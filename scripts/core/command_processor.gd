@@ -4,6 +4,7 @@ extends RefCounted
 ## Audit entries are in-memory for now; save serialization is a later milestone.
 
 signal parameter_changed(change: Dictionary)
+signal trait_changed(change: Dictionary)
 signal history_changed
 
 const MAX_UNDO := 120
@@ -60,10 +61,72 @@ func execute_set(target: Node, parameter_id: String, requested_value: Variant, i
 	return true
 
 
+## Role and tag mutations are real commands with provenance and Undo/Redo.
+## They change neither the origin category nor the derived CREATURE role.
+func execute_trait(target: Node, operation: String, trait: String,
+		initiator_id: String = "luna", source_id: String = "wand:luna") -> bool:
+	if not is_instance_valid(target) or operation not in ["ADD_ROLE", "REMOVE_ROLE", "ADD_TAG", "REMOVE_TAG"]:
+		return false
+	var record: Variant = target.get("record")
+	if record == null:
+		return false
+	var before := {"roles": record.get_stored_roles(), "tags": record.get_tags()}
+	var accepted := false
+	match operation:
+		"ADD_ROLE": accepted = record.add_role(trait)
+		"REMOVE_ROLE": accepted = record.remove_role(trait)
+		"ADD_TAG": accepted = record.add_tag(trait)
+		"REMOVE_TAG": accepted = record.remove_tag(trait)
+	if not accepted:
+		return false
+	var after := {"roles": record.get_stored_roles(), "tags": record.get_tags()}
+	_sequence += 1
+	var entry := {
+		"kind": "traits", "sequence": _sequence,
+		"target_ref": weakref(target), "entity_id": str(record.id),
+		"parameter_id": "ROLES_TAGS", "before": before, "after": after,
+		"initiator_id": initiator_id, "source_id": source_id,
+		"merge_key": "", "trait_operation": operation, "trait": trait
+	}
+	_undo_stack.append(entry)
+	if _undo_stack.size() > MAX_UNDO:
+		_undo_stack.pop_front()
+	_redo_stack.clear()
+	_append_audit("TRAIT_SET", entry, before, after)
+	trait_changed.emit(_latest_audit())
+	history_changed.emit()
+	return true
+
+
+func _replay_trait_change(entry: Dictionary, forward: bool) -> bool:
+	var target: Object = (entry["target_ref"] as WeakRef).get_ref()
+	if not is_instance_valid(target):
+		return false
+	var record: Variant = target.get("record")
+	if record == null:
+		return false
+	var expected: Dictionary = entry["before"] if forward else entry["after"]
+	if record.get_stored_roles() != expected["roles"] or record.get_tags() != expected["tags"]:
+		return false
+	var new_traits: Dictionary = entry["after"] if forward else entry["before"]
+	if not record.set_traits(new_traits["roles"], new_traits["tags"]):
+		return false
+	_append_audit("REDO_TRAITS" if forward else "UNDO_TRAITS", entry, expected, new_traits)
+	trait_changed.emit(_latest_audit())
+	return true
+
+
 func undo() -> bool:
 	if _undo_stack.is_empty():
 		return false
 	var entry: Dictionary = _undo_stack.back()
+	if str(entry.get("kind", "")) == "traits":
+		if not _replay_trait_change(entry, false):
+			return false
+		_undo_stack.pop_back()
+		_redo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if entry.has("steps"):
 		if not _replay_batch(entry, false):
 			return false
@@ -86,6 +149,13 @@ func redo() -> bool:
 	if _redo_stack.is_empty():
 		return false
 	var entry: Dictionary = _redo_stack.back()
+	if str(entry.get("kind", "")) == "traits":
+		if not _replay_trait_change(entry, true):
+			return false
+		_redo_stack.pop_back()
+		_undo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if entry.has("steps"):
 		if not _replay_batch(entry, true):
 			return false
