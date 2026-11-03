@@ -5,6 +5,7 @@ signal target_acquired(source_id: String, target_id: String, target_group: Strin
 
 const EntityRecord = preload("res://scripts/core/entity_record.gd")
 const BehaviorBrain = preload("res://scripts/systems/behavior_brain.gd")
+const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 const GRAVITY := 18.0
 
 var record
@@ -14,20 +15,23 @@ var legs: Array[MeshInstance3D] = []
 var brain = BehaviorBrain.new()
 var world_registry
 var relationship_service
+var arcane_manifestation: Dictionary = {}
 var age := 0.0
 var _previous_engaged_target := ""
 
 
-func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null, relations = null) -> void:
+func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null, relations = null, arcane_recipe: Dictionary = {}) -> void:
 	name = entity_id
 	position = start_position
 	collision_layer = 2
 	collision_mask = 1
 	world_registry = registry_of_world
 	relationship_service = relations
+	arcane_manifestation = ArcaneGrammar.normalize(arcane_recipe)
 	var is_tree := entity_type == "tree"
-	var base_color := Color("b790dd") if is_tree else Color("87bfe8")
-	var label := "Дерево" if is_tree else "Холодильник"
+	var is_arcane: bool = not arcane_manifestation.is_empty()
+	var base_color: Color = ArcaneGrammar.tint(str(arcane_manifestation["element"])) if is_arcane else (Color("b790dd") if is_tree else Color("87bfe8"))
+	var label := "Магическое существо" if entity_type == "arcane_creature" else ("Магический предмет" if entity_type == "arcane_object" else ("Магическая энергия" if entity_type == "arcane_energy" else ("Дерево" if is_tree else "Холодильник")))
 	record = EntityRecord.new(entity_id, entity_type, label, parameter_registry, {
 		"color": base_color,
 		"size": 1.0,
@@ -44,7 +48,7 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 
 	var collider := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(1.6, 2.6, 1.6) if is_tree else Vector3(1.15, 1.8, 1.0)
+	box.size = Vector3(0.9, 1.3, 0.9) if is_arcane else (Vector3(1.6, 2.6, 1.6) if is_tree else Vector3(1.15, 1.8, 1.0))
 	collider.shape = box
 	collider.position.y = box.size.y * 0.5
 	add_child(collider)
@@ -52,7 +56,9 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 	visual_root = Node3D.new()
 	visual_root.name = "Appearance"
 	add_child(visual_root)
-	if is_tree:
+	if is_arcane:
+		_build_arcane_shape()
+	elif is_tree:
 		_build_tree()
 	else:
 		_build_fridge()
@@ -62,6 +68,16 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 		var leg := _make_box(Vector3(0.18, 0.46, 0.19), Vector3(x, 0.23, 0.0), Color("56456e"))
 		leg.visible = false
 		legs.append(leg)
+	if is_arcane:
+		var behavior: String = str(arcane_manifestation["behavior"])
+		var is_creature: bool = entity_type == "arcane_creature"
+		var can_move: bool = is_creature or behavior in ["SEEK", "WANDER", "FOLLOW", "CHASE", "FLEE"]
+		var brain_mode: String = "CHASE" if behavior == "SEEK" else ("IDLE" if behavior == "STRAIGHT" else behavior)
+		set_parameter("alive", can_move)
+		set_parameter("ai_enabled", can_move and brain_mode != "IDLE")
+		set_parameter("behavior_mode", brain_mode)
+		set_parameter("speed", 2.5 if is_creature else 1.8)
+
 
 
 func get_parameter(key: String) -> Variant:
@@ -145,6 +161,36 @@ func _physics_process(delta: float) -> void:
 			atan2(-velocity.x, -velocity.z),
 			minf(delta * 5.0, 1.0)
 		)
+
+
+func _build_arcane_shape() -> void:
+	## Same generic actor for ENERGY, OBJECT and CREATURE. No scripts per spell.
+	var shape: String = str(arcane_manifestation["shape"])
+	var radius: float = float(arcane_manifestation["size"]) * 1.5
+	var tint: Color = record.get_parameter("color")
+	match shape:
+		"ORB":
+			primary_part = _make_sphere(radius, Vector3(0, 0.8, 0), tint)
+		"SHARD":
+			var crystal := CylinderMesh.new()
+			crystal.top_radius = 0.0
+			crystal.bottom_radius = radius * 0.72
+			crystal.height = radius * 2.8
+			crystal.radial_segments = 5
+			primary_part = MeshInstance3D.new()
+			primary_part.mesh = crystal
+			primary_part.position = Vector3(0, 0.85, 0)
+			primary_part.material_override = _material(tint)
+			visual_root.add_child(primary_part)
+		"BOLT":
+			var bolt := CapsuleMesh.new()
+			bolt.radius = radius * 0.58
+			bolt.height = radius * 2.8
+			primary_part = MeshInstance3D.new()
+			primary_part.mesh = bolt
+			primary_part.position = Vector3(0, 0.8, 0)
+			primary_part.material_override = _material(tint)
+			visual_root.add_child(primary_part)
 
 
 func _build_tree() -> void:
