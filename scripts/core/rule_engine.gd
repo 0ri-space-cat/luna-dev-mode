@@ -231,7 +231,9 @@ func _normalize_rule(input: Dictionary) -> Dictionary:
 			return {}
 	var where: Dictionary = {}
 	if input.has("where"):
-		if typeof(input["where"]) != TYPE_DICTIONARY or not _valid_condition(input["where"], 0):
+		if typeof(input["where"]) != TYPE_DICTIONARY:
+			return {}
+		if not input["where"].is_empty() and not _valid_condition(input["where"], 0):
 			return {}
 		where = input["where"].duplicate(true)
 	elif input.has("conditions"):
