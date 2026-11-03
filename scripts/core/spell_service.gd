@@ -5,6 +5,7 @@ extends RefCounted
 signal spell_cast(details: Dictionary)
 signal projectile_requested(details: Dictionary)
 signal manifestation_requested(details: Dictionary)
+signal chain_resolved(details: Dictionary)
 
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 const TargetResolver = preload("res://scripts/core/target_resolver.gd")
@@ -72,12 +73,16 @@ func is_valid_impact(impact: Variant) -> bool:
 	if typeof(impact) != TYPE_DICTIONARY:
 		return false
 	var mode: String = str(impact.get("mode", "DIRECT"))
-	if mode == "BURST":
-		if impact.size() != 2 or typeof(impact.get("radius")) not in [TYPE_INT, TYPE_FLOAT]:
+	if mode == "BURST" or mode == "CHAIN":
+		var wanted_fields: int = 3 if mode == "CHAIN" else 2
+		if impact.size() != wanted_fields or typeof(impact.get("radius")) not in [TYPE_INT, TYPE_FLOAT]:
 			return false
 		var radius: float = float(impact["radius"])
-		return not is_nan(radius) and not is_inf(radius) \
-			and radius >= 0.5 and radius <= TargetResolver.MAX_RADIUS
+		if is_nan(radius) or is_inf(radius) or radius < 0.5 or radius > TargetResolver.MAX_RADIUS:
+			return false
+		if mode == "CHAIN":
+			return typeof(impact.get("jumps")) == TYPE_INT and int(impact["jumps"]) >= 1 and int(impact["jumps"]) <= 4
+		return true
 	return mode == "DIRECT" and (impact.is_empty() or impact.size() == 1)
 
 
@@ -152,19 +157,46 @@ func resolve_impact(spell_id: String, caster_id: String, target_id: String) -> b
 	var affected: Array[String] = [target_id]
 	if mode == "BURST":
 		affected = TargetResolver.around(world, target_id, float(impact["radius"]))
+	elif mode == "CHAIN":
+		affected = TargetResolver.chain(world, target_id,
+			float(impact["radius"]), int(impact["jumps"]))
 	var ok := false
-	if mode == "BURST":
+	if mode == "CHAIN":
+		var plans: Array[Dictionary] = []
+		for hop in range(affected.size()):
+			var actions: Array = []
+			for original in spec["effects"]:
+				var action: Dictionary = original.duplicate(true)
+				# Only damaging HEALTH values fade; utility effects retain
+				# their normal semantics throughout the chain.
+				if str(action.get("operation", "")) == "ADD" \
+						and str(action.get("parameter_id", "")) == "health" \
+						and float(action.get("value", 0)) < 0:
+					var damage: int = maxi(1,
+						roundi(absf(float(action["value"])) * pow(0.65, hop)))
+					action["value"] = -damage
+				actions.append(action)
+			plans.append({"target_id": affected[hop], "actions": actions})
+		ok = effects.apply_targeted_batches(plans, caster_id, "spell:%s" % spell_id)
+	elif mode == "BURST":
 		ok = effects.apply_to_targets(spec["effects"], affected, caster_id, "spell:%s" % spell_id)
 	else:
 		ok = effects.apply_batch(spec["effects"], target_id, caster_id, "spell:%s" % spell_id)
 	if not ok:
 		return _fail("Попадание не сработало: %s" % effects.last_error)
 	# Elemental overlays are attached only after the entire hit was accepted.
-	# Creation-only recipes don't burn or freeze their summoned creatures.
 	var manifestation: Dictionary = spec.get("manifestation", {})
 	if elemental_statuses != null and not manifestation.is_empty():
 		for entity_id in affected:
 			elemental_statuses.apply_element(entity_id, str(manifestation["element"]))
+	if mode == "CHAIN" and affected.size() > 1:
+		var links: Array[Dictionary] = []
+		for i in range(1, affected.size()):
+			links.append({"from_id": affected[i - 1], "to_id": affected[i]})
+		chain_resolved.emit({
+			"spell_id": spell_id, "origin_id": target_id,
+			"targets": affected.duplicate(), "links": links
+		})
 	return true
 
 
@@ -190,6 +222,7 @@ func _register_starters() -> void:
 		"id": "ARC_BOLT", "label": "ИСКРОВОЙ РАЗРЯД", "cast_range": 17.0,
 		"symbol_id": "LIGHTNING", "stone_color": Color("e6d77a"),
 		"manifestation": ArcaneGrammar.make("BOLT", "STORM", 22.0, 0.25),
+		"impact": {"mode": "CHAIN", "radius": 4.5, "jumps": 3},
 		"effects": [{"operation": "ADD", "parameter_id": "health", "value": -16}]
 	})
 
