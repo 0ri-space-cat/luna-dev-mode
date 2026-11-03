@@ -189,10 +189,147 @@ func _announce_entity(entry: Dictionary, action: String) -> void:
 	})
 
 
+## A world transaction contains existing parameter/relation steps and one
+## terminal lifecycle operation. Other steps may not refer to the created or
+## deleted ID; this makes all stages preflightable without dangling Node refs.
+## A commit has ONE undo record and emits gameplay events only on success.
+func execute_world_batch(prepared_steps: Array[Dictionary], lifecycle, operation: String,
+		blueprint: Dictionary, initiator_id: String, source_id: String) -> bool:
+	if lifecycle == null or operation not in ["CREATE", "DELETE"] or prepared_steps.size() > 31:
+		return false
+	if not lifecycle.validate_blueprint(blueprint):
+		return false
+	var entity_id: String = str(blueprint["id"])
+	if not _valid_lifecycle_boundary(prepared_steps, entity_id):
+		return false
+	var present: bool = lifecycle.world.get_entity(entity_id) != null
+	if present != (operation == "DELETE"):
+		return false
+	if operation == "DELETE" and lifecycle.capture(entity_id) != blueprint:
+		return false
+	if not _validate_batch(prepared_steps):
+		return false
+	# All typed inputs are valid before the first game-state write. Apply
+	# parameter/relation steps silently; the lifecycle action comes last.
+	if not _apply_steps(prepared_steps, true):
+		return false
+	var committed_blueprint: Dictionary = blueprint.duplicate(true)
+	var success := false
+	if operation == "CREATE":
+		success = lifecycle.restore_entity(committed_blueprint) != null
+	else:
+		var removed: Dictionary = lifecycle.delete_entity(entity_id)
+		success = not removed.is_empty()
+		if success:
+			committed_blueprint = removed
+	if not success:
+		var reverse_steps: Array[Dictionary] = prepared_steps.duplicate()
+		reverse_steps.reverse()
+		_apply_steps(reverse_steps, false)
+		return false
+	var stored: Array[Dictionary] = []
+	for step in prepared_steps:
+		var copy: Dictionary = step.duplicate()
+		if str(copy["kind"]) == "parameter":
+			copy["target_ref"] = weakref(copy["target"])
+			copy.erase("target")
+		stored.append(copy)
+	_sequence += 1
+	var entity_entry := {
+		"sequence": _sequence, "entity_id": entity_id, "parameter_id": "ENTITY_LIFECYCLE",
+		"blueprint": committed_blueprint, "initiator_id": initiator_id, "source_id": source_id
+	}
+	var entry := {
+		"kind": "world_batch", "steps": stored,
+		"lifecycle": lifecycle, "operation": operation,
+		"entity": entity_entry, "initiator_id": initiator_id, "source_id": source_id
+	}
+	_undo_stack.append(entry)
+	if _undo_stack.size() > MAX_UNDO:
+		_undo_stack.pop_front()
+	_redo_stack.clear()
+	_announce_steps(stored, "SET", initiator_id, source_id, true)
+	_announce_entity(entity_entry, operation)
+	history_changed.emit()
+	return true
+
+
+func _valid_lifecycle_boundary(steps: Array[Dictionary], entity_id: String) -> bool:
+	for step in steps:
+		var kind: String = str(step.get("kind", ""))
+		if kind == "parameter":
+			if str(step.get("entity_id", "")) == entity_id:
+				return false
+		elif kind == "relation":
+			if str(step.get("from_id", "")) == entity_id or str(step.get("to_id", "")) == entity_id:
+				return false
+		else:
+			return false
+	return true
+
+
+func _replay_world_batch(entry: Dictionary, forward: bool) -> bool:
+	var lifecycle: Variant = entry["lifecycle"]
+	var entity_entry: Dictionary = entry["entity"]
+	var blueprint: Dictionary = entity_entry["blueprint"]
+	var operation: String = str(entry["operation"])
+	var entity_id: String = str(entity_entry["entity_id"])
+	var should_exist: bool = (operation == "CREATE") == forward
+	var exists: bool = lifecycle.world.get_entity(entity_id) != null
+	if exists == should_exist:
+		return false
+	var steps: Array[Dictionary] = []
+	for step in entry["steps"]:
+		steps.append(step)
+	if not forward:
+		steps.reverse()
+	if not _validate_batch(steps, forward):
+		return false
+	# Forward: ordinary changes -> lifecycle. Undo: inverse lifecycle ->
+	# ordinary inverses, since creation/deletion was the last operation.
+	if forward and not _apply_steps(steps, true):
+		return false
+	var acted := false
+	if should_exist:
+		acted = lifecycle.restore_entity(blueprint) != null
+	else:
+		var deleted: Dictionary = lifecycle.delete_entity(entity_id)
+		acted = not deleted.is_empty()
+		if acted and operation == "DELETE" and forward:
+			entity_entry["blueprint"] = deleted
+			entry["entity"] = entity_entry
+	if not acted:
+		if forward:
+			var reverse_steps: Array[Dictionary] = steps.duplicate()
+			reverse_steps.reverse()
+			_apply_steps(reverse_steps, false)
+		return false
+	if not forward and not _apply_steps(steps, false):
+		# Exceptional rollback: undoing a world batch must also be all-or-none.
+		if should_exist:
+			lifecycle.delete_entity(entity_id)
+		else:
+			lifecycle.restore_entity(blueprint)
+		return false
+	_announce_steps(steps, "REDO" if forward else "UNDO",
+		str(entry["initiator_id"]), str(entry["source_id"]), forward)
+	_sequence += 1
+	entity_entry["sequence"] = _sequence
+	_announce_entity(entity_entry, ("REDO_" if forward else "UNDO_") + operation)
+	return true
+
+
 func undo() -> bool:
 	if _undo_stack.is_empty():
 		return false
 	var entry: Dictionary = _undo_stack.back()
+	if str(entry.get("kind", "")) == "world_batch":
+		if not _replay_world_batch(entry, false):
+			return false
+		_undo_stack.pop_back()
+		_redo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if str(entry.get("kind", "")) == "entity":
 		if not _replay_entity(entry, false):
 			return false
@@ -229,6 +366,13 @@ func redo() -> bool:
 	if _redo_stack.is_empty():
 		return false
 	var entry: Dictionary = _redo_stack.back()
+	if str(entry.get("kind", "")) == "world_batch":
+		if not _replay_world_batch(entry, true):
+			return false
+		_redo_stack.pop_back()
+		_undo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if str(entry.get("kind", "")) == "entity":
 		if not _replay_entity(entry, true):
 			return false
