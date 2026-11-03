@@ -16,6 +16,10 @@ func _initialize() -> void:
 	fridge.configure("fridge_001", "fridge", Vector3(1, 0, 0), parameters, world)
 	tree.configure("tree_001", "tree", Vector3(6, 0, 0), parameters, world)
 	luna.position = Vector3(4, 0, 0)
+	# Node3D.global_position is only valid after the nodes enter SceneTree.
+	root.add_child(fridge)
+	root.add_child(tree)
+	root.add_child(luna)
 	assert(world.register_entity("fridge_001", fridge, "FRIDGE"))
 	assert(world.register_entity("tree_001", tree, "TREE"))
 	assert(world.register_entity("luna", luna, "LUNA"))
