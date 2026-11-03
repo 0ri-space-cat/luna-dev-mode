@@ -59,6 +59,7 @@ func snapshot(world, player: Node3D, relationships = null, elemental_statuses = 
 		"scene": SCENE_ID,
 		"player_position": _pack_position(player.position),
 		"entities": entities,
+		"deleted_entities": world.deleted_ids(),
 		"relationships": relationships.export_data() if relationships != null else {},
 		"elemental_statuses": elemental_statuses.export_data() if elemental_statuses != null else {},
 		"surface_fields": surface_fields.export_data() if surface_fields != null else {},
@@ -78,15 +79,15 @@ func save_world(world, player: Node3D, relationships = null, elemental_statuses 
 	return true
 
 
-func load_world(world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null, create_duplicate: Callable = Callable(), rules = null) -> bool:
+func load_world(world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null, create_duplicate: Callable = Callable(), rules = null, remove_actor: Callable = Callable(), create_original: Callable = Callable()) -> bool:
 	last_error = ""
 	var received: Dictionary = JsonStore.read_document(save_path)
 	if not bool(received["ok"]):
 		return _fail(str(received["error"]))
-	return apply_snapshot(received["data"], world, player, relationships, create_actor, parameter_registry, elemental_statuses, surface_fields, social_awareness, create_duplicate, rules)
+	return apply_snapshot(received["data"], world, player, relationships, create_actor, parameter_registry, elemental_statuses, surface_fields, social_awareness, create_duplicate, rules, remove_actor, create_original)
 
 
-func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null, create_duplicate: Callable = Callable(), rules = null) -> bool:
+func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null, create_duplicate: Callable = Callable(), rules = null, remove_actor: Callable = Callable(), create_original: Callable = Callable()) -> bool:
 	last_error = ""
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
@@ -100,6 +101,14 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 	var entries: Variant = data.get("entities")
 	if typeof(entries) != TYPE_DICTIONARY:
 		return _fail("Missing entity data")
+	var deleted: Variant = data.get("deleted_entities", [])
+	if not world.validate_deleted_ids(deleted):
+		return _fail("Malformed deleted entity IDs")
+	for deleted_id in deleted:
+		if deleted_id == "luna" or entries.has(deleted_id):
+			return _fail("Deleted ID still has a live entity")
+		if world.get_entity(str(deleted_id)) != null and not remove_actor.is_valid():
+			return _fail("Missing entity removal callback")
 	var relationship_data: Variant = data.get("relationships", {})
 	if relationships != null and not relationships.validate_data(relationship_data):
 		return _fail("Invalid relationship data")
@@ -128,8 +137,16 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		var fields_registry = null
 		var manifest: Dictionary = {}
 		var copy_origin := ""
+		var restore_base := false
 		if entity == null:
-			if item.has("copy_origin"):
+			if id in ["tree_001", "tree_002", "fridge_001"] and not item.has("copy_origin") and not item.has("construct"):
+				if not create_original.is_valid() or parameter_registry == null:
+					continue
+				if category != ("fridge" if id == "fridge_001" else "tree"):
+					return _fail("Invalid original entity category")
+				fields_registry = parameter_registry
+				restore_base = true
+			elif item.has("copy_origin"):
 				if not create_duplicate.is_valid() or parameter_registry == null:
 					continue # Old save callers still work without copy spawning.
 				if typeof(item["copy_origin"]) != TYPE_STRING:
@@ -204,6 +221,7 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 			"roles": saved_roles, "tags": saved_tags,
 			"node": entity, "id": id, "manifest": manifest,
 			"copy_origin": copy_origin, "category": category,
+			"restore_base": restore_base,
 			"position": pos["value"], "parameters": normalized
 		})
 		ids_in_save.append(id)
@@ -214,7 +232,11 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		if item["node"] != null:
 			continue
 		var actor: Node
-		if not str(item["copy_origin"]).is_empty():
+		if bool(item["restore_base"]):
+			actor = create_original.call(
+				str(item["id"]), str(item["category"]), item["position"]
+			)
+		elif not str(item["copy_origin"]).is_empty():
 			actor = create_duplicate.call(
 				str(item["id"]), str(item["category"]), item["position"], str(item["copy_origin"])
 			)
@@ -248,6 +270,14 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		social_awareness.import_data(social_data)
 	if rules != null and not rule_data.is_empty():
 		rules.import_data(rule_data)
+	# Deletions are facts, not invisible defaults that respawn on restart.
+	# Clean active tombstoned actors only after the full snapshot validated.
+	for deleted_id in deleted:
+		if world.get_entity(str(deleted_id)) != null:
+			if not bool(remove_actor.call(str(deleted_id))):
+				return _fail("Unable to apply deletion: %s" % deleted_id)
+	if not world.restore_deleted_ids(deleted):
+		return _fail("Unable to restore deleted-entity registry")
 	last_restored_ids = ids_in_save
 	return true
 
