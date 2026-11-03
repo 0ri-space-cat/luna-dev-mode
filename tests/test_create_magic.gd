@@ -95,7 +95,36 @@ func _run() -> void:
 	assert(stage.spell_service.cast_spell(created_id, actor_id, target_id))
 	assert(stage.world_registry.get_entity("arcane_0003") != null)
 
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_PATH))
+	# Generated entities must survive a full scene shutdown and restoration.
+	assert(stage.save_service.save_world(
+		stage.world_registry, stage.luna, stage.relationship_service
+	))
+	var checkpoint: Dictionary = stage.save_service.snapshot(
+		stage.world_registry, stage.luna, stage.relationship_service
+	)
+	assert(checkpoint["entities"]["arcane_0001"]["construct"]["create"] == "OBJECT")
+	assert(checkpoint["entities"]["arcane_0002"]["construct"]["create"] == "CREATURE")
 	stage.free()
-	print("LUNA grammar: editable created OBJECT and CREATURE passed")
+	var reloaded = load("res://scenes/main.tscn").instantiate()
+	root.add_child(reloaded)
+	reloaded.save_service = SaveService.new(TEST_PATH)
+	reloaded._load_checkpoint(false)
+	var restored_object: Node = reloaded.world_registry.get_entity("arcane_0001")
+	var restored_creature: Node = reloaded.world_registry.get_entity("arcane_0002")
+	assert(restored_object != null and restored_creature != null)
+	assert(restored_object.get_parameter("color") == Color("f49fc9"))
+	assert(restored_creature.get_parameter("alive") == true)
+	assert(restored_creature.get_parameter("behavior_mode") == "FOLLOW")
+	assert(reloaded.world_registry.get_entity("arcane_0003") != null)
+
+	var damaged: Dictionary = checkpoint.duplicate(true)
+	damaged["entities"]["arcane_0002"]["construct"]["create"] = "DRAGON"
+	assert(not reloaded.save_service.apply_snapshot(
+		damaged, reloaded.world_registry, reloaded.luna, reloaded.relationship_service,
+		Callable(reloaded, "_restore_arcane_actor"), reloaded.parameter_registry
+	))
+	assert(reloaded.world_registry.get_entity("arcane_0002") != null)
+	reloaded.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_PATH))
+	print("LUNA grammar: created entities, editing and restored world passed")
 	quit(0)
