@@ -66,3 +66,39 @@ func list_ids() -> Array[String]:
 			result.append(str(entity_id))
 	result.sort()
 	return result
+
+
+## Deterministic, bounded classification search. New systems (magic, rules,
+## factions and discoveries) can share this selector rather than adding
+## custom species-by-species loops.
+func query_ids(selector: Dictionary, limit: int = 16) -> Array[String]:
+	var result: Array[String] = []
+	if limit < 1 or limit > 24:
+		return result
+	for key in selector.keys():
+		if str(key) not in ["category", "role", "tag", "alive"]:
+			return result
+		if str(key) == "alive":
+			if typeof(selector[key]) != TYPE_BOOL:
+				return result
+		elif typeof(selector[key]) != TYPE_STRING or str(selector[key]).is_empty():
+			return result
+	for entity_id in list_ids():
+		var actor: Node = get_entity(entity_id)
+		if actor == null or not actor.has_method("get_parameter"):
+			continue
+		var record: Variant = actor.get("record")
+		if record == null:
+			continue
+		if selector.has("category") and str(record.category) != str(selector["category"]):
+			continue
+		if selector.has("role") and not record.has_role(str(selector["role"])):
+			continue
+		if selector.has("tag") and not record.has_tag(str(selector["tag"])):
+			continue
+		if selector.has("alive") and bool(actor.call("get_parameter", "alive")) != bool(selector["alive"]):
+			continue
+		result.append(entity_id)
+		if result.size() >= limit:
+			break
+	return result
