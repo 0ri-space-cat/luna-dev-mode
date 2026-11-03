@@ -248,10 +248,10 @@ func _normalize_rule(input: Dictionary) -> Dictionary:
 			leaves.append(leaf)
 		if not leaves.is_empty():
 			where = {"all": leaves}
-	var priority := input.get("priority", 0)
-	var cooldown := input.get("cooldown_ms", 0)
-	var repeats := input.get("repeat_limit", 0)
-	var enabled := input.get("enabled", true)
+	var priority: Variant = input.get("priority", 0)
+	var cooldown: Variant = input.get("cooldown_ms", 0)
+	var repeats: Variant = input.get("repeat_limit", 0)
+	var enabled: Variant = input.get("enabled", true)
 	if typeof(priority) != TYPE_INT or priority < -100 or priority > 100:
 		return {}
 	if typeof(cooldown) != TYPE_INT or cooldown < 0 or cooldown > 120000:
@@ -260,7 +260,7 @@ func _normalize_rule(input: Dictionary) -> Dictionary:
 		return {}
 	if typeof(enabled) != TYPE_BOOL:
 		return {}
-	var author := input.get("author_id", "system")
+	var author: Variant = input.get("author_id", "system")
 	if typeof(author) != TYPE_STRING or author.is_empty() or author.length() > 96:
 		return {}
 	return {
