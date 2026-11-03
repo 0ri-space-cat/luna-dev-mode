@@ -131,7 +131,7 @@ func refresh_language() -> void:
 func _update_identity() -> void:
 	if not is_instance_valid(target) or not is_instance_valid(title_label):
 		return
-	title_label.text = "> %s   ID: %s" % [str(target.record.display_name).to_upper(), str(target.record.id).to_upper()]
+	title_label.text = "> %s   ID: %s" % [ui_language.translated(str(target.record.display_name)).to_upper(), str(target.record.id).to_upper()]
 	type_label.text = "TYPE: %s" % str(target.record.category).to_upper()
 
 
