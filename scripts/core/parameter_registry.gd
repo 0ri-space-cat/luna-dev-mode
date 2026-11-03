@@ -25,6 +25,29 @@ func _init() -> void:
 		"hint": "Разрешает самостоятельное поведение живого объекта."
 	})
 	register_parameter({
+		"id": "behavior_mode", "label": "BEHAVIOR_MODE", "kind": "enum", "default": "WANDER",
+		"choices": [{"name":"WANDER","value":"WANDER"},{"name":"IDLE","value":"IDLE"},{"name":"FOLLOW","value":"FOLLOW"},{"name":"CHASE","value":"CHASE"},{"name":"FLEE","value":"FLEE"},{"name":"AUTO","value":"AUTO"}],
+		"hint": "WANDER — бродить; FOLLOW — идти за целью; CHASE — преследовать; FLEE — убегать; AUTO — по отношению к Луне."
+	})
+	register_parameter({
+		"id": "target_group", "label": "TARGET_GROUP", "kind": "enum", "default": "LUNA",
+		"choices": [{"name":"LUNA","value":"LUNA"},{"name":"ANY","value":"ANY"},{"name":"TREE","value":"TREE"},{"name":"FRIDGE","value":"FRIDGE"}],
+		"hint": "Кого искать для следования, преследования или побега."
+	})
+	register_parameter({
+		"id": "luna_relation", "label": "LUNA_RELATION", "kind": "enum", "default": "NEUTRAL",
+		"choices": [{"name":"NEUTRAL","value":"NEUTRAL"},{"name":"FRIEND","value":"FRIEND"},{"name":"HOSTILE","value":"HOSTILE"},{"name":"AFRAID","value":"AFRAID"}],
+		"hint": "Отношение к Луне, определяет поведение в режиме AUTO."
+	})
+	register_parameter({
+		"id": "sense_range", "label": "SENSE_RANGE", "kind": "float", "min": 2.0, "max": 25.0, "step": 0.5, "default": 12.0,
+		"hint": "Радиус, в котором существо замечает цель."
+	})
+	register_parameter({
+		"id": "follow_distance", "label": "FOLLOW_DISTANCE", "kind": "float", "min": 1.0, "max": 7.0, "step": 0.2, "default": 2.0,
+		"hint": "Расстояние, на котором спутник остановится рядом с целью."
+	})
+	register_parameter({
 		"id": "health", "label": "HEALTH", "kind": "int",
 		"min": 1.0, "max": 200.0, "step": 1.0, "default": 100,
 		"hint": "Запас здоровья объекта."
@@ -54,7 +77,7 @@ func register_parameter(spec: Dictionary) -> bool:
 	var parameter_id: String = str(spec["id"])
 	if parameter_id.is_empty() or _by_id.has(parameter_id):
 		return false
-	if not ["bool", "int", "float", "color"].has(str(spec["kind"])):
+	if not ["bool", "int", "float", "color", "enum"].has(str(spec["kind"])):
 		return false
 	var checked := _normalize_using_spec(spec, spec["default"])
 	if not checked["ok"]:
@@ -109,6 +132,13 @@ func _applies_to(spec: Dictionary, category: String) -> bool:
 func _normalize_using_spec(spec: Dictionary, proposed: Variant) -> Dictionary:
 	var kind: String = str(spec["kind"])
 	match kind:
+		"enum":
+			if typeof(proposed) != TYPE_STRING:
+				return {"ok": false, "error": "Expected enum string"}
+			for option in spec.get("choices", []):
+				if str(option.get("value", "")) == proposed:
+					return {"ok": true, "value": proposed}
+			return {"ok": false, "error": "Unknown enum option"}
 		"bool":
 			if typeof(proposed) != TYPE_BOOL:
 				return {"ok": false, "error": "Expected boolean"}

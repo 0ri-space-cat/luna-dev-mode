@@ -6,6 +6,7 @@ const HackableEntity = preload("res://scripts/hackable_entity.gd")
 const HackEditor = preload("res://scripts/hack_editor.gd")
 const ParameterRegistry = preload("res://scripts/core/parameter_registry.gd")
 const CommandProcessor = preload("res://scripts/core/command_processor.gd")
+const WorldRegistry = preload("res://scripts/core/world_registry.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -14,11 +15,13 @@ var pause_tint: ColorRect
 var pending_selection := Vector2(-1, -1)
 var parameter_registry
 var command_processor
+var world_registry
 
 
 func _ready() -> void:
 	parameter_registry = ParameterRegistry.new()
 	command_processor = CommandProcessor.new()
+	world_registry = WorldRegistry.new()
 	_register_controls()
 	_build_environment()
 	_build_ground()
@@ -136,6 +139,7 @@ func _spawn_player() -> void:
 	luna = PlayerController.new()
 	luna.position = Vector3(0, 0.1, 3.3)
 	add_child(luna)
+	world_registry.register_entity("luna", luna, "LUNA")
 
 
 func _spawn_entities() -> void:
@@ -147,7 +151,8 @@ func _spawn_entities() -> void:
 func _spawn(entity_id: String, category: String, where: Vector3) -> void:
 	var entity := HackableEntity.new()
 	add_child(entity)
-	entity.configure(entity_id, category, where, parameter_registry)
+	entity.configure(entity_id, category, where, parameter_registry, world_registry)
+	world_registry.register_entity(entity_id, entity, category.to_upper())
 
 
 func _build_interface() -> void:
@@ -165,7 +170,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.2"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.3"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -179,7 +184,7 @@ func _build_interface() -> void:
 	layer.add_child(instructions)
 
 	var bottom := Label.new()
-	bottom.text = "IS_ALIVE: TRUE — оживление. AI_ENABLED: FALSE — остановить самостоятельное поведение."
+	bottom.text = "IS_ALIVE: TRUE • BEHAVIOR_MODE: FOLLOW / FLEE / CHASE • TARGET_GROUP: LUNA или другие объекты"
 	bottom.position = Vector2(24, 750)
 	bottom.add_theme_color_override("font_color", Color("f7e2f4"))
 	bottom.add_theme_font_size_override("font_size", 16)

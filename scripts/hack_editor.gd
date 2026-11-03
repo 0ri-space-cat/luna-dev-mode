@@ -163,15 +163,18 @@ func _add_field(spec: Dictionary) -> void:
 			field_controls[parameter_id] = {
 				"kind": kind, "input": slider, "display": number
 			}
-		"color":
+		"color", "enum":
 			var picker := OptionButton.new()
 			picker.custom_minimum_size.x = 144
 			for option in spec.get("choices", []):
-				picker.add_item("%s #%s" % [
-					option["name"], str(option["value"].to_html(false)).to_upper()
-				])
+				if kind == "color":
+					picker.add_item("%s #%s" % [
+						option["name"], str(option["value"].to_html(false)).to_upper()
+					])
+				else:
+					picker.add_item(str(option["name"]))
 			line.add_child(picker)
-			picker.item_selected.connect(_on_color_selected.bind(parameter_id, spec.get("choices", [])))
+			picker.item_selected.connect(_on_choice_selected.bind(parameter_id, spec.get("choices", [])))
 			field_controls[parameter_id] = {
 				"kind": kind, "input": picker, "choices": spec.get("choices", [])
 			}
@@ -200,7 +203,7 @@ func _sync_fields_from_target() -> void:
 				slider.set_value_no_signal(float(value))
 				var value_label: Label = field["display"]
 				value_label.text = str(int(value)) if field["kind"] == "int" else "%.1f" % float(value)
-			"color":
+			"color", "enum":
 				var picker: OptionButton = field["input"]
 				var choices: Array = field["choices"]
 				for index in range(choices.size()):
@@ -266,7 +269,7 @@ func _on_range_changed(value: float, parameter_id: String) -> void:
 	_apply_change(parameter_id, requested, str(_active_gestures.get(parameter_id, "")))
 
 
-func _on_color_selected(index: int, parameter_id: String, choices: Array) -> void:
+func _on_choice_selected(index: int, parameter_id: String, choices: Array) -> void:
 	if syncing or index < 0 or index >= choices.size():
 		return
 	_apply_change(parameter_id, choices[index]["value"])

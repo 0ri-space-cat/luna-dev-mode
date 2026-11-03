@@ -15,11 +15,14 @@ func _initialize() -> void:
 	var tree = Hackable.new()
 	tree.configure("tree_test", "tree", Vector3.ZERO, registry)
 
-	assert(registry.get_specs_for("fridge").size() == 6)
+	assert(registry.get_specs_for("fridge").size() == 11)
 	assert(fridge.record.category == "fridge")
 	assert(tree.record.category == "tree")
 	assert(fridge.get_parameter("alive") == false)
 	assert(fridge.get_parameter("ai_enabled") == true)
+	assert(fridge.get_parameter("behavior_mode") == "WANDER")
+	assert(registry.normalize("fridge", "behavior_mode", "CHASE")["ok"])
+	assert(not registry.normalize("fridge", "behavior_mode", "UNDEFINED")["ok"])
 	assert(tree.get_parameter("health") == 65)
 
 	# Typed values and clamping are shared between every entity.

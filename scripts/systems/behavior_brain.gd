@@ -72,7 +72,7 @@ func calculate(delta: float, position: Vector3, properties: Dictionary, targets:
 						effective_mode = "IDLE"
 					elif distance > 0.001:
 						wanted = -offset.normalized()
-				elif distance > follow_distance if mode == "FOLLOW" else distance > 0.95:
+				elif (mode == "FOLLOW" and distance > follow_distance) or (mode == "CHASE" and distance > 0.95):
 					wanted = offset.normalized()
 				else:
 					effective_mode = "IDLE"
