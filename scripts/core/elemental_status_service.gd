@@ -52,6 +52,24 @@ func movement_factor(entity_id: String) -> float:
 	return 1.0
 
 
+func nearest_fire(entity_id: String, position: Vector3, radius: float = 4.0) -> Dictionary:
+	## Ambient danger perception is separate from faction/relationship targets.
+	var nearest: Dictionary = {}
+	var best_distance: float = radius * radius
+	for burning_id in _states.keys():
+		if str(burning_id) == entity_id or not (_states[burning_id] as Dictionary).has("BURN"):
+			continue
+		var actor: Node = world.get_entity(str(burning_id))
+		if not (actor is Node3D):
+			continue
+		var where: Vector3 = (actor as Node3D).global_position
+		var distance: float = position.distance_squared_to(where)
+		if distance < best_distance - 0.0001 or (is_equal_approx(distance, best_distance) and not nearest.is_empty() and str(burning_id) < str(nearest["id"])):
+			best_distance = distance
+			nearest = {"id": str(burning_id), "position": where, "group": "FIRE"}
+	return nearest
+
+
 func apply_element(entity_id: String, element: String, spread_from: String = "") -> bool:
 	var target: Node = world.get_entity(entity_id)
 	if target == null or not target.has_method("get_parameter"):
@@ -72,6 +90,8 @@ func apply_element(entity_id: String, element: String, spread_from: String = "")
 				active.erase("CHILL")
 				active.erase("FROZEN")
 				reaction = "STEAM"
+			if reaction in ["STEAM", "THAW"] and surfaces != null and target is Node3D:
+				surfaces.add_steam_at((target as Node3D).global_position)
 			# Every target can take immediate magical damage from ON_HIT, but
 			# sustained combustion requires a flammable material. The same
 			# rule governs direct ignition and fire spreading.
