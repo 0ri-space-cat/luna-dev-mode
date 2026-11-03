@@ -64,6 +64,10 @@ func apply_element(entity_id: String, element: String) -> bool:
 	var reaction := ""
 	match element:
 		"FIRE":
+			if surfaces != null and target is Node3D:
+				var melted: int = surfaces.melt_at((target as Node3D).global_position)
+				if melted > 0:
+					reaction = "THAW"
 			if active.has("CHILL") or active.has("FROZEN"):
 				active.erase("CHILL")
 				active.erase("FROZEN")

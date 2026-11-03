@@ -32,6 +32,26 @@ func add_ice_at(center: Vector3) -> bool:
 	return true
 
 
+func melt_at(position: Vector3) -> int:
+	## Fire removes ice covering the struck point, even when the ice was
+	## created by an earlier spell. One location may intersect multiple fields.
+	if not position.is_finite():
+		return 0
+	var removed := 0
+	for i in range(_fields.size() - 1, -1, -1):
+		var field: Dictionary = _fields[i]
+		var center: Vector3 = field["center"]
+		var dx: float = position.x - center.x
+		var dz: float = position.z - center.z
+		if dx * dx + dz * dz > pow(float(field["radius"]), 2.0):
+			continue
+		_fields.remove_at(i)
+		removed += 1
+	if removed > 0:
+		fields_changed.emit(get_fields())
+	return removed
+
+
 func traction(position: Vector3) -> float:
 	for field in _fields:
 		var center: Vector3 = field["center"]
