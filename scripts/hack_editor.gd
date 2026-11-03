@@ -92,13 +92,14 @@ func _ready() -> void:
 	duplicate_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	duplicate_button.pressed.connect(_on_duplicate_pressed)
 	footer.add_child(duplicate_button)
+	delete_button = Button.new()
+	delete_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	delete_button.pressed.connect(_on_delete_pressed)
+	footer.add_child(delete_button)
 	close_button = Button.new()
 	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	close_button.pressed.connect(func() -> void: closed.emit())
 	footer.add_child(close_button)
-	delete_button = Button.new()
-	delete_button.pressed.connect(_on_delete_pressed)
-	layout.add_child(delete_button)
 	refresh_language()
 	visible = false
 
@@ -121,15 +122,15 @@ func refresh_language() -> void:
 	for index in range(TAB_IDS.size()):
 		tab_bar.set_tab_title(index, ui_language.text(TAB_IDS[index], TAB_RU[index]))
 	if is_instance_valid(duplicate_button):
-		duplicate_button.text = ui_language.text("▣ COPY", "▣ КОПИЯ")
+		duplicate_button.text = "COPY"
 		duplicate_button.tooltip_text = ui_language.text(
 			"Create an independent copy with the same parameters.",
 			"Создать независимую копию с теми же параметрами."
 		)
 	if is_instance_valid(close_button):
-		close_button.text = ui_language.text("✓ DONE [ESC]", "✓ ГОТОВО [ESC]")
+		close_button.text = "DONE"
 	if is_instance_valid(delete_button):
-		delete_button.text = ui_language.text("× DELETE ENTITY", "× УДАЛИТЬ ОБЪЕКТ")
+		delete_button.text = "DELETE"
 		delete_button.tooltip_text = ui_language.text(
 			"Remove this entity from the world. You can undo it.",
 			"Удалить объект из мира. Действие можно отменить."
