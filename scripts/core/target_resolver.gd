@@ -2,6 +2,8 @@ extends RefCounted
 ## Shared spatial selection: spells, explosions, auras and future AI rules.
 ## The world registry remains authoritative. Only editable entities are affected.
 
+const MaterialProfile = preload("res://scripts/core/material_profile.gd")
+
 const MAX_TARGETS := 8
 const MAX_RADIUS := 6.0
 
@@ -60,7 +62,10 @@ static func chain(world, primary_id: String, radius: float, max_jumps: int) -> A
 		if not (current is Node3D):
 			break
 		var where: Vector3 = (current as Node3D).global_position
-		var candidates: Array[Dictionary] = world.candidates(current_id, where, "ANY", radius)
+		var hop_radius: float = radius
+		if current.has_method("get_parameter") and MaterialProfile.is_conductive(str(current.call("get_parameter", "material"))):
+			hop_radius = minf(radius + 1.0, MAX_RADIUS)
+		var candidates: Array[Dictionary] = world.candidates(current_id, where, "ANY", hop_radius)
 		var closest_id := ""
 		var closest_distance := INF
 		for option in candidates:

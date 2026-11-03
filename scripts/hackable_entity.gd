@@ -6,6 +6,7 @@ signal target_acquired(source_id: String, target_id: String, target_group: Strin
 const EntityRecord = preload("res://scripts/core/entity_record.gd")
 const BehaviorBrain = preload("res://scripts/systems/behavior_brain.gd")
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
+const MaterialProfile = preload("res://scripts/core/material_profile.gd")
 const GRAVITY := 18.0
 
 var record
@@ -37,6 +38,7 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 	var label := "Магическое существо" if entity_type == "arcane_creature" else ("Магический предмет" if entity_type == "arcane_object" else ("Магическая энергия" if entity_type == "arcane_energy" else ("Дерево" if is_tree else "Холодильник")))
 	record = EntityRecord.new(entity_id, entity_type, label, parameter_registry, {
 		"color": base_color,
+		"material": MaterialProfile.initial(entity_type, arcane_manifestation),
 		"size": 1.0,
 		"alive": false,
 		"ai_enabled": true,

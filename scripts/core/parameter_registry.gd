@@ -2,6 +2,8 @@ extends RefCounted
 ## Single source of truth for editable parameters: types, limits, UI metadata.
 ## To add a field, register a definition. The inspector reads this registry.
 
+const MaterialProfile = preload("res://scripts/core/material_profile.gd")
+
 const PALETTE = [
 	{"name": "LAVENDER", "value": Color("b790dd")},
 	{"name": "MINT", "value": Color("8ed7bd")},
@@ -61,6 +63,12 @@ func _init() -> void:
 		"id": "size", "label": "SCALE", "display_name": "Размер", "kind": "float",
 		"min": 0.5, "max": 2.0, "step": 0.1, "default": 1.0,
 		"hint": "Большой, маленький. Вопрос вкуса."
+	})
+	register_parameter({
+		"id": "material", "label": "MATERIAL", "display_name": "Материал",
+		"kind": "enum", "default": "STONE",
+		"choices": MaterialProfile.choices(),
+		"hint": "Из чего сделано? Проверим, горит ли."
 	})
 	register_parameter({
 		"id": "color", "label": "BASE_COLOR", "display_name": "Цвет", "kind": "color",
