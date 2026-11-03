@@ -7,6 +7,9 @@ const HackEditor = preload("res://scripts/hack_editor.gd")
 const ParameterRegistry = preload("res://scripts/core/parameter_registry.gd")
 const CommandProcessor = preload("res://scripts/core/command_processor.gd")
 const WorldRegistry = preload("res://scripts/core/world_registry.gd")
+const EventBus = preload("res://scripts/core/event_bus.gd")
+const EffectEngine = preload("res://scripts/core/effect_engine.gd")
+const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -16,17 +19,25 @@ var pending_selection := Vector2(-1, -1)
 var parameter_registry
 var command_processor
 var world_registry
+var event_bus
+var effect_engine
+var rule_engine
 
 
 func _ready() -> void:
 	parameter_registry = ParameterRegistry.new()
 	command_processor = CommandProcessor.new()
 	world_registry = WorldRegistry.new()
+	event_bus = EventBus.new()
+	effect_engine = EffectEngine.new(world_registry, command_processor)
+	rule_engine = RuleEngine.new(effect_engine)
+	command_processor.parameter_changed.connect(_on_parameter_changed)
 	_register_controls()
 	_build_environment()
 	_build_ground()
 	_spawn_player()
 	_spawn_entities()
+	_register_example_rules()
 	_build_interface()
 
 
@@ -43,6 +54,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	# Reactive events are delivered in a bounded batch, never recursively.
+	event_bus.drain(rule_engine)
 	# Physics queries are intentionally performed in a physics tick, not in input callbacks.
 	if pending_selection != Vector2(-1, -1):
 		var mouse_position := pending_selection
@@ -153,6 +166,46 @@ func _spawn(entity_id: String, category: String, where: Vector3) -> void:
 	add_child(entity)
 	entity.configure(entity_id, category, where, parameter_registry, world_registry)
 	world_registry.register_entity(entity_id, entity, category.to_upper())
+	entity.target_acquired.connect(_on_target_acquired)
+
+
+func _register_example_rules() -> void:
+	# Proof of the reusable rule system: when the fridge notices a tree,
+	# the tree gets a pink tint. No special-case logic in the fridge itself.
+	rule_engine.register_rule({
+		"id": "demo:fridge_notices_tree",
+		"owner_id": "fridge_001",
+		"event_type": "entity.target_acquired",
+		"conditions": [{"field": "group", "equals": "TREE"}],
+		"target": "EVENT_TARGET",
+		"effects": [{"operation": "SET", "parameter_id": "color", "value": Color("f49fc9")}],
+		"cooldown_ms": 0
+	})
+
+
+func _on_target_acquired(source_id: String, target_id: String, target_group: String) -> void:
+	event_bus.enqueue({
+		"type": "entity.target_acquired",
+		"source_id": source_id,
+		"target_id": target_id,
+		"payload": {"group": target_group}
+	})
+
+
+func _on_parameter_changed(change: Dictionary) -> void:
+	# Undo/redo restores prior state without launching gameplay rules again.
+	if str(change.get("action", "")) != "SET":
+		return
+	event_bus.enqueue({
+		"type": "parameter.changed",
+		"source_id": str(change["entity_id"]),
+		"target_id": str(change["entity_id"]),
+		"payload": {
+			"parameter_id": str(change["parameter_id"]),
+			"value": change["after"],
+			"initiator_id": str(change["initiator_id"])
+		}
+	})
 
 
 func _build_interface() -> void:
@@ -170,7 +223,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.3"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.4"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -184,7 +237,7 @@ func _build_interface() -> void:
 	layer.add_child(instructions)
 
 	var bottom := Label.new()
-	bottom.text = "IS_ALIVE: TRUE • BEHAVIOR_MODE: FOLLOW / FLEE / CHASE • TARGET_GROUP: LUNA или другие объекты"
+	bottom.text = "Попробуй: FRIDGE → IS_ALIVE TRUE → BEHAVIOR_MODE CHASE → TARGET_GROUP TREE"
 	bottom.position = Vector2(24, 750)
 	bottom.add_theme_color_override("font_color", Color("f7e2f4"))
 	bottom.add_theme_font_size_override("font_size", 16)

@@ -1,4 +1,6 @@
 extends CharacterBody3D
+
+signal target_acquired(source_id: String, target_id: String, target_group: String)
 ## First hackable entity implementation. The base category never changes on awakening.
 
 const EntityRecord = preload("res://scripts/core/entity_record.gd")
@@ -12,6 +14,7 @@ var legs: Array[MeshInstance3D] = []
 var brain = BehaviorBrain.new()
 var world_registry
 var age := 0.0
+var _previous_engaged_target := ""
 
 
 func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null) -> void:
@@ -90,6 +93,15 @@ func _physics_process(delta: float) -> void:
 			float(record.get_parameter("sense_range"))
 		)
 	var wanted_velocity: Vector3 = brain.calculate(delta, global_position, record.parameters, nearby)
+	var engaged: String = brain.last_target_id if brain.last_decision in ["FOLLOW", "CHASE", "FLEE"] else ""
+	if not engaged.is_empty() and engaged != _previous_engaged_target:
+		var chosen_group := ""
+		for candidate in nearby:
+			if str(candidate["id"]) == engaged:
+				chosen_group = str(candidate["group"])
+				break
+		target_acquired.emit(record.id, engaged, chosen_group)
+	_previous_engaged_target = engaged
 	# Acceleration and smooth heading are independent of the animation model.
 	var acceleration := 9.0
 	velocity.x = move_toward(velocity.x, wanted_velocity.x, acceleration * delta)
