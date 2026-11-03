@@ -110,12 +110,16 @@ func _run() -> void:
 	assert(world.get_entity("tree_copy_0001").get_meta("copy_origin") == "tree_002")
 
 	# A direct multi-target spell shares the same bounded, atomic resolver.
+	# Mark the two originals AFTER copying; the duplicate should not be
+	# selected merely because it shares their species or ancestry.
+	assert(tree1.record.add_tag("NEEDS_HEALING"))
+	assert(tree2.record.add_tag("NEEDS_HEALING"))
 	var before_one: int = int(tree1.get_parameter("health"))
 	var before_two: int = int(tree2.get_parameter("health"))
 	assert(stage.spell_service.register_spell({
 		"id": "PLANT_MEDICINE", "label": "PLANT_MEDICINE", "cast_range": 20.0,
 		"target_selector": {"radius": 9.0, "category": "tree", "role": "PLANT",
-			"max_targets": 2, "include_origin": true},
+			"tag": "NEEDS_HEALING", "max_targets": 2, "include_origin": true},
 		"effects": [{"operation": "ADD", "parameter_id": "health", "value": 5}]
 	}))
 	assert(stage.spell_service.cast_spell("PLANT_MEDICINE", "luna", "tree_002"))
