@@ -12,6 +12,7 @@ const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
 const RelationshipService = preload("res://scripts/core/relationship_service.gd")
+const SocialAwarenessService = preload("res://scripts/core/social_awareness_service.gd")
 const ProfileService = preload("res://scripts/core/profile_service.gd")
 const SpellService = preload("res://scripts/core/spell_service.gd")
 const ElementalStatusService = preload("res://scripts/core/elemental_status_service.gd")
@@ -35,6 +36,7 @@ var effect_engine
 var rule_engine
 var save_service
 var relationship_service
+var social_awareness
 var profile_service
 var spell_service
 var elemental_status_service
@@ -60,6 +62,7 @@ func _ready() -> void:
 	command_processor = CommandProcessor.new()
 	world_registry = WorldRegistry.new()
 	relationship_service = RelationshipService.new()
+	social_awareness = SocialAwarenessService.new(world_registry, relationship_service)
 	event_bus = EventBus.new()
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	surface_field_service = SurfaceFieldService.new()
@@ -69,6 +72,7 @@ func _ready() -> void:
 	elemental_status_service.reaction_triggered.connect(_on_elemental_reaction)
 	elemental_status_service.state_changed.connect(_on_elemental_state_changed)
 	spell_service = SpellService.new(world_registry, effect_engine, elemental_status_service)
+	spell_service.damage_applied.connect(_on_spell_damage)
 	spell_service.projectile_requested.connect(_spawn_arcane_projectile)
 	spell_service.chain_resolved.connect(_on_chain_resolved)
 	spell_service.manifestation_requested.connect(_on_arcane_place)
@@ -150,6 +154,8 @@ func _physics_process(delta: float) -> void:
 		elemental_status_service.advance(delta)
 	if surface_field_service != null:
 		surface_field_service.advance(delta)
+	if social_awareness != null:
+		social_awareness.advance(delta)
 	# Reactive events are delivered in a bounded batch, never recursively.
 	event_bus.drain(rule_engine)
 	# Physics queries are intentionally performed in a physics tick, not in input callbacks.
@@ -164,7 +170,7 @@ func _physics_process(delta: float) -> void:
 func _exit_tree() -> void:
 	# Save on normal exit as well as on the periodic checkpoint.
 	if save_service != null and world_registry != null and is_instance_valid(luna):
-		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service, surface_field_service)
+		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service, surface_field_service, social_awareness)
 	if profile_service != null:
 		profile_service.save_profile()
 	if get_tree() != null:
@@ -268,7 +274,7 @@ func _spawn_entities() -> void:
 func _spawn(entity_id: String, category: String, where: Vector3) -> void:
 	var entity := HackableEntity.new()
 	add_child(entity)
-	entity.configure(entity_id, category, where, parameter_registry, world_registry, relationship_service, {}, elemental_status_service)
+	entity.configure(entity_id, category, where, parameter_registry, world_registry, relationship_service, {}, elemental_status_service, social_awareness)
 	world_registry.register_entity(entity_id, entity, category.to_upper())
 	entity.target_acquired.connect(_on_target_acquired)
 
@@ -296,6 +302,13 @@ func _on_target_acquired(source_id: String, target_id: String, target_group: Str
 	})
 
 
+func _on_spell_damage(details: Dictionary) -> void:
+	var targets: Array[String] = []
+	for entity_id in details.get("targets", []):
+		targets.append(str(entity_id))
+	social_awareness.observe_damage(str(details.get("caster_id", "")), targets)
+
+
 func _on_parameter_changed(change: Dictionary) -> void:
 	# Mirror social edits even when the internal API undoes/ redoes a command.
 	if str(change.get("parameter_id", "")) == "luna_relation":
@@ -314,6 +327,9 @@ func _on_parameter_changed(change: Dictionary) -> void:
 				str(entity_record.category), str(change["parameter_id"])
 			):
 				profile_service.save_profile()
+	# Direct harmful wand edits are witnessed just like harmful spells.
+	if str(change.get("source_id", "")) == "wand:luna" 			and str(change.get("initiator_id", "")) == "luna" 			and str(change.get("parameter_id", "")) == "health" 			and float(change.get("after", 0)) < float(change.get("before", 0)):
+		social_awareness.observe_damage("luna", [str(change["entity_id"])])
 	event_bus.enqueue({
 		"type": "parameter.changed",
 		"source_id": str(change["entity_id"]),
@@ -361,7 +377,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.16"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.17"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -478,7 +494,7 @@ func _save_checkpoint(notify_player: bool) -> void:
 		return
 	var success: bool = save_service.save_world(
 		world_registry, luna, relationship_service,
-		elemental_status_service, surface_field_service
+		elemental_status_service, surface_field_service, social_awareness
 	)
 	if notify_player or not success:
 		_show_checkpoint_message("МИР СОХРАНЁН" if success else "ОШИБКА СОХРАНЕНИЯ: %s" % save_service.last_error)
@@ -721,7 +737,7 @@ func _spawn_arcane_actor_with_id(entity_id: String, recipe: Dictionary, location
 	entity.configure(
 		entity_id, "arcane_" + create_kind.to_lower(), location,
 		parameter_registry, world_registry, relationship_service, constructed,
-		elemental_status_service
+		elemental_status_service, social_awareness
 	)
 	if not world_registry.register_entity(entity_id, entity, create_kind):
 		entity.queue_free()
