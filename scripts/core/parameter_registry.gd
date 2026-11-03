@@ -4,6 +4,21 @@ extends RefCounted
 
 const MaterialProfile = preload("res://scripts/core/material_profile.gd")
 
+const EDITOR_META := {
+	"alive": {"tab": "GENERAL", "icon": "✦", "hint_en": "Bring this object to life. Good luck with that."},
+	"ai_enabled": {"tab": "MIND", "icon": "◎", "hint_en": "Let it make decisions on its own."},
+	"behavior_mode": {"tab": "BEHAVIOR", "icon": "➜", "hint_en": "Wander, chase, flee or just stand there dramatically."},
+	"target_group": {"tab": "BEHAVIOR", "icon": "⌖", "hint_en": "Choose what it looks for (or runs from)."},
+	"luna_relation": {"tab": "RELATIONSHIPS", "icon": "♡", "hint_en": "Is it a friend, an enemy, or just intimidated by me?"},
+	"sense_range": {"tab": "BEHAVIOR", "icon": "◉", "hint_en": "How far it can notice a potential problem."},
+	"follow_distance": {"tab": "BEHAVIOR", "icon": "↔", "hint_en": "Personal space. Boundaries are important."},
+	"health": {"tab": "GENERAL", "icon": "♥", "hint_en": "How much damage it can take."},
+	"speed": {"tab": "BEHAVIOR", "icon": "»", "hint_en": "How fast it moves. Catch me if you can."},
+	"size": {"tab": "APPEARANCE", "icon": "◇", "hint_en": "Bigger, smaller. Entirely your call."},
+	"material": {"tab": "PHYSICS", "icon": "⬡", "hint_en": "What it's made of. Some things burn or conduct electricity."},
+	"color": {"tab": "APPEARANCE", "icon": "✿", "hint_en": "Repaint reality. It won't complain. Probably."}
+}
+
 const PALETTE = [
 	{"name": "LAVENDER", "value": Color("b790dd")},
 	{"name": "MINT", "value": Color("8ed7bd")},
@@ -102,7 +117,7 @@ func get_specs_for(category: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for spec in _ordered_specs:
 		if _applies_to(spec, category):
-			result.append(spec.duplicate(true))
+			result.append(_editor_spec(spec))
 	return result
 
 
@@ -110,7 +125,7 @@ func get_spec(category: String, parameter_id: String) -> Dictionary:
 	var spec: Dictionary = _by_id.get(parameter_id, {})
 	if spec.is_empty() or not _applies_to(spec, category):
 		return {}
-	return spec.duplicate(true)
+	return _editor_spec(spec)
 
 
 func make_defaults(category: String, overrides: Dictionary = {}) -> Dictionary:
@@ -169,3 +184,10 @@ func _normalize_using_spec(spec: Dictionary, proposed: Variant) -> Dictionary:
 				return {"ok": false, "error": "Expected Color"}
 			return {"ok": true, "value": proposed}
 	return {"ok": false, "error": "Unsupported type"}
+
+
+func _editor_spec(spec: Dictionary) -> Dictionary:
+	var result: Dictionary = spec.duplicate(true)
+	for key in EDITOR_META.get(str(spec["id"]), {}).keys():
+		result[key] = EDITOR_META[str(spec["id"])][key]
+	return result
