@@ -1,30 +1,44 @@
 extends PanelContainer
-## Small, automatically populated GUI for the first five supported parameters.
-## It lives in an always-processing CanvasLayer so the world can be paused.
+## Graybox inspector: technical parameter names, Russian optional hints.
+## The editor is in an always-processing CanvasLayer while the game world is paused.
+## FIELD_SPECS are temporary metadata until the planned ParameterRegistry is introduced.
 
 signal closed
 
 const PALETTE = [
-	{"label": "Сиреневый", "value": Color("b790dd")},
-	{"label": "Мятный", "value": Color("8ed7bd")},
-	{"label": "Розовый", "value": Color("f49fc9")},
-	{"label": "Голубой", "value": Color("87bfe8")},
-	{"label": "Персиковый", "value": Color("efb68e")},
-	{"label": "Тёмно-фиолетовый", "value": Color("684a96")}
+	{"name": "LAVENDER", "color": Color("b790dd")},
+	{"name": "MINT", "color": Color("8ed7bd")},
+	{"name": "PINK", "color": Color("f49fc9")},
+	{"name": "BLUE", "color": Color("87bfe8")},
+	{"name": "PEACH", "color": Color("efb68e")},
+	{"name": "VIOLET", "color": Color("684a96")}
 ]
 
-var target
+# UI-facing names are intentionally independent of the EntityRecord storage keys.
+const FIELD_SPECS = [
+	{"id": "alive", "label": "IS_ALIVE", "kind": "bool",
+	 "hint": "Объект живой и может действовать самостоятельно."},
+	{"id": "health", "label": "HEALTH", "kind": "range",
+	 "min": 1.0, "max": 200.0, "step": 1.0,
+	 "hint": "Запас здоровья объекта."},
+	{"id": "speed", "label": "MOVE_SPEED", "kind": "range",
+	 "min": 0.0, "max": 5.0, "step": 0.1,
+	 "hint": "Скорость самостоятельного передвижения."},
+	{"id": "size", "label": "SCALE", "kind": "range",
+	 "min": 0.5, "max": 2.0, "step": 0.1,
+	 "hint": "Размер объекта относительно исходного."},
+	{"id": "color", "label": "BASE_COLOR", "kind": "color",
+	 "hint": "Основной цвет объекта."}
+]
+
+var target: Node3D
 var syncing := false
+var show_hints := false
 var title_label: Label
-var status_label: Label
-var color_options: OptionButton
-var size_slider: HSlider
-var size_value: Label
-var speed_slider: HSlider
-var speed_value: Label
-var health_slider: HSlider
-var health_value: Label
-var alive_toggle: CheckButton
+var type_label: Label
+var hints_toggle: CheckButton
+var field_controls: Dictionary = {}
+var hint_labels: Array[Label] = []
 
 
 func _ready() -> void:
@@ -32,78 +46,133 @@ func _ready() -> void:
 	anchor_right = 1.0
 	anchor_top = 0.0
 	anchor_bottom = 0.0
-	offset_left = -370.0
+	offset_left = -414.0
 	offset_right = -22.0
-	offset_top = 24.0
-	offset_bottom = 558.0
+	offset_top = 22.0
+	offset_bottom = 680.0
 	mouse_filter = Control.MOUSE_FILTER_STOP
+
 	var styling := StyleBoxFlat.new()
 	styling.bg_color = Color("25213b")
 	styling.border_color = Color("7be4e6")
 	styling.set_border_width_all(2)
-	styling.set_corner_radius_all(14)
-	styling.set_content_margin_all(18)
+	styling.set_corner_radius_all(10)
+	styling.set_content_margin_all(16)
 	add_theme_stylebox_override("panel", styling)
 
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
+	column.add_theme_constant_override("separation", 10)
 	add_child(column)
 
-	title_label = _label(column, "ПАРАМЕТРЫ", 22)
-	_label(column, "Взлом • Луна Селестис", 13)
+	title_label = _label(column, "ENTITY", 21)
+	type_label = _label(column, "TYPE: UNKNOWN", 13)
+
+	var top_line := HBoxContainer.new()
+	column.add_child(top_line)
+	var metadata_label := _label(top_line, "PARAMETERS", 14)
+	metadata_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	hints_toggle = CheckButton.new()
+	hints_toggle.text = "SHOW_HINTS: FALSE"
+	hints_toggle.button_pressed = false
+	hints_toggle.toggled.connect(_on_hints_toggled)
+	top_line.add_child(hints_toggle)
 	column.add_child(HSeparator.new())
-	_label(column, "Цвет объекта", 16)
-	color_options = OptionButton.new()
-	for item in PALETTE:
-		color_options.add_item(item["label"])
-	column.add_child(color_options)
-	color_options.item_selected.connect(_on_color_selected)
 
-	var size_group := _make_slider(column, "Размер", 0.5, 2.0, 0.1)
-	size_slider = size_group[0]
-	size_value = size_group[1]
-	size_slider.value_changed.connect(_on_size_changed)
-
-	var health_group := _make_slider(column, "Здоровье", 1.0, 200.0, 1.0)
-	health_slider = health_group[0]
-	health_value = health_group[1]
-	health_slider.value_changed.connect(_on_health_changed)
-
-	alive_toggle = CheckButton.new()
-	alive_toggle.text = "Оживить предмет"
-	column.add_child(alive_toggle)
-	alive_toggle.toggled.connect(_on_alive_toggled)
-
-	var speed_group := _make_slider(column, "Скорость движения", 0.0, 5.0, 0.1)
-	speed_slider = speed_group[0]
-	speed_value = speed_group[1]
-	speed_slider.value_changed.connect(_on_speed_changed)
+	for spec in FIELD_SPECS:
+		_add_field(column, spec)
 
 	column.add_child(HSeparator.new())
-	status_label = _label(column, "", 13)
-	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var close_button := Button.new()
-	close_button.text = "Применить и закрыть    [Esc]"
-	column.add_child(close_button)
+	close_button.text = "ЗАКРЫТЬ  [ESC]"
 	close_button.pressed.connect(func() -> void: closed.emit())
+	column.add_child(close_button)
 	visible = false
+
+
+func _add_field(parent: VBoxContainer, spec: Dictionary) -> void:
+	var parameter_id: String = str(spec["id"])
+	var kind: String = str(spec["kind"])
+	var group := VBoxContainer.new()
+	group.add_theme_constant_override("separation", 2)
+	parent.add_child(group)
+
+	var row := HBoxContainer.new()
+	group.add_child(row)
+	var name_label := _label(row, str(spec["label"]) + ":", 15)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	match kind:
+		"bool":
+			var toggle := CheckButton.new()
+			toggle.text = "FALSE"
+			toggle.custom_minimum_size.x = 94
+			row.add_child(toggle)
+			toggle.toggled.connect(_on_bool_changed.bind(parameter_id, toggle))
+			field_controls[parameter_id] = {"kind": kind, "input": toggle}
+
+		"range":
+			var slider := HSlider.new()
+			slider.min_value = float(spec["min"])
+			slider.max_value = float(spec["max"])
+			slider.step = float(spec["step"])
+			slider.custom_minimum_size.x = 95
+			slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(slider)
+
+			var number := _label(row, "0", 14)
+			number.custom_minimum_size.x = 44
+			number.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			slider.value_changed.connect(_on_range_changed.bind(parameter_id, number))
+			field_controls[parameter_id] = {
+				"kind": kind,
+				"input": slider,
+				"display": number
+			}
+
+		"color":
+			var picker := OptionButton.new()
+			picker.custom_minimum_size.x = 140
+			for option in PALETTE:
+				picker.add_item("%s  #%s" % [
+					option["name"], str(option["color"].to_html(false)).to_upper()
+				])
+			row.add_child(picker)
+			picker.item_selected.connect(_on_color_selected.bind(parameter_id))
+			field_controls[parameter_id] = {"kind": kind, "input": picker}
+
+	var hint := _label(group, str(spec["hint"]), 12)
+	hint.add_theme_color_override("font_color", Color("b6b4cf"))
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.visible = show_hints
+	hint_labels.append(hint)
 
 
 func show_for(entity: Node3D) -> void:
 	target = entity
 	syncing = true
-	title_label.text = str(target.record.display_name).to_upper()
-	var tint: Color = target.get_parameter("color")
-	for i in range(PALETTE.size()):
-		if PALETTE[i]["value"] == tint:
-			color_options.select(i)
-			break
-	size_slider.value = float(target.get_parameter("size"))
-	health_slider.value = float(target.get_parameter("health"))
-	alive_toggle.button_pressed = bool(target.get_parameter("alive"))
-	speed_slider.value = float(target.get_parameter("speed"))
+	title_label.text = "ENTITY: %s" % str(entity.record.id).to_upper()
+	type_label.text = "TYPE: %s" % str(entity.record.category).to_upper()
+	for spec in FIELD_SPECS:
+		var parameter_id: String = str(spec["id"])
+		var value: Variant = target.get_parameter(parameter_id)
+		var control: Dictionary = field_controls[parameter_id]
+		match str(control["kind"]):
+			"bool":
+				var toggle: CheckButton = control["input"]
+				toggle.set_pressed_no_signal(bool(value))
+				toggle.text = "TRUE" if bool(value) else "FALSE"
+			"range":
+				var slider: HSlider = control["input"]
+				slider.set_value_no_signal(float(value))
+				_set_range_display(parameter_id, float(value), control["display"])
+			"color":
+				var picker: OptionButton = control["input"]
+				for i in range(PALETTE.size()):
+					if PALETTE[i]["color"] == value:
+						picker.select(i)
+						break
 	syncing = false
-	_refresh_values()
 	visible = true
 
 
@@ -113,7 +182,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		closed.emit()
 
 
-func _label(parent: VBoxContainer, content: String, font_size: int) -> Label:
+func _label(parent: Node, content: String, font_size: int) -> Label:
 	var result := Label.new()
 	result.text = content
 	result.add_theme_color_override("font_color", Color("e9e2fc"))
@@ -122,62 +191,36 @@ func _label(parent: VBoxContainer, content: String, font_size: int) -> Label:
 	return result
 
 
-func _make_slider(parent: VBoxContainer, heading: String, minimum: float, maximum: float, increment: float) -> Array:
-	var line := HBoxContainer.new()
-	parent.add_child(line)
-	var text_label := _label(line, heading, 15)
-	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var number := _label(line, "", 15)
-	var slider := HSlider.new()
-	slider.min_value = minimum
-	slider.max_value = maximum
-	slider.step = increment
-	parent.add_child(slider)
-	return [slider, number]
+func _set_range_display(parameter_id: String, value: float, output: Label) -> void:
+	if parameter_id == "health":
+		output.text = str(int(value))
+	else:
+		output.text = "%.1f" % value
 
 
-func _refresh_values() -> void:
-	if target == null:
-		return
-	size_value.text = "%.1f×" % float(target.get_parameter("size"))
-	health_value.text = str(target.get_parameter("health"))
-	speed_value.text = "%.1f" % float(target.get_parameter("speed"))
-	status_label.text = "Категория: %s | ID: %s\n%s" % [
-		target.record.category,
-		target.record.id,
-		"Живёт своей жизнью!" if bool(target.get_parameter("alive")) else "Пока обычный предмет"
-	]
+func _on_hints_toggled(enabled: bool) -> void:
+	show_hints = enabled
+	hints_toggle.text = "SHOW_HINTS: TRUE" if enabled else "SHOW_HINTS: FALSE"
+	for hint in hint_labels:
+		hint.visible = enabled
 
 
-func _on_color_selected(index: int) -> void:
+func _on_bool_changed(enabled: bool, parameter_id: String, toggle: CheckButton) -> void:
 	if syncing or target == null:
 		return
-	target.set_parameter("color", PALETTE[index]["value"])
+	if target.set_parameter(parameter_id, enabled):
+		toggle.text = "TRUE" if enabled else "FALSE"
 
 
-func _on_size_changed(value: float) -> void:
+func _on_range_changed(value: float, parameter_id: String, output: Label) -> void:
 	if syncing or target == null:
 		return
-	target.set_parameter("size", value)
-	_refresh_values()
+	if target.set_parameter(parameter_id, value):
+		_set_range_display(parameter_id, float(target.get_parameter(parameter_id)), output)
 
 
-func _on_health_changed(value: float) -> void:
+func _on_color_selected(index: int, parameter_id: String) -> void:
 	if syncing or target == null:
 		return
-	target.set_parameter("health", int(value))
-	_refresh_values()
-
-
-func _on_alive_toggled(enabled: bool) -> void:
-	if syncing or target == null:
-		return
-	target.set_parameter("alive", enabled)
-	_refresh_values()
-
-
-func _on_speed_changed(value: float) -> void:
-	if syncing or target == null:
-		return
-	target.set_parameter("speed", value)
-	_refresh_values()
+	if index >= 0 and index < PALETTE.size():
+		target.set_parameter(parameter_id, PALETTE[index]["color"])
