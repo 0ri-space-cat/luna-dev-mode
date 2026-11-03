@@ -55,6 +55,9 @@ jobs:
 
       - name: Run atomic world and lifecycle effects tests
         run: bash ci/run_godot_script.sh res://tests/test_world_transactions.gd
+
+      - name: Run bounded role/tag/relationship selector integration tests
+        run: bash ci/run_godot_script.sh res://tests/test_target_selectors.gd
       - name: Run save and load smoke tests
         run: bash ci/run_godot_script.sh res://tests/test_save_service.gd
       - name: Run social relations smoke tests
