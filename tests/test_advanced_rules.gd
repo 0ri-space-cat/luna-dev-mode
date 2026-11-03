@@ -122,8 +122,13 @@ func _run() -> void:
 	rules.remove_rule("low")
 	tree.set_parameter("health", 100)
 	tree.set_parameter("color", Color("b790dd"))
-	assert(save.load_world(world, player, null, Callable(), null,
-		null, null, null, Callable(), rules))
+	var restored_ok: bool = save.load_world(world, player, null, Callable(), null,
+		null, null, null, Callable(), rules)
+	if not restored_ok:
+		push_error("RULE CHECKPOINT RESTORE FAILED: %s" % save.last_error)
+		quit(1)
+		return
+	assert(restored_ok)
 	assert(rules.count_rules() == 3)
 	assert(rules.fired_count("luna:guard_tree") == 2)
 	assert(rules.get_rule("low")["effects"][0]["value"] == Color("f49fc9"))
