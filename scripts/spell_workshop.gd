@@ -23,6 +23,8 @@ var release_choice: OptionButton
 var impact_choice: OptionButton
 var impact_radius_row: HBoxContainer
 var impact_radius_control: SpinBox
+var impact_jumps_row: HBoxContainer
+var impact_jumps_control: SpinBox
 var speed_control: SpinBox
 var size_control: SpinBox
 
@@ -142,7 +144,8 @@ func _ready() -> void:
 	impact_choice = _choice_row(
 		layout, "ON_HIT · Попадание", [
 			{"id": "DIRECT", "name": "Одна цель"},
-			{"id": "BURST", "name": "Взрыв вокруг цели"}
+			{"id": "BURST", "name": "Взрыв вокруг цели"},
+			{"id": "CHAIN", "name": "Цепная молния"}
 		]
 	)
 	impact_choice.item_selected.connect(_on_impact_changed)
@@ -156,6 +159,16 @@ func _ready() -> void:
 	impact_radius_control.value = 2.5
 	impact_radius_row.add_child(impact_radius_control)
 	impact_radius_row.visible = false
+	impact_jumps_row = HBoxContainer.new()
+	layout.add_child(impact_jumps_row)
+	_label(impact_jumps_row, "Количество переходов", 12)
+	impact_jumps_control = SpinBox.new()
+	impact_jumps_control.min_value = 1.0
+	impact_jumps_control.max_value = 4.0
+	impact_jumps_control.step = 1.0
+	impact_jumps_control.value = 3.0
+	impact_jumps_row.add_child(impact_jumps_control)
+	impact_jumps_row.visible = false
 	var field_row := HBoxContainer.new()
 	layout.add_child(field_row)
 	_label(field_row, "ПРИ ПОПАДАНИИ:", 13)
@@ -250,6 +263,8 @@ func load_spell(spell_id: String) -> bool:
 	_on_impact_changed(impact_choice.selected)
 	if impact.has("radius"):
 		impact_radius_control.value = float(impact["radius"])
+	if impact.has("jumps"):
+		impact_jumps_control.value = float(impact["jumps"])
 	var location: int = source_ids.find(spell_id)
 	if location >= 0:
 		source_choice.select(location)
@@ -311,10 +326,14 @@ func _manifestation() -> Dictionary:
 
 
 func _on_impact_changed(_index: int) -> void:
-	impact_radius_row.visible = _choice_value(impact_choice) == "BURST"
+	impact_radius_row.visible = _choice_value(impact_choice) in ["BURST", "CHAIN"]
+	impact_jumps_row.visible = _choice_value(impact_choice) == "CHAIN"
 
 
 func _impact() -> Dictionary:
+	if _choice_value(impact_choice) == "CHAIN":
+		return {"mode": "CHAIN", "radius": impact_radius_control.value,
+			"jumps": int(impact_jumps_control.value)}
 	if _choice_value(impact_choice) == "BURST":
 		return {"mode": "BURST", "radius": impact_radius_control.value}
 	return {}
