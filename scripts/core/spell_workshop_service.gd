@@ -53,7 +53,7 @@ func create_recipe(label: String, cast_range: float, actions: Array[Dictionary],
 		"cast_range": cast_range,
 		"symbol_id": "CUSTOM",
 		"stone_color": Color("b790dd"),
-		"manifestation": manifestation.duplicate(true),
+		"manifestation": ArcaneGrammar.normalize(manifestation),
 		"effects": actions.duplicate(true)
 	}
 	if not _valid_recipe(spec):
@@ -152,7 +152,7 @@ func _valid_recipe(spec: Dictionary) -> bool:
 	if typeof(spec["effects"]) != TYPE_ARRAY:
 		return false
 	var actions: Array = spec["effects"]
-	if actions.is_empty() or actions.size() > MAX_EFFECTS:
+	if (actions.is_empty() and spec.get("manifestation", {}).is_empty()) or actions.size() > MAX_EFFECTS:
 		return false
 	for effect in actions:
 		if typeof(effect) != TYPE_DICTIONARY or not _valid_effect(effect):
@@ -240,6 +240,6 @@ func _parse_recipe(raw: Dictionary) -> Dictionary:
 		"cast_range": raw["cast_range"],
 		"symbol_id": "CUSTOM",
 		"stone_color": Color("b790dd"),
-		"manifestation": raw.get("manifestation", {}),
+		"manifestation": ArcaneGrammar.normalize(raw.get("manifestation", {})),
 		"effects": decoded
 	}

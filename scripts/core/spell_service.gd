@@ -36,7 +36,10 @@ func register_spell(spec: Dictionary) -> bool:
 	if float(cast_range) < 0.5 or float(cast_range) > 50.0:
 		return false
 	var actions: Variant = spec["effects"]
-	if typeof(actions) != TYPE_ARRAY or actions.is_empty() or actions.size() > MAX_EFFECTS:
+	var manifest: Variant = spec.get("manifestation", {})
+	if typeof(manifest) != TYPE_DICTIONARY or not ArcaneGrammar.valid(manifest):
+		return false
+	if typeof(actions) != TYPE_ARRAY or actions.size() > MAX_EFFECTS or (actions.is_empty() and manifest.is_empty()):
 		return false
 	for action in actions:
 		if typeof(action) != TYPE_DICTIONARY:
@@ -51,9 +54,6 @@ func register_spell(spec: Dictionary) -> bool:
 			return false
 		if operation != "TOGGLE" and not action.has("value"):
 			return false
-	var manifest: Variant = spec.get("manifestation", {})
-	if typeof(manifest) != TYPE_DICTIONARY or not ArcaneGrammar.valid(manifest):
-		return false
 	var stored: Dictionary = spec.duplicate(true)
 	stored["manifestation"] = ArcaneGrammar.normalize(manifest)
 	_definitions[id] = stored
@@ -124,6 +124,8 @@ func resolve_impact(spell_id: String, caster_id: String, target_id: String) -> b
 	var spec: Dictionary = _definitions.get(spell_id, {})
 	if spec.is_empty() or world.get_entity(target_id) == null:
 		return _fail("Снаряд потерял свою цель.")
+	if spec["effects"].is_empty():
+		return true
 	if not effects.apply_batch(spec["effects"], target_id, caster_id, "spell:%s" % spell_id):
 		return _fail("Попадание не сработало: %s" % effects.last_error)
 	return true
