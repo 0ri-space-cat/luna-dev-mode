@@ -1,4 +1,6 @@
 extends RefCounted
+
+const JsonStore = preload("res://scripts/core/json_store.gd")
 ## Versioned world snapshots. Writes only data, never Node references or scripts.
 ## JSON is validated before any state is applied. Save uses temp + rename.
 ##
@@ -54,38 +56,18 @@ func save_world(world, player: Node3D, relationships = null) -> bool:
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
 	var data := snapshot(world, player, relationships)
-	var serialized := JSON.stringify(data, "\t")
-	var temp_path := save_path + ".tmp"
-	var stream := FileAccess.open(temp_path, FileAccess.WRITE)
-	if stream == null:
-		return _fail("Cannot open temporary save file: %s" % FileAccess.get_open_error())
-	stream.store_string(serialized)
-	stream.flush()
-	stream.close()
-	var source := ProjectSettings.globalize_path(temp_path)
-	var destination := ProjectSettings.globalize_path(save_path)
-	var error: Error = DirAccess.rename_absolute(source, destination)
-	if error != OK:
-		return _fail("Cannot replace save file: %s" % error)
+	var written: Dictionary = JsonStore.write_document(save_path, data)
+	if not bool(written["ok"]):
+		return _fail(str(written["error"]))
 	return true
 
 
 func load_world(world, player: Node3D, relationships = null) -> bool:
 	last_error = ""
-	if not has_save():
-		return _fail("No save found")
-	var stream := FileAccess.open(save_path, FileAccess.READ)
-	if stream == null:
-		return _fail("Cannot open save: %s" % FileAccess.get_open_error())
-	var serialized := stream.get_as_text()
-	stream.close()
-	var parser := JSON.new()
-	var error: Error = parser.parse(serialized)
-	if error != OK:
-		return _fail("Invalid save JSON at line %d" % parser.get_error_line())
-	if typeof(parser.data) != TYPE_DICTIONARY:
-		return _fail("Save root must be a dictionary")
-	return apply_snapshot(parser.data, world, player, relationships)
+	var received: Dictionary = JsonStore.read_document(save_path)
+	if not bool(received["ok"]):
+		return _fail(str(received["error"]))
+	return apply_snapshot(received["data"], world, player, relationships)
 
 
 func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null) -> bool:

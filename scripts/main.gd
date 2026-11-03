@@ -12,6 +12,7 @@ const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
 const RelationshipService = preload("res://scripts/core/relationship_service.gd")
+const ProfileService = preload("res://scripts/core/profile_service.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -26,6 +27,9 @@ var effect_engine
 var rule_engine
 var save_service
 var relationship_service
+var profile_service
+var journal_panel: PanelContainer
+var journal_label: Label
 var save_status_label: Label
 var _autosave_elapsed := 0.0
 var _save_message_seconds := 0.0
@@ -41,6 +45,10 @@ func _ready() -> void:
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	rule_engine = RuleEngine.new(effect_engine)
 	save_service = SaveService.new()
+	profile_service = ProfileService.new()
+	if profile_service.has_profile():
+		if not profile_service.load_profile():
+			push_warning("Profile could not be read: %s" % profile_service.last_error)
 	command_processor.parameter_changed.connect(_on_parameter_changed)
 	relationship_service.relationship_changed.connect(_on_relationship_changed)
 	_register_controls()
@@ -71,6 +79,10 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_J:
+			_toggle_journal()
+			get_viewport().set_input_as_handled()
+			return
 		if event.keycode == KEY_F6:
 			_save_checkpoint(true)
 			get_viewport().set_input_as_handled()
@@ -97,6 +109,8 @@ func _exit_tree() -> void:
 	# Save on normal exit as well as on the periodic checkpoint.
 	if save_service != null and world_registry != null and is_instance_valid(luna):
 		save_service.save_world(world_registry, luna, relationship_service)
+	if profile_service != null:
+		profile_service.save_profile()
 	if get_tree() != null:
 		get_tree().paused = false
 
@@ -235,6 +249,14 @@ func _on_parameter_changed(change: Dictionary) -> void:
 	# Undo/redo restores prior state without triggering gameplay rules.
 	if str(change.get("action", "")) != "SET":
 		return
+	if str(change.get("initiator_id", "")) == "luna" and str(change.get("source_id", "")) == "wand:luna":
+		var inspected: Node = world_registry.get_entity(str(change.get("entity_id", "")))
+		if inspected != null and inspected.has_method("get_parameter"):
+			var entity_record: Variant = inspected.get("record")
+			if entity_record != null and profile_service.discover_parameter(
+				str(entity_record.category), str(change["parameter_id"])
+			):
+				profile_service.save_profile()
 	event_bus.enqueue({
 		"type": "parameter.changed",
 		"source_id": str(change["entity_id"]),
@@ -282,7 +304,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.6"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.7"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -309,6 +331,34 @@ func _build_interface() -> void:
 	save_status_label.add_theme_color_override("font_color", Color("d2ffe9"))
 	layer.add_child(save_status_label)
 
+
+	journal_panel = PanelContainer.new()
+	journal_panel.position = Vector2(24, 100)
+	journal_panel.custom_minimum_size = Vector2(400, 350)
+	journal_panel.visible = false
+	layer.add_child(journal_panel)
+	var journal_style := StyleBoxFlat.new()
+	journal_style.bg_color = Color("28233e")
+	journal_style.border_color = Color("aa8ae0")
+	journal_style.set_border_width_all(2)
+	journal_style.set_corner_radius_all(10)
+	journal_style.set_content_margin_all(14)
+	journal_panel.add_theme_stylebox_override("panel", journal_style)
+	var journal_layout := VBoxContainer.new()
+	journal_panel.add_child(journal_layout)
+	var title := Label.new()
+	title.text = "ДНЕВНИК ЛУНЫ   [J]"
+	title.add_theme_font_size_override("font_size", 18)
+	journal_layout.add_child(title)
+	var journal_scroller := ScrollContainer.new()
+	journal_scroller.custom_minimum_size = Vector2(360, 280)
+	journal_scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	journal_layout.add_child(journal_scroller)
+	journal_label = Label.new()
+	journal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	journal_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	journal_scroller.add_child(journal_label)
+
 	editor = HackEditor.new()
 	layer.add_child(editor)
 	editor.configure(parameter_registry, command_processor)
@@ -329,6 +379,8 @@ func _try_select(mouse_position: Vector2) -> void:
 
 
 func _open_editor(entity: Node3D) -> void:
+	if profile_service.discover_category(str(entity.record.category)):
+		profile_service.save_profile()
 	pause_tint.visible = true
 	editor.show_for(entity)
 	get_tree().paused = true
@@ -373,3 +425,31 @@ func _show_checkpoint_message(message: String) -> void:
 		return
 	save_status_label.text = message
 	_save_message_seconds = 3.0
+
+
+func _toggle_journal() -> void:
+	if not is_instance_valid(journal_panel):
+		return
+	journal_panel.visible = not journal_panel.visible
+	if journal_panel.visible:
+		_refresh_journal()
+
+
+func _refresh_journal() -> void:
+	if not is_instance_valid(journal_label):
+		return
+	var lines := PackedStringArray()
+	lines.append("Что я уже успела исследовать:")
+	var categories: Array[String] = profile_service.list_categories()
+	if categories.is_empty():
+		lines.append("Пока ничего. Даже обидно.")
+	for category in categories:
+		lines.append("")
+		lines.append("• %s" % category.to_upper())
+		var fields: Array[String] = profile_service.list_parameters(category)
+		if fields.is_empty():
+			lines.append("  Смотрела, но пока не трогала.")
+		else:
+			for parameter_id in fields:
+				lines.append("  — %s" % parameter_id.to_upper())
+	journal_label.text = "\n".join(lines)
