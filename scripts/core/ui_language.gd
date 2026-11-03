@@ -67,7 +67,7 @@ const EN = {
 	"ОГНЕННЫЙ ШАР": "FIREBALL",
 	"ЛЕДЯНОЙ ОСКОЛОК": "FROST SHARD",
 	"ИСКРОВОЙ РАЗРЯД": "ARC BOLT",
-	"LUNA: DEV MODE   ✦   ПРОТОТИП 0.21": "LUNA: DEV MODE   ✦   PROTOTYPE 0.21",
+	"LUNA: DEV MODE   ✦   ПРОТОТИП 0.23": "LUNA: DEV MODE   ✦   PROTOTYPE 0.23",
 	"WASD — ходить   •   ЛКМ — взломать   •   Shift+ЛКМ — колдовать   •   1–9 / Tab — выбрать   •   B — конструктор": "WASD — MOVE   •   LMB — HACK   •   SHIFT+LMB — CAST   •   1–9 / TAB — SELECT   •   B — WORKSHOP",
 	"Попробуй: FRIDGE → IS_ALIVE TRUE → BEHAVIOR_MODE CHASE → TARGET_GROUP TREE": "TRY: FRIDGE → IS_ALIVE TRUE → BEHAVIOR_MODE CHASE → TARGET_GROUP TREE",
 	"ДНЕВНИК ЛУНЫ   [J]": "LUNA'S JOURNAL   [J]",
