@@ -11,7 +11,7 @@ const MAX_CONDITION_BRANCHES := 8
 const MAX_FIRES_PER_ROOT := 8
 const MAX_TRACKED_ROOTS := 128
 const ALLOWED_TARGETS := ["EVENT_SOURCE", "EVENT_TARGET", "RULE_OWNER"]
-const ALLOWED_OPERATIONS := ["SET", "ADD", "MULTIPLY", "TOGGLE", "SET_RELATION"]
+const ALLOWED_OPERATIONS := ["SET", "ADD", "MULTIPLY", "TOGGLE", "SET_RELATION", "COPY_ENTITY", "DELETE_ENTITY"]
 const ALLOWED_COMPARISONS := ["EQ", "NE", "GT", "GTE", "LT", "LTE"]
 const ALLOWED_RELATIONS := ["NEUTRAL", "FRIEND", "HOSTILE", "AFRAID"]
 
@@ -285,6 +285,25 @@ func _valid_action(action: Dictionary) -> bool:
 	var operation: String = str(action.get("operation", ""))
 	if not ALLOWED_OPERATIONS.has(operation):
 		return false
+	if operation in ["DELETE_ENTITY", "COPY_ENTITY"]:
+		# These are data-only; no embedded scripts, arbitrary manifests or
+		# arbitrary direct OS actions can be persisted in a rule.
+		for key in action.keys():
+			if str(key) not in (["operation", "target_id"] if operation == "DELETE_ENTITY" else ["operation", "target_id", "new_id", "offset"]):
+				return false
+		if action.has("target_id") and (typeof(action["target_id"]) != TYPE_STRING or not str(action["target_id"]).is_valid_identifier()):
+			return false
+		if operation == "COPY_ENTITY":
+			if action.has("new_id") and (typeof(action["new_id"]) != TYPE_STRING or not str(action["new_id"]).is_valid_identifier() or str(action["new_id"]).length() > 96):
+				return false
+			if action.has("offset"):
+				var raw_offset: Variant = action["offset"]
+				if typeof(raw_offset) != TYPE_ARRAY or raw_offset.size() != 3:
+					return false
+				for amount in raw_offset:
+					if typeof(amount) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(amount)) or absf(float(amount)) > 12.0:
+						return false
+		return true
 	if operation == "SET_RELATION":
 		return typeof(action.get("subject_id")) == TYPE_STRING and not str(action["subject_id"]).is_empty() \
 			and typeof(action.get("value")) == TYPE_STRING and ALLOWED_RELATIONS.has(str(action["value"]))
