@@ -16,6 +16,7 @@ var brain = BehaviorBrain.new()
 var world_registry
 var relationship_service
 var elemental_statuses
+var elemental_label: Label3D
 var arcane_manifestation: Dictionary = {}
 var age := 0.0
 var _previous_engaged_target := ""
@@ -65,6 +66,14 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 	else:
 		_build_fridge()
 
+	elemental_label = Label3D.new()
+	elemental_label.position = Vector3(0.0, 3.1 if is_tree else 2.3, 0.0)
+	elemental_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	elemental_label.font_size = 28
+	elemental_label.pixel_size = 0.008
+	elemental_label.visible = false
+	add_child(elemental_label)
+
 	# The legs belong to the appearance, not the definition of life itself.
 	for x in [-0.3, 0.3]:
 		var leg := _make_box(Vector3(0.18, 0.46, 0.19), Vector3(x, 0.23, 0.0), Color("56456e"))
@@ -80,6 +89,24 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 		set_parameter("behavior_mode", brain_mode)
 		set_parameter("speed", 2.5 if is_creature else 1.8)
 
+
+
+
+func show_elemental_statuses(active: Dictionary) -> void:
+	if not is_instance_valid(elemental_label):
+		return
+	var names := PackedStringArray()
+	for kind in ["BURN", "CHILL", "SHOCK"]:
+		if active.has(kind):
+			names.append(kind)
+	elemental_label.text = " / ".join(names)
+	elemental_label.visible = not names.is_empty()
+	if active.has("SHOCK"):
+		elemental_label.modulate = Color("e6d77a")
+	elif active.has("CHILL"):
+		elemental_label.modulate = Color("9edffa")
+	else:
+		elemental_label.modulate = Color("ff884a")
 
 
 func get_parameter(key: String) -> Variant:
