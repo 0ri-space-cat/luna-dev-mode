@@ -15,18 +15,20 @@ var legs: Array[MeshInstance3D] = []
 var brain = BehaviorBrain.new()
 var world_registry
 var relationship_service
+var elemental_statuses
 var arcane_manifestation: Dictionary = {}
 var age := 0.0
 var _previous_engaged_target := ""
 
 
-func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null, relations = null, arcane_recipe: Dictionary = {}) -> void:
+func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null, relations = null, arcane_recipe: Dictionary = {}, status_service = null) -> void:
 	name = entity_id
 	position = start_position
 	collision_layer = 2
 	collision_mask = 1
 	world_registry = registry_of_world
 	relationship_service = relations
+	elemental_statuses = status_service
 	arcane_manifestation = ArcaneGrammar.normalize(arcane_recipe)
 	var is_tree := entity_type == "tree"
 	var is_arcane: bool = not arcane_manifestation.is_empty()
@@ -130,6 +132,8 @@ func _physics_process(delta: float) -> void:
 			effective_parameters = record.parameters.duplicate()
 			effective_parameters["target_relation"] = relationship_service.get_attitude(record.id, nearest_id)
 	var wanted_velocity: Vector3 = brain.calculate(delta, global_position, effective_parameters, nearby)
+	if elemental_statuses != null:
+		wanted_velocity *= elemental_statuses.movement_factor(record.id)
 	var engaged: String = brain.last_target_id if brain.last_decision in ["FOLLOW", "CHASE", "FLEE"] else ""
 	if not engaged.is_empty() and engaged != _previous_engaged_target:
 		var chosen_group := ""
