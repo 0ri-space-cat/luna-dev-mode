@@ -64,6 +64,8 @@ func register_spell(spec: Dictionary) -> bool:
 	var stored: Dictionary = spec.duplicate(true)
 	stored["manifestation"] = ArcaneGrammar.normalize(manifest)
 	stored["impact"] = impact.duplicate(true)
+	if str(impact.get("mode", "")) == "CHAIN":
+		stored["impact"]["jumps"] = int(impact["jumps"])
 	_definitions[id] = stored
 	_order.append(id)
 	return true
@@ -81,7 +83,10 @@ func is_valid_impact(impact: Variant) -> bool:
 		if is_nan(radius) or is_inf(radius) or radius < 0.5 or radius > TargetResolver.MAX_RADIUS:
 			return false
 		if mode == "CHAIN":
-			return typeof(impact.get("jumps")) == TYPE_INT and int(impact["jumps"]) >= 1 and int(impact["jumps"]) <= 4
+			var jumps: Variant = impact.get("jumps")
+			if typeof(jumps) not in [TYPE_INT, TYPE_FLOAT] or is_nan(float(jumps)) or is_inf(float(jumps)):
+				return false
+			return float(jumps) == float(int(jumps)) and int(jumps) >= 1 and int(jumps) <= 4
 		return true
 	return mode == "DIRECT" and (impact.is_empty() or impact.size() == 1)
 
