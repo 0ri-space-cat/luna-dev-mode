@@ -206,6 +206,10 @@ func _exit_tree() -> void:
 		command_processor.clear_history()
 	if entity_lifecycle != null:
 		entity_lifecycle.spawn_actor = Callable()
+	# Lifecycle -> elemental service -> effect engine forms a reference loop
+	# if the engine also retains the lifecycle service at scene shutdown.
+	if effect_engine != null:
+		effect_engine.configure_lifecycle(null)
 	if get_tree() != null:
 		get_tree().paused = false
 
