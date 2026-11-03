@@ -44,7 +44,8 @@ func _run() -> void:
 	assert(surfaces.get_fields().size() == 2)
 	assert(statuses.apply_element("near", "FIRE"))
 	assert(reactions.has("THAW"))
-	assert(surfaces.get_fields().size() == 1)
+	assert(surfaces.get_fields().size() == 2) # Ice far away + steam near impact
+	assert(surfaces.visibility_factor(Vector3.ZERO) < 1.0)
 	assert(is_equal_approx(surfaces.traction(Vector3.ZERO), 1.0))
 	assert(surfaces.traction(Vector3(10, 0, 0)) < 1.0)
 
@@ -54,20 +55,26 @@ func _run() -> void:
 	# STEAM and melts the terrain as part of the same interaction.
 	assert(statuses.apply_element("near", "FROST"))
 	assert(statuses.has_status("near", "CHILL"))
-	assert(surfaces.get_fields().size() == 2)
+	assert(surfaces.get_fields().size() == 3)
 	assert(statuses.apply_element("near", "FIRE"))
 	assert(reactions.has("STEAM"))
 	assert(not statuses.has_status("near", "CHILL"))
 	assert(statuses.has_status("near", "BURN"))
-	assert(surfaces.get_fields().size() == 1)
+	assert(surfaces.get_fields().size() == 2)
 	assert(surfaces.traction(Vector3.ZERO) == 1.0)
 	assert(surfaces.traction(Vector3(10, 0, 0)) < 1.0)
 
 	# Invalid coordinates do not mutate the ground.
 	assert(surfaces.melt_at(Vector3(INF, 0, 0)) == 0)
-	assert(surfaces.get_fields().size() == 1)
+	assert(surfaces.get_fields().size() == 2)
 	assert(surfaces.melt_at(Vector3(10, 0, 0)) == 1)
+	assert(surfaces.get_fields().size() == 1) # Steam survives melting
+	assert(surfaces.traction(Vector3.ZERO) == 1.0)
+	assert(surfaces.visibility_factor(Vector3.ZERO) < 1.0)
+	for tick in range(4):
+		surfaces.advance(1.0)
 	assert(surfaces.get_fields().is_empty())
+	assert(surfaces.visibility_factor(Vector3.ZERO) == 1.0)
 	near.free()
 	far.free()
 	print("LUNA 0.15: flame melts ice and leaves distant surfaces intact")
