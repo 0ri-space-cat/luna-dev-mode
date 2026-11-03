@@ -109,6 +109,7 @@ func _ready() -> void:
 		elemental_status_service, social_awareness,
 		Callable(self, "_spawn_lifecycle_actor")
 	)
+	effect_engine.configure_lifecycle(entity_lifecycle)
 	_register_example_rules()
 	_build_interface()
 	if save_service.has_save():
