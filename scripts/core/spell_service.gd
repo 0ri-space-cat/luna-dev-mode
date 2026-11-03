@@ -72,12 +72,14 @@ func cast_spell(spell_id: String, caster_id: String, target_id: String) -> bool:
 	var dist: float = (caster as Node3D).global_position.distance_to((target as Node3D).global_position)
 	if dist > float(spec["cast_range"]):
 		return _fail("Не достаю! Подойди поближе.")
-	var changed := 0
-	for action in spec["effects"]:
-		if not effects.apply(action, target_id, caster_id, "spell:%s" % spell_id):
-			return _fail("Заклинание споткнулось: %s" % effects.last_error)
-		changed += 1
-	spell_cast.emit({"spell_id": spell_id, "caster_id": caster_id, "target_id": target_id, "effect_count": changed})
+	if not effects.apply_batch(spec["effects"], target_id, caster_id, "spell:%s" % spell_id):
+		return _fail("Заклинание споткнулось: %s" % effects.last_error)
+	spell_cast.emit({
+		"spell_id": spell_id,
+		"caster_id": caster_id,
+		"target_id": target_id,
+		"effect_count": spec["effects"].size()
+	})
 	return true
 
 

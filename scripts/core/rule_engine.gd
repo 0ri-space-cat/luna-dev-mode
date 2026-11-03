@@ -70,12 +70,8 @@ func process_event(event: Dictionary) -> int:
 		var target_id := _resolve_target(str(rule["target"]), owner_id, event)
 		if target_id.is_empty():
 			continue
-		var successful := false
-		for action in rule["effects"]:
-			if effects.apply(action, target_id, "entity:%s" % owner_id, "rule:%s" % rule_id):
-				changes += 1
-				successful = true
-		if successful:
+		if effects.apply_batch(rule["effects"], target_id, "entity:%s" % owner_id, "rule:%s" % rule_id):
+			changes += rule["effects"].size()
 			_last_fired[rule_id] = now_ms
 	return changes
 
