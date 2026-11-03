@@ -68,3 +68,6 @@ jobs:
 
       - name: Run chain lightning hop and transactional tests
         run: timeout 40s godot --headless --path . --script res://tests/test_chain_lightning.gd
+
+      - name: Run material, fire propagation and ice terrain tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_environment_interactions.gd
