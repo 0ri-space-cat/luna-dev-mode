@@ -667,6 +667,7 @@ func _on_elemental_reaction(details: Dictionary) -> void:
 		"STEAM": "ПШШ! Пар!",
 		"QUENCH": "Потушили!",
 		"FREEZE": "Ледышка! Буквально.",
+		"THAW": "Пшш! Лёд растаял.",
 		"SUPERCONDUCT": "Сверхразряд!",
 		"OVERLOAD": "Искры и огонь!"
 	}
