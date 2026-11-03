@@ -64,6 +64,13 @@ func undo() -> bool:
 	if _undo_stack.is_empty():
 		return false
 	var entry: Dictionary = _undo_stack.back()
+	if entry.has("steps"):
+		if not _replay_batch(entry, false):
+			return false
+		_undo_stack.pop_back()
+		_redo_stack.append(entry)
+		history_changed.emit()
+		return true
 	var target: Object = (entry["target_ref"] as WeakRef).get_ref()
 	if not is_instance_valid(target) or not bool(target.call("set_parameter", entry["parameter_id"], entry["before"])):
 		return false
@@ -79,6 +86,13 @@ func redo() -> bool:
 	if _redo_stack.is_empty():
 		return false
 	var entry: Dictionary = _redo_stack.back()
+	if entry.has("steps"):
+		if not _replay_batch(entry, true):
+			return false
+		_redo_stack.pop_back()
+		_undo_stack.append(entry)
+		history_changed.emit()
+		return true
 	var target: Object = (entry["target_ref"] as WeakRef).get_ref()
 	if not is_instance_valid(target) or not bool(target.call("set_parameter", entry["parameter_id"], entry["after"])):
 		return false
@@ -134,3 +148,138 @@ func clear_history() -> void:
 	_redo_stack.clear()
 	_audit.clear()
 	history_changed.emit()
+
+
+func execute_batch(prepared_steps: Array[Dictionary], initiator_id: String, source_id: String) -> bool:
+	## One undoable transaction: validate the full sequence, then apply silently.
+	## No event is emitted until all changes have committed.
+	if prepared_steps.is_empty():
+		return true
+	if prepared_steps.size() > 32 or not _validate_batch(prepared_steps):
+		return false
+	if not _apply_steps(prepared_steps, true):
+		return false
+	var stored: Array[Dictionary] = []
+	for step in prepared_steps:
+		var archive: Dictionary = step.duplicate()
+		if str(step["kind"]) == "parameter":
+			archive["target_ref"] = weakref(step["target"])
+			archive.erase("target")
+		stored.append(archive)
+	_undo_stack.append({
+		"steps": stored, "initiator_id": initiator_id, "source_id": source_id
+	})
+	if _undo_stack.size() > MAX_UNDO:
+		_undo_stack.pop_front()
+	_redo_stack.clear()
+	_announce_steps(stored, "SET", initiator_id, source_id, true)
+	history_changed.emit()
+	return true
+
+
+func _replay_batch(entry: Dictionary, redo_change: bool) -> bool:
+	var ordered: Array[Dictionary] = []
+	for step in entry["steps"]:
+		ordered.append(step)
+	if not redo_change:
+		ordered.reverse()
+	if not _validate_batch(ordered, redo_change):
+		return false
+	if not _apply_steps(ordered, redo_change):
+		return false
+	_announce_steps(ordered, "REDO" if redo_change else "UNDO",
+		str(entry["initiator_id"]), str(entry["source_id"]), redo_change)
+	return true
+
+
+func _validate_batch(steps: Array[Dictionary], forward: bool = true) -> bool:
+	var virtual_values := {}
+	for step in steps:
+		if not step.has("kind") or not step.has("before") or not step.has("after"):
+			return false
+		var current: Variant
+		var key := ""
+		if step["kind"] == "parameter":
+			var target: Object = _target_for_step(step)
+			if not is_instance_valid(target) or not target.has_method("get_parameter") or not target.has_method("set_parameter"):
+				return false
+			var record: Variant = target.get("record")
+			if record == null:
+				return false
+			var parameter_id: String = str(step.get("parameter_id", ""))
+			var checked: Dictionary = record.registry.normalize(record.category, parameter_id,
+				step["after"] if forward else step["before"])
+			if not bool(checked["ok"]) or checked["value"] != (step["after"] if forward else step["before"]):
+				return false
+			key = "P:%s:%s" % [record.id, parameter_id]
+			current = target.call("get_parameter", parameter_id)
+		elif step["kind"] == "relation":
+			var relations: Variant = step.get("relations")
+			var from_id: String = str(step.get("from_id", ""))
+			var to_id: String = str(step.get("to_id", ""))
+			if relations == null or from_id.is_empty() or to_id.is_empty() or from_id == to_id:
+				return false
+			if not relations.is_valid_attitude(str(step["before"])) or not relations.is_valid_attitude(str(step["after"])):
+				return false
+			key = "R:%s:%s" % [from_id, to_id]
+			current = relations.get_attitude(from_id, to_id)
+		else:
+			return false
+		var expected: Variant = step["before"] if forward else step["after"]
+		if virtual_values.has(key):
+			current = virtual_values[key]
+		if current != expected:
+			return false
+		virtual_values[key] = step["after"] if forward else step["before"]
+	return true
+
+
+func _apply_steps(steps: Array[Dictionary], forward: bool) -> bool:
+	var done: Array[Dictionary] = []
+	for step in steps:
+		if not _apply_step(step, forward):
+			done.reverse()
+			for completed in done:
+				_apply_step(completed, not forward)
+			return false
+		done.append(step)
+	return true
+
+
+func _apply_step(step: Dictionary, forward: bool) -> bool:
+	var value: Variant = step["after"] if forward else step["before"]
+	if str(step["kind"]) == "parameter":
+		var target: Object = _target_for_step(step)
+		return is_instance_valid(target) and bool(target.call("set_parameter", step["parameter_id"], value))
+	var relations: Variant = step["relations"]
+	return relations.set_attitude_silent(str(step["from_id"]), str(step["to_id"]), str(value))
+
+
+func _target_for_step(step: Dictionary) -> Object:
+	if step.has("target"):
+		return step["target"]
+	if step.has("target_ref"):
+		return (step["target_ref"] as WeakRef).get_ref()
+	return null
+
+
+func _announce_steps(steps: Array[Dictionary], action: String,
+		initiator_id: String, source_id: String, forward: bool) -> void:
+	for step in steps:
+		var before: Variant = step["before"] if forward else step["after"]
+		var after: Variant = step["after"] if forward else step["before"]
+		if step["kind"] == "relation":
+			var relations: Variant = step["relations"]
+			relations.announce_change(str(step["from_id"]), str(step["to_id"]),
+				str(before), str(after), initiator_id, source_id)
+			continue
+		_sequence += 1
+		var audit_step := {
+			"sequence": _sequence,
+			"entity_id": str(step["entity_id"]),
+			"parameter_id": str(step["parameter_id"]),
+			"initiator_id": initiator_id,
+			"source_id": source_id
+		}
+		_append_audit(action, audit_step, before, after)
+		parameter_changed.emit(_latest_audit())
