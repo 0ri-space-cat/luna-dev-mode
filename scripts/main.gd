@@ -37,6 +37,8 @@ var spell_workshop_service
 var spell_workshop_panel
 var selected_spell_id := "FIREBALL"
 var pending_spell_cast := false
+var arcane_serial := 0
+const MAX_ARCANE_ENTITIES := 40
 var spell_hint_label: Label
 var journal_panel: PanelContainer
 var journal_label: Label
@@ -55,6 +57,7 @@ func _ready() -> void:
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	spell_service = SpellService.new(world_registry, effect_engine)
 	spell_service.projectile_requested.connect(_spawn_arcane_projectile)
+	spell_service.manifestation_requested.connect(_on_arcane_place)
 	spell_workshop_service = SpellWorkshopService.new(parameter_registry, spell_service)
 	if spell_workshop_service.has_library():
 		if not spell_workshop_service.load_library():
@@ -574,3 +577,43 @@ func _spawn_arcane_projectile(details: Dictionary) -> void:
 func _on_arcane_impact(spell_id: String, caster_id: String, target_id: String) -> void:
 	if not spell_service.resolve_impact(spell_id, caster_id, target_id):
 		_show_checkpoint_message(spell_service.last_error)
+		return
+	var spell: Dictionary = spell_service.get_spell(spell_id)
+	var recipe: Dictionary = spell.get("manifestation", {})
+	if str(recipe.get("create", "ENERGY")) != "ENERGY":
+		_create_arcane_entity(recipe, target_id)
+
+
+func _on_arcane_place(details: Dictionary) -> void:
+	_create_arcane_entity(details["manifestation"], str(details["target_id"]))
+
+
+func _create_arcane_entity(recipe: Dictionary, target_id: String) -> Node:
+	## The same HackableEntity and BehaviorBrain handle summoned creatures,
+	## animated objects and static energy constructs; no species-specific scripts.
+	var target: Node = world_registry.get_entity(target_id)
+	if not (target is Node3D):
+		return null
+	var living_count := 0
+	for entity_id in world_registry.list_ids():
+		if entity_id.begins_with("arcane_"):
+			living_count += 1
+	if living_count >= MAX_ARCANE_ENTITIES:
+		_show_checkpoint_message("Магии слишком много. Даже для меня.")
+		return null
+	arcane_serial += 1
+	var id: String = "arcane_%04d" % arcane_serial
+	while world_registry.get_entity(id) != null:
+		arcane_serial += 1
+		id = "arcane_%04d" % arcane_serial
+	var create_type: String = str(recipe["create"])
+	var category := "arcane_" + create_type.to_lower()
+	var spawn_at: Vector3 = (target as Node3D).global_position + Vector3(1.6, 0, 0.7)
+	spawn_at.y = 0.1
+	var entity := HackableEntity.new()
+	add_child(entity)
+	entity.configure(id, category, spawn_at, parameter_registry,
+		world_registry, relationship_service, recipe)
+	world_registry.register_entity(id, entity, create_type)
+	entity.target_acquired.connect(_on_target_acquired)
+	return entity
