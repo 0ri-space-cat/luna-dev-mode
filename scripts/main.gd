@@ -60,6 +60,7 @@ func _ready() -> void:
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	elemental_status_service = ElementalStatusService.new(world_registry, effect_engine)
 	elemental_status_service.reaction_triggered.connect(_on_elemental_reaction)
+	elemental_status_service.state_changed.connect(_on_elemental_state_changed)
 	spell_service = SpellService.new(world_registry, effect_engine, elemental_status_service)
 	spell_service.projectile_requested.connect(_spawn_arcane_projectile)
 	spell_service.manifestation_requested.connect(_on_arcane_place)
@@ -599,6 +600,12 @@ func _on_arcane_impact(spell_id: String, caster_id: String, target_id: String) -
 	var recipe: Dictionary = spell.get("manifestation", {})
 	if str(recipe.get("create", "ENERGY")) != "ENERGY":
 		_create_arcane_entity(recipe, target_id)
+
+
+func _on_elemental_state_changed(entity_id: String, active: Dictionary) -> void:
+	var entity: Node = world_registry.get_entity(entity_id)
+	if entity != null and entity.has_method("show_elemental_statuses"):
+		entity.call("show_elemental_statuses", active)
 
 
 func _on_elemental_reaction(details: Dictionary) -> void:
