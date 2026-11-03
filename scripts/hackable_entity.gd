@@ -142,11 +142,14 @@ func _physics_process(delta: float) -> void:
 	age += delta
 	var nearby: Array[Dictionary] = []
 	if world_registry != null:
+		var sense: float = float(record.get_parameter("sense_range"))
+		if elemental_statuses != null and elemental_statuses.surfaces != null:
+			sense *= elemental_statuses.surfaces.visibility_factor(global_position)
 		nearby = world_registry.candidates(
 			record.id,
 			global_position,
 			str(record.get_parameter("target_group")),
-			float(record.get_parameter("sense_range"))
+			sense
 		)
 	var effective_parameters: Dictionary = record.parameters
 	if relationship_service != null and str(record.get_parameter("behavior_mode")) == "AUTO":
@@ -160,10 +163,23 @@ func _physics_process(delta: float) -> void:
 		if not nearest_id.is_empty():
 			effective_parameters = record.parameters.duplicate()
 			effective_parameters["target_relation"] = relationship_service.get_attitude(record.id, nearest_id)
+	# Autonomous wanderers react to nearby burning objects. This temporary
+	# decision never rewrites BEHAVIOR or permanent relationships.
+	var avoiding_fire := false
+	if elemental_statuses != null and bool(record.get_parameter("alive")) \
+			and bool(record.get_parameter("ai_enabled")) \
+			and str(record.get_parameter("behavior_mode")) == "WANDER":
+		var fire: Dictionary = elemental_statuses.nearest_fire(record.id, global_position)
+		if not fire.is_empty():
+			effective_parameters = effective_parameters.duplicate(true)
+			effective_parameters["behavior_mode"] = "FLEE"
+			effective_parameters["follow_distance"] = 2.5
+			nearby = [fire]
+			avoiding_fire = true
 	var wanted_velocity: Vector3 = brain.calculate(delta, global_position, effective_parameters, nearby)
 	if elemental_statuses != null:
 		wanted_velocity *= elemental_statuses.movement_factor(record.id)
-	var engaged: String = brain.last_target_id if brain.last_decision in ["FOLLOW", "CHASE", "FLEE"] else ""
+	var engaged: String = brain.last_target_id if brain.last_decision in ["FOLLOW", "CHASE", "FLEE"] and not avoiding_fire else ""
 	if not engaged.is_empty() and engaged != _previous_engaged_target:
 		var chosen_group := ""
 		for candidate in nearby:
