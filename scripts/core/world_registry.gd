@@ -57,3 +57,12 @@ func count_live() -> int:
 		if get_entity(str(entity_id)) != null:
 			count += 1
 	return count
+
+
+func list_ids() -> Array[String]:
+	var result: Array[String] = []
+	for entity_id in _entries.keys():
+		if get_entity(str(entity_id)) != null:
+			result.append(str(entity_id))
+	result.sort()
+	return result
