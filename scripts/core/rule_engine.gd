@@ -26,7 +26,12 @@ func register_rule(definition: Dictionary) -> bool:
 	if typeof(actions) != TYPE_ARRAY or actions.is_empty():
 		return false
 	for action in actions:
-		if typeof(action) != TYPE_DICTIONARY or not action.has("operation") or not action.has("parameter_id"):
+		if typeof(action) != TYPE_DICTIONARY or not action.has("operation"):
+			return false
+		if str(action["operation"]) == "SET_RELATION":
+			if not action.has("subject_id") or not action.has("value"):
+				return false
+		elif not action.has("parameter_id"):
 			return false
 	var conditions: Variant = definition.get("conditions", [])
 	if typeof(conditions) != TYPE_ARRAY:

@@ -13,16 +13,18 @@ var primary_part: MeshInstance3D
 var legs: Array[MeshInstance3D] = []
 var brain = BehaviorBrain.new()
 var world_registry
+var relationship_service
 var age := 0.0
 var _previous_engaged_target := ""
 
 
-func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null) -> void:
+func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null, relations = null) -> void:
 	name = entity_id
 	position = start_position
 	collision_layer = 2
 	collision_mask = 1
 	world_registry = registry_of_world
+	relationship_service = relations
 	var is_tree := entity_type == "tree"
 	var base_color := Color("b790dd") if is_tree else Color("87bfe8")
 	var label := "Дерево" if is_tree else "Холодильник"
@@ -99,7 +101,19 @@ func _physics_process(delta: float) -> void:
 			str(record.get_parameter("target_group")),
 			float(record.get_parameter("sense_range"))
 		)
-	var wanted_velocity: Vector3 = brain.calculate(delta, global_position, record.parameters, nearby)
+	var effective_parameters: Dictionary = record.parameters
+	if relationship_service != null and str(record.get_parameter("behavior_mode")) == "AUTO":
+		var nearest_id := ""
+		var nearest_distance := INF
+		for candidate in nearby:
+			var distance: float = global_position.distance_squared_to(candidate["position"])
+			if distance < nearest_distance:
+				nearest_distance = distance
+				nearest_id = str(candidate["id"])
+		if not nearest_id.is_empty():
+			effective_parameters = record.parameters.duplicate()
+			effective_parameters["target_relation"] = relationship_service.get_attitude(record.id, nearest_id)
+	var wanted_velocity: Vector3 = brain.calculate(delta, global_position, effective_parameters, nearby)
 	var engaged: String = brain.last_target_id if brain.last_decision in ["FOLLOW", "CHASE", "FLEE"] else ""
 	if not engaged.is_empty() and engaged != _previous_engaged_target:
 		var chosen_group := ""

@@ -35,7 +35,7 @@ func calculate(delta: float, position: Vector3, properties: Dictionary, targets:
 
 	var mode: String = str(properties.get("behavior_mode", "WANDER"))
 	if mode == "AUTO":
-		match str(properties.get("luna_relation", "NEUTRAL")):
+		match str(properties.get("target_relation", properties.get("luna_relation", "NEUTRAL"))):
 			"FRIEND":
 				mode = "FOLLOW"
 			"HOSTILE":

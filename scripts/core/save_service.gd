@@ -21,7 +21,7 @@ func has_save() -> bool:
 	return FileAccess.file_exists(save_path)
 
 
-func snapshot(world, player: Node3D) -> Dictionary:
+func snapshot(world, player: Node3D, relationships = null) -> Dictionary:
 	var entities := {}
 	for entity_id in world.list_ids():
 		var node: Node = world.get_entity(entity_id)
@@ -44,15 +44,16 @@ func snapshot(world, player: Node3D) -> Dictionary:
 		"version": FORMAT_VERSION,
 		"scene": SCENE_ID,
 		"player_position": _pack_position(player.position),
-		"entities": entities
+		"entities": entities,
+		"relationships": relationships.export_data() if relationships != null else {}
 	}
 
 
-func save_world(world, player: Node3D) -> bool:
+func save_world(world, player: Node3D, relationships = null) -> bool:
 	last_error = ""
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
-	var data := snapshot(world, player)
+	var data := snapshot(world, player, relationships)
 	var serialized := JSON.stringify(data, "\t")
 	var temp_path := save_path + ".tmp"
 	var stream := FileAccess.open(temp_path, FileAccess.WRITE)
@@ -69,7 +70,7 @@ func save_world(world, player: Node3D) -> bool:
 	return true
 
 
-func load_world(world, player: Node3D) -> bool:
+func load_world(world, player: Node3D, relationships = null) -> bool:
 	last_error = ""
 	if not has_save():
 		return _fail("No save found")
@@ -84,10 +85,10 @@ func load_world(world, player: Node3D) -> bool:
 		return _fail("Invalid save JSON at line %d" % parser.get_error_line())
 	if typeof(parser.data) != TYPE_DICTIONARY:
 		return _fail("Save root must be a dictionary")
-	return apply_snapshot(parser.data, world, player)
+	return apply_snapshot(parser.data, world, player, relationships)
 
 
-func apply_snapshot(data: Dictionary, world, player: Node3D) -> bool:
+func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null) -> bool:
 	last_error = ""
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
@@ -101,6 +102,9 @@ func apply_snapshot(data: Dictionary, world, player: Node3D) -> bool:
 	var entries: Variant = data.get("entities")
 	if typeof(entries) != TYPE_DICTIONARY:
 		return _fail("Missing entity data")
+	var relationship_data: Variant = data.get("relationships", {})
+	if relationships != null and not relationships.validate_data(relationship_data):
+		return _fail("Invalid relationship data")
 	var plan: Array[Dictionary] = []
 	for id in entries.keys():
 		if typeof(id) != TYPE_STRING or typeof(entries[id]) != TYPE_DICTIONARY:
@@ -144,6 +148,8 @@ func apply_snapshot(data: Dictionary, world, player: Node3D) -> bool:
 			if not node.call("set_parameter", key, item["parameters"][key]):
 				return _fail("Failed to restore %s" % key)
 	player.position = start["value"]
+	if relationships != null:
+		relationships.import_data(relationship_data)
 	return true
 
 

@@ -11,6 +11,7 @@ const EventBus = preload("res://scripts/core/event_bus.gd")
 const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
+const RelationshipService = preload("res://scripts/core/relationship_service.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -24,6 +25,7 @@ var event_bus
 var effect_engine
 var rule_engine
 var save_service
+var relationship_service
 var save_status_label: Label
 var _autosave_elapsed := 0.0
 var _save_message_seconds := 0.0
@@ -34,11 +36,13 @@ func _ready() -> void:
 	parameter_registry = ParameterRegistry.new()
 	command_processor = CommandProcessor.new()
 	world_registry = WorldRegistry.new()
+	relationship_service = RelationshipService.new()
 	event_bus = EventBus.new()
-	effect_engine = EffectEngine.new(world_registry, command_processor)
+	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	rule_engine = RuleEngine.new(effect_engine)
 	save_service = SaveService.new()
 	command_processor.parameter_changed.connect(_on_parameter_changed)
+	relationship_service.relationship_changed.connect(_on_relationship_changed)
 	_register_controls()
 	_build_environment()
 	_build_ground()
@@ -92,7 +96,7 @@ func _physics_process(_delta: float) -> void:
 func _exit_tree() -> void:
 	# Save on normal exit as well as on the periodic checkpoint.
 	if save_service != null and world_registry != null and is_instance_valid(luna):
-		save_service.save_world(world_registry, luna)
+		save_service.save_world(world_registry, luna, relationship_service)
 	if get_tree() != null:
 		get_tree().paused = false
 
@@ -193,7 +197,7 @@ func _spawn_entities() -> void:
 func _spawn(entity_id: String, category: String, where: Vector3) -> void:
 	var entity := HackableEntity.new()
 	add_child(entity)
-	entity.configure(entity_id, category, where, parameter_registry, world_registry)
+	entity.configure(entity_id, category, where, parameter_registry, world_registry, relationship_service)
 	world_registry.register_entity(entity_id, entity, category.to_upper())
 	entity.target_acquired.connect(_on_target_acquired)
 
@@ -225,6 +229,11 @@ func _on_parameter_changed(change: Dictionary) -> void:
 	# Undo/redo restores prior state without launching gameplay rules again.
 	if str(change.get("action", "")) != "SET":
 		return
+	if str(change.get("parameter_id", "")) == "luna_relation":
+		relationship_service.set_attitude(
+			str(change["entity_id"]), "luna", str(change["after"]),
+			str(change["initiator_id"]), str(change["source_id"])
+		)
 	event_bus.enqueue({
 		"type": "parameter.changed",
 		"source_id": str(change["entity_id"]),
@@ -235,6 +244,26 @@ func _on_parameter_changed(change: Dictionary) -> void:
 			"initiator_id": str(change["initiator_id"])
 		}
 	})
+
+
+func _on_relationship_changed(change: Dictionary) -> void:
+	event_bus.enqueue({
+		"type": "relationship.changed",
+		"source_id": str(change["from_id"]),
+		"target_id": str(change["to_id"]),
+		"payload": {"before": change["before"], "attitude": change["after"]}
+	})
+
+
+func _sync_luna_relationships() -> void:
+	# Covers older saves that only had LUNA_RELATION on each entity.
+	for entity_id in world_registry.list_ids():
+		var target: Node = world_registry.get_entity(entity_id)
+		if target == null or not target.has_method("get_parameter"):
+			continue
+		var relation: Variant = target.call("get_parameter", "luna_relation")
+		if relation != null:
+			relationship_service.set_attitude(entity_id, "luna", str(relation), "system", "save:restore")
 
 
 func _build_interface() -> void:
@@ -252,7 +281,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.5"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.6"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -323,8 +352,9 @@ func _load_checkpoint(automatic: bool) -> void:
 		if not automatic:
 			_show_checkpoint_message("НЕТ СОХРАНЕНИЯ")
 		return
-	var success: bool = save_service.load_world(world_registry, luna)
+	var success: bool = save_service.load_world(world_registry, luna, relationship_service)
 	if success:
+		_sync_luna_relationships()
 		# Restores do not count as player hacks, nor do pre-load queued events.
 		command_processor.clear_history()
 		event_bus.clear_pending()

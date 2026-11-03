@@ -4,12 +4,14 @@ extends RefCounted
 
 var world
 var commands
+var relationships
 var last_error := ""
 
 
-func _init(world_registry, command_processor) -> void:
+func _init(world_registry, command_processor, relationship_service = null) -> void:
 	world = world_registry
 	commands = command_processor
+	relationships = relationship_service
 
 
 func apply(effect: Dictionary, target_id: String, initiator_id: String, source_id: String) -> bool:
@@ -18,6 +20,19 @@ func apply(effect: Dictionary, target_id: String, initiator_id: String, source_i
 	if target == null or not target.has_method("get_parameter"):
 		last_error = "Unknown target ID: %s" % target_id
 		return false
+	if str(effect.get("operation", "")) == "SET_RELATION":
+		if relationships == null:
+			last_error = "Relationship service is missing"
+			return false
+		var subject_id: String = str(effect.get("subject_id", ""))
+		var attitude: String = str(effect.get("value", ""))
+		if world.get_entity(subject_id) == null:
+			last_error = "Unknown relationship source"
+			return false
+		if not relationships.set_attitude(subject_id, target_id, attitude, initiator_id, source_id):
+			last_error = "Invalid relationship effect"
+			return false
+		return true
 	var key: String = str(effect.get("parameter_id", ""))
 	if key.is_empty():
 		last_error = "Missing parameter_id"
