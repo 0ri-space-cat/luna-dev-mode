@@ -27,7 +27,7 @@ func _run() -> void:
 	luna.position = Vector3(20, 0, 0)
 	assert(world.register_entity("luna", luna, "LUNA"))
 	assert(world.register_entity("fridge_001", fridge, "FRIDGE"))
-	assert(spells.list_spell_ids() == ["AWAKEN", "PINKIFY", "QUICKEN"])
+	assert(spells.list_spell_ids() == ["FIREBALL", "FROST_SHARD", "ARC_BOLT"])
 	assert(not spells.register_spell({"id": "AWAKEN", "label": "DUPLICATE", "cast_range": 9.0, "effects": [{"operation": "TOGGLE", "parameter_id": "alive"}]}))
 	assert(not spells.register_spell({"id": "BAD", "label": "BAD", "cast_range": 9.0, "effects": [{"operation": "UNSAFE_EVAL", "parameter_id": "alive"}]}))
 	assert(not spells.register_spell({"id": "TOO_FAR", "label": "BAD", "cast_range": 500.0, "effects": [{"operation": "TOGGLE", "parameter_id": "alive"}]}))

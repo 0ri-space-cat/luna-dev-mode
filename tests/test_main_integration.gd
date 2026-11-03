@@ -24,7 +24,7 @@ func _run() -> void:
 	stage.profile_service = ProfileService.new(PROFILE_TEST_PATH)
 	var fridge: Node = stage.world_registry.get_entity("fridge_001")
 	assert(fridge != null)
-	assert(stage.spell_service.list_spell_ids() == ["AWAKEN", "PINKIFY", "QUICKEN"])
+	assert(stage.spell_service.list_spell_ids() == ["FIREBALL", "FROST_SHARD", "ARC_BOLT"])
 	assert(not stage.profile_service.has_discovered_category("fridge"))
 
 	# Inspecting a real scene object adds permanent knowledge, not a world edit.
