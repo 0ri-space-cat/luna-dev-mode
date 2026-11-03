@@ -40,6 +40,9 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_behavior_system.gd
       - name: Run effects and rules smoke tests
         run: bash ci/run_godot_script.sh res://tests/test_rule_system.gd
+
+      - name: Run advanced rule grammar and persistence tests
+        run: bash ci/run_godot_script.sh res://tests/test_advanced_rules.gd
       - name: Run save and load smoke tests
         run: bash ci/run_godot_script.sh res://tests/test_save_service.gd
       - name: Run social relations smoke tests
