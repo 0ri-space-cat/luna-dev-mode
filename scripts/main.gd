@@ -476,7 +476,10 @@ func _close_editor() -> void:
 func _save_checkpoint(notify_player: bool) -> void:
 	if save_service == null or not is_instance_valid(luna):
 		return
-	var success: bool = save_service.save_world(world_registry, luna, relationship_service, elemental_status_service)
+	var success: bool = save_service.save_world(
+		world_registry, luna, relationship_service,
+		elemental_status_service, surface_field_service
+	)
 	if notify_player or not success:
 		_show_checkpoint_message("МИР СОХРАНЁН" if success else "ОШИБКА СОХРАНЕНИЯ: %s" % save_service.last_error)
 
