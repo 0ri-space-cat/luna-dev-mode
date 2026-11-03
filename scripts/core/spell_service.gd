@@ -51,6 +51,17 @@ func register_spell(spec: Dictionary) -> bool:
 	_order.append(id)
 	return true
 
+func unregister_custom_spell(spell_id: String) -> bool:
+	if not spell_id.begins_with("CUSTOM_") or not _definitions.has(spell_id):
+		return false
+	_definitions.erase(spell_id)
+	_order.erase(spell_id)
+	return true
+
+
+func contains_spell(spell_id: String) -> bool:
+	return _definitions.has(spell_id)
+
 
 func list_spell_ids() -> Array[String]:
 	return _order.duplicate()
