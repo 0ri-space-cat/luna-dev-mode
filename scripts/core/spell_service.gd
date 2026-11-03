@@ -219,8 +219,7 @@ func _register_starters() -> void:
 		"symbol_id": "SNOW", "stone_color": Color("9edffa"),
 		"manifestation": ArcaneGrammar.make("SHARD", "FROST", 14.0, 0.34),
 		"effects": [
-			{"operation": "ADD", "parameter_id": "health", "value": -10},
-			{"operation": "MULTIPLY", "parameter_id": "speed", "value": 0.65}
+			{"operation": "ADD", "parameter_id": "health", "value": -10}
 		]
 	})
 	register_spell({

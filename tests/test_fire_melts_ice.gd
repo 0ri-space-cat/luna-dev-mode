@@ -48,6 +48,8 @@ func _run() -> void:
 	assert(is_equal_approx(surfaces.traction(Vector3.ZERO), 1.0))
 	assert(surfaces.traction(Vector3(10, 0, 0)) < 1.0)
 
+	# Wooden material sustains burning after thaw; ordinary metal wouldn't.
+	assert(near.set_parameter("material", "WOOD"))
 	# A freeze creates ground ice as before; a following flame produces
 	# STEAM and melts the terrain as part of the same interaction.
 	assert(statuses.apply_element("near", "FROST"))

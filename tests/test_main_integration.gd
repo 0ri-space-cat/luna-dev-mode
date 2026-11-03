@@ -137,5 +137,5 @@ func _run() -> void:
 	assert(profile_after_restart.has_discovered_parameter("fridge", "luna_relation"))
 	for path in [RUN_TEST_PATH, PROFILE_TEST_PATH, SPELL_TEST_PATH]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	print("LUNA 0.13: elemental labels, workshop, saves and full scene passed")
+	print("LUNA 0.15: elemental labels, workshop, saves and full scene passed")
 	quit(0)

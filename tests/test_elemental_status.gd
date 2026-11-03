@@ -49,6 +49,14 @@ func _run() -> void:
 	assert(not conditions.apply_element("fridge", "POISON"))
 	assert(conditions.movement_factor("fridge") == 1.0)
 
+	# Elemental damage can hit metal, but metal doesn't sustain fire.
+	assert(fridge.get_parameter("material") == "METAL")
+	assert(conditions.apply_element("fridge", "FIRE"))
+	assert(not conditions.has_status("fridge", "BURN"))
+	assert(conditions.get_state("fridge").is_empty())
+	assert(fridge.set_parameter("material", "WOOD"))
+	# A wooden fridge can now burn; MATERIAL remains fully hackable.
+
 	# A fiery explosion attaches BURN to every valid target, after impact only.
 	assert(spells.cast_spell("FIREBALL", "luna", "fridge"))
 	assert(conditions.get_state("fridge").is_empty())
@@ -68,6 +76,7 @@ func _run() -> void:
 	assert(not conditions.has_status("fridge", "BURN"))
 	assert(conditions.has_status("fridge", "CHILL"))
 	assert(is_equal_approx(conditions.movement_factor("fridge"), 0.45))
+	assert(is_equal_approx(float(fridge.get_parameter("speed")), 2.6)) # Base speed was not changed.
 	assert(reactions.has("QUENCH"))
 
 	# Electricity interacts with ice: longer total stun, consuming the chill.

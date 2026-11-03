@@ -85,7 +85,7 @@ func _run() -> void:
 	assert(requests[1]["manifestation"]["shape"] == "SHARD")
 	assert(spells.resolve_impact("FROST_SHARD", "luna", "fridge_test"))
 	assert(fridge.get_parameter("health") == 66)
-	assert(is_equal_approx(float(fridge.get_parameter("speed")), 1.7))
+	assert(is_equal_approx(float(fridge.get_parameter("speed")), 2.6)) # Chill is a temporary overlay, not a permanent speed hack.
 	assert(commands.undo())
 	assert(fridge.get_parameter("health") == 76)
 	assert(is_equal_approx(float(fridge.get_parameter("speed")), 2.6))

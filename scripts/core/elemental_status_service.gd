@@ -72,8 +72,13 @@ func apply_element(entity_id: String, element: String, spread_from: String = "")
 				active.erase("CHILL")
 				active.erase("FROZEN")
 				reaction = "STEAM"
-			# Steam extinguishes the cold; fire is shorter after melting ice.
-			active["BURN"] = _burn(2.5 if reaction == "STEAM" else BURN_TIME, spread_from)
+			# Every target can take immediate magical damage from ON_HIT, but
+			# sustained combustion requires a flammable material. The same
+			# rule governs direct ignition and fire spreading.
+			if MaterialProfile.is_flammable(str(target.call("get_parameter", "material"))):
+				active["BURN"] = _burn(2.5 if reaction == "STEAM" else BURN_TIME, spread_from)
+			else:
+				active.erase("BURN")
 		"FROST":
 			if active.has("BURN"):
 				active.erase("BURN")
@@ -99,7 +104,10 @@ func apply_element(entity_id: String, element: String, spread_from: String = "")
 				burning["interval"] = 0.5
 				active["BURN"] = burning
 			active["SHOCK"] = _duration(duration)
-	_states[entity_id] = active
+	if active.is_empty():
+		_states.erase(entity_id)
+	else:
+		_states[entity_id] = active
 	if element == "FROST" and surfaces != null and target is Node3D:
 		surfaces.add_ice_at((target as Node3D).global_position)
 	state_changed.emit(entity_id, get_state(entity_id))
@@ -122,6 +130,12 @@ func advance(delta: float) -> void:
 			continue
 		var active: Dictionary = _states[entity_id]
 		var updated := false
+		# Recheck live MATERIAL: hacking a burning wooden object into metal
+		# immediately extinguishes it on the next simulation update.
+		var actor: Node = world.get_entity(str(entity_id))
+		if active.has("BURN") and not MaterialProfile.is_flammable(str(actor.call("get_parameter", "material"))):
+			active.erase("BURN")
+			updated = true
 		for status in active.keys():
 			var item: Dictionary = active[status]
 			var before: float = float(item["remaining"])
