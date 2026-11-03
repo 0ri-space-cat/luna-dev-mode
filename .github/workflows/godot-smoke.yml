@@ -28,52 +28,58 @@ jobs:
             echo "Godot reported a runtime or parser error."
             exit 1
           fi
+          # Godot 4.3's headless dummy renderer sometimes reports a null
+          # mesh when it has no rendering backend; flag every other ERROR.
+          if grep '^ERROR:' /tmp/luna-boot.log | grep -Fv 'ERROR: Parameter "m" is null.'; then
+            echo "Unexpected Godot engine error during main-scene boot."
+            exit 1
+          fi
       - name: Run parameter and undo smoke tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_parameter_system.gd
+        run: bash ci/run_godot_script.sh res://tests/test_parameter_system.gd
       - name: Run behavior and targeting smoke tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_behavior_system.gd
+        run: bash ci/run_godot_script.sh res://tests/test_behavior_system.gd
       - name: Run effects and rules smoke tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_rule_system.gd
+        run: bash ci/run_godot_script.sh res://tests/test_rule_system.gd
       - name: Run save and load smoke tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_save_service.gd
+        run: bash ci/run_godot_script.sh res://tests/test_save_service.gd
       - name: Run social relations smoke tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_relationships.gd
+        run: bash ci/run_godot_script.sh res://tests/test_relationships.gd
       - name: Run discovery profile smoke tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_profile_service.gd
+        run: bash ci/run_godot_script.sh res://tests/test_profile_service.gd
       - name: Run spell engine smoke tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_spell_service.gd
+        run: bash ci/run_godot_script.sh res://tests/test_spell_service.gd
       - name: Run full scene integration tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_main_integration.gd
+        run: bash ci/run_godot_script.sh res://tests/test_main_integration.gd
 
       - name: Run atomic effect transaction tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_atomic_effects.gd
+        run: bash ci/run_godot_script.sh res://tests/test_atomic_effects.gd
 
       - name: Run spell workshop and persistence tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_spell_workshop.gd
+        run: bash ci/run_godot_script.sh res://tests/test_spell_workshop.gd
 
       - name: Run elemental spell and projectile tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_arcane_magic.gd
+        run: bash ci/run_godot_script.sh res://tests/test_arcane_magic.gd
 
       - name: Run CREATE OBJECT CREATURE magic tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_create_magic.gd
+        run: bash ci/run_godot_script.sh res://tests/test_create_magic.gd
 
       - name: Run legacy magic recipe migration tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_legacy_magic_migration.gd
+        run: bash ci/run_godot_script.sh res://tests/test_legacy_magic_migration.gd
 
       - name: Run spatial ON_HIT burst tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_area_effects.gd
+        run: bash ci/run_godot_script.sh res://tests/test_area_effects.gd
 
       - name: Run elemental status and interaction tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_elemental_status.gd
+        run: bash ci/run_godot_script.sh res://tests/test_elemental_status.gd
 
       - name: Run chain lightning hop and transactional tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_chain_lightning.gd
+        run: bash ci/run_godot_script.sh res://tests/test_chain_lightning.gd
 
       - name: Run material, fire propagation and ice terrain tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_environment_interactions.gd
+        run: bash ci/run_godot_script.sh res://tests/test_environment_interactions.gd
 
       - name: Run fire thaw and temporary ice interaction tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_fire_melts_ice.gd
+        run: bash ci/run_godot_script.sh res://tests/test_fire_melts_ice.gd
 
       - name: Run steam clouds, visibility and living fire avoidance tests
-        run: timeout 40s godot --headless --path . --script res://tests/test_steam_and_fire_ai.gd
+        run: bash ci/run_godot_script.sh res://tests/test_steam_and_fire_ai.gd
