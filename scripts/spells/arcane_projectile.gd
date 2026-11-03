@@ -14,6 +14,8 @@ var destination_ref: WeakRef
 var flight_speed := 14.0
 var lifetime := 3.5
 var age := 0.0
+var travel_behavior := "SEEK"
+var straight_heading := Vector3.FORWARD
 
 
 func configure(recipe: Dictionary, origin: Node3D, target: Node3D, spell: String, caster: String, target_entity: String) -> void:
@@ -22,11 +24,15 @@ func configure(recipe: Dictionary, origin: Node3D, target: Node3D, spell: String
 	target_id = target_entity
 	destination_ref = weakref(target)
 	flight_speed = float(recipe["speed"])
-	position = origin.global_position + Vector3(0, 1.2, 0)
+	travel_behavior = str(recipe["behavior"])
+	global_position = origin.global_position + Vector3(0, 1.2, 0)
+	var target_at_cast: Vector3 = target.global_position + Vector3(0, 1.2, 0)
+	var initial_vector: Vector3 = target_at_cast - global_position
+	straight_heading = initial_vector.normalized() if initial_vector.length_squared() > 0.01 else Vector3.FORWARD
 	var size: float = float(recipe["size"])
-	var tint: Color = ArcaneGrammar.tint(str(recipe["essence"]))
+	var tint: Color = ArcaneGrammar.tint(str(recipe["element"]))
 	var core := MeshInstance3D.new()
-	var shape: String = str(recipe["form"])
+	var shape: String = str(recipe["shape"])
 	if shape == "SHARD":
 		var crystal := CylinderMesh.new()
 		crystal.top_radius = 0.0
@@ -81,10 +87,16 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 		return
 	var goal: Vector3 = (target as Node3D).global_position + Vector3(0, 1.2, 0)
-	var distance := global_position.distance_to(goal)
-	if distance <= flight_speed * delta + 0.25:
-		struck.emit(spell_id, caster_id, target_id)
-		queue_free()
-		return
-	global_position = global_position.move_toward(goal, flight_speed * delta)
+	if travel_behavior == "STRAIGHT":
+		global_position += straight_heading * flight_speed * delta
+		if global_position.distance_to(goal) <= 0.65:
+			struck.emit(spell_id, caster_id, target_id)
+			queue_free()
+	else:
+		var distance := global_position.distance_to(goal)
+		if distance <= flight_speed * delta + 0.25:
+			struck.emit(spell_id, caster_id, target_id)
+			queue_free()
+			return
+		global_position = global_position.move_toward(goal, flight_speed * delta)
 	rotate_y(delta * 9.0)
