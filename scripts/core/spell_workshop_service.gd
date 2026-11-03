@@ -3,6 +3,7 @@ extends RefCounted
 ## available fields and valid values; no scripts or free-form code are stored.
 
 const JsonStore = preload("res://scripts/core/json_store.gd")
+const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 const FORMAT_VERSION := 1
 const DEFAULT_PATH := "user://luna_spells_v1.json"
 const MAX_RECIPES := 48
@@ -39,7 +40,7 @@ func available_fields() -> Array[Dictionary]:
 	return result
 
 
-func create_recipe(label: String, cast_range: float, actions: Array[Dictionary]) -> String:
+func create_recipe(label: String, cast_range: float, actions: Array[Dictionary], manifestation: Dictionary = {}) -> String:
 	last_error = ""
 	if _recipes.size() >= MAX_RECIPES:
 		last_error = "Палочка уже забита заклинаниями."
@@ -52,6 +53,7 @@ func create_recipe(label: String, cast_range: float, actions: Array[Dictionary])
 		"cast_range": cast_range,
 		"symbol_id": "CUSTOM",
 		"stone_color": Color("b790dd"),
+		"manifestation": manifestation.duplicate(true),
 		"effects": actions.duplicate(true)
 	}
 	if not _valid_recipe(spec):
@@ -145,6 +147,8 @@ func _valid_recipe(spec: Dictionary) -> bool:
 	var range_value := float(spec["cast_range"])
 	if is_nan(range_value) or is_inf(range_value) or range_value < 0.5 or range_value > 50.0:
 		return false
+	if typeof(spec.get("manifestation", {})) != TYPE_DICTIONARY or not ArcaneGrammar.valid(spec.get("manifestation", {})):
+		return false
 	if typeof(spec["effects"]) != TYPE_ARRAY:
 		return false
 	var actions: Array = spec["effects"]
@@ -206,6 +210,7 @@ func _serialize_recipe(spec: Dictionary) -> Dictionary:
 		"id": spec["id"],
 		"label": spec["label"],
 		"cast_range": spec["cast_range"],
+		"manifestation": spec.get("manifestation", {}).duplicate(true),
 		"effects": actions
 	}
 
@@ -235,5 +240,6 @@ func _parse_recipe(raw: Dictionary) -> Dictionary:
 		"cast_range": raw["cast_range"],
 		"symbol_id": "CUSTOM",
 		"stone_color": Color("b790dd"),
+		"manifestation": raw.get("manifestation", {}),
 		"effects": decoded
 	}
