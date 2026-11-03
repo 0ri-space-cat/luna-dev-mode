@@ -3,6 +3,8 @@ extends RefCounted
 ## Scene ownership remains in Main/WorldManager, never here.
 
 var _entries: Dictionary = {}
+const MAX_TOMBSTONES := 128
+var _tombstones: Dictionary = {}
 
 
 func register_entity(entity_id: String, entity: Node, group: String) -> bool:
@@ -11,11 +13,55 @@ func register_entity(entity_id: String, entity: Node, group: String) -> bool:
 	if _entries.has(entity_id) and get_entity(entity_id) != null:
 		return false
 	_entries[entity_id] = {"ref": weakref(entity), "group": group}
+	_tombstones.erase(entity_id)
 	return true
 
 
 func unregister_entity(entity_id: String) -> void:
 	_entries.erase(entity_id)
+
+
+## An explicit deletion is a gameplay fact. Unregister alone is only a
+## runtime cleanup; test teardown and unloading must not become deletions.
+func retire_entity(entity_id: String) -> bool:
+	if get_entity(entity_id) == null or (_tombstones.size() >= MAX_TOMBSTONES and not _tombstones.has(entity_id)):
+		return false
+	_entries.erase(entity_id)
+	_tombstones[entity_id] = true
+	return true
+
+
+func was_deleted(entity_id: String) -> bool:
+	return _tombstones.has(entity_id)
+
+
+func deleted_ids() -> Array[String]:
+	var result: Array[String] = []
+	for key in _tombstones.keys():
+		result.append(str(key))
+	result.sort()
+	return result
+
+
+func validate_deleted_ids(values: Variant) -> bool:
+	if typeof(values) != TYPE_ARRAY or values.size() > MAX_TOMBSTONES:
+		return false
+	var seen := {}
+	for value in values:
+		if typeof(value) != TYPE_STRING or not str(value).is_valid_identifier() or str(value).length() > 96 or seen.has(value):
+			return false
+		seen[value] = true
+	return true
+
+
+func restore_deleted_ids(values: Variant) -> bool:
+	if not validate_deleted_ids(values):
+		return false
+	var loaded := {}
+	for value in values:
+		loaded[str(value)] = true
+	_tombstones = loaded
+	return true
 
 
 func get_entity(entity_id: String) -> Node:
