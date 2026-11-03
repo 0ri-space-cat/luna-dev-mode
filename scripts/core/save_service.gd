@@ -95,19 +95,49 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 	if relationships != null and not relationships.validate_data(relationship_data):
 		return _fail("Invalid relationship data")
 	var plan: Array[Dictionary] = []
+	var ids_in_save: Array[String] = []
+	var generated_count := 0
 	for id in entries.keys():
 		if typeof(id) != TYPE_STRING or typeof(entries[id]) != TYPE_DICTIONARY:
 			return _fail("Invalid entity record")
-		var entity: Node = world.get_entity(id)
-		if entity == null:
-			# Allows older saves to contain entities removed from a later version.
-			continue
-		if not (entity is Node3D) or not entity.has_method("set_parameter"):
-			return _fail("Save target is not an editable entity: %s" % id)
-		var record: Variant = entity.get("record")
 		var item: Dictionary = entries[id]
-		if record == null or str(item.get("category", "")) != str(record.category):
-			return _fail("Entity category changed: %s" % id)
+		var entity: Node = world.get_entity(id)
+		var category: String = str(item.get("category", ""))
+		var fields_registry = null
+		var manifest: Dictionary = {}
+		if entity == null:
+			if not item.has("construct"):
+				continue # Entity removed by a newer version of the game.
+			if not create_actor.is_valid() or parameter_registry == null:
+				continue # Old callers can still restore their existing actors.
+			if typeof(item["construct"]) != TYPE_DICTIONARY:
+				return _fail("Invalid created entity")
+			manifest = ArcaneGrammar.normalize(item["construct"])
+			if not ArcaneGrammar.valid(manifest) or manifest.is_empty():
+				return _fail("Invalid generated entity recipe")
+			if not id.begins_with("arcane_") or not id.substr(7).is_valid_int():
+				return _fail("Invalid generated entity ID")
+			if category != "arcane_" + str(manifest["create"]).to_lower():
+				return _fail("Generated category mismatch")
+			generated_count += 1
+			if generated_count > 40:
+				return _fail("Generated entity limit reached")
+			fields_registry = parameter_registry
+		else:
+			if not (entity is Node3D) or not entity.has_method("set_parameter"):
+				return _fail("Save target cannot be edited")
+			var record: Variant = entity.get("record")
+			if record == null or category != str(record.category):
+				return _fail("Entity category mismatch")
+			fields_registry = record.registry
+			if item.has("construct"):
+				if typeof(item["construct"]) != TYPE_DICTIONARY:
+					return _fail("Invalid construct metadata")
+				manifest = ArcaneGrammar.normalize(item["construct"])
+				if manifest.is_empty() or not ArcaneGrammar.valid(manifest):
+					return _fail("Invalid construct metadata")
+				if category != "arcane_" + str(manifest["create"]).to_lower():
+					return _fail("Construct category mismatch")
 		var pos := _unpack_position(item.get("position"))
 		if not bool(pos["ok"]):
 			return _fail("Invalid entity position: %s" % id)
@@ -121,14 +151,17 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 			var value := _unpack_value(raw_values[key])
 			if not bool(value["ok"]):
 				return _fail("Invalid value for %s.%s" % [id, key])
-			var checked: Dictionary = record.registry.normalize(record.category, key, value["value"])
+			var checked: Dictionary = fields_registry.normalize(category, key, value["value"])
 			if not bool(checked["ok"]):
-				# Removed parameters from future/old version saves are ignored.
-				if record.registry.get_spec(record.category, key).is_empty():
-					continue
+				if fields_registry.get_spec(category, key).is_empty():
+					continue # Backward compatibility with removed parameters.
 				return _fail("Invalid typed value for %s.%s" % [id, key])
 			normalized[key] = checked["value"]
-		plan.append({"node": entity, "position": pos["value"], "parameters": normalized})
+		plan.append({
+			"node": entity, "id": id, "manifest": manifest,
+			"position": pos["value"], "parameters": normalized
+		})
+		ids_in_save.append(id)
 	# All input is valid. Apply only after validation, without replaying hacks.
 	for item in plan:
 		var node: Node3D = item["node"]
