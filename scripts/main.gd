@@ -132,6 +132,15 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		# Keep recovery available without putting developer buttons on screen.
+		# macOS uses Command; other platforms use Ctrl.
+		if (event.ctrl_pressed or event.meta_pressed) and event.keycode == KEY_Z:
+			if event.shift_pressed:
+				command_processor.redo()
+			else:
+				command_processor.undo()
+			get_viewport().set_input_as_handled()
+			return
 		if event.keycode >= KEY_1 and event.keycode <= KEY_9:
 			var index: int = int(event.keycode) - int(KEY_1)
 			var spell_ids: Array[String] = spell_service.list_spell_ids()
