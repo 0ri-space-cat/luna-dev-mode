@@ -62,3 +62,6 @@ jobs:
 
       - name: Run spatial ON_HIT burst tests
         run: timeout 40s godot --headless --path . --script res://tests/test_area_effects.gd
+
+      - name: Run elemental status and interaction tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_elemental_status.gd
