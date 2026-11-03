@@ -59,3 +59,6 @@ jobs:
 
       - name: Run legacy magic recipe migration tests
         run: timeout 40s godot --headless --path . --script res://tests/test_legacy_magic_migration.gd
+
+      - name: Run spatial ON_HIT burst tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_area_effects.gd
