@@ -39,7 +39,7 @@ var profile_service
 var spell_service
 var elemental_status_service
 var surface_field_service
-var ice_visuals: Array[Node3D] = []
+var environment_visuals: Array[Node3D] = []
 var spell_workshop_service
 var spell_workshop_panel
 var selected_spell_id := "FIREBALL"
@@ -641,28 +641,31 @@ func _on_fire_spread(_details: Dictionary) -> void:
 
 
 func _on_surface_fields_changed(fields: Array) -> void:
-	for visual in ice_visuals:
+	# Visuals are regenerated from saved field data. No independent timers.
+	for visual in environment_visuals:
 		if is_instance_valid(visual):
 			visual.queue_free()
-	ice_visuals.clear()
+	environment_visuals.clear()
 	for field in fields:
-		if field["kind"] != "ICE":
+		var kind: String = str(field["kind"])
+		if kind not in ["ICE", "STEAM"]:
 			continue
 		var instance := MeshInstance3D.new()
 		var mesh := CylinderMesh.new()
 		mesh.top_radius = float(field["radius"])
 		mesh.bottom_radius = float(field["radius"])
-		mesh.height = 0.045
+		mesh.height = 0.045 if kind == "ICE" else 1.6
+		mesh.radial_segments = 24
 		instance.mesh = mesh
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(0.52, 0.88, 1.0, 0.36)
+		mat.albedo_color = Color(0.52, 0.88, 1.0, 0.36) if kind == "ICE" else Color(0.84, 0.89, 0.92, 0.22)
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		instance.material_override = mat
 		var origin: Vector3 = field["center"]
-		instance.position = Vector3(origin.x, 0.06, origin.z)
+		instance.position = Vector3(origin.x, 0.06 if kind == "ICE" else 0.85, origin.z)
 		add_child(instance)
-		ice_visuals.append(instance)
+		environment_visuals.append(instance)
 
 
 func _on_elemental_reaction(details: Dictionary) -> void:
