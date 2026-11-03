@@ -18,36 +18,56 @@ func get_attitude(from_id: String, to_id: String) -> String:
 	return str(outward.get(to_id, "NEUTRAL"))
 
 
+func is_valid_attitude(attitude: String) -> bool:
+	return ATTITUDES.has(attitude)
+
+
 func set_attitude(from_id: String, to_id: String, attitude: String, initiator_id: String = "system", source_id: String = "system") -> bool:
-	if from_id.is_empty() or to_id.is_empty() or from_id == to_id or not ATTITUDES.has(attitude):
+	if not _valid_link(from_id, to_id, attitude):
 		return false
-	var prior := get_attitude(from_id, to_id)
-	if prior == attitude:
+	var before := get_attitude(from_id, to_id)
+	if before == attitude:
 		return true
+	set_attitude_silent(from_id, to_id, attitude)
+	announce_change(from_id, to_id, before, attitude, initiator_id, source_id)
+	return true
+
+
+func set_attitude_silent(from_id: String, to_id: String, attitude: String) -> bool:
+	## Called by a prevalidated transaction. Emits nothing until commit succeeds.
+	if not _valid_link(from_id, to_id, attitude):
+		return false
 	if attitude == "NEUTRAL":
 		var existing: Dictionary = _links.get(from_id, {})
 		existing.erase(to_id)
 		if existing.is_empty():
 			_links.erase(from_id)
+		else:
+			_links[from_id] = existing
 	else:
-		var links_from: Dictionary = _links.get(from_id, {})
-		links_from[to_id] = attitude
-		_links[from_id] = links_from
+		var outward: Dictionary = _links.get(from_id, {})
+		outward[to_id] = attitude
+		_links[from_id] = outward
+	return true
+
+
+func announce_change(from_id: String, to_id: String, before: String, after: String, initiator_id: String, source_id: String) -> void:
+	if before == after:
+		return
 	_sequence += 1
 	var change := {
-		"sequence": _sequence,
-		"from_id": from_id,
-		"to_id": to_id,
-		"before": prior,
-		"after": attitude,
-		"initiator_id": initiator_id,
-		"source_id": source_id
+		"sequence": _sequence, "from_id": from_id, "to_id": to_id,
+		"before": before, "after": after,
+		"initiator_id": initiator_id, "source_id": source_id
 	}
 	_audit.append(change)
 	if _audit.size() > MAX_AUDIT:
 		_audit.pop_front()
 	relationship_changed.emit(change.duplicate(true))
-	return true
+
+
+func _valid_link(from_id: String, to_id: String, attitude: String) -> bool:
+	return not from_id.is_empty() and not to_id.is_empty() and from_id != to_id and ATTITUDES.has(attitude)
 
 
 func export_data() -> Dictionary:
