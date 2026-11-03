@@ -13,6 +13,7 @@ const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
 const RelationshipService = preload("res://scripts/core/relationship_service.gd")
 const ProfileService = preload("res://scripts/core/profile_service.gd")
+const SpellService = preload("res://scripts/core/spell_service.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -28,6 +29,10 @@ var rule_engine
 var save_service
 var relationship_service
 var profile_service
+var spell_service
+var selected_spell_id := "AWAKEN"
+var pending_spell_cast := false
+var spell_hint_label: Label
 var journal_panel: PanelContainer
 var journal_label: Label
 var save_status_label: Label
@@ -43,6 +48,7 @@ func _ready() -> void:
 	relationship_service = RelationshipService.new()
 	event_bus = EventBus.new()
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
+	spell_service = SpellService.new(world_registry, effect_engine)
 	rule_engine = RuleEngine.new(effect_engine)
 	save_service = SaveService.new()
 	profile_service = ProfileService.new()
@@ -79,6 +85,14 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode in [KEY_1, KEY_2, KEY_3]:
+			var index: int = int(event.keycode) - int(KEY_1)
+			var spell_ids: Array[String] = spell_service.list_spell_ids()
+			if index >= 0 and index < spell_ids.size():
+				selected_spell_id = spell_ids[index]
+				_update_spell_hint()
+			get_viewport().set_input_as_handled()
+			return
 		if event.keycode == KEY_J:
 			_toggle_journal()
 			get_viewport().set_input_as_handled()
@@ -93,6 +107,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		pending_selection = event.position
+		pending_spell_cast = event.shift_pressed
 
 
 func _physics_process(_delta: float) -> void:
@@ -101,8 +116,10 @@ func _physics_process(_delta: float) -> void:
 	# Physics queries are intentionally performed in a physics tick, not in input callbacks.
 	if pending_selection != Vector2(-1, -1):
 		var mouse_position := pending_selection
+		var casting: bool = pending_spell_cast
 		pending_selection = Vector2(-1, -1)
-		_try_select(mouse_position)
+		pending_spell_cast = false
+		_try_select(mouse_position, casting)
 
 
 func _exit_tree() -> void:
@@ -304,18 +321,25 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.7"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.8"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
 	layer.add_child(header)
 
 	var instructions := Label.new()
-	instructions.text = "WASD / стрелки — ходить    •    ЛКМ на дереве или холодильнике — взломать    •    Esc — закрыть"
+	instructions.text = "WASD — ходить   •   ЛКМ — взломать   •   Shift+ЛКМ — заклинание   •   1–3 — выбрать заклинание"
 	instructions.position = Vector2(24, 50)
 	instructions.add_theme_font_size_override("font_size", 15)
 	instructions.add_theme_color_override("font_color", Color("e0f7f4"))
 	layer.add_child(instructions)
+
+	spell_hint_label = Label.new()
+	spell_hint_label.position = Vector2(24, 80)
+	spell_hint_label.add_theme_font_size_override("font_size", 14)
+	spell_hint_label.add_theme_color_override("font_color", Color("ffe1f5"))
+	layer.add_child(spell_hint_label)
+	_update_spell_hint()
 
 	var bottom := Label.new()
 	bottom.text = "Попробуй: FRIDGE → IS_ALIVE TRUE → BEHAVIOR_MODE CHASE → TARGET_GROUP TREE"
@@ -365,7 +389,7 @@ func _build_interface() -> void:
 	editor.closed.connect(_close_editor)
 
 
-func _try_select(mouse_position: Vector2) -> void:
+func _try_select(mouse_position: Vector2, casting: bool = false) -> void:
 	var from := camera.project_ray_origin(mouse_position)
 	var to := from + camera.project_ray_normal(mouse_position) * 150.0
 	var query := PhysicsRayQueryParameters3D.create(from, to, 2)
@@ -374,6 +398,16 @@ func _try_select(mouse_position: Vector2) -> void:
 		return
 	var entity: Object = hit.get("collider")
 	if entity == null or not entity.has_method("get_parameter"):
+		return
+	if casting:
+		var selected: Node = entity as Node
+		var record: Variant = selected.get("record")
+		if record == null:
+			return
+		if spell_service.cast_spell(selected_spell_id, "luna", str(record.id)):
+			_show_checkpoint_message("ЗАКЛИНАНИЕ: %s" % selected_spell_id)
+		else:
+			_show_checkpoint_message(spell_service.last_error)
 		return
 	_open_editor(entity as Node3D)
 
@@ -395,7 +429,7 @@ func _close_editor() -> void:
 func _save_checkpoint(notify_player: bool) -> void:
 	if save_service == null or not is_instance_valid(luna):
 		return
-	var success: bool = save_service.save_world(world_registry, luna)
+	var success: bool = save_service.save_world(world_registry, luna, relationship_service)
 	if notify_player or not success:
 		_show_checkpoint_message("МИР СОХРАНЁН" if success else "ОШИБКА СОХРАНЕНИЯ: %s" % save_service.last_error)
 
@@ -453,3 +487,10 @@ func _refresh_journal() -> void:
 			for parameter_id in fields:
 				lines.append("  — %s" % parameter_id.to_upper())
 	journal_label.text = "\n".join(lines)
+
+
+func _update_spell_hint() -> void:
+	if not is_instance_valid(spell_hint_label) or spell_service == null:
+		return
+	var spell: Dictionary = spell_service.get_spell(selected_spell_id)
+	spell_hint_label.text = "ПАЛОЧКА: %s  |  Shift+ЛКМ по объекту" % str(spell.get("label", selected_spell_id))
