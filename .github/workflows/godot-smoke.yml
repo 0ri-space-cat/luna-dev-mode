@@ -53,3 +53,6 @@ jobs:
 
       - name: Run elemental spell and projectile tests
         run: timeout 40s godot --headless --path . --script res://tests/test_arcane_magic.gd
+
+      - name: Run CREATE OBJECT CREATURE magic tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_create_magic.gd
