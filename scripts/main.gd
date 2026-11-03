@@ -22,7 +22,13 @@ const SpellWorkshop = preload("res://scripts/spell_workshop.gd")
 const ArcaneProjectile = preload("res://scripts/spells/arcane_projectile.gd")
 const ArcaneLink = preload("res://scripts/spells/arcane_link.gd")
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
+const UiLanguage = preload("res://scripts/core/ui_language.gd")
 
+var ui_language = UiLanguage.new()
+var ui_layer: CanvasLayer
+var language_choice: OptionButton
+var duplicate_serial := 0
+const MAX_DUPLICATES := 24
 var luna: CharacterBody3D
 var camera: Camera3D
 var editor
@@ -371,6 +377,7 @@ func _sync_luna_relationships() -> void:
 
 func _build_interface() -> void:
 	var layer := CanvasLayer.new()
+	ui_layer = layer
 	layer.name = "ScreenUI"
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(layer)
@@ -388,13 +395,24 @@ func _build_interface() -> void:
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
+	header.set_meta("ui_source", header.text)
 	layer.add_child(header)
+
+	language_choice = OptionButton.new()
+	language_choice.position = Vector2(1112, 13)
+	language_choice.custom_minimum_size.x = 142
+	language_choice.add_item("ENGLISH")
+	language_choice.add_item("РУССКИЙ")
+	language_choice.select(0 if ui_language.locale == "en" else 1)
+	language_choice.item_selected.connect(_on_language_selected)
+	layer.add_child(language_choice)
 
 	var instructions := Label.new()
 	instructions.text = "WASD — ходить   •   ЛКМ — взломать   •   Shift+ЛКМ — колдовать   •   1–9 / Tab — выбрать   •   B — конструктор"
 	instructions.position = Vector2(24, 50)
 	instructions.add_theme_font_size_override("font_size", 15)
 	instructions.add_theme_color_override("font_color", Color("e0f7f4"))
+	instructions.set_meta("ui_source", instructions.text)
 	layer.add_child(instructions)
 
 	spell_hint_label = Label.new()
@@ -409,6 +427,7 @@ func _build_interface() -> void:
 	bottom.position = Vector2(24, 750)
 	bottom.add_theme_color_override("font_color", Color("f7e2f4"))
 	bottom.add_theme_font_size_override("font_size", 16)
+	bottom.set_meta("ui_source", bottom.text)
 	layer.add_child(bottom)
 
 
@@ -436,6 +455,7 @@ func _build_interface() -> void:
 	var title := Label.new()
 	title.text = "ДНЕВНИК ЛУНЫ   [J]"
 	title.add_theme_font_size_override("font_size", 18)
+	title.set_meta("ui_source", title.text)
 	journal_layout.add_child(title)
 	var journal_scroller := ScrollContainer.new()
 	journal_scroller.custom_minimum_size = Vector2(360, 280)
@@ -448,15 +468,110 @@ func _build_interface() -> void:
 
 	editor = HackEditor.new()
 	layer.add_child(editor)
-	editor.configure(parameter_registry, command_processor)
+	editor.configure(parameter_registry, command_processor, ui_language)
 	editor.closed.connect(_close_editor)
+	editor.duplicate_requested.connect(_on_duplicate_requested)
 
 	spell_workshop_panel = SpellWorkshop.new()
 	layer.add_child(spell_workshop_panel)
-	spell_workshop_panel.configure(parameter_registry, spell_workshop_service)
+	spell_workshop_panel.configure(parameter_registry, spell_workshop_service, ui_language)
 	spell_workshop_panel.closed.connect(_close_workshop)
 	spell_workshop_panel.spell_created.connect(_on_custom_spell_created)
+	_refresh_language()
 
+
+func _on_language_selected(index: int) -> void:
+	ui_language.set_locale("en" if index == 0 else "ru")
+	_refresh_language()
+
+
+func _refresh_language() -> void:
+	if is_instance_valid(ui_layer):
+		_localize_control_tree(ui_layer)
+	if is_instance_valid(editor):
+		editor.refresh_language()
+	if is_instance_valid(spell_workshop_panel):
+		spell_workshop_panel.refresh_language()
+	if is_instance_valid(journal_panel) and journal_panel.visible:
+		_refresh_journal()
+	_update_spell_hint()
+
+
+func _localize_control_tree(node: Node) -> void:
+	if node.has_meta("ui_source") and node is Label:
+		(node as Label).text = ui_language.translated(str(node.get_meta("ui_source")))
+	for child in node.get_children():
+		if child == editor or child == spell_workshop_panel:
+			continue
+		_localize_control_tree(child)
+
+
+func _on_duplicate_requested(source: Node3D) -> void:
+	var copied: Node3D = _duplicate_entity(source)
+	if is_instance_valid(copied):
+		editor.show_for(copied)
+		_show_checkpoint_message(ui_language.text("ENTITY COPIED", "ОБЪЕКТ СКОПИРОВАН"))
+
+
+func _duplicate_entity(source: Node3D) -> Node3D:
+	if not is_instance_valid(source) or not source.has_method("get_parameter"):
+		return null
+	var count := 0
+	for entity_id in world_registry.list_ids():
+		var existing: Node = world_registry.get_entity(entity_id)
+		if existing != null and existing.has_meta("copy_origin"):
+			count += 1
+	if count >= MAX_DUPLICATES:
+		_show_checkpoint_message(ui_language.text("COPY LIMIT REACHED", "ДОСТИГНУТ ПРЕДЕЛ КОПИЙ"))
+		return null
+	var category: String = str(source.record.category)
+	var location: Vector3 = source.position + Vector3(1.7, 0.0, 0.8)
+	var copy: Node3D
+	if category.begins_with("arcane_"):
+		arcane_serial += 1
+		var generated_id := "arcane_%04d" % arcane_serial
+		while world_registry.get_entity(generated_id) != null:
+			arcane_serial += 1
+			generated_id = "arcane_%04d" % arcane_serial
+		copy = _spawn_arcane_actor_with_id(generated_id, source.arcane_manifestation, location)
+	elif category in ["tree", "fridge"]:
+		duplicate_serial += 1
+		var copy_id := "%s_copy_%04d" % [category, duplicate_serial]
+		while world_registry.get_entity(copy_id) != null:
+			duplicate_serial += 1
+			copy_id = "%s_copy_%04d" % [category, duplicate_serial]
+		copy = _spawn_saved_duplicate(copy_id, category, location, str(source.record.id))
+	else:
+		return null
+	if not is_instance_valid(copy):
+		return null
+	# Original type is retained; new entity gets an independent stable ID.
+	# Statuses/relationships are deliberately not shared between copies.
+	for key in source.record.parameters.keys():
+		copy.set_parameter(str(key), source.get_parameter(str(key)))
+	return copy
+
+
+func _spawn_saved_duplicate(entity_id: String, category: String, location: Vector3, original_id: String) -> Node3D:
+	if world_registry.get_entity(entity_id) != null or category not in ["tree", "fridge"]:
+		return null
+	var copy := HackableEntity.new()
+	add_child(copy)
+	copy.configure(entity_id, category, location, parameter_registry, world_registry,
+		relationship_service, {}, elemental_status_service, social_awareness)
+	if not world_registry.register_entity(entity_id, copy, category.to_upper()):
+		copy.queue_free()
+		return null
+	copy.set_meta("copy_origin", original_id)
+	copy.target_acquired.connect(_on_target_acquired)
+	var parts := entity_id.split("_copy_")
+	if parts.size() == 2:
+		duplicate_serial = maxi(duplicate_serial, int(parts[1]))
+	return copy
+
+
+func _restore_saved_duplicate(entity_id: String, category: String, location: Vector3, original_id: String) -> Node3D:
+	return _spawn_saved_duplicate(entity_id, category, location, original_id)
 
 
 func _try_select(mouse_position: Vector2, casting: bool = false) -> void:
@@ -475,7 +590,7 @@ func _try_select(mouse_position: Vector2, casting: bool = false) -> void:
 		if record == null:
 			return
 		if spell_service.cast_spell(selected_spell_id, "luna", str(record.id)):
-			_show_checkpoint_message("ЗАКЛИНАНИЕ: %s" % selected_spell_id)
+			_show_checkpoint_message(ui_language.text("SPELL: %s", "ЗАКЛИНАНИЕ: %s") % selected_spell_id)
 		else:
 			_show_checkpoint_message(spell_service.last_error)
 		return
@@ -504,22 +619,25 @@ func _save_checkpoint(notify_player: bool) -> void:
 		elemental_status_service, surface_field_service, social_awareness
 	)
 	if notify_player or not success:
-		_show_checkpoint_message("МИР СОХРАНЁН" if success else "ОШИБКА СОХРАНЕНИЯ: %s" % save_service.last_error)
+		_show_checkpoint_message(ui_language.text("WORLD SAVED", "МИР СОХРАНЁН") if success else ui_language.text("SAVE ERROR: %s", "ОШИБКА СОХРАНЕНИЯ: %s") % save_service.last_error)
 
 
 func _load_checkpoint(automatic: bool) -> void:
 	if save_service == null or not save_service.has_save() or not is_instance_valid(luna):
 		if not automatic:
-			_show_checkpoint_message("НЕТ СОХРАНЕНИЯ")
+			_show_checkpoint_message(ui_language.text("NO SAVE FOUND", "НЕТ СОХРАНЕНИЯ"))
 		return
 	var success: bool = save_service.load_world(
 		world_registry, luna, relationship_service,
 		Callable(self, "_restore_arcane_actor"), parameter_registry,
-		elemental_status_service, surface_field_service, social_awareness
+		elemental_status_service, surface_field_service, social_awareness,
+		Callable(self, "_restore_saved_duplicate")
 	)
 	if success:
 		for entity_id in world_registry.list_ids():
-			if entity_id.begins_with("arcane_") and not save_service.last_restored_ids.has(entity_id):
+			var saved_actor: Node = world_registry.get_entity(entity_id)
+			var is_created: bool = entity_id.begins_with("arcane_") or (saved_actor != null and saved_actor.has_meta("copy_origin"))
+			if is_created and not save_service.last_restored_ids.has(entity_id):
 				var removed: Node = world_registry.get_entity(entity_id)
 				world_registry.unregister_entity(entity_id)
 				if removed != null:
@@ -534,13 +652,13 @@ func _load_checkpoint(automatic: bool) -> void:
 				node.call("reset_after_load")
 		_autosave_elapsed = 0.0
 	if not automatic or not success:
-		_show_checkpoint_message("МИР ЗАГРУЖЕН" if success else "ОШИБКА ЗАГРУЗКИ: %s" % save_service.last_error)
+		_show_checkpoint_message(ui_language.text("WORLD LOADED", "МИР ЗАГРУЖЕН") if success else ui_language.text("LOAD ERROR: %s", "ОШИБКА ЗАГРУЗКИ: %s") % save_service.last_error)
 
 
 func _show_checkpoint_message(message: String) -> void:
 	if not is_instance_valid(save_status_label):
 		return
-	save_status_label.text = message
+	save_status_label.text = ui_language.translated(message)
 	_save_message_seconds = 3.0
 
 
@@ -556,16 +674,16 @@ func _refresh_journal() -> void:
 	if not is_instance_valid(journal_label):
 		return
 	var lines := PackedStringArray()
-	lines.append("Что я уже успела исследовать:")
+	lines.append(ui_language.text("What have I figured out so far?", "Что я уже успела исследовать:"))
 	var categories: Array[String] = profile_service.list_categories()
 	if categories.is_empty():
-		lines.append("Пока ничего. Даже обидно.")
+		lines.append(ui_language.text("Nothing yet. Rude.", "Пока ничего. Даже обидно."))
 	for category in categories:
 		lines.append("")
 		lines.append("• %s" % category.to_upper())
 		var fields: Array[String] = profile_service.list_parameters(category)
 		if fields.is_empty():
-			lines.append("  Смотрела, но пока не трогала.")
+			lines.append(ui_language.text("  Looked, but didn't touch.", "  Смотрела, но пока не трогала."))
 		else:
 			for parameter_id in fields:
 				lines.append("  — %s" % parameter_id.to_upper())
@@ -576,7 +694,7 @@ func _update_spell_hint() -> void:
 	if not is_instance_valid(spell_hint_label) or spell_service == null:
 		return
 	var spell: Dictionary = spell_service.get_spell(selected_spell_id)
-	spell_hint_label.text = "ПАЛОЧКА: %s  |  Shift+ЛКМ по объекту" % str(spell.get("label", selected_spell_id))
+	spell_hint_label.text = ui_language.text("WAND: %s  |  SHIFT+LMB TO CAST", "ПАЛОЧКА: %s  |  Shift+ЛКМ по объекту") % ui_language.translated(str(spell.get("label", selected_spell_id)))
 
 
 func _open_workshop() -> void:
@@ -602,7 +720,7 @@ func _on_custom_spell_created(spell_id: String) -> void:
 	selected_spell_id = spell_id
 	_update_spell_hint()
 	_close_workshop()
-	_show_checkpoint_message("ГОТОВО: %s. ПРОБУЙ Shift+ЛКМ!" % spell_id)
+	_show_checkpoint_message(ui_language.text("DONE: %s. TRY SHIFT+LMB!", "ГОТОВО: %s. ПРОБУЙ Shift+ЛКМ!") % spell_id)
 
 
 func _select_next_spell() -> void:
@@ -736,7 +854,7 @@ func _spawn_arcane_actor_with_id(entity_id: String, recipe: Dictionary, location
 		if world_id.begins_with("arcane_"):
 			generated_count += 1
 	if generated_count >= MAX_ARCANE_ENTITIES:
-		_show_checkpoint_message("Магии слишком много. Даже для меня.")
+		_show_checkpoint_message(ui_language.text("Too much magic. Even for me.", "Магии слишком много. Даже для меня."))
 		return null
 	var create_kind: String = str(constructed["create"])
 	var entity := HackableEntity.new()
