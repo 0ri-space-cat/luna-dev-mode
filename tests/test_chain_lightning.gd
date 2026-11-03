@@ -124,6 +124,14 @@ func _run() -> void:
 	assert(reload_spells.get_spell(chain_id)["impact"]["jumps"] == 2)
 	assert(reload_spells.get_spell(chain_id)["impact"]["radius"] == 3.5)
 
+	# Hacking a material changes how far the discharge travels.
+	# METAL extends the source radius, STONE does not.
+	assert(actors[2].set_parameter("alive", false))
+	assert(actors[0].get_parameter("material") == "METAL")
+	assert(Resolver.chain(world, "fridge", 4.5, 1) == ["fridge", "second"])
+	assert(actors[0].set_parameter("material", "STONE"))
+	assert(Resolver.chain(world, "fridge", 4.5, 1) == ["fridge"])
+
 	for actor in actors:
 		actor.free()
 	luna.free()
