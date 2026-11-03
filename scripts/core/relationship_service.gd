@@ -107,6 +107,37 @@ func import_data(data: Dictionary) -> bool:
 	return true
 
 
+## Preserve only edges involving this entity for Undo. Never wipe other
+## participants' changes when restoring a deleted object.
+func take_entity_links(entity_id: String) -> Dictionary:
+	var removed := {}
+	for from_id in _links.keys():
+		var edges: Dictionary = _links[from_id]
+		for to_id in edges.keys():
+			if str(from_id) == entity_id or str(to_id) == entity_id:
+				removed["%s\u001f%s" % [str(from_id), str(to_id)]] = str(edges[to_id])
+				edges.erase(to_id)
+		if edges.is_empty():
+			_links.erase(from_id)
+		else:
+			_links[from_id] = edges
+	return removed
+
+
+func restore_entity_links(data: Dictionary) -> bool:
+	var parsed: Array[Dictionary] = []
+	for key in data.keys():
+		if typeof(key) != TYPE_STRING:
+			return false
+		var parts: PackedStringArray = str(key).split("\u001f")
+		if parts.size() != 2 or not _valid_link(parts[0], parts[1], str(data[key])):
+			return false
+		parsed.append({"from": parts[0], "to": parts[1], "attitude": str(data[key])})
+	for edge in parsed:
+		set_attitude_silent(str(edge["from"]), str(edge["to"]), str(edge["attitude"]))
+	return true
+
+
 func clear_audit() -> void:
 	_audit.clear()
 
