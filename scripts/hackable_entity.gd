@@ -17,13 +17,14 @@ var brain = BehaviorBrain.new()
 var world_registry
 var relationship_service
 var elemental_statuses
+var social_awareness
 var elemental_label: Label3D
 var arcane_manifestation: Dictionary = {}
 var age := 0.0
 var _previous_engaged_target := ""
 
 
-func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null, relations = null, arcane_recipe: Dictionary = {}, status_service = null) -> void:
+func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry, registry_of_world = null, relations = null, arcane_recipe: Dictionary = {}, status_service = null, awareness_service = null) -> void:
 	name = entity_id
 	position = start_position
 	collision_layer = 2
@@ -31,6 +32,7 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 	world_registry = registry_of_world
 	relationship_service = relations
 	elemental_statuses = status_service
+	social_awareness = awareness_service
 	arcane_manifestation = ArcaneGrammar.normalize(arcane_recipe)
 	var is_tree := entity_type == "tree"
 	var is_arcane: bool = not arcane_manifestation.is_empty()
@@ -176,10 +178,31 @@ func _physics_process(delta: float) -> void:
 			effective_parameters["follow_distance"] = 2.5
 			nearby = [fire]
 			avoiding_fire = true
+	# Witnessing actual harm creates a short-lived decision. Explicit
+	# behavior and stored relationships remain the player's authority.
+	var reacting_to_harm := false
+	if social_awareness != null and bool(record.get_parameter("alive")) 			and bool(record.get_parameter("ai_enabled")) 			and str(record.get_parameter("behavior_mode")) in ["WANDER", "AUTO"]:
+		var alert: Dictionary = social_awareness.get_alert(record.id)
+		if not alert.is_empty():
+			var aggressor_id: String = str(alert["aggressor_id"])
+			var aggressor: Node = world_registry.get_entity(aggressor_id) if world_registry != null else null
+			var attitude := "NEUTRAL"
+			if relationship_service != null:
+				attitude = relationship_service.get_attitude(record.id, aggressor_id)
+			if aggressor is Node3D and attitude != "FRIEND":
+				effective_parameters = effective_parameters.duplicate(true)
+				effective_parameters["behavior_mode"] = "CHASE" if attitude == "HOSTILE" else "FLEE"
+				effective_parameters["follow_distance"] = 7.0
+				nearby = [{
+					"id": aggressor_id,
+					"position": (aggressor as Node3D).global_position,
+					"group": "THREAT"
+				}]
+				reacting_to_harm = true
 	var wanted_velocity: Vector3 = brain.calculate(delta, global_position, effective_parameters, nearby)
 	if elemental_statuses != null:
 		wanted_velocity *= elemental_statuses.movement_factor(record.id)
-	var engaged: String = brain.last_target_id if brain.last_decision in ["FOLLOW", "CHASE", "FLEE"] and not avoiding_fire else ""
+	var engaged: String = brain.last_target_id if brain.last_decision in ["FOLLOW", "CHASE", "FLEE"] and not avoiding_fire and not reacting_to_harm else ""
 	if not engaged.is_empty() and engaged != _previous_engaged_target:
 		var chosen_group := ""
 		for candidate in nearby:
