@@ -127,3 +127,10 @@ func _append_audit(action: String, entry: Dictionary, previous: Variant, actual:
 
 func _latest_audit() -> Dictionary:
 	return _audit.back().duplicate(true)
+
+
+func clear_history() -> void:
+	_undo_stack.clear()
+	_redo_stack.clear()
+	_audit.clear()
+	history_changed.emit()

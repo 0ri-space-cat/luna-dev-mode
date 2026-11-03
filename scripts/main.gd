@@ -10,6 +10,7 @@ const WorldRegistry = preload("res://scripts/core/world_registry.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
+const SaveService = preload("res://scripts/core/save_service.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -22,6 +23,11 @@ var world_registry
 var event_bus
 var effect_engine
 var rule_engine
+var save_service
+var save_status_label: Label
+var _autosave_elapsed := 0.0
+var _save_message_seconds := 0.0
+const AUTO_SAVE_INTERVAL := 30.0
 
 
 func _ready() -> void:
@@ -31,6 +37,7 @@ func _ready() -> void:
 	event_bus = EventBus.new()
 	effect_engine = EffectEngine.new(world_registry, command_processor)
 	rule_engine = RuleEngine.new(effect_engine)
+	save_service = SaveService.new()
 	command_processor.parameter_changed.connect(_on_parameter_changed)
 	_register_controls()
 	_build_environment()
@@ -39,16 +46,35 @@ func _ready() -> void:
 	_spawn_entities()
 	_register_example_rules()
 	_build_interface()
+	if save_service.has_save():
+		_load_checkpoint(true)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	# Keep an orthographic game view that reads like a 2D cartoon.
 	if is_instance_valid(luna):
 		camera.global_position = luna.global_position + Vector3(0, 14, 13)
 		camera.look_at(luna.global_position + Vector3(0, 0.65, 0))
+	_autosave_elapsed += delta
+	if _autosave_elapsed >= AUTO_SAVE_INTERVAL:
+		_autosave_elapsed = 0.0
+		_save_checkpoint(false)
+	if _save_message_seconds > 0.0:
+		_save_message_seconds -= delta
+		if _save_message_seconds <= 0.0 and is_instance_valid(save_status_label):
+			save_status_label.text = ""
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F6:
+			_save_checkpoint(true)
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_F9:
+			_load_checkpoint(false)
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		pending_selection = event.position
 
@@ -64,6 +90,9 @@ func _physics_process(_delta: float) -> void:
 
 
 func _exit_tree() -> void:
+	# Save on normal exit as well as on the periodic checkpoint.
+	if save_service != null and world_registry != null and is_instance_valid(luna):
+		save_service.save_world(world_registry, luna)
 	if get_tree() != null:
 		get_tree().paused = false
 
@@ -223,7 +252,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.4"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.5"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -242,6 +271,13 @@ func _build_interface() -> void:
 	bottom.add_theme_color_override("font_color", Color("f7e2f4"))
 	bottom.add_theme_font_size_override("font_size", 16)
 	layer.add_child(bottom)
+
+
+	save_status_label = Label.new()
+	save_status_label.position = Vector2(24, 708)
+	save_status_label.add_theme_font_size_override("font_size", 15)
+	save_status_label.add_theme_color_override("font_color", Color("d2ffe9"))
+	layer.add_child(save_status_label)
 
 	editor = HackEditor.new()
 	layer.add_child(editor)
@@ -272,3 +308,37 @@ func _close_editor() -> void:
 	editor.visible = false
 	pause_tint.visible = false
 	get_tree().paused = false
+
+
+func _save_checkpoint(notify_player: bool) -> void:
+	if save_service == null or not is_instance_valid(luna):
+		return
+	var success: bool = save_service.save_world(world_registry, luna)
+	if notify_player or not success:
+		_show_checkpoint_message("МИР СОХРАНЁН" if success else "ОШИБКА СОХРАНЕНИЯ: %s" % save_service.last_error)
+
+
+func _load_checkpoint(automatic: bool) -> void:
+	if save_service == null or not save_service.has_save() or not is_instance_valid(luna):
+		if not automatic:
+			_show_checkpoint_message("НЕТ СОХРАНЕНИЯ")
+		return
+	var success: bool = save_service.load_world(world_registry, luna)
+	if success:
+		# Restores do not count as player hacks, nor do pre-load queued events.
+		command_processor.clear_history()
+		event_bus.clear_pending()
+		for entity_id in world_registry.list_ids():
+			var node: Node = world_registry.get_entity(entity_id)
+			if node != null and node.has_method("reset_after_load"):
+				node.call("reset_after_load")
+		_autosave_elapsed = 0.0
+	if not automatic or not success:
+		_show_checkpoint_message("МИР ЗАГРУЖЕН" if success else "ОШИБКА ЗАГРУЗКИ: %s" % save_service.last_error)
+
+
+func _show_checkpoint_message(message: String) -> void:
+	if not is_instance_valid(save_status_label):
+		return
+	save_status_label.text = message
+	_save_message_seconds = 3.0

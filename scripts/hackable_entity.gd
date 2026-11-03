@@ -82,6 +82,13 @@ func set_parameter(key: String, value: Variant) -> bool:
 	return true
 
 
+func reset_after_load() -> void:
+	# A restored object starts with a fresh steering state.
+	brain = BehaviorBrain.new()
+	_previous_engaged_target = ""
+	velocity = Vector3.ZERO
+
+
 func _physics_process(delta: float) -> void:
 	age += delta
 	var nearby: Array[Dictionary] = []

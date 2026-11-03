@@ -64,3 +64,7 @@ func pending_count() -> int:
 func _drop(reason: String) -> void:
 	dropped_count += 1
 	event_dropped.emit(reason)
+
+
+func clear_pending() -> void:
+	_queue.clear()
