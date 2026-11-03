@@ -162,7 +162,22 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 			"position": pos["value"], "parameters": normalized
 		})
 		ids_in_save.append(id)
-	# All input is valid. Apply only after validation, without replaying hacks.
+	# Rebuild missing actors only after every saved field has been validated.
+	# This keeps malformed files from partially changing the world.
+	var created: Array[Node] = []
+	for item in plan:
+		if item["node"] != null:
+			continue
+		var actor: Node = create_actor.call(
+			str(item["id"]), item["manifest"], item["position"]
+		)
+		if actor == null:
+			for added in created:
+				world.unregister_entity(str(added.record.id))
+				added.queue_free()
+			return _fail("Failed to recreate magical entity")
+		item["node"] = actor
+		created.append(actor)
 	for item in plan:
 		var node: Node3D = item["node"]
 		node.position = item["position"]
@@ -172,6 +187,7 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 	player.position = start["value"]
 	if relationships != null:
 		relationships.import_data(relationship_data)
+	last_restored_ids = ids_in_save
 	return true
 
 
