@@ -204,9 +204,9 @@ func _decode_data(data: Variant) -> Dictionary:
 		if typeof(rule_id) != TYPE_STRING or not parsed.has(rule_id):
 			return {}
 		var amount: Variant = raw_counts[rule_id]
-		if typeof(amount) != TYPE_INT or amount < 0 or amount > 100000:
+		if not _valid_integer_range(amount, 0, 100000):
 			return {}
-		counts[rule_id] = amount
+		counts[rule_id] = int(amount)
 	return {"rules": parsed, "fired": counts}
 
 
@@ -252,11 +252,11 @@ func _normalize_rule(input: Dictionary) -> Dictionary:
 	var cooldown: Variant = input.get("cooldown_ms", 0)
 	var repeats: Variant = input.get("repeat_limit", 0)
 	var enabled: Variant = input.get("enabled", true)
-	if typeof(priority) != TYPE_INT or priority < -100 or priority > 100:
+	if not _valid_integer_range(priority, -100, 100):
 		return {}
-	if typeof(cooldown) != TYPE_INT or cooldown < 0 or cooldown > 120000:
+	if not _valid_integer_range(cooldown, 0, 120000):
 		return {}
-	if typeof(repeats) != TYPE_INT or repeats < 0 or repeats > 100000:
+	if not _valid_integer_range(repeats, 0, 100000):
 		return {}
 	if typeof(enabled) != TYPE_BOOL:
 		return {}
@@ -266,9 +266,17 @@ func _normalize_rule(input: Dictionary) -> Dictionary:
 	return {
 		"id": rule_id, "owner_id": owner_id, "event_type": event_type,
 		"target": str(input["target"]), "effects": actions.duplicate(true),
-		"where": where, "priority": priority, "cooldown_ms": cooldown,
-		"repeat_limit": repeats, "enabled": enabled, "author_id": author
+		"where": where, "priority": int(priority), "cooldown_ms": int(cooldown),
+		"repeat_limit": int(repeats), "enabled": enabled, "author_id": author
 	}
+
+
+func _valid_integer_range(value: Variant, smallest: int, largest: int) -> bool:
+	if typeof(value) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var amount: float = float(value)
+	return not is_nan(amount) and not is_inf(amount) and amount >= float(smallest) \
+		and amount <= float(largest) and is_equal_approx(amount, float(int(amount)))
 
 
 func _valid_action(action: Dictionary) -> bool:
