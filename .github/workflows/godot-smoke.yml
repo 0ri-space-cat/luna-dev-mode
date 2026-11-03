@@ -51,6 +51,9 @@ jobs:
       - name: Run full scene integration tests
         run: bash ci/run_godot_script.sh res://tests/test_main_integration.gd
 
+      - name: Run 0.18 bilingual inspector and copy persistence tests
+        run: bash ci/run_godot_script.sh res://tests/test_editor_ux.gd
+
       - name: Run atomic effect transaction tests
         run: bash ci/run_godot_script.sh res://tests/test_atomic_effects.gd
 
