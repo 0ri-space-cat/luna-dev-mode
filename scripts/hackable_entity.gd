@@ -103,7 +103,7 @@ func _physics_process(delta: float) -> void:
 				brain.turn_away_from_wall(hit.get_normal())
 				break
 	var speed_horizontal := Vector2(velocity.x, velocity.z).length()
-	var walking := speed_horizontal > 0.15 and brain.last_decision != "IDLE"
+	var walking: bool = speed_horizontal > 0.15 and brain.last_decision != "IDLE"
 	for i in range(legs.size()):
 		legs[i].rotation.x = sin(age * (5.5 + speed_horizontal * 2.0) + float(i) * PI) * 0.36 if walking else 0.0
 	if speed_horizontal > 0.15:
