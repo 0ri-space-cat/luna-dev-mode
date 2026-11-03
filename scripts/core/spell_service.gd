@@ -56,16 +56,7 @@ func register_spell(spec: Dictionary) -> bool:
 		if operation != "TOGGLE" and not action.has("value"):
 			return false
 	var impact: Variant = spec.get("impact", {})
-	if typeof(impact) != TYPE_DICTIONARY:
-		return false
-	var mode: String = str(impact.get("mode", "DIRECT"))
-	if mode == "BURST":
-		if impact.size() != 2 or typeof(impact.get("radius")) not in [TYPE_INT, TYPE_FLOAT]:
-			return false
-		var radius: float = float(impact["radius"])
-		if is_nan(radius) or is_inf(radius) or radius < 0.5 or radius > TargetResolver.MAX_RADIUS:
-			return false
-	elif mode != "DIRECT" or (not impact.is_empty() and impact.size() != 1):
+	if not is_valid_impact(impact):
 		return false
 	var stored: Dictionary = spec.duplicate(true)
 	stored["manifestation"] = ArcaneGrammar.normalize(manifest)
@@ -73,6 +64,20 @@ func register_spell(spec: Dictionary) -> bool:
 	_definitions[id] = stored
 	_order.append(id)
 	return true
+
+
+func is_valid_impact(impact: Variant) -> bool:
+	if typeof(impact) != TYPE_DICTIONARY:
+		return false
+	var mode: String = str(impact.get("mode", "DIRECT"))
+	if mode == "BURST":
+		if impact.size() != 2 or typeof(impact.get("radius")) not in [TYPE_INT, TYPE_FLOAT]:
+			return false
+		var radius: float = float(impact["radius"])
+		return not is_nan(radius) and not is_inf(radius) \
+			and radius >= 0.5 and radius <= TargetResolver.MAX_RADIUS
+	return mode == "DIRECT" and (impact.is_empty() or impact.size() == 1)
+
 
 func unregister_custom_spell(spell_id: String) -> bool:
 	if not spell_id.begins_with("CUSTOM_") or not _definitions.has(spell_id):
