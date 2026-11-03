@@ -32,3 +32,5 @@ jobs:
         run: timeout 40s godot --headless --path . --script res://tests/test_parameter_system.gd
       - name: Run behavior and targeting smoke tests
         run: timeout 40s godot --headless --path . --script res://tests/test_behavior_system.gd
+      - name: Run effects and rules smoke tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_rule_system.gd
