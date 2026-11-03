@@ -69,15 +69,15 @@ func save_world(world, player: Node3D, relationships = null) -> bool:
 	return true
 
 
-func load_world(world, player: Node3D, relationships = null) -> bool:
+func load_world(world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null) -> bool:
 	last_error = ""
 	var received: Dictionary = JsonStore.read_document(save_path)
 	if not bool(received["ok"]):
 		return _fail(str(received["error"]))
-	return apply_snapshot(received["data"], world, player, relationships)
+	return apply_snapshot(received["data"], world, player, relationships, create_actor, parameter_registry)
 
 
-func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null) -> bool:
+func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null) -> bool:
 	last_error = ""
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
