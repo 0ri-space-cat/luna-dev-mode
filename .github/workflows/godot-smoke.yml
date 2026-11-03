@@ -71,3 +71,6 @@ jobs:
 
       - name: Run material, fire propagation and ice terrain tests
         run: timeout 40s godot --headless --path . --script res://tests/test_environment_interactions.gd
+
+      - name: Run fire thaw and temporary ice interaction tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_fire_melts_ice.gd
