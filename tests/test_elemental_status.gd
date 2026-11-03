@@ -86,6 +86,8 @@ func _run() -> void:
 
 	# Electricity + fire accelerates the existing burn pulse rate.
 	var tree_health: int = tree.get_parameter("health")
+	# Refresh the burning timer before testing the accelerated pulse.
+	assert(conditions.apply_element("tree", "FIRE"))
 	assert(conditions.apply_element("tree", "STORM"))
 	assert(reactions.has("OVERLOAD"))
 	assert(is_equal_approx(conditions.get_state("tree")["BURN"]["interval"], 0.5))
