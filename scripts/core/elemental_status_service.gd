@@ -5,6 +5,9 @@ extends RefCounted
 
 signal reaction_triggered(details: Dictionary)
 signal state_changed(entity_id: String, active: Dictionary)
+signal fire_spread(details: Dictionary)
+
+const MaterialProfile = preload("res://scripts/core/material_profile.gd")
 
 const FORMAT_VERSION := 1
 const MAX_ENTITIES := 96
@@ -15,15 +18,21 @@ const FROZEN_TIME := 1.8
 const SHOCK_TIME := 1.25
 const BURN_INTERVAL := 1.0
 const BURN_DAMAGE := 2
+const SPREAD_RADIUS := 2.8
+const SPREAD_AT_REMAINING := 2.0
+const MAX_NEW_FIRES_PER_TICK := 3
+const MAX_BURNING := 12
 
 var world
 var effects
+var surfaces
 var _states: Dictionary = {}
 
 
-func _init(world_registry, effect_engine) -> void:
+func _init(world_registry, effect_engine, surface_service = null) -> void:
 	world = world_registry
 	effects = effect_engine
+	surfaces = surface_service
 
 
 func get_state(entity_id: String) -> Dictionary:
@@ -48,6 +57,8 @@ func apply_element(entity_id: String, element: String) -> bool:
 	if target == null or not target.has_method("get_parameter"):
 		return false
 	if not ["FIRE", "FROST", "STORM"].has(element):
+		return false
+	if _states.size() >= MAX_ENTITIES and not _states.has(entity_id):
 		return false
 	var active: Dictionary = get_state(entity_id)
 	var reaction := ""
@@ -85,6 +96,8 @@ func apply_element(entity_id: String, element: String) -> bool:
 				active["BURN"] = burning
 			active["SHOCK"] = _duration(duration)
 	_states[entity_id] = active
+	if element == "FROST" and surfaces != null and target is Node3D:
+		surfaces.add_ice_at((target as Node3D).global_position)
 	state_changed.emit(entity_id, get_state(entity_id))
 	if not reaction.is_empty():
 		reaction_triggered.emit({
@@ -98,6 +111,7 @@ func advance(delta: float) -> void:
 	if is_nan(delta) or is_inf(delta) or delta <= 0.0:
 		return
 	var elapsed: float = minf(delta, 1.0) # Avoid huge damage spikes on lag.
+	var spread_candidates: Array[String] = []
 	for entity_id in _states.keys():
 		if world.get_entity(str(entity_id)) == null:
 			_states.erase(entity_id)
@@ -110,6 +124,8 @@ func advance(delta: float) -> void:
 			var lived: float = minf(elapsed, before)
 			item["remaining"] = maxf(0.0, before - elapsed)
 			if status == "BURN" and lived > 0.0:
+				if before > SPREAD_AT_REMAINING and float(item["remaining"]) <= SPREAD_AT_REMAINING:
+					spread_candidates.append(str(entity_id))
 				item["elapsed"] = float(item["elapsed"]) + lived
 				var period: float = float(item["interval"])
 				var pulses := 0
@@ -133,6 +149,49 @@ func advance(delta: float) -> void:
 			_states[entity_id] = active
 		if updated:
 			state_changed.emit(str(entity_id), get_state(str(entity_id)))
+	# Resolve ignition after iterating the current state snapshot so new fires
+	# never recursively spread within the same physics tick.
+	var spread_count := 0
+	for source_id in spread_candidates:
+		if spread_count >= MAX_NEW_FIRES_PER_TICK:
+			break
+		if _try_spread_fire(source_id):
+			spread_count += 1
+
+
+
+func _try_spread_fire(source_id: String) -> bool:
+	var source: Node = world.get_entity(source_id)
+	if not (source is Node3D):
+		return false
+	var burning := 0
+	for state_id in _states.keys():
+		if (_states[state_id] as Dictionary).has("BURN"):
+			burning += 1
+	if burning >= MAX_BURNING:
+		return false
+	var origin: Vector3 = (source as Node3D).global_position
+	var options: Array[Dictionary] = world.candidates(source_id, origin, "ANY", SPREAD_RADIUS)
+	options.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var da: float = origin.distance_squared_to(a["position"])
+		var db: float = origin.distance_squared_to(b["position"])
+		if is_equal_approx(da, db):
+			return str(a["id"]) < str(b["id"])
+		return da < db
+	)
+	for candidate in options:
+		var next_id: String = str(candidate["id"])
+		if has_status(next_id, "BURN"):
+			continue
+		var node: Node = world.get_entity(next_id)
+		if node == null or not node.has_method("get_parameter"):
+			continue
+		if not MaterialProfile.is_flammable(str(node.call("get_parameter", "material"))):
+			continue
+		if apply_element(next_id, "FIRE"):
+			fire_spread.emit({"from_id": source_id, "to_id": next_id})
+			return true
+	return false
 
 
 func export_data() -> Dictionary:
