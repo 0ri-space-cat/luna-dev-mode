@@ -50,3 +50,6 @@ jobs:
 
       - name: Run spell workshop and persistence tests
         run: timeout 40s godot --headless --path . --script res://tests/test_spell_workshop.gd
+
+      - name: Run elemental spell and projectile tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_arcane_magic.gd
