@@ -50,8 +50,28 @@ func register_spell(spec: Dictionary) -> bool:
 		if typeof(action) != TYPE_DICTIONARY:
 			return false
 		var operation: String = str(action.get("operation", ""))
-		if not ["SET", "ADD", "MULTIPLY", "TOGGLE", "SET_RELATION"].has(operation):
+		if not ["SET", "ADD", "MULTIPLY", "TOGGLE", "SET_RELATION", "COPY_ENTITY", "DELETE_ENTITY"].has(operation):
 			return false
+		if operation in ["COPY_ENTITY", "DELETE_ENTITY"]:
+			# Currently only direct, non-manifested spells may edit lifecycle.
+			# Multi-target placement requires an independent world planner.
+			if not manifest.is_empty():
+				return false
+			for key in action.keys():
+				if str(key) not in (["operation", "target_id", "new_id", "offset"] if operation == "COPY_ENTITY" else ["operation", "target_id"]):
+					return false
+			if action.has("target_id") and (typeof(action["target_id"]) != TYPE_STRING or not str(action["target_id"]).is_valid_identifier()):
+				return false
+			if action.has("new_id") and (typeof(action["new_id"]) != TYPE_STRING or not str(action["new_id"]).is_valid_identifier()):
+				return false
+			if action.has("offset"):
+				var raw_offset: Variant = action["offset"]
+				if typeof(raw_offset) != TYPE_ARRAY or raw_offset.size() != 3:
+					return false
+				for coordinate in raw_offset:
+					if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)) or absf(float(coordinate)) > 12.0:
+						return false
+			continue
 		if operation == "SET_RELATION":
 			if not action.has("subject_id") or not action.has("value"):
 				return false
@@ -62,6 +82,10 @@ func register_spell(spec: Dictionary) -> bool:
 	var impact: Variant = spec.get("impact", {})
 	if not is_valid_impact(impact):
 		return false
+	if str(impact.get("mode", "DIRECT")) != "DIRECT":
+		for action in actions:
+			if str(action.get("operation", "")) in ["COPY_ENTITY", "DELETE_ENTITY"]:
+				return false
 	var stored: Dictionary = spec.duplicate(true)
 	stored["manifestation"] = ArcaneGrammar.normalize(manifest)
 	stored["impact"] = impact.duplicate(true)
