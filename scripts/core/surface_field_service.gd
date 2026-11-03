@@ -1,6 +1,6 @@
 extends RefCounted
 ## Temporary terrain effects, shared by Luna, NPCs and future spells.
-## ICE is intentionally a movement/traction field, not a new level mesh.
+## Temporary fields: ICE reduces traction, STEAM obscures vision.
 
 signal fields_changed(fields: Array)
 
@@ -9,24 +9,35 @@ const MAX_FIELDS := 16
 const ICE_DURATION := 6.0
 const ICE_RADIUS := 2.1
 const ICE_TRACTION := 0.2
+const STEAM_DURATION := 4.0
+const STEAM_RADIUS := 2.6
+const STEAM_VISIBILITY := 0.4
 
 var _fields: Array[Dictionary] = []
 
 
 func add_ice_at(center: Vector3) -> bool:
+	return _add_field("ICE", center, ICE_RADIUS, ICE_DURATION)
+
+
+func add_steam_at(center: Vector3) -> bool:
+	return _add_field("STEAM", center, STEAM_RADIUS, STEAM_DURATION)
+
+
+func _add_field(kind: String, center: Vector3, radius: float, duration: float) -> bool:
 	if not center.is_finite() or center.length() > 100000.0:
 		return false
 	var ground := Vector3(center.x, 0.0, center.z)
 	for field in _fields:
-		if field["center"].distance_squared_to(ground) <= 0.75 * 0.75:
-			field["remaining"] = ICE_DURATION
+		if field["kind"] == kind and field["center"].distance_squared_to(ground) <= 0.75 * 0.75:
+			field["remaining"] = duration
 			fields_changed.emit(get_fields())
 			return true
 	if _fields.size() >= MAX_FIELDS:
 		return false
 	_fields.append({
-		"kind": "ICE", "center": ground,
-		"radius": ICE_RADIUS, "remaining": ICE_DURATION
+		"kind": kind, "center": ground,
+		"radius": radius, "remaining": duration
 	})
 	fields_changed.emit(get_fields())
 	return true
@@ -40,6 +51,8 @@ func melt_at(position: Vector3) -> int:
 	var removed := 0
 	for i in range(_fields.size() - 1, -1, -1):
 		var field: Dictionary = _fields[i]
+		if field["kind"] != "ICE":
+			continue
 		var center: Vector3 = field["center"]
 		var dx: float = position.x - center.x
 		var dz: float = position.z - center.z
@@ -54,6 +67,8 @@ func melt_at(position: Vector3) -> int:
 
 func traction(position: Vector3) -> float:
 	for field in _fields:
+		if field["kind"] != "ICE":
+			continue
 		var center: Vector3 = field["center"]
 		if absf(position.y - center.y) > 2.5:
 			continue
@@ -61,6 +76,22 @@ func traction(position: Vector3) -> float:
 		var dz: float = position.z - center.z
 		if dx * dx + dz * dz <= pow(float(field["radius"]), 2.0):
 			return ICE_TRACTION
+	return 1.0
+
+
+func visibility_factor(position: Vector3) -> float:
+	if not position.is_finite():
+		return 1.0
+	for field in _fields:
+		if field["kind"] != "STEAM":
+			continue
+		var center: Vector3 = field["center"]
+		if absf(position.y - center.y) > 3.5:
+			continue
+		var dx: float = position.x - center.x
+		var dz: float = position.z - center.z
+		if dx * dx + dz * dz <= pow(float(field["radius"]), 2.0):
+			return STEAM_VISIBILITY
 	return 1.0
 
 
@@ -88,7 +119,7 @@ func export_data() -> Dictionary:
 	for field in _fields:
 		var p: Vector3 = field["center"]
 		rows.append({
-			"kind": "ICE", "position": [p.x, p.y, p.z],
+			"kind": field["kind"], "position": [p.x, p.y, p.z],
 			"radius": field["radius"], "remaining": field["remaining"]
 		})
 	return {"version": FORMAT_VERSION, "fields": rows}
@@ -108,7 +139,7 @@ func validate_data(data: Variant) -> bool:
 	for row in data["fields"]:
 		if typeof(row) != TYPE_DICTIONARY or row.size() != 4:
 			return false
-		if row.get("kind") != "ICE" or typeof(row.get("position")) != TYPE_ARRAY or row["position"].size() != 3:
+		if row.get("kind") not in ["ICE", "STEAM"] or typeof(row.get("position")) != TYPE_ARRAY or row["position"].size() != 3:
 			return false
 		for n in row["position"]:
 			if typeof(n) not in [TYPE_FLOAT, TYPE_INT] or is_nan(float(n)) or is_inf(float(n)) or absf(float(n)) > 100000.0:
@@ -117,9 +148,11 @@ func validate_data(data: Variant) -> bool:
 			var val: Variant = row.get(key)
 			if typeof(val) not in [TYPE_FLOAT, TYPE_INT] or is_nan(float(val)) or is_inf(float(val)):
 				return false
-		if float(row["radius"]) <= 0.0 or float(row["radius"]) > ICE_RADIUS:
+		var maximum_radius: float = ICE_RADIUS if row["kind"] == "ICE" else STEAM_RADIUS
+		var maximum_duration: float = ICE_DURATION if row["kind"] == "ICE" else STEAM_DURATION
+		if float(row["radius"]) <= 0.0 or float(row["radius"]) > maximum_radius:
 			return false
-		if float(row["remaining"]) <= 0.0 or float(row["remaining"]) > ICE_DURATION:
+		if float(row["remaining"]) <= 0.0 or float(row["remaining"]) > maximum_duration:
 			return false
 	return true
 
@@ -132,7 +165,7 @@ func import_data(data: Dictionary) -> bool:
 		for row in data["fields"]:
 			var pos: Array = row["position"]
 			restored.append({
-				"kind": "ICE",
+				"kind": str(row["kind"]),
 				"center": Vector3(float(pos[0]), float(pos[1]), float(pos[2])),
 				"radius": float(row["radius"]), "remaining": float(row["remaining"])
 			})
