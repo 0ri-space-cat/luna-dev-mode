@@ -82,6 +82,17 @@ func register_spell(spec: Dictionary) -> bool:
 	var impact: Variant = spec.get("impact", {})
 	if not is_valid_impact(impact):
 		return false
+	var selector: Variant = spec.get("target_selector", {})
+	if typeof(selector) != TYPE_DICTIONARY:
+		return false
+	if not selector.is_empty():
+		if not TargetResolver.validate_selector(selector):
+			return false
+		if not manifest.is_empty() or str(impact.get("mode", "DIRECT")) != "DIRECT":
+			return false
+		for action in actions:
+			if action.has("target_id"):
+				return false
 	if str(impact.get("mode", "DIRECT")) != "DIRECT":
 		for action in actions:
 			if str(action.get("operation", "")) in ["COPY_ENTITY", "DELETE_ENTITY"]:
@@ -89,6 +100,7 @@ func register_spell(spec: Dictionary) -> bool:
 	var stored: Dictionary = spec.duplicate(true)
 	stored["manifestation"] = ArcaneGrammar.normalize(manifest)
 	stored["impact"] = impact.duplicate(true)
+	stored["target_selector"] = selector.duplicate(true)
 	if str(impact.get("mode", "")) == "CHAIN":
 		stored["impact"]["jumps"] = int(impact["jumps"])
 	_definitions[id] = stored
@@ -185,7 +197,12 @@ func resolve_impact(spell_id: String, caster_id: String, target_id: String) -> b
 	var impact: Dictionary = spec.get("impact", {})
 	var mode: String = str(impact.get("mode", "DIRECT"))
 	var affected: Array[String] = [target_id]
-	if mode == "BURST":
+	var selector: Dictionary = spec.get("target_selector", {})
+	if not selector.is_empty():
+		affected = TargetResolver.select_by_properties(world, target_id, selector, effects.relationships)
+		if affected.is_empty():
+			return _fail("No entities match the spell's selector")
+	elif mode == "BURST":
 		affected = TargetResolver.around(world, target_id, float(impact["radius"]))
 	elif mode == "CHAIN":
 		affected = TargetResolver.chain(world, target_id,
@@ -215,7 +232,7 @@ func resolve_impact(spell_id: String, caster_id: String, target_id: String) -> b
 				actions.append(action)
 			plans.append({"target_id": affected[hop], "actions": actions})
 		ok = effects.apply_targeted_batches(plans, caster_id, "spell:%s" % spell_id)
-	elif mode == "BURST":
+	elif mode == "BURST" or not selector.is_empty():
 		ok = effects.apply_to_targets(spec["effects"], affected, caster_id, "spell:%s" % spell_id)
 	else:
 		ok = effects.apply_batch(spec["effects"], target_id, caster_id, "spell:%s" % spell_id)
