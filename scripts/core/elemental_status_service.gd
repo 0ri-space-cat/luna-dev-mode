@@ -52,7 +52,7 @@ func movement_factor(entity_id: String) -> float:
 	return 1.0
 
 
-func apply_element(entity_id: String, element: String) -> bool:
+func apply_element(entity_id: String, element: String, spread_from: String = "") -> bool:
 	var target: Node = world.get_entity(entity_id)
 	if target == null or not target.has_method("get_parameter"):
 		return false
@@ -73,7 +73,7 @@ func apply_element(entity_id: String, element: String) -> bool:
 				active.erase("FROZEN")
 				reaction = "STEAM"
 			# Steam extinguishes the cold; fire is shorter after melting ice.
-			active["BURN"] = _burn(2.5 if reaction == "STEAM" else BURN_TIME)
+			active["BURN"] = _burn(2.5 if reaction == "STEAM" else BURN_TIME, spread_from)
 		"FROST":
 			if active.has("BURN"):
 				active.erase("BURN")
@@ -175,6 +175,8 @@ func _try_spread_fire(source_id: String) -> bool:
 	if burning >= MAX_BURNING:
 		return false
 	var origin: Vector3 = (source as Node3D).global_position
+	var source_burn: Dictionary = (_states.get(source_id, {}) as Dictionary).get("BURN", {})
+	var parent_id: String = str(source_burn.get("spread_from", ""))
 	var options: Array[Dictionary] = world.candidates(source_id, origin, "ANY", SPREAD_RADIUS)
 	options.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var da: float = origin.distance_squared_to(a["position"])
@@ -185,14 +187,14 @@ func _try_spread_fire(source_id: String) -> bool:
 	)
 	for candidate in options:
 		var next_id: String = str(candidate["id"])
-		if has_status(next_id, "BURN"):
+		if next_id == parent_id or has_status(next_id, "BURN"):
 			continue
 		var node: Node = world.get_entity(next_id)
 		if node == null or not node.has_method("get_parameter"):
 			continue
 		if not MaterialProfile.is_flammable(str(node.call("get_parameter", "material"))):
 			continue
-		if apply_element(next_id, "FIRE"):
+		if apply_element(next_id, "FIRE", source_id):
 			fire_spread.emit({"from_id": source_id, "to_id": next_id})
 			return true
 	return false
@@ -234,9 +236,15 @@ func validate_data(data: Variant) -> bool:
 				return false
 			var item: Dictionary = active[status]
 			var required: Array = ["remaining", "elapsed", "interval"] if status == "BURN" else ["remaining"]
+			if status == "BURN" and item.has("spread_from"):
+				if typeof(item["spread_from"]) != TYPE_STRING or not str(item["spread_from"]).is_valid_identifier():
+					return false
+				required.append("spread_from")
 			if item.size() != required.size():
 				return false
 			for key in required:
+				if key == "spread_from":
+					continue
 				if typeof(item.get(key)) not in [TYPE_FLOAT, TYPE_INT]:
 					return false
 				var value: float = float(item[key])
@@ -273,5 +281,8 @@ func _duration(seconds: float) -> Dictionary:
 	return {"remaining": seconds}
 
 
-func _burn(seconds: float) -> Dictionary:
-	return {"remaining": seconds, "elapsed": 0.0, "interval": BURN_INTERVAL}
+func _burn(seconds: float, spread_from: String = "") -> Dictionary:
+	var state := {"remaining": seconds, "elapsed": 0.0, "interval": BURN_INTERVAL}
+	if not spread_from.is_empty():
+		state["spread_from"] = spread_from
+	return state
