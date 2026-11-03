@@ -83,3 +83,6 @@ jobs:
 
       - name: Run steam clouds, visibility and living fire avoidance tests
         run: bash ci/run_godot_script.sh res://tests/test_steam_and_fire_ai.gd
+
+      - name: Run social witness reactions and temporary memory tests
+        run: bash ci/run_godot_script.sh res://tests/test_social_awareness.gd
