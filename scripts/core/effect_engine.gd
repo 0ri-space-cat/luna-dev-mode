@@ -1,4 +1,5 @@
 extends RefCounted
+const TargetResolver = preload("res://scripts/core/target_resolver.gd")
 ## Effects always route through the same CommandProcessor as the hack editor.
 ## Nothing here runs arbitrary scripts or mutates Node properties directly.
 
@@ -300,6 +301,29 @@ func _reject_plan(reason: String) -> Dictionary:
 	last_error = reason
 	return {"ok": false, "steps": []}
 
+
+
+## A selector is resolved at cast/rule execution time. Never cache Nodes or
+## a list of targets in serialized spell/rule definitions.
+func apply_to_selector(actions: Array, origin_id: String, selector: Dictionary,
+		initiator_id: String, source_id: String) -> bool:
+	last_error = ""
+	if not TargetResolver.validate_selector(selector):
+		last_error = "Invalid target selector"
+		return false
+	for action in actions:
+		if typeof(action) != TYPE_DICTIONARY or action.has("target_id"):
+			last_error = "Selector actions may not override their selected target"
+			return false
+	var targets: Array[String] = TargetResolver.select_by_properties(
+		world, origin_id, selector, relationships
+	)
+	if targets.is_empty():
+		last_error = "No matching targets"
+		return false
+	if targets.size() == 1:
+		return apply_batch(actions, targets[0], initiator_id, source_id)
+	return apply_to_targets(actions, targets, initiator_id, source_id)
 
 
 func apply_to_targets(actions: Array, target_ids: Array[String],
