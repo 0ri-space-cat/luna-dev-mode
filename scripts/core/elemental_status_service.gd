@@ -181,12 +181,18 @@ func validate_data(data: Variant) -> bool:
 func import_data(data: Dictionary) -> bool:
 	if not validate_data(data):
 		return false
+	var previous: Array = _states.keys()
 	_states.clear()
-	if data.is_empty():
-		return true
-	for entity_id in data["entities"].keys():
-		if world.get_entity(str(entity_id)) != null:
-			_states[entity_id] = (data["entities"][entity_id] as Dictionary).duplicate(true)
+	if not data.is_empty():
+		for entity_id in data["entities"].keys():
+			if world.get_entity(str(entity_id)) != null:
+				_states[entity_id] = (data["entities"][entity_id] as Dictionary).duplicate(true)
+	# Updating the world snapshot must also refresh visible state markers.
+	for entity_id in previous:
+		state_changed.emit(str(entity_id), get_state(str(entity_id)))
+	for entity_id in _states.keys():
+		if not previous.has(entity_id):
+			state_changed.emit(str(entity_id), get_state(str(entity_id)))
 	return true
 
 
