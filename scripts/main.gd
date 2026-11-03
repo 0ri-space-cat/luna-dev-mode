@@ -17,6 +17,7 @@ const SpellService = preload("res://scripts/core/spell_service.gd")
 const SpellWorkshopService = preload("res://scripts/core/spell_workshop_service.gd")
 const SpellWorkshop = preload("res://scripts/spell_workshop.gd")
 const ArcaneProjectile = preload("res://scripts/spells/arcane_projectile.gd")
+const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -467,8 +468,17 @@ func _load_checkpoint(automatic: bool) -> void:
 		if not automatic:
 			_show_checkpoint_message("НЕТ СОХРАНЕНИЯ")
 		return
-	var success: bool = save_service.load_world(world_registry, luna, relationship_service)
+	var success: bool = save_service.load_world(
+		world_registry, luna, relationship_service,
+		Callable(self, "_restore_arcane_actor"), parameter_registry
+	)
 	if success:
+		for entity_id in world_registry.list_ids():
+			if entity_id.begins_with("arcane_") and not save_service.last_restored_ids.has(entity_id):
+				var removed: Node = world_registry.get_entity(entity_id)
+				world_registry.unregister_entity(entity_id)
+				if removed != null:
+					removed.queue_free()
 		_sync_luna_relationships()
 		# Restores do not count as player hacks, nor do pre-load queued events.
 		command_processor.clear_history()
@@ -589,31 +599,47 @@ func _on_arcane_place(details: Dictionary) -> void:
 
 
 func _create_arcane_entity(recipe: Dictionary, target_id: String) -> Node:
-	## The same HackableEntity and BehaviorBrain handle summoned creatures,
-	## animated objects and static energy constructs; no species-specific scripts.
 	var target: Node = world_registry.get_entity(target_id)
 	if not (target is Node3D):
 		return null
-	var living_count := 0
-	for entity_id in world_registry.list_ids():
-		if entity_id.begins_with("arcane_"):
-			living_count += 1
-	if living_count >= MAX_ARCANE_ENTITIES:
-		_show_checkpoint_message("Магии слишком много. Даже для меня.")
-		return null
+	var location: Vector3 = (target as Node3D).global_position + Vector3(1.6, 0.0, 0.7)
+	location.y = 0.1
 	arcane_serial += 1
 	var id: String = "arcane_%04d" % arcane_serial
 	while world_registry.get_entity(id) != null:
 		arcane_serial += 1
 		id = "arcane_%04d" % arcane_serial
-	var create_type: String = str(recipe["create"])
-	var category := "arcane_" + create_type.to_lower()
-	var spawn_at: Vector3 = (target as Node3D).global_position + Vector3(1.6, 0, 0.7)
-	spawn_at.y = 0.1
+	return _spawn_arcane_actor_with_id(id, recipe, location)
+
+
+func _restore_arcane_actor(entity_id: String, recipe: Dictionary, location: Vector3) -> Node:
+	return _spawn_arcane_actor_with_id(entity_id, recipe, location)
+
+
+func _spawn_arcane_actor_with_id(entity_id: String, recipe: Dictionary, location: Vector3) -> Node:
+	var constructed: Dictionary = ArcaneGrammar.normalize(recipe)
+	if not ArcaneGrammar.valid(constructed) or constructed.is_empty():
+		return null
+	if world_registry.get_entity(entity_id) != null:
+		return null
+	var generated_count := 0
+	for world_id in world_registry.list_ids():
+		if world_id.begins_with("arcane_"):
+			generated_count += 1
+	if generated_count >= MAX_ARCANE_ENTITIES:
+		_show_checkpoint_message("Магии слишком много. Даже для меня.")
+		return null
+	var create_kind: String = str(constructed["create"])
 	var entity := HackableEntity.new()
 	add_child(entity)
-	entity.configure(id, category, spawn_at, parameter_registry,
-		world_registry, relationship_service, recipe)
-	world_registry.register_entity(id, entity, create_type)
+	entity.configure(
+		entity_id, "arcane_" + create_kind.to_lower(), location,
+		parameter_registry, world_registry, relationship_service, constructed
+	)
+	if not world_registry.register_entity(entity_id, entity, create_kind):
+		entity.queue_free()
+		return null
 	entity.target_acquired.connect(_on_target_acquired)
+	if entity_id.begins_with("arcane_"):
+		arcane_serial = maxi(arcane_serial, entity_id.substr(7).to_int())
 	return entity
