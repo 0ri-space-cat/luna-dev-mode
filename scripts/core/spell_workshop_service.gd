@@ -40,7 +40,7 @@ func available_fields() -> Array[Dictionary]:
 	return result
 
 
-func create_recipe(label: String, cast_range: float, actions: Array, manifestation: Dictionary = {}) -> String:
+func create_recipe(label: String, cast_range: float, actions: Array, manifestation: Dictionary = {}, impact: Dictionary = {}) -> String:
 	last_error = ""
 	if _recipes.size() >= MAX_RECIPES:
 		last_error = "Палочка уже забита заклинаниями."
@@ -57,6 +57,7 @@ func create_recipe(label: String, cast_range: float, actions: Array, manifestati
 		"symbol_id": "CUSTOM",
 		"stone_color": Color("b790dd"),
 		"manifestation": ArcaneGrammar.normalize(manifestation),
+		"impact": impact.duplicate(true),
 		"effects": actions.duplicate(true)
 	}
 	if not _valid_recipe(spec):
@@ -152,6 +153,8 @@ func _valid_recipe(spec: Dictionary) -> bool:
 		return false
 	if typeof(spec.get("manifestation", {})) != TYPE_DICTIONARY or not ArcaneGrammar.valid(spec.get("manifestation", {})):
 		return false
+	if not spells.is_valid_impact(spec.get("impact", {})):
+		return false
 	if typeof(spec["effects"]) != TYPE_ARRAY:
 		return false
 	var actions: Array = spec["effects"]
@@ -214,6 +217,7 @@ func _serialize_recipe(spec: Dictionary) -> Dictionary:
 		"label": spec["label"],
 		"cast_range": spec["cast_range"],
 		"manifestation": spec.get("manifestation", {}).duplicate(true),
+		"impact": spec.get("impact", {}).duplicate(true),
 		"effects": actions
 	}
 
@@ -249,5 +253,6 @@ func _parse_recipe(raw: Dictionary) -> Dictionary:
 		"symbol_id": "CUSTOM",
 		"stone_color": Color("b790dd"),
 		"manifestation": ArcaneGrammar.normalize(raw.get("manifestation", {})),
+		"impact": raw.get("impact", {}),
 		"effects": decoded
 	}
