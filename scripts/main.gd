@@ -230,7 +230,7 @@ func _build_interface() -> void:
 	layer.add_child(header)
 
 	var instructions := Label.new()
-	instructions.text = "WASD / стрелки — ходить    •    ЛКМ на дереве или холодильнике — взломать    •    Esc — закрыть    •    Cmd/Ctrl+Z — отменить"
+	instructions.text = "WASD / стрелки — ходить    •    ЛКМ на дереве или холодильнике — взломать    •    Esc — закрыть"
 	instructions.position = Vector2(24, 50)
 	instructions.add_theme_font_size_override("font_size", 15)
 	instructions.add_theme_color_override("font_color", Color("e0f7f4"))

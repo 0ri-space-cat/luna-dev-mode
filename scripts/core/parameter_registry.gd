@@ -18,54 +18,54 @@ var _by_id: Dictionary = {}
 func _init() -> void:
 	register_parameter({
 		"id": "alive", "label": "IS_ALIVE", "kind": "bool", "default": false,
-		"hint": "Объект живой. При включённом AI_ENABLED действует самостоятельно."
+		"hint": "Оживляет объект. Или делает неживым, тут как повезёт."
 	})
 	register_parameter({
 		"id": "ai_enabled", "label": "AI_ENABLED", "kind": "bool", "default": true,
-		"hint": "Разрешает самостоятельное поведение живого объекта."
+		"hint": "Пусть сам решает, куда ему идти."
 	})
 	register_parameter({
 		"id": "behavior_mode", "label": "BEHAVIOR_MODE", "kind": "enum", "default": "WANDER",
 		"choices": [{"name":"WANDER","value":"WANDER"},{"name":"IDLE","value":"IDLE"},{"name":"FOLLOW","value":"FOLLOW"},{"name":"CHASE","value":"CHASE"},{"name":"FLEE","value":"FLEE"},{"name":"AUTO","value":"AUTO"}],
-		"hint": "WANDER — бродить; FOLLOW — идти за целью; CHASE — преследовать; FLEE — убегать; AUTO — по отношению к Луне."
+		"hint": "Гулять, догонять, убегать. Выбирай настроение."
 	})
 	register_parameter({
 		"id": "target_group", "label": "TARGET_GROUP", "kind": "enum", "default": "LUNA",
 		"choices": [{"name":"LUNA","value":"LUNA"},{"name":"ANY","value":"ANY"},{"name":"TREE","value":"TREE"},{"name":"FRIDGE","value":"FRIDGE"}],
-		"hint": "Кого искать для следования, преследования или побега."
+		"hint": "За кем носиться? Или от кого."
 	})
 	register_parameter({
 		"id": "luna_relation", "label": "LUNA_RELATION", "kind": "enum", "default": "NEUTRAL",
 		"choices": [{"name":"NEUTRAL","value":"NEUTRAL"},{"name":"FRIEND","value":"FRIEND"},{"name":"HOSTILE","value":"HOSTILE"},{"name":"AFRAID","value":"AFRAID"}],
-		"hint": "Отношение к Луне, определяет поведение в режиме AUTO."
+		"hint": "Любит меня, боится или хочет прибить."
 	})
 	register_parameter({
 		"id": "sense_range", "label": "SENSE_RANGE", "kind": "float", "min": 2.0, "max": 25.0, "step": 0.5, "default": 12.0,
-		"hint": "Радиус, в котором существо замечает цель."
+		"hint": "Как далеко видит. Не проверяй на мне."
 	})
 	register_parameter({
 		"id": "follow_distance", "label": "FOLLOW_DISTANCE", "kind": "float", "min": 1.0, "max": 7.0, "step": 0.2, "default": 2.0,
-		"hint": "Расстояние, на котором спутник остановится рядом с целью."
+		"hint": "Личное пространство. Уважаем."
 	})
 	register_parameter({
 		"id": "health", "label": "HEALTH", "kind": "int",
 		"min": 1.0, "max": 200.0, "step": 1.0, "default": 100,
-		"hint": "Запас здоровья объекта."
+		"hint": "Сколько ещё протянет."
 	})
 	register_parameter({
 		"id": "speed", "label": "MOVE_SPEED", "kind": "float",
 		"min": 0.0, "max": 5.0, "step": 0.1, "default": 2.0,
-		"hint": "Скорость самостоятельного передвижения."
+		"hint": "Быстрее. Ещё быстрее. Ой."
 	})
 	register_parameter({
 		"id": "size", "label": "SCALE", "kind": "float",
 		"min": 0.5, "max": 2.0, "step": 0.1, "default": 1.0,
-		"hint": "Размер объекта относительно исходного."
+		"hint": "Большой, маленький. Вопрос вкуса."
 	})
 	register_parameter({
 		"id": "color", "label": "BASE_COLOR", "kind": "color",
 		"default": Color("b790dd"), "choices": PALETTE,
-		"hint": "Основной цвет объекта."
+		"hint": "Перекрасить? Запросто."
 	})
 
 

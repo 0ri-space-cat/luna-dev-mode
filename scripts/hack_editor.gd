@@ -18,16 +18,12 @@ var title_label: Label
 var type_label: Label
 var hints_toggle: CheckButton
 var fields_container: VBoxContainer
-var undo_button: Button
-var redo_button: Button
-var history_label: Label
 
 
 func configure(parameter_registry, command_processor) -> void:
 	registry = parameter_registry
 	commands = command_processor
 	commands.history_changed.connect(_on_history_changed)
-	_refresh_history()
 
 
 func _ready() -> void:
@@ -74,26 +70,6 @@ func _ready() -> void:
 	fields_container.add_theme_constant_override("separation", 12)
 	scroll.add_child(fields_container)
 
-	layout.add_child(HSeparator.new())
-	var history_title := _label(layout, "CHANGE_HISTORY", 13)
-	history_title.add_theme_color_override("font_color", Color("87dadb"))
-	history_label = _label(layout, "EMPTY", 12)
-	history_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	history_label.custom_minimum_size.y = 65
-
-	var buttons := HBoxContainer.new()
-	layout.add_child(buttons)
-	undo_button = Button.new()
-	undo_button.text = "UNDO"
-	undo_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	undo_button.pressed.connect(_on_undo_pressed)
-	buttons.add_child(undo_button)
-	redo_button = Button.new()
-	redo_button.text = "REDO"
-	redo_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	redo_button.pressed.connect(_on_redo_pressed)
-	buttons.add_child(redo_button)
-
 	var close_button := Button.new()
 	close_button.text = "ЗАКРЫТЬ   [ESC]"
 	close_button.pressed.connect(func() -> void: closed.emit())
@@ -110,7 +86,6 @@ func show_for(entity: Node3D) -> void:
 	_active_gestures.clear()
 	_build_fields()
 	_sync_fields_from_target()
-	_refresh_history()
 	visible = true
 
 
@@ -219,15 +194,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
 		closed.emit()
-	elif (event.meta_pressed or event.ctrl_pressed) and event.keycode == KEY_Z:
-		get_viewport().set_input_as_handled()
-		if event.shift_pressed:
-			_on_redo_pressed()
-		else:
-			_on_undo_pressed()
-	elif (event.meta_pressed or event.ctrl_pressed) and event.keycode == KEY_Y:
-		get_viewport().set_input_as_handled()
-		_on_redo_pressed()
 
 
 func _label(parent: Node, content: String, font_size: int) -> Label:
@@ -282,45 +248,7 @@ func _apply_change(parameter_id: String, value: Variant, merge_key: String = "")
 		_sync_fields_from_target()
 
 
-func _on_undo_pressed() -> void:
-	if commands != null:
-		commands.undo()
-
-
-func _on_redo_pressed() -> void:
-	if commands != null:
-		commands.redo()
-
-
 func _on_history_changed() -> void:
+	# Commands still have an internal audit; the player-facing inspector stays compact.
 	if visible:
 		_sync_fields_from_target()
-	_refresh_history()
-
-
-func _refresh_history() -> void:
-	if commands == null or history_label == null:
-		return
-	undo_button.disabled = not commands.can_undo()
-	redo_button.disabled = not commands.can_redo()
-	var lines := PackedStringArray()
-	for entry in commands.get_recent_audit(3):
-		lines.append("%s %s.%s = %s  (%s)" % [
-			entry["action"],
-			entry["entity_id"],
-			entry["parameter_id"],
-			_display_value(entry["after"]),
-			entry["initiator_id"]
-		])
-	history_label.text = "\n".join(lines) if lines.size() > 0 else "EMPTY"
-
-
-func _display_value(value: Variant) -> String:
-	match typeof(value):
-		TYPE_BOOL:
-			return "TRUE" if bool(value) else "FALSE"
-		TYPE_COLOR:
-			return "#%s" % (value as Color).to_html(false).to_upper()
-		TYPE_FLOAT:
-			return "%.1f" % float(value)
-	return str(value)
