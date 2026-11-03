@@ -17,7 +17,7 @@ func _init(world_registry, command_processor, relationship_service = null) -> vo
 func apply(effect: Dictionary, target_id: String, initiator_id: String, source_id: String) -> bool:
 	last_error = ""
 	var target: Node = world.get_entity(target_id)
-	if target == null or not target.has_method("get_parameter"):
+	if target == null:
 		last_error = "Unknown target ID: %s" % target_id
 		return false
 	if str(effect.get("operation", "")) == "SET_RELATION":
@@ -33,6 +33,9 @@ func apply(effect: Dictionary, target_id: String, initiator_id: String, source_i
 			last_error = "Invalid relationship effect"
 			return false
 		return true
+	if not target.has_method("get_parameter"):
+		last_error = "Target has no editable parameters"
+		return false
 	var key: String = str(effect.get("parameter_id", ""))
 	if key.is_empty():
 		last_error = "Missing parameter_id"

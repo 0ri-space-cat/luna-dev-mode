@@ -226,14 +226,15 @@ func _on_target_acquired(source_id: String, target_id: String, target_group: Str
 
 
 func _on_parameter_changed(change: Dictionary) -> void:
-	# Undo/redo restores prior state without launching gameplay rules again.
-	if str(change.get("action", "")) != "SET":
-		return
+	# Mirror social edits even when the internal API undoes/ redoes a command.
 	if str(change.get("parameter_id", "")) == "luna_relation":
 		relationship_service.set_attitude(
 			str(change["entity_id"]), "luna", str(change["after"]),
 			str(change["initiator_id"]), str(change["source_id"])
 		)
+	# Undo/redo restores prior state without triggering gameplay rules.
+	if str(change.get("action", "")) != "SET":
+		return
 	event_bus.enqueue({
 		"type": "parameter.changed",
 		"source_id": str(change["entity_id"]),
