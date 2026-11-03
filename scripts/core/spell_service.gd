@@ -13,14 +13,16 @@ const MAX_EFFECTS := 12
 
 var world
 var effects
+var elemental_statuses
 var last_error := ""
 var _order: Array[String] = []
 var _definitions: Dictionary = {}
 
 
-func _init(world_registry, effect_engine) -> void:
+func _init(world_registry, effect_engine, elemental_service = null) -> void:
 	world = world_registry
 	effects = effect_engine
+	elemental_statuses = elemental_service
 	_register_starters()
 
 
@@ -147,14 +149,22 @@ func resolve_impact(spell_id: String, caster_id: String, target_id: String) -> b
 		return true
 	var impact: Dictionary = spec.get("impact", {})
 	var mode: String = str(impact.get("mode", "DIRECT"))
+	var affected: Array[String] = [target_id]
+	if mode == "BURST":
+		affected = TargetResolver.around(world, target_id, float(impact["radius"]))
 	var ok := false
 	if mode == "BURST":
-		var ids: Array[String] = TargetResolver.around(world, target_id, float(impact["radius"]))
-		ok = effects.apply_to_targets(spec["effects"], ids, caster_id, "spell:%s" % spell_id)
+		ok = effects.apply_to_targets(spec["effects"], affected, caster_id, "spell:%s" % spell_id)
 	else:
 		ok = effects.apply_batch(spec["effects"], target_id, caster_id, "spell:%s" % spell_id)
 	if not ok:
 		return _fail("Попадание не сработало: %s" % effects.last_error)
+	# Elemental overlays are attached only after the entire hit was accepted.
+	# Creation-only recipes don't burn or freeze their summoned creatures.
+	var manifestation: Dictionary = spec.get("manifestation", {})
+	if elemental_statuses != null and not manifestation.is_empty():
+		for entity_id in affected:
+			elemental_statuses.apply_element(entity_id, str(manifestation["element"]))
 	return true
 
 
