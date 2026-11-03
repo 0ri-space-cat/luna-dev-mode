@@ -20,6 +20,9 @@ var form_choice: OptionButton
 var essence_choice: OptionButton
 var behavior_choice: OptionButton
 var release_choice: OptionButton
+var impact_choice: OptionButton
+var impact_radius_row: HBoxContainer
+var impact_radius_control: SpinBox
 var speed_control: SpinBox
 var size_control: SpinBox
 
@@ -136,6 +139,23 @@ func _ready() -> void:
 	manifestation_settings.visible = false
 
 	layout.add_child(HSeparator.new())
+	impact_choice = _choice_row(
+		layout, "ON_HIT · Попадание", [
+			{"id": "DIRECT", "name": "Одна цель"},
+			{"id": "BURST", "name": "Взрыв вокруг цели"}
+		]
+	)
+	impact_choice.item_selected.connect(_on_impact_changed)
+	impact_radius_row = HBoxContainer.new()
+	layout.add_child(impact_radius_row)
+	_label(impact_radius_row, "Радиус взрыва", 12)
+	impact_radius_control = SpinBox.new()
+	impact_radius_control.min_value = 0.5
+	impact_radius_control.max_value = 6.0
+	impact_radius_control.step = 0.5
+	impact_radius_control.value = 2.5
+	impact_radius_row.add_child(impact_radius_control)
+	impact_radius_row.visible = false
 	var field_row := HBoxContainer.new()
 	layout.add_child(field_row)
 	_label(field_row, "ПРИ ПОПАДАНИИ:", 13)
@@ -225,6 +245,11 @@ func load_spell(spell_id: String) -> bool:
 		_select_choice(release_choice, str(manifest["release"]))
 		speed_control.value = float(manifest["speed"])
 		size_control.value = float(manifest["size"])
+	var impact: Dictionary = definition.get("impact", {})
+	_select_choice(impact_choice, str(impact.get("mode", "DIRECT")))
+	_on_impact_changed(impact_choice.selected)
+	if impact.has("radius"):
+		impact_radius_control.value = float(impact["radius"])
 	var location: int = source_ids.find(spell_id)
 	if location >= 0:
 		source_choice.select(location)
@@ -259,6 +284,8 @@ func _on_new_recipe() -> void:
 	speed_control.value = ArcaneGrammar.DEFAULT_SPEED
 	size_control.value = ArcaneGrammar.DEFAULT_SIZE
 	status_label.text = ""
+	_select_choice(impact_choice, "DIRECT")
+	_on_impact_changed(impact_choice.selected)
 	_refresh_blocks()
 
 
@@ -281,6 +308,16 @@ func _manifestation() -> Dictionary:
 		_choice_value(behavior_choice), _choice_value(release_choice),
 		speed_control.value, size_control.value
 	)
+
+
+func _on_impact_changed(_index: int) -> void:
+	impact_radius_row.visible = _choice_value(impact_choice) == "BURST"
+
+
+func _impact() -> Dictionary:
+	if _choice_value(impact_choice) == "BURST":
+		return {"mode": "BURST", "radius": impact_radius_control.value}
+	return {}
 
 
 func _choice_row(parent: Node, label: String, choices: Array) -> OptionButton:
@@ -498,7 +535,7 @@ func _on_save() -> void:
 	if workshop == null:
 		return
 	var spell_id: String = workshop.create_recipe(
-		name_input.text, range_input.value, draft, _manifestation()
+		name_input.text, range_input.value, draft, _manifestation(), _impact()
 	)
 	if spell_id.is_empty():
 		status_label.text = workshop.last_error
