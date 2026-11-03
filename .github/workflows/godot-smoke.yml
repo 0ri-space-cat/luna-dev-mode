@@ -46,6 +46,9 @@ jobs:
 
       - name: Run composable entity role and tag tests
         run: bash ci/run_godot_script.sh res://tests/test_entity_traits.gd
+
+      - name: Run reversible role/tag commands and reactive rule tests
+        run: bash ci/run_godot_script.sh res://tests/test_trait_commands.gd
       - name: Run save and load smoke tests
         run: bash ci/run_godot_script.sh res://tests/test_save_service.gd
       - name: Run social relations smoke tests
