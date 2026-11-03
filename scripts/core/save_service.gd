@@ -48,6 +48,8 @@ func snapshot(world, player: Node3D, relationships = null, elemental_statuses = 
 			var manifest: Dictionary = node.get("arcane_manifestation")
 			if ArcaneGrammar.valid(manifest) and not manifest.is_empty():
 				entry["construct"] = ArcaneGrammar.normalize(manifest)
+		if node.has_meta("copy_origin"):
+			entry["copy_origin"] = str(node.get_meta("copy_origin"))
 		entities[entity_id] = entry
 	return {
 		"version": FORMAT_VERSION,
@@ -72,15 +74,15 @@ func save_world(world, player: Node3D, relationships = null, elemental_statuses 
 	return true
 
 
-func load_world(world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null) -> bool:
+func load_world(world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null, create_duplicate: Callable = Callable()) -> bool:
 	last_error = ""
 	var received: Dictionary = JsonStore.read_document(save_path)
 	if not bool(received["ok"]):
 		return _fail(str(received["error"]))
-	return apply_snapshot(received["data"], world, player, relationships, create_actor, parameter_registry, elemental_statuses, surface_fields, social_awareness)
+	return apply_snapshot(received["data"], world, player, relationships, create_actor, parameter_registry, elemental_statuses, surface_fields, social_awareness, create_duplicate)
 
 
-func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null) -> bool:
+func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null, create_duplicate: Callable = Callable()) -> bool:
 	last_error = ""
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
@@ -109,6 +111,7 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 	var plan: Array[Dictionary] = []
 	var ids_in_save: Array[String] = []
 	var generated_count := 0
+	var copy_count := 0
 	for id in entries.keys():
 		if typeof(id) != TYPE_STRING or typeof(entries[id]) != TYPE_DICTIONARY:
 			return _fail("Invalid entity record")
@@ -117,24 +120,41 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		var category: String = str(item.get("category", ""))
 		var fields_registry = null
 		var manifest: Dictionary = {}
+		var copy_origin := ""
 		if entity == null:
-			if not item.has("construct"):
-				continue # Entity removed by a newer version of the game.
-			if not create_actor.is_valid() or parameter_registry == null:
-				continue # Old callers can still restore their existing actors.
-			if typeof(item["construct"]) != TYPE_DICTIONARY:
-				return _fail("Invalid created entity")
-			manifest = ArcaneGrammar.normalize(item["construct"])
-			if not ArcaneGrammar.valid(manifest) or manifest.is_empty():
-				return _fail("Invalid generated entity recipe")
-			if not id.begins_with("arcane_") or not id.substr(7).is_valid_int():
-				return _fail("Invalid generated entity ID")
-			if category != "arcane_" + str(manifest["create"]).to_lower():
-				return _fail("Generated category mismatch")
-			generated_count += 1
-			if generated_count > 40:
-				return _fail("Generated entity limit reached")
-			fields_registry = parameter_registry
+			if item.has("copy_origin"):
+				if not create_duplicate.is_valid() or parameter_registry == null:
+					continue # Old save callers still work without copy spawning.
+				if typeof(item["copy_origin"]) != TYPE_STRING:
+					return _fail("Invalid copy origin")
+				copy_origin = str(item["copy_origin"])
+				if category not in ["tree", "fridge"] or copy_origin.is_empty():
+					return _fail("Invalid copy category or source")
+				var prefix := category + "_copy_"
+				if not id.begins_with(prefix) or not id.substr(prefix.length()).is_valid_int():
+					return _fail("Invalid duplicate ID")
+				copy_count += 1
+				if copy_count > 24:
+					return _fail("Duplicate entity limit reached")
+				fields_registry = parameter_registry
+			else:
+				if not item.has("construct"):
+					continue # Entity removed by a newer version of the game.
+				if not create_actor.is_valid() or parameter_registry == null:
+					continue # Old callers can still restore their existing actors.
+				if typeof(item["construct"]) != TYPE_DICTIONARY:
+					return _fail("Invalid created entity")
+				manifest = ArcaneGrammar.normalize(item["construct"])
+				if not ArcaneGrammar.valid(manifest) or manifest.is_empty():
+					return _fail("Invalid generated entity recipe")
+				if not id.begins_with("arcane_") or not id.substr(7).is_valid_int():
+					return _fail("Invalid generated entity ID")
+				if category != "arcane_" + str(manifest["create"]).to_lower():
+					return _fail("Generated category mismatch")
+				generated_count += 1
+				if generated_count > 40:
+					return _fail("Generated entity limit reached")
+				fields_registry = parameter_registry
 		else:
 			if not (entity is Node3D) or not entity.has_method("set_parameter"):
 				return _fail("Save target cannot be edited")
@@ -171,6 +191,7 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 			normalized[key] = checked["value"]
 		plan.append({
 			"node": entity, "id": id, "manifest": manifest,
+			"copy_origin": copy_origin, "category": category,
 			"position": pos["value"], "parameters": normalized
 		})
 		ids_in_save.append(id)
@@ -180,14 +201,20 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 	for item in plan:
 		if item["node"] != null:
 			continue
-		var actor: Node = create_actor.call(
-			str(item["id"]), item["manifest"], item["position"]
-		)
+		var actor: Node
+		if not str(item["copy_origin"]).is_empty():
+			actor = create_duplicate.call(
+				str(item["id"]), str(item["category"]), item["position"], str(item["copy_origin"])
+			)
+		else:
+			actor = create_actor.call(
+				str(item["id"]), item["manifest"], item["position"]
+			)
 		if actor == null:
 			for added in created:
 				world.unregister_entity(str(added.record.id))
 				added.queue_free()
-			return _fail("Failed to recreate magical entity")
+			return _fail("Failed to recreate entity")
 		item["node"] = actor
 		created.append(actor)
 	for item in plan:
