@@ -47,3 +47,6 @@ jobs:
 
       - name: Run atomic effect transaction tests
         run: timeout 40s godot --headless --path . --script res://tests/test_atomic_effects.gd
+
+      - name: Run spell workshop and persistence tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_spell_workshop.gd
