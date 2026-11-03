@@ -549,6 +549,7 @@ func _duplicate_entity(source: Node3D) -> Node3D:
 	# Statuses/relationships are deliberately not shared between copies.
 	for key in source.record.parameters.keys():
 		copy.set_parameter(str(key), source.get_parameter(str(key)))
+	copy.record.set_traits(source.record.get_stored_roles(), source.record.get_tags())
 	return copy
 
 
