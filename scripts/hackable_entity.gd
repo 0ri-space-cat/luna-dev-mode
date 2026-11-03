@@ -207,7 +207,7 @@ func _physics_process(delta: float) -> void:
 	if social_awareness != null and bool(record.get_parameter("alive")) 			and bool(record.get_parameter("ai_enabled")) 			and str(record.get_parameter("behavior_mode")) in ["WANDER", "AUTO"]:
 		var alert: Dictionary = social_awareness.get_alert(record.id)
 		if not alert.is_empty():
-			var aggressor_id: String = str(alert["aggressor_id"])
+			var aggressor_id: String = str(alert.get("source_id", alert.get("aggressor_id", "")))
 			var aggressor: Node = world_registry.get_entity(aggressor_id) if world_registry != null else null
 			var attitude := "NEUTRAL"
 			if relationship_service != null:
