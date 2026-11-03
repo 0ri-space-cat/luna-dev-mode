@@ -6,6 +6,8 @@ signal closed
 signal spell_created(spell_id: String)
 
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
+const UiLanguage = preload("res://scripts/core/ui_language.gd")
+var ui_language = UiLanguage.new()
 
 var workshop
 var registry
@@ -39,7 +41,9 @@ var block_list: VBoxContainer
 var status_label: Label
 
 
-func configure(parameter_registry, workshop_service) -> void:
+func configure(parameter_registry, workshop_service, language_service = null) -> void:
+	if language_service != null:
+		ui_language = language_service
 	registry = parameter_registry
 	workshop = workshop_service
 	specs = workshop.available_fields()
@@ -87,7 +91,8 @@ func _ready() -> void:
 	source_choice.item_selected.connect(_on_source_selected)
 	source_row.add_child(source_choice)
 	var new_button := Button.new()
-	new_button.text = "С НУЛЯ"
+	new_button.text = _translate("С НУЛЯ")
+	new_button.set_meta("ui_source", "С НУЛЯ")
 	new_button.pressed.connect(_on_new_recipe)
 	source_row.add_child(new_button)
 
@@ -95,8 +100,8 @@ func _ready() -> void:
 	layout.add_child(headline)
 	_label(headline, "NAME:", 14)
 	name_input = LineEdit.new()
-	name_input.placeholder_text = "Название заклинания"
-	name_input.text = "МОЙ ХАОС"
+	name_input.placeholder_text = _translate("Название заклинания")
+	name_input.text = _translate("МОЙ ХАОС")
 	name_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	headline.add_child(name_input)
 	var range_row := HBoxContainer.new()
@@ -192,7 +197,8 @@ func _ready() -> void:
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint_label.add_theme_color_override("font_color", Color("bdb6dc"))
 	var add_button := Button.new()
-	add_button.text = "+ ДОБАВИТЬ БЛОК"
+	add_button.text = _translate("+ ДОБАВИТЬ БЛОК")
+	add_button.set_meta("ui_source", "+ ДОБАВИТЬ БЛОК")
 	add_button.pressed.connect(_on_add_block)
 	layout.add_child(add_button)
 
@@ -213,12 +219,14 @@ func _ready() -> void:
 	var buttons := HBoxContainer.new()
 	layout.add_child(buttons)
 	var save_button := Button.new()
-	save_button.text = "СОХРАНИТЬ ЗАКЛИНАНИЕ"
+	save_button.text = _translate("СОХРАНИТЬ ЗАКЛИНАНИЕ")
+	save_button.set_meta("ui_source", "СОХРАНИТЬ ЗАКЛИНАНИЕ")
 	save_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	save_button.pressed.connect(_on_save)
 	buttons.add_child(save_button)
 	var close_button := Button.new()
-	close_button.text = "ЗАКРЫТЬ [B]"
+	close_button.text = _translate("ЗАКРЫТЬ [B]")
+	close_button.set_meta("ui_source", "ЗАКРЫТЬ [B]")
 	close_button.pressed.connect(func() -> void: closed.emit())
 	buttons.add_child(close_button)
 
@@ -232,7 +240,7 @@ func show_workshop(selected_spell_id: String = "") -> void:
 	_reload_sources()
 	if not selected_spell_id.is_empty():
 		load_spell(selected_spell_id)
-	status_label.text = "Разбери заклинание. Перепиши как хочешь."
+	status_label.text = _translate("Разбери заклинание. Перепиши как хочешь.")
 	visible = true
 
 
@@ -243,7 +251,7 @@ func load_spell(spell_id: String) -> bool:
 	if definition.is_empty():
 		return false
 	var title: String = str(definition["label"])
-	name_input.text = ("МОЙ " + title).substr(0, 40)
+	name_input.text = (ui_language.text("MY ", "МОЙ ") + _translate(title)).substr(0, 40)
 	range_input.value = float(definition["cast_range"])
 	draft.clear()
 	for action in definition["effects"]:
@@ -278,7 +286,7 @@ func _reload_sources() -> void:
 	for spell_id in workshop.spells.list_spell_ids():
 		var item: Dictionary = workshop.spells.get_spell(spell_id)
 		source_ids.append(spell_id)
-		source_choice.add_item(str(item.get("label", spell_id)))
+		source_choice.add_item(_translate(str(item.get("label", spell_id))))
 
 
 func _on_source_selected(index: int) -> void:
@@ -288,7 +296,7 @@ func _on_source_selected(index: int) -> void:
 
 func _on_new_recipe() -> void:
 	draft.clear()
-	name_input.text = "МОЁ ЗАКЛИНАНИЕ"
+	name_input.text = _translate("МОЁ ЗАКЛИНАНИЕ")
 	range_input.value = 11.0
 	_select_choice(create_choice, "ENERGY")
 	_on_create_changed(create_choice.selected)
@@ -347,7 +355,7 @@ func _choice_row(parent: Node, label: String, choices: Array) -> OptionButton:
 	var options := OptionButton.new()
 	options.custom_minimum_size.x = 145
 	for item in choices:
-		options.add_item(str(item["name"]))
+		options.add_item(_translate(str(item["name"])))
 		options.set_item_metadata(options.item_count - 1, item["id"])
 	row.add_child(options)
 	return options
@@ -371,7 +379,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _rebuild_fields() -> void:
 	field_choice.clear()
 	for spec in specs:
-		field_choice.add_item(str(spec.get("display_name", spec["label"])))
+		field_choice.add_item(str(spec["label"]))
 	if not specs.is_empty():
 		field_choice.select(0)
 		_on_field_changed(0)
@@ -393,12 +401,12 @@ func _on_field_changed(_index: int) -> void:
 		_:
 			_add_operation("Задать", "SET")
 	operation_choice.select(0)
-	hint_label.text = str(spec["hint"])
+	hint_label.text = ui_language.hint(spec)
 	_refresh_value_input()
 
 
 func _add_operation(label: String, operation_id: String) -> void:
-	operation_choice.add_item(label)
+	operation_choice.add_item(_translate(label))
 	operation_choice.set_item_metadata(operation_choice.item_count - 1, operation_id)
 
 
@@ -468,7 +476,7 @@ func _refresh_value_input() -> void:
 
 func _on_add_block() -> void:
 	if draft.size() >= 12:
-		status_label.text = "Двенадцать блоков. Дальше уже издевательство."
+		status_label.text = _translate("Двенадцать блоков. Дальше уже издевательство.")
 		return
 	var spec := _current_spec()
 	if spec.is_empty():
@@ -511,9 +519,9 @@ func _refresh_blocks() -> void:
 		var spec_name := str(block["parameter_id"]).to_upper()
 		for spec in specs:
 			if spec["id"] == block["parameter_id"]:
-				spec_name = str(spec.get("display_name", spec["label"]))
+				spec_name = str(spec["label"])
 				break
-		var readable_op := {"SET": "ЗАДАТЬ", "ADD": "ИЗМЕНИТЬ НА", "MULTIPLY": "УМНОЖИТЬ", "TOGGLE": "ПЕРЕКЛЮЧИТЬ"}
+		var readable_op := {"SET": _translate("ЗАДАТЬ"), "ADD": _translate("ИЗМЕНИТЬ НА"), "MULTIPLY": _translate("УМНОЖИТЬ"), "TOGGLE": _translate("ПЕРЕКЛЮЧИТЬ")}
 		var description := "%02d  %s  ·  %s" % [i + 1, spec_name, str(readable_op.get(block["operation"], block["operation"]))]
 		if block.has("value"):
 			description += "  %s" % _format_value(block["value"])
@@ -561,7 +569,7 @@ func _on_save() -> void:
 		return
 	draft.clear()
 	_refresh_blocks()
-	status_label.text = "Готово: %s. Теперь попробуй на холодильнике." % spell_id
+	status_label.text = ui_language.text("Ready: %s. Try it on a fridge.", "Готово: %s. Теперь попробуй на холодильнике.") % spell_id
 	spell_created.emit(spell_id)
 
 
@@ -575,8 +583,41 @@ func _format_value(value: Variant) -> String:
 
 func _label(parent: Node, text: String, size: int) -> Label:
 	var label := Label.new()
-	label.text = text
+	label.text = _translate(text)
+	label.set_meta("ui_source", text)
 	label.add_theme_font_size_override("font_size", size)
 	label.add_theme_color_override("font_color", Color("ece5f9"))
 	parent.add_child(label)
 	return label
+
+
+func _translate(source: String) -> String:
+	return ui_language.translated(source)
+
+
+func refresh_language() -> void:
+	if not is_node_ready():
+		return
+	_localize_descendants(self)
+	if is_instance_valid(name_input):
+		name_input.placeholder_text = _translate("Название заклинания")
+	if is_instance_valid(hint_label):
+		var spec := _current_spec()
+		if not spec.is_empty():
+			hint_label.text = ui_language.hint(spec)
+	if is_instance_valid(block_list):
+		_refresh_blocks()
+
+
+func _localize_descendants(node: Node) -> void:
+	if node.has_meta("ui_source"):
+		if node is Label:
+			(node as Label).text = _translate(str(node.get_meta("ui_source")))
+		elif node is Button:
+			(node as Button).text = _translate(str(node.get_meta("ui_source")))
+	if node is OptionButton and node != field_choice:
+		var option: OptionButton = node as OptionButton
+		for index in range(option.item_count):
+			option.set_item_text(index, _translate(option.get_item_text(index)))
+	for child in node.get_children():
+		_localize_descendants(child)
