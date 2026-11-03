@@ -14,6 +14,7 @@ const SaveService = preload("res://scripts/core/save_service.gd")
 const RelationshipService = preload("res://scripts/core/relationship_service.gd")
 const ProfileService = preload("res://scripts/core/profile_service.gd")
 const SpellService = preload("res://scripts/core/spell_service.gd")
+const ElementalStatusService = preload("res://scripts/core/elemental_status_service.gd")
 const SpellWorkshopService = preload("res://scripts/core/spell_workshop_service.gd")
 const SpellWorkshop = preload("res://scripts/spell_workshop.gd")
 const ArcaneProjectile = preload("res://scripts/spells/arcane_projectile.gd")
@@ -34,6 +35,7 @@ var save_service
 var relationship_service
 var profile_service
 var spell_service
+var elemental_status_service
 var spell_workshop_service
 var spell_workshop_panel
 var selected_spell_id := "FIREBALL"
@@ -56,7 +58,9 @@ func _ready() -> void:
 	relationship_service = RelationshipService.new()
 	event_bus = EventBus.new()
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
-	spell_service = SpellService.new(world_registry, effect_engine)
+	elemental_status_service = ElementalStatusService.new(world_registry, effect_engine)
+	elemental_status_service.reaction_triggered.connect(_on_elemental_reaction)
+	spell_service = SpellService.new(world_registry, effect_engine, elemental_status_service)
 	spell_service.projectile_requested.connect(_spawn_arcane_projectile)
 	spell_service.manifestation_requested.connect(_on_arcane_place)
 	spell_workshop_service = SpellWorkshopService.new(parameter_registry, spell_service)
@@ -132,7 +136,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		pending_spell_cast = event.shift_pressed
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	if elemental_status_service != null:
+		elemental_status_service.advance(delta)
 	# Reactive events are delivered in a bounded batch, never recursively.
 	event_bus.drain(rule_engine)
 	# Physics queries are intentionally performed in a physics tick, not in input callbacks.
@@ -147,7 +153,7 @@ func _physics_process(_delta: float) -> void:
 func _exit_tree() -> void:
 	# Save on normal exit as well as on the periodic checkpoint.
 	if save_service != null and world_registry != null and is_instance_valid(luna):
-		save_service.save_world(world_registry, luna, relationship_service)
+		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service)
 	if profile_service != null:
 		profile_service.save_profile()
 	if get_tree() != null:
@@ -250,7 +256,7 @@ func _spawn_entities() -> void:
 func _spawn(entity_id: String, category: String, where: Vector3) -> void:
 	var entity := HackableEntity.new()
 	add_child(entity)
-	entity.configure(entity_id, category, where, parameter_registry, world_registry, relationship_service)
+	entity.configure(entity_id, category, where, parameter_registry, world_registry, relationship_service, {}, elemental_status_service)
 	world_registry.register_entity(entity_id, entity, category.to_upper())
 	entity.target_acquired.connect(_on_target_acquired)
 
@@ -343,7 +349,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.12"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.13"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -470,7 +476,8 @@ func _load_checkpoint(automatic: bool) -> void:
 		return
 	var success: bool = save_service.load_world(
 		world_registry, luna, relationship_service,
-		Callable(self, "_restore_arcane_actor"), parameter_registry
+		Callable(self, "_restore_arcane_actor"), parameter_registry,
+		elemental_status_service
 	)
 	if success:
 		for entity_id in world_registry.list_ids():
@@ -594,6 +601,16 @@ func _on_arcane_impact(spell_id: String, caster_id: String, target_id: String) -
 		_create_arcane_entity(recipe, target_id)
 
 
+func _on_elemental_reaction(details: Dictionary) -> void:
+	var names := {
+		"STEAM": "ПШШ! Пар!",
+		"QUENCH": "Потушили!",
+		"SUPERCONDUCT": "Сверхразряд!",
+		"OVERLOAD": "Искры и огонь!"
+	}
+	_show_checkpoint_message(str(names.get(str(details["reaction"]), "Магия реагирует.")))
+
+
 func _on_arcane_place(details: Dictionary) -> void:
 	_create_arcane_entity(details["manifestation"], str(details["target_id"]))
 
@@ -634,7 +651,8 @@ func _spawn_arcane_actor_with_id(entity_id: String, recipe: Dictionary, location
 	add_child(entity)
 	entity.configure(
 		entity_id, "arcane_" + create_kind.to_lower(), location,
-		parameter_registry, world_registry, relationship_service, constructed
+		parameter_registry, world_registry, relationship_service, constructed,
+		elemental_status_service
 	)
 	if not world_registry.register_entity(entity_id, entity, create_kind):
 		entity.queue_free()
