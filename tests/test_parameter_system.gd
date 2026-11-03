@@ -15,7 +15,7 @@ func _initialize() -> void:
 	var tree = Hackable.new()
 	tree.configure("tree_test", "tree", Vector3.ZERO, registry)
 
-	assert(registry.get_specs_for("fridge").size() == 11)
+	assert(registry.get_specs_for("fridge").size() == 12)
 	assert(fridge.record.category == "fridge")
 	assert(tree.record.category == "tree")
 	assert(fridge.get_parameter("alive") == false)

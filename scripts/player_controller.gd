@@ -36,7 +36,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var direction := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	var traction := surface_service.traction(global_position) if surface_service != null else 1.0
+	var traction: float = float(surface_service.traction(global_position)) if surface_service != null else 1.0
 	velocity.x = move_toward(velocity.x, direction.x * WALK_SPEED, ACCELERATION * traction * delta)
 	velocity.z = move_toward(velocity.z, direction.y * WALK_SPEED, ACCELERATION * traction * delta)
 	velocity.y -= GRAVITY * delta
