@@ -83,7 +83,7 @@ func load_world(world, player: Node3D, relationships = null, create_actor: Calla
 	return apply_snapshot(received["data"], world, player, relationships, create_actor, parameter_registry, elemental_statuses, surface_fields, social_awareness, create_duplicate, rules)
 
 
-func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, social_awareness = null, create_duplicate: Callable = Callable(), rules = null) -> bool:
+func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null, social_awareness = null, create_duplicate: Callable = Callable(), rules = null) -> bool:
 	last_error = ""
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
