@@ -515,7 +515,7 @@ func _load_checkpoint(automatic: bool) -> void:
 	var success: bool = save_service.load_world(
 		world_registry, luna, relationship_service,
 		Callable(self, "_restore_arcane_actor"), parameter_registry,
-		elemental_status_service, surface_field_service
+		elemental_status_service, surface_field_service, social_awareness
 	)
 	if success:
 		for entity_id in world_registry.list_ids():
