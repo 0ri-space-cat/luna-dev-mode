@@ -482,7 +482,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.21"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.23"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
