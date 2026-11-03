@@ -8,9 +8,10 @@ signal state_changed(entity_id: String, active: Dictionary)
 
 const FORMAT_VERSION := 1
 const MAX_ENTITIES := 96
-const MAX_STATUS_FIELDS := 3
+const MAX_STATUS_FIELDS := 4
 const BURN_TIME := 4.0
 const CHILL_TIME := 4.0
+const FROZEN_TIME := 1.8
 const SHOCK_TIME := 1.25
 const BURN_INTERVAL := 1.0
 const BURN_DAMAGE := 2
@@ -35,7 +36,7 @@ func has_status(entity_id: String, status: String) -> bool:
 
 func movement_factor(entity_id: String) -> float:
 	var active: Dictionary = _states.get(entity_id, {})
-	if active.has("SHOCK"):
+	if active.has("SHOCK") or active.has("FROZEN"):
 		return 0.0
 	if active.has("CHILL"):
 		return 0.45
@@ -52,8 +53,9 @@ func apply_element(entity_id: String, element: String) -> bool:
 	var reaction := ""
 	match element:
 		"FIRE":
-			if active.has("CHILL"):
+			if active.has("CHILL") or active.has("FROZEN"):
 				active.erase("CHILL")
+				active.erase("FROZEN")
 				reaction = "STEAM"
 			# Steam extinguishes the cold; fire is shorter after melting ice.
 			active["BURN"] = _burn(2.5 if reaction == "STEAM" else BURN_TIME)
@@ -61,13 +63,21 @@ func apply_element(entity_id: String, element: String) -> bool:
 			if active.has("BURN"):
 				active.erase("BURN")
 				reaction = "QUENCH"
-			active["CHILL"] = _duration(2.5 if reaction == "QUENCH" else CHILL_TIME)
+				active["CHILL"] = _duration(2.5)
+			elif active.has("CHILL") or active.has("FROZEN"):
+				active.erase("CHILL")
+				active["FROZEN"] = _duration(FROZEN_TIME)
+				reaction = "FREEZE"
+			else:
+				active["CHILL"] = _duration(CHILL_TIME)
 		"STORM":
 			var duration := SHOCK_TIME
-			if active.has("CHILL"):
+			if active.has("CHILL") or active.has("FROZEN"):
+				var was_frozen: bool = active.has("FROZEN")
 				active.erase("CHILL")
+				active.erase("FROZEN")
 				reaction = "SUPERCONDUCT"
-				duration = 2.5
+				duration = 3.0 if was_frozen else 2.5
 			elif active.has("BURN"):
 				reaction = "OVERLOAD"
 				var burning: Dictionary = active["BURN"]
@@ -155,7 +165,7 @@ func validate_data(data: Variant) -> bool:
 		if active.is_empty() or active.size() > MAX_STATUS_FIELDS:
 			return false
 		for status in active.keys():
-			if status not in ["BURN", "CHILL", "SHOCK"]:
+			if status not in ["BURN", "CHILL", "FROZEN", "SHOCK"]:
 				return false
 			if typeof(active[status]) != TYPE_DICTIONARY:
 				return false
