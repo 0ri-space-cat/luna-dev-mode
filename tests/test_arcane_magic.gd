@@ -62,7 +62,7 @@ func _run() -> void:
 	assert(spells.cast_spell("FIREBALL", "luna", "fridge_test"))
 	assert(requests.size() == 1)
 	assert(fridge.get_parameter("health") == 100) # No damage before impact!
-	assert(requests[0]["manifestation"]["form"] == "ORB")
+	assert(requests[0]["manifestation"]["shape"] == "ORB")
 	var projectile = Projectile.new()
 	root.add_child(projectile)
 	projectile.configure(
@@ -82,7 +82,7 @@ func _run() -> void:
 
 	assert(spells.cast_spell("FROST_SHARD", "luna", "fridge_test"))
 	assert(requests.size() == 2)
-	assert(requests[1]["manifestation"]["form"] == "SHARD")
+	assert(requests[1]["manifestation"]["shape"] == "SHARD")
 	assert(spells.resolve_impact("FROST_SHARD", "luna", "fridge_test"))
 	assert(fridge.get_parameter("health") == 66)
 	assert(is_equal_approx(float(fridge.get_parameter("speed")), 1.7))
@@ -93,20 +93,20 @@ func _run() -> void:
 	# Dissect the classic fireball, reassemble into a storm shard, and persist.
 	var workshop = Workshop.new(registry, spells, TEMP)
 	var remix: Dictionary = spells.get_spell("FIREBALL")["manifestation"].duplicate(true)
-	remix["form"] = "SHARD"
-	remix["essence"] = "STORM"
+	remix["shape"] = "SHARD"
+	remix["element"] = "STORM"
 	remix["speed"] = 18.0
 	var actions: Array[Dictionary] = [
 		{"operation": "ADD", "parameter_id": "health", "value": -12},
 		{"operation": "SET", "parameter_id": "alive", "value": true}
 	]
 	assert(workshop.create_recipe("Моя грозовая пакость", 14.0, actions, remix) == "CUSTOM_001")
-	assert(spells.get_spell("CUSTOM_001")["manifestation"]["essence"] == "STORM")
+	assert(spells.get_spell("CUSTOM_001")["manifestation"]["element"] == "STORM")
 	assert(workshop.create_recipe("Ошибка", 15.0, actions, invalid).is_empty())
 	var next_spells = Spells.new(world, effects)
 	var library = Workshop.new(registry, next_spells, TEMP)
 	assert(library.load_library())
-	assert(next_spells.get_spell("CUSTOM_001")["manifestation"]["form"] == "SHARD")
+	assert(next_spells.get_spell("CUSTOM_001")["manifestation"]["shape"] == "SHARD")
 	assert(next_spells.cast_spell("CUSTOM_001", "luna", "fridge_test"))
 	assert(fridge.get_parameter("health") == 76) # Projectile needs to land.
 	assert(next_spells.resolve_impact("CUSTOM_001", "luna", "fridge_test"))

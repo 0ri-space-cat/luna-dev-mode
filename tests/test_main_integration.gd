@@ -69,13 +69,13 @@ func _run() -> void:
 	assert(paused)
 	var panel = stage.spell_workshop_panel
 	# The workshop now opens by dissecting the selected fireball.
-	assert(panel.manifestation_toggle.button_pressed)
+	assert(panel._choice_value(panel.create_choice) == "ENERGY")
 	assert(panel.draft.size() == 1)
 	assert(panel.form_choice.get_item_metadata(panel.form_choice.selected) == "ORB")
 	assert(panel.essence_choice.get_item_metadata(panel.essence_choice.selected) == "FIRE")
 	panel._on_new_recipe()
-	panel.manifestation_toggle.set_pressed_no_signal(false)
-	panel._on_manifestation_toggled(false)
+	panel._select_choice(panel.create_choice, "NONE")
+	panel._on_create_changed(panel.create_choice.selected)
 	panel.name_input.text = "Мой оживитель"
 	panel.field_choice.select(0)
 	panel._on_field_changed(0)
