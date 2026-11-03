@@ -5,10 +5,21 @@ extends PanelContainer
 signal closed
 signal spell_created(spell_id: String)
 
+const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
+
 var workshop
 var registry
 var draft: Array[Dictionary] = []
 var specs: Array[Dictionary] = []
+
+var source_choice: OptionButton
+var source_ids: Array[String] = []
+var manifestation_toggle: CheckButton
+var manifestation_settings: VBoxContainer
+var form_choice: OptionButton
+var essence_choice: OptionButton
+var speed_control: SpinBox
+var size_control: SpinBox
 
 var name_input: LineEdit
 var range_input: SpinBox
@@ -36,8 +47,8 @@ func _ready() -> void:
 	anchor_bottom = 0.5
 	offset_left = -290.0
 	offset_right = 290.0
-	offset_top = -355.0
-	offset_bottom = 355.0
+	offset_top = -380.0
+	offset_bottom = 380.0
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var style := StyleBoxFlat.new()
@@ -48,12 +59,24 @@ func _ready() -> void:
 	style.set_content_margin_all(16)
 	add_theme_stylebox_override("panel", style)
 	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 9)
+	layout.add_theme_constant_override("separation", 5)
 	add_child(layout)
 
 	var title := _label(layout, "SPELL_WORKSHOP", 21)
 	title.add_theme_color_override("font_color", Color("a4f8e2"))
 	_label(layout, "Собери цепочку. А последствия посмотрим.", 13)
+
+	var source_row := HBoxContainer.new()
+	layout.add_child(source_row)
+	_label(source_row, "РАЗОБРАТЬ:", 13)
+	source_choice = OptionButton.new()
+	source_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	source_choice.item_selected.connect(_on_source_selected)
+	source_row.add_child(source_choice)
+	var new_button := Button.new()
+	new_button.text = "С НУЛЯ"
+	new_button.pressed.connect(_on_new_recipe)
+	source_row.add_child(new_button)
 
 	var headline := HBoxContainer.new()
 	layout.add_child(headline)
@@ -74,9 +97,40 @@ func _ready() -> void:
 	range_row.add_child(range_input)
 
 	layout.add_child(HSeparator.new())
+	manifestation_toggle = CheckButton.new()
+	manifestation_toggle.text = "CONJURE · Призвать снаряд"
+	manifestation_toggle.button_pressed = false
+	manifestation_toggle.toggled.connect(_on_manifestation_toggled)
+	layout.add_child(manifestation_toggle)
+
+	manifestation_settings = VBoxContainer.new()
+	manifestation_settings.add_theme_constant_override("separation", 4)
+	layout.add_child(manifestation_settings)
+	form_choice = _choice_row(manifestation_settings, "SHAPE · Форма", ArcaneGrammar.FORMS)
+	essence_choice = _choice_row(manifestation_settings, "INFUSE · Стихия", ArcaneGrammar.ESSENCES)
+	_label(manifestation_settings, "CAST · Отправить в цель: Снаряд", 12)
+	var motion_row := HBoxContainer.new()
+	manifestation_settings.add_child(motion_row)
+	_label(motion_row, "Скорость полёта", 12)
+	speed_control = SpinBox.new()
+	speed_control.min_value = 3.0
+	speed_control.max_value = 30.0
+	speed_control.step = 1.0
+	speed_control.value = ArcaneGrammar.DEFAULT_SPEED
+	motion_row.add_child(speed_control)
+	_label(motion_row, "Размер", 12)
+	size_control = SpinBox.new()
+	size_control.min_value = 0.15
+	size_control.max_value = 0.9
+	size_control.step = 0.05
+	size_control.value = ArcaneGrammar.DEFAULT_SIZE
+	motion_row.add_child(size_control)
+	manifestation_settings.visible = false
+
+	layout.add_child(HSeparator.new())
 	var field_row := HBoxContainer.new()
 	layout.add_child(field_row)
-	_label(field_row, "PARAMETER:", 14)
+	_label(field_row, "ПРИ ПОПАДАНИИ:", 13)
 	field_choice = OptionButton.new()
 	field_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field_choice.item_selected.connect(_on_field_changed)
@@ -84,7 +138,7 @@ func _ready() -> void:
 
 	var operation_row := HBoxContainer.new()
 	layout.add_child(operation_row)
-	_label(operation_row, "OPERATION:", 14)
+	_label(operation_row, "ДЕЙСТВИЕ:", 13)
 	operation_choice = OptionButton.new()
 	operation_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	operation_choice.item_selected.connect(_on_operation_changed)
@@ -102,9 +156,9 @@ func _ready() -> void:
 	layout.add_child(add_button)
 
 	layout.add_child(HSeparator.new())
-	_label(layout, "EFFECT_CHAIN  [максимум 12]", 14)
+	_label(layout, "ON_HIT · Цепочка эффектов [до 12]", 13)
 	var scroller := ScrollContainer.new()
-	scroller.custom_minimum_size.y = 175
+	scroller.custom_minimum_size.y = 105
 	scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	layout.add_child(scroller)
@@ -133,9 +187,104 @@ func _ready() -> void:
 	_refresh_blocks()
 
 
-func show_workshop() -> void:
-	status_label.text = ""
+func show_workshop(selected_spell_id: String = "") -> void:
+	_reload_sources()
+	if not selected_spell_id.is_empty():
+		load_spell(selected_spell_id)
+	status_label.text = "Разбери заклинание и собери свою версию."
 	visible = true
+
+
+func load_spell(spell_id: String) -> bool:
+	if workshop == null:
+		return false
+	var definition: Dictionary = workshop.spells.get_spell(spell_id)
+	if definition.is_empty():
+		return false
+	var title: String = str(definition["label"])
+	name_input.text = ("МОЙ " + title).substr(0, 40)
+	range_input.value = float(definition["cast_range"])
+	draft.clear()
+	for action in definition["effects"]:
+		draft.append(action.duplicate(true))
+	var manifest: Dictionary = definition.get("manifestation", {})
+	manifestation_toggle.set_pressed_no_signal(not manifest.is_empty())
+	_on_manifestation_toggled(not manifest.is_empty())
+	if not manifest.is_empty():
+		_select_choice(form_choice, str(manifest["form"]))
+		_select_choice(essence_choice, str(manifest["essence"]))
+		speed_control.value = float(manifest["speed"])
+		size_control.value = float(manifest["size"])
+	var location: int = source_ids.find(spell_id)
+	if location >= 0:
+		source_choice.select(location)
+	_refresh_blocks()
+	return true
+
+
+func _reload_sources() -> void:
+	source_ids.clear()
+	source_choice.clear()
+	for spell_id in workshop.spells.list_spell_ids():
+		var item: Dictionary = workshop.spells.get_spell(spell_id)
+		source_ids.append(spell_id)
+		source_choice.add_item(str(item.get("label", spell_id)))
+
+
+func _on_source_selected(index: int) -> void:
+	if index >= 0 and index < source_ids.size():
+		load_spell(source_ids[index])
+
+
+func _on_new_recipe() -> void:
+	draft.clear()
+	name_input.text = "МОЁ ЗАКЛИНАНИЕ"
+	range_input.value = 11.0
+	manifestation_toggle.set_pressed_no_signal(true)
+	_on_manifestation_toggled(true)
+	_select_choice(form_choice, "ORB")
+	_select_choice(essence_choice, "FIRE")
+	speed_control.value = ArcaneGrammar.DEFAULT_SPEED
+	size_control.value = ArcaneGrammar.DEFAULT_SIZE
+	status_label.text = ""
+	_refresh_blocks()
+
+
+func _on_manifestation_toggled(enabled: bool) -> void:
+	manifestation_settings.visible = enabled
+
+
+func _manifestation() -> Dictionary:
+	if not manifestation_toggle.button_pressed:
+		return {}
+	return {
+		"form": str(form_choice.get_item_metadata(form_choice.selected)),
+		"essence": str(essence_choice.get_item_metadata(essence_choice.selected)),
+		"delivery": "PROJECTILE",
+		"speed": speed_control.value,
+		"size": size_control.value
+	}
+
+
+func _choice_row(parent: Node, label: String, choices: Array) -> OptionButton:
+	var row := HBoxContainer.new()
+	parent.add_child(row)
+	var name := _label(row, label, 12)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var options := OptionButton.new()
+	options.custom_minimum_size.x = 145
+	for item in choices:
+		options.add_item(str(item["name"]))
+		options.set_item_metadata(options.item_count - 1, item["id"])
+	row.add_child(options)
+	return options
+
+
+func _select_choice(choice: OptionButton, id: String) -> void:
+	for index in range(choice.item_count):
+		if str(choice.get_item_metadata(index)) == id:
+			choice.select(index)
+			return
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -149,7 +298,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _rebuild_fields() -> void:
 	field_choice.clear()
 	for spec in specs:
-		field_choice.add_item(str(spec["label"]))
+		field_choice.add_item(str(spec.get("display_name", spec["label"])))
 	if not specs.is_empty():
 		field_choice.select(0)
 		_on_field_changed(0)
@@ -162,17 +311,28 @@ func _on_field_changed(_index: int) -> void:
 		return
 	match str(spec["kind"]):
 		"bool":
-			operation_choice.add_item("SET")
-			operation_choice.add_item("TOGGLE")
+			_add_operation("Задать", "SET")
+			_add_operation("Переключить", "TOGGLE")
 		"int", "float":
-			operation_choice.add_item("SET")
-			operation_choice.add_item("ADD")
-			operation_choice.add_item("MULTIPLY")
+			_add_operation("Задать", "SET")
+			_add_operation("Прибавить", "ADD")
+			_add_operation("Умножить", "MULTIPLY")
 		_:
-			operation_choice.add_item("SET")
+			_add_operation("Задать", "SET")
 	operation_choice.select(0)
 	hint_label.text = str(spec["hint"])
 	_refresh_value_input()
+
+
+func _add_operation(label: String, operation_id: String) -> void:
+	operation_choice.add_item(label)
+	operation_choice.set_item_metadata(operation_choice.item_count - 1, operation_id)
+
+
+func _selected_operation() -> String:
+	if operation_choice.selected < 0:
+		return ""
+	return str(operation_choice.get_item_metadata(operation_choice.selected))
 
 
 func _on_operation_changed(_index: int) -> void:
@@ -194,7 +354,7 @@ func _refresh_value_input() -> void:
 	var spec := _current_spec()
 	if spec.is_empty():
 		return
-	var operation := operation_choice.get_item_text(operation_choice.selected)
+	var operation := _selected_operation()
 	_label(value_host, "VALUE:", 14)
 	if operation == "TOGGLE":
 		_label(value_host, "INVERT", 14)
@@ -278,9 +438,10 @@ func _refresh_blocks() -> void:
 		var spec_name := str(block["parameter_id"]).to_upper()
 		for spec in specs:
 			if spec["id"] == block["parameter_id"]:
-				spec_name = str(spec["label"])
+				spec_name = str(spec.get("display_name", spec["label"]))
 				break
-		var description := "%02d  %s  %s" % [i + 1, spec_name, str(block["operation"])]
+		var readable_op := {"SET": "ЗАДАТЬ", "ADD": "ИЗМЕНИТЬ НА", "MULTIPLY": "УМНОЖИТЬ", "TOGGLE": "ПЕРЕКЛЮЧИТЬ"}
+		var description := "%02d  %s  ·  %s" % [i + 1, spec_name, str(readable_op.get(block["operation"], block["operation"]))]
 		if block.has("value"):
 			description += "  %s" % _format_value(block["value"])
 		var label := _label(row, description, 12)
@@ -320,7 +481,7 @@ func _on_save() -> void:
 	if workshop == null:
 		return
 	var spell_id: String = workshop.create_recipe(
-		name_input.text, range_input.value, draft
+		name_input.text, range_input.value, draft, _manifestation()
 	)
 	if spell_id.is_empty():
 		status_label.text = workshop.last_error
