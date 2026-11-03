@@ -35,6 +35,21 @@ func _init(world_registry, effect_engine, surface_service = null) -> void:
 	surfaces = surface_service
 
 
+## Capture a single entity's transient statuses without disturbing others.
+func take_entity_state(entity_id: String) -> Dictionary:
+	var stored: Dictionary = get_state(entity_id)
+	_states.erase(entity_id)
+	state_changed.emit(entity_id, {})
+	return stored
+
+
+func restore_entity_state(entity_id: String, state: Dictionary) -> void:
+	if state.is_empty():
+		return
+	_states[entity_id] = state.duplicate(true)
+	state_changed.emit(entity_id, get_state(entity_id))
+
+
 func get_state(entity_id: String) -> Dictionary:
 	return (_states.get(entity_id, {}) as Dictionary).duplicate(true)
 
