@@ -7,6 +7,7 @@ signal projectile_requested(details: Dictionary)
 signal manifestation_requested(details: Dictionary)
 
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
+const TargetResolver = preload("res://scripts/core/target_resolver.gd")
 
 const MAX_EFFECTS := 12
 
@@ -54,8 +55,21 @@ func register_spell(spec: Dictionary) -> bool:
 			return false
 		if operation != "TOGGLE" and not action.has("value"):
 			return false
+	var impact: Variant = spec.get("impact", {})
+	if typeof(impact) != TYPE_DICTIONARY:
+		return false
+	var mode: String = str(impact.get("mode", "DIRECT"))
+	if mode == "BURST":
+		if impact.size() != 2 or typeof(impact.get("radius")) not in [TYPE_INT, TYPE_FLOAT]:
+			return false
+		var radius: float = float(impact["radius"])
+		if is_nan(radius) or is_inf(radius) or radius < 0.5 or radius > TargetResolver.MAX_RADIUS:
+			return false
+	elif mode != "DIRECT" or (not impact.is_empty() and impact.size() != 1):
+		return false
 	var stored: Dictionary = spec.duplicate(true)
 	stored["manifestation"] = ArcaneGrammar.normalize(manifest)
+	stored["impact"] = impact.duplicate(true)
 	_definitions[id] = stored
 	_order.append(id)
 	return true
@@ -126,7 +140,15 @@ func resolve_impact(spell_id: String, caster_id: String, target_id: String) -> b
 		return _fail("Снаряд потерял свою цель.")
 	if spec["effects"].is_empty():
 		return true
-	if not effects.apply_batch(spec["effects"], target_id, caster_id, "spell:%s" % spell_id):
+	var impact: Dictionary = spec.get("impact", {})
+	var mode: String = str(impact.get("mode", "DIRECT"))
+	var ok := false
+	if mode == "BURST":
+		var ids: Array[String] = TargetResolver.around(world, target_id, float(impact["radius"]))
+		ok = effects.apply_to_targets(spec["effects"], ids, caster_id, "spell:%s" % spell_id)
+	else:
+		ok = effects.apply_batch(spec["effects"], target_id, caster_id, "spell:%s" % spell_id)
+	if not ok:
 		return _fail("Попадание не сработало: %s" % effects.last_error)
 	return true
 
@@ -137,6 +159,7 @@ func _register_starters() -> void:
 		"id": "FIREBALL", "label": "ОГНЕННЫЙ ШАР", "cast_range": 15.0,
 		"symbol_id": "FIRE", "stone_color": Color("ff884a"),
 		"manifestation": ArcaneGrammar.make("ORB", "FIRE", 12.0, 0.44),
+		"impact": {"mode": "BURST", "radius": 2.5},
 		"effects": [{"operation": "ADD", "parameter_id": "health", "value": -24}]
 	})
 	register_spell({
