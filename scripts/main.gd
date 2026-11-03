@@ -94,6 +94,7 @@ func _ready() -> void:
 		if not profile_service.load_profile():
 			push_warning("Profile could not be read: %s" % profile_service.last_error)
 	command_processor.parameter_changed.connect(_on_parameter_changed)
+	command_processor.trait_changed.connect(_on_trait_changed)
 	relationship_service.relationship_changed.connect(_on_relationship_changed)
 	_register_controls()
 	_build_environment()
@@ -351,6 +352,21 @@ func _on_parameter_changed(change: Dictionary) -> void:
 			"parameter_id": str(change["parameter_id"]),
 			"value": change["after"],
 			"initiator_id": str(change["initiator_id"])
+		}
+	})
+
+
+func _on_trait_changed(change: Dictionary) -> void:
+	# Entity classification is part of the same causal event system as parameters.
+	event_bus.enqueue({
+		"type": "entity.traits_changed",
+		"source_id": str(change["entity_id"]),
+		"target_id": str(change["entity_id"]),
+		"payload": {
+			"roles": change["after"]["roles"],
+			"tags": change["after"]["tags"],
+			"initiator_id": str(change["initiator_id"]),
+			"command_source_id": str(change["source_id"])
 		}
 	})
 
