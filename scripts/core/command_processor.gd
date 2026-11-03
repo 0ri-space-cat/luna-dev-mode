@@ -5,6 +5,7 @@ extends RefCounted
 
 signal parameter_changed(change: Dictionary)
 signal trait_changed(change: Dictionary)
+signal entity_changed(change: Dictionary)
 signal history_changed
 
 const MAX_UNDO := 120
@@ -116,10 +117,89 @@ func _replay_trait_change(entry: Dictionary, forward: bool) -> bool:
 	return true
 
 
+## Single creation/removal command shared by the wand, magic and future
+## systems. Blueprints contain only data and retain the same ID through redo.
+func execute_entity_create(lifecycle, blueprint: Dictionary,
+		initiator_id: String = "luna", source_id: String = "wand:luna") -> Node:
+	if lifecycle == null:
+		return null
+	var actor: Node = lifecycle.restore_entity(blueprint)
+	if actor == null:
+		return null
+	_record_entity_action(lifecycle, blueprint, "CREATE", initiator_id, source_id)
+	return actor
+
+
+func execute_entity_delete(lifecycle, entity_id: String,
+		initiator_id: String = "luna", source_id: String = "wand:luna") -> bool:
+	if lifecycle == null or entity_id == "luna":
+		return false
+	var blueprint: Dictionary = lifecycle.delete_entity(entity_id)
+	if blueprint.is_empty():
+		return false
+	_record_entity_action(lifecycle, blueprint, "DELETE", initiator_id, source_id)
+	return true
+
+
+func _record_entity_action(lifecycle, blueprint: Dictionary, action: String,
+		initiator_id: String, source_id: String) -> void:
+	_sequence += 1
+	var entry := {
+		"kind": "entity", "lifecycle": lifecycle,
+		"action": action, "blueprint": blueprint.duplicate(true),
+		"sequence": _sequence, "entity_id": str(blueprint["id"]),
+		"parameter_id": "ENTITY_LIFECYCLE", "initiator_id": initiator_id,
+		"source_id": source_id, "merge_key": ""
+	}
+	_undo_stack.append(entry)
+	if _undo_stack.size() > MAX_UNDO:
+		_undo_stack.pop_front()
+	_redo_stack.clear()
+	_announce_entity(entry, action)
+	history_changed.emit()
+
+
+func _replay_entity(entry: Dictionary, forward: bool) -> bool:
+	var lifecycle: Variant = entry["lifecycle"]
+	var blueprint: Dictionary = entry["blueprint"]
+	var should_exist: bool = (str(entry["action"]) == "CREATE") == forward
+	if should_exist:
+		if lifecycle.restore_entity(blueprint) == null:
+			return false
+	else:
+		var removed: Dictionary = lifecycle.delete_entity(str(blueprint["id"]))
+		if removed.is_empty():
+			return false
+		# A removed creation may have transient state/relations not captured
+		# at creation; restoring it on redo should not inherit those edits.
+		if str(entry["action"]) == "DELETE" and forward:
+			entry["blueprint"] = removed
+	_announce_entity(entry, ("REDO_" if forward else "UNDO_") + str(entry["action"]))
+	return true
+
+
+func _announce_entity(entry: Dictionary, action: String) -> void:
+	_append_audit("ENTITY_" + action, entry, {}, entry["blueprint"])
+	entity_changed.emit({
+		"action": action, "entity_id": str(entry["entity_id"]),
+		"category": str(entry["blueprint"]["category"]),
+		"present": action in ["CREATE", "UNDO_DELETE", "REDO_CREATE"],
+		"initiator_id": str(entry["initiator_id"]),
+		"source_id": str(entry["source_id"])
+	})
+
+
 func undo() -> bool:
 	if _undo_stack.is_empty():
 		return false
 	var entry: Dictionary = _undo_stack.back()
+	if str(entry.get("kind", "")) == "entity":
+		if not _replay_entity(entry, false):
+			return false
+		_undo_stack.pop_back()
+		_redo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if str(entry.get("kind", "")) == "traits":
 		if not _replay_trait_change(entry, false):
 			return false
@@ -149,6 +229,13 @@ func redo() -> bool:
 	if _redo_stack.is_empty():
 		return false
 	var entry: Dictionary = _redo_stack.back()
+	if str(entry.get("kind", "")) == "entity":
+		if not _replay_entity(entry, true):
+			return false
+		_redo_stack.pop_back()
+		_undo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if str(entry.get("kind", "")) == "traits":
 		if not _replay_trait_change(entry, true):
 			return false
