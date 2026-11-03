@@ -29,6 +29,6 @@ jobs:
             exit 1
           fi
       - name: Run parameter and undo smoke tests
-        run: godot --headless --path . --script res://tests/test_parameter_system.gd
+        run: timeout 40s godot --headless --path . --script res://tests/test_parameter_system.gd
       - name: Run behavior and targeting smoke tests
-        run: godot --headless --path . --script res://tests/test_behavior_system.gd
+        run: timeout 40s godot --headless --path . --script res://tests/test_behavior_system.gd
