@@ -61,6 +61,9 @@ static func normalize(recipe: Dictionary) -> Dictionary:
 	if _has_exact_fields(recipe, LEGACY_KEYS):
 		if recipe["delivery"] != "PROJECTILE":
 			return {}
+		for number in ["speed", "size"]:
+			if typeof(recipe[number]) not in [TYPE_INT, TYPE_FLOAT]:
+				return {}
 		return make(str(recipe["form"]), str(recipe["essence"]),
 			float(recipe["speed"]), float(recipe["size"]))
 	if _has_exact_fields(recipe, CURRENT_KEYS):

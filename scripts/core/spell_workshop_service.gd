@@ -46,6 +46,9 @@ func create_recipe(label: String, cast_range: float, actions: Array, manifestati
 		last_error = "Палочка уже забита заклинаниями."
 		return ""
 	var name := label.strip_edges()
+	if not manifestation.is_empty() and ArcaneGrammar.normalize(manifestation).is_empty():
+		last_error = "Непонятная форма заклинания."
+		return ""
 	var id := _next_id()
 	var spec := {
 		"id": id,
@@ -220,6 +223,11 @@ func _parse_recipe(raw: Dictionary) -> Dictionary:
 		if not raw.has(required):
 			return {}
 	if typeof(raw["effects"]) != TYPE_ARRAY:
+		return {}
+	var incoming: Variant = raw.get("manifestation", {})
+	if typeof(incoming) != TYPE_DICTIONARY:
+		return {}
+	if not incoming.is_empty() and ArcaneGrammar.normalize(incoming).is_empty():
 		return {}
 	var decoded := []
 	for source in raw["effects"]:
