@@ -2,6 +2,7 @@ extends RefCounted
 
 const JsonStore = preload("res://scripts/core/json_store.gd")
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
+const EntityRecord = preload("res://scripts/core/entity_record.gd")
 ## Versioned world snapshots. Writes only data, never Node references or scripts.
 ## JSON is validated before any state is applied. Save uses temp + rename.
 ##
@@ -42,7 +43,9 @@ func snapshot(world, player: Node3D, relationships = null, elemental_statuses = 
 		var entry := {
 			"category": str(record.category),
 			"position": _pack_position((node as Node3D).position),
-			"parameters": packed_parameters
+			"parameters": packed_parameters,
+			"roles": record.get_stored_roles(),
+			"tags": record.get_tags()
 		}
 		if str(record.category).begins_with("arcane_"):
 			var manifest: Dictionary = node.get("arcane_manifestation")
@@ -193,7 +196,12 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 					continue # Backward compatibility with removed parameters.
 				return _fail("Invalid typed value for %s.%s" % [id, key])
 			normalized[key] = checked["value"]
+		var saved_roles: Variant = item.get("roles", EntityRecord.default_roles(category))
+		var saved_tags: Variant = item.get("tags", EntityRecord.default_tags(category))
+		if not EntityRecord.validate_trait_list(saved_roles) or not EntityRecord.validate_trait_list(saved_tags):
+			return _fail("Invalid entity roles/tags: %s" % id)
 		plan.append({
+			"roles": saved_roles, "tags": saved_tags,
 			"node": entity, "id": id, "manifest": manifest,
 			"copy_origin": copy_origin, "category": category,
 			"position": pos["value"], "parameters": normalized
@@ -227,6 +235,8 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		for key in item["parameters"].keys():
 			if not node.call("set_parameter", key, item["parameters"][key]):
 				return _fail("Failed to restore %s" % key)
+		if not node.record.set_traits(item["roles"], item["tags"]):
+			return _fail("Failed to restore entity roles/tags")
 	player.position = start["value"]
 	if relationships != null:
 		relationships.import_data(relationship_data)
