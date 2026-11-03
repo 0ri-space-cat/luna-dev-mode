@@ -14,6 +14,8 @@ const SaveService = preload("res://scripts/core/save_service.gd")
 const RelationshipService = preload("res://scripts/core/relationship_service.gd")
 const ProfileService = preload("res://scripts/core/profile_service.gd")
 const SpellService = preload("res://scripts/core/spell_service.gd")
+const SpellWorkshopService = preload("res://scripts/core/spell_workshop_service.gd")
+const SpellWorkshop = preload("res://scripts/spell_workshop.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -30,6 +32,8 @@ var save_service
 var relationship_service
 var profile_service
 var spell_service
+var spell_workshop_service
+var spell_workshop_panel
 var selected_spell_id := "AWAKEN"
 var pending_spell_cast := false
 var spell_hint_label: Label
@@ -49,6 +53,10 @@ func _ready() -> void:
 	event_bus = EventBus.new()
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	spell_service = SpellService.new(world_registry, effect_engine)
+	spell_workshop_service = SpellWorkshopService.new(parameter_registry, spell_service)
+	if spell_workshop_service.has_library():
+		if not spell_workshop_service.load_library():
+			push_warning("Spell recipes could not be loaded: %s" % spell_workshop_service.last_error)
 	rule_engine = RuleEngine.new(effect_engine)
 	save_service = SaveService.new()
 	profile_service = ProfileService.new()
@@ -85,12 +93,20 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode in [KEY_1, KEY_2, KEY_3]:
+		if event.keycode >= KEY_1 and event.keycode <= KEY_9:
 			var index: int = int(event.keycode) - int(KEY_1)
 			var spell_ids: Array[String] = spell_service.list_spell_ids()
 			if index >= 0 and index < spell_ids.size():
 				selected_spell_id = spell_ids[index]
 				_update_spell_hint()
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_TAB:
+			_select_next_spell()
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_B:
+			_open_workshop()
 			get_viewport().set_input_as_handled()
 			return
 		if event.keycode == KEY_J:
@@ -321,14 +337,14 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.8"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.9"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
 	layer.add_child(header)
 
 	var instructions := Label.new()
-	instructions.text = "WASD — ходить   •   ЛКМ — взломать   •   Shift+ЛКМ — заклинание   •   1–3 — выбрать заклинание"
+	instructions.text = "WASD — ходить   •   ЛКМ — взломать   •   Shift+ЛКМ — колдовать   •   1–9 / Tab — выбрать   •   B — конструктор"
 	instructions.position = Vector2(24, 50)
 	instructions.add_theme_font_size_override("font_size", 15)
 	instructions.add_theme_color_override("font_color", Color("e0f7f4"))
@@ -387,6 +403,13 @@ func _build_interface() -> void:
 	layer.add_child(editor)
 	editor.configure(parameter_registry, command_processor)
 	editor.closed.connect(_close_editor)
+
+	spell_workshop_panel = SpellWorkshop.new()
+	layer.add_child(spell_workshop_panel)
+	spell_workshop_panel.configure(parameter_registry, spell_workshop_service)
+	spell_workshop_panel.closed.connect(_close_workshop)
+	spell_workshop_panel.spell_created.connect(_on_custom_spell_created)
+
 
 
 func _try_select(mouse_position: Vector2, casting: bool = false) -> void:
@@ -494,3 +517,38 @@ func _update_spell_hint() -> void:
 		return
 	var spell: Dictionary = spell_service.get_spell(selected_spell_id)
 	spell_hint_label.text = "ПАЛОЧКА: %s  |  Shift+ЛКМ по объекту" % str(spell.get("label", selected_spell_id))
+
+
+func _open_workshop() -> void:
+	if not is_instance_valid(spell_workshop_panel) or (is_instance_valid(editor) and editor.visible):
+		return
+	if is_instance_valid(journal_panel):
+		journal_panel.visible = false
+	pause_tint.visible = true
+	spell_workshop_panel.show_workshop()
+	get_tree().paused = true
+
+
+func _close_workshop() -> void:
+	if not is_instance_valid(spell_workshop_panel):
+		return
+	spell_workshop_panel.visible = false
+	if not (is_instance_valid(editor) and editor.visible):
+		pause_tint.visible = false
+		get_tree().paused = false
+
+
+func _on_custom_spell_created(spell_id: String) -> void:
+	selected_spell_id = spell_id
+	_update_spell_hint()
+	_close_workshop()
+	_show_checkpoint_message("ГОТОВО: %s. ПРОБУЙ Shift+ЛКМ!" % spell_id)
+
+
+func _select_next_spell() -> void:
+	var ids: Array[String] = spell_service.list_spell_ids()
+	if ids.is_empty():
+		return
+	var index: int = ids.find(selected_spell_id)
+	selected_spell_id = ids[(index + 1) % ids.size()]
+	_update_spell_hint()
