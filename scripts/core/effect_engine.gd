@@ -183,21 +183,31 @@ func _reject_plan(reason: String) -> Dictionary:
 
 func apply_to_targets(actions: Array, target_ids: Array[String],
 		initiator_id: String, source_id: String) -> bool:
-	## All affected targets are validated before a single world transaction.
+	var plans: Array[Dictionary] = []
+	for target_id in target_ids:
+		plans.append({"target_id": target_id, "actions": actions})
+	return apply_targeted_batches(plans, initiator_id, source_id)
+
+
+func apply_targeted_batches(plans: Array[Dictionary], initiator_id: String, source_id: String) -> bool:
+	## Used by chain lightning: targets can receive DIFFERENT damage, all in
+	## one transaction. Never leave a partially applied lightning chain.
 	last_error = ""
-	if actions.is_empty():
-		return true
-	if target_ids.is_empty() or target_ids.size() > 8:
+	if plans.is_empty() or plans.size() > 8:
 		last_error = "Invalid number of effect targets"
 		return false
 	var encountered := {}
 	var steps: Array[Dictionary] = []
-	for target_id in target_ids:
-		if encountered.has(target_id):
-			last_error = "A target was selected twice"
+	for plan in plans:
+		var target_id: String = str(plan.get("target_id", ""))
+		if target_id.is_empty() or encountered.has(target_id):
+			last_error = "Missing or repeated effect target"
+			return false
+		if typeof(plan.get("actions")) != TYPE_ARRAY:
+			last_error = "Malformed effect plan"
 			return false
 		encountered[target_id] = true
-		var preview: Dictionary = preview_batch(actions, target_id)
+		var preview: Dictionary = preview_batch(plan["actions"], target_id)
 		if not bool(preview["ok"]):
 			return false
 		for step in preview["steps"]:
@@ -208,6 +218,6 @@ func apply_to_targets(actions: Array, target_ids: Array[String],
 	if steps.is_empty():
 		return true
 	if not commands.execute_batch(steps, initiator_id, source_id):
-		last_error = "Area transaction failed to commit"
+		last_error = "Multi-target transaction failed to commit"
 		return false
 	return true
