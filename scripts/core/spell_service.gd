@@ -3,6 +3,7 @@ extends RefCounted
 ## Final spell-card visuals and the player's spell builder are later features.
 
 signal spell_cast(details: Dictionary)
+signal damage_applied(details: Dictionary)
 signal projectile_requested(details: Dictionary)
 signal manifestation_requested(details: Dictionary)
 signal chain_resolved(details: Dictionary)
@@ -165,6 +166,13 @@ func resolve_impact(spell_id: String, caster_id: String, target_id: String) -> b
 	elif mode == "CHAIN":
 		affected = TargetResolver.chain(world, target_id,
 			float(impact["radius"]), int(impact["jumps"]))
+	var before_health := {}
+	for entity_id in affected:
+		var damaged_actor: Node = world.get_entity(entity_id)
+		if damaged_actor != null and damaged_actor.has_method("get_parameter"):
+			var current: Variant = damaged_actor.call("get_parameter", "health")
+			if typeof(current) in [TYPE_INT, TYPE_FLOAT]:
+				before_health[entity_id] = float(current)
 	var ok := false
 	if mode == "CHAIN":
 		var plans: Array[Dictionary] = []
@@ -194,6 +202,19 @@ func resolve_impact(spell_id: String, caster_id: String, target_id: String) -> b
 	if elemental_statuses != null and not manifestation.is_empty():
 		for entity_id in affected:
 			elemental_statuses.apply_element(entity_id, str(manifestation["element"]))
+	var victims: Array[String] = []
+	for entity_id in before_health.keys():
+		var damaged_actor: Node = world.get_entity(str(entity_id))
+		if damaged_actor == null or not damaged_actor.has_method("get_parameter"):
+			continue
+		var current_health: Variant = damaged_actor.call("get_parameter", "health")
+		if typeof(current_health) in [TYPE_INT, TYPE_FLOAT] and float(current_health) < float(before_health[entity_id]):
+			victims.append(str(entity_id))
+	if not victims.is_empty():
+		damage_applied.emit({
+			"spell_id": spell_id, "caster_id": caster_id,
+			"targets": victims.duplicate()
+		})
 	if mode == "CHAIN" and affected.size() > 1:
 		var links: Array[Dictionary] = []
 		for i in range(1, affected.size()):
