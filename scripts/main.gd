@@ -527,7 +527,7 @@ func _open_workshop() -> void:
 	if is_instance_valid(journal_panel):
 		journal_panel.visible = false
 	pause_tint.visible = true
-	spell_workshop_panel.show_workshop()
+	spell_workshop_panel.show_workshop(selected_spell_id)
 	get_tree().paused = true
 
 
