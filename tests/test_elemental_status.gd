@@ -84,6 +84,22 @@ func _run() -> void:
 	assert(not conditions.has_status("fridge", "SHOCK"))
 	assert(conditions.movement_factor("fridge") == 1.0)
 
+	# Two consecutive frost hits turn a slow into a complete freeze.
+	assert(conditions.apply_element("fridge", "FROST"))
+	assert(conditions.has_status("fridge", "CHILL"))
+	assert(conditions.apply_element("fridge", "FROST"))
+	assert(conditions.has_status("fridge", "FROZEN"))
+	assert(not conditions.has_status("fridge", "CHILL"))
+	assert(conditions.movement_factor("fridge") == 0.0)
+	assert(reactions.has("FREEZE"))
+	assert(conditions.apply_element("fridge", "STORM"))
+	assert(not conditions.has_status("fridge", "FROZEN"))
+	assert(is_equal_approx(conditions.get_state("fridge")["SHOCK"]["remaining"], 3.0))
+	conditions.advance(1.0)
+	conditions.advance(1.0)
+	conditions.advance(1.0)
+	assert(conditions.movement_factor("fridge") == 1.0)
+
 	# Electricity + fire accelerates the existing burn pulse rate.
 	var tree_health: int = tree.get_parameter("health")
 	# Refresh the burning timer before testing the accelerated pulse.

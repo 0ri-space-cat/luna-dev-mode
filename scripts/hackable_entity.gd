@@ -96,14 +96,14 @@ func show_elemental_statuses(active: Dictionary) -> void:
 	if not is_instance_valid(elemental_label):
 		return
 	var names := PackedStringArray()
-	for kind in ["BURN", "CHILL", "SHOCK"]:
+	for kind in ["BURN", "CHILL", "FROZEN", "SHOCK"]:
 		if active.has(kind):
 			names.append(kind)
 	elemental_label.text = " / ".join(names)
 	elemental_label.visible = not names.is_empty()
 	if active.has("SHOCK"):
 		elemental_label.modulate = Color("e6d77a")
-	elif active.has("CHILL"):
+	elif active.has("CHILL") or active.has("FROZEN"):
 		elemental_label.modulate = Color("9edffa")
 	else:
 		elemental_label.modulate = Color("ff884a")

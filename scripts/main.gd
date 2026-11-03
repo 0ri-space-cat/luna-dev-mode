@@ -612,6 +612,7 @@ func _on_elemental_reaction(details: Dictionary) -> void:
 	var names := {
 		"STEAM": "ПШШ! Пар!",
 		"QUENCH": "Потушили!",
+		"FREEZE": "Ледышка! Буквально.",
 		"SUPERCONDUCT": "Сверхразряд!",
 		"OVERLOAD": "Искры и огонь!"
 	}
