@@ -14,10 +14,12 @@ var specs: Array[Dictionary] = []
 
 var source_choice: OptionButton
 var source_ids: Array[String] = []
-var manifestation_toggle: CheckButton
+var create_choice: OptionButton
 var manifestation_settings: VBoxContainer
 var form_choice: OptionButton
 var essence_choice: OptionButton
+var behavior_choice: OptionButton
+var release_choice: OptionButton
 var speed_control: SpinBox
 var size_control: SpinBox
 
@@ -58,9 +60,15 @@ func _ready() -> void:
 	style.set_corner_radius_all(8)
 	style.set_content_margin_all(16)
 	add_theme_stylebox_override("panel", style)
+	var panel_scroll := ScrollContainer.new()
+	panel_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(panel_scroll)
 	var layout := VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 5)
-	add_child(layout)
+	panel_scroll.add_child(layout)
 
 	var title := _label(layout, "SPELL_WORKSHOP", 21)
 	title.add_theme_color_override("font_color", Color("a4f8e2"))
@@ -97,18 +105,18 @@ func _ready() -> void:
 	range_row.add_child(range_input)
 
 	layout.add_child(HSeparator.new())
-	manifestation_toggle = CheckButton.new()
-	manifestation_toggle.text = "CONJURE · Призвать снаряд"
-	manifestation_toggle.button_pressed = false
-	manifestation_toggle.toggled.connect(_on_manifestation_toggled)
-	layout.add_child(manifestation_toggle)
+	var create_choices: Array = [{"id": "NONE", "name": "Без создания"}]
+	create_choices.append_array(ArcaneGrammar.CREATIONS)
+	create_choice = _choice_row(layout, "CREATE · Создать", create_choices)
+	create_choice.item_selected.connect(_on_create_changed)
 
 	manifestation_settings = VBoxContainer.new()
 	manifestation_settings.add_theme_constant_override("separation", 4)
 	layout.add_child(manifestation_settings)
-	form_choice = _choice_row(manifestation_settings, "SHAPE · Форма", ArcaneGrammar.FORMS)
-	essence_choice = _choice_row(manifestation_settings, "INFUSE · Стихия", ArcaneGrammar.ESSENCES)
-	_label(manifestation_settings, "CAST · Отправить в цель: Снаряд", 12)
+	form_choice = _choice_row(manifestation_settings, "SHAPE · Форма", ArcaneGrammar.SHAPES)
+	essence_choice = _choice_row(manifestation_settings, "ELEMENT · Стихия", ArcaneGrammar.ELEMENTS)
+	behavior_choice = _choice_row(manifestation_settings, "BEHAVIOR · Поведение", ArcaneGrammar.BEHAVIORS)
+	release_choice = _choice_row(manifestation_settings, "RELEASE · Выпустить", ArcaneGrammar.RELEASES)
 	var motion_row := HBoxContainer.new()
 	manifestation_settings.add_child(motion_row)
 	_label(motion_row, "Скорость полёта", 12)
@@ -191,7 +199,7 @@ func show_workshop(selected_spell_id: String = "") -> void:
 	_reload_sources()
 	if not selected_spell_id.is_empty():
 		load_spell(selected_spell_id)
-	status_label.text = "Разбери заклинание и собери свою версию."
+	status_label.text = "Разбери заклинание. Перепиши как хочешь."
 	visible = true
 
 
@@ -207,12 +215,14 @@ func load_spell(spell_id: String) -> bool:
 	draft.clear()
 	for action in definition["effects"]:
 		draft.append(action.duplicate(true))
-	var manifest: Dictionary = definition.get("manifestation", {})
-	manifestation_toggle.set_pressed_no_signal(not manifest.is_empty())
-	_on_manifestation_toggled(not manifest.is_empty())
+	var manifest: Dictionary = ArcaneGrammar.normalize(definition.get("manifestation", {}))
+	_select_choice(create_choice, "NONE" if manifest.is_empty() else str(manifest["create"]))
+	_on_create_changed(create_choice.selected)
 	if not manifest.is_empty():
-		_select_choice(form_choice, str(manifest["form"]))
-		_select_choice(essence_choice, str(manifest["essence"]))
+		_select_choice(form_choice, str(manifest["shape"]))
+		_select_choice(essence_choice, str(manifest["element"]))
+		_select_choice(behavior_choice, str(manifest["behavior"]))
+		_select_choice(release_choice, str(manifest["release"]))
 		speed_control.value = float(manifest["speed"])
 		size_control.value = float(manifest["size"])
 	var location: int = source_ids.find(spell_id)
@@ -240,30 +250,37 @@ func _on_new_recipe() -> void:
 	draft.clear()
 	name_input.text = "МОЁ ЗАКЛИНАНИЕ"
 	range_input.value = 11.0
-	manifestation_toggle.set_pressed_no_signal(true)
-	_on_manifestation_toggled(true)
+	_select_choice(create_choice, "ENERGY")
+	_on_create_changed(create_choice.selected)
 	_select_choice(form_choice, "ORB")
 	_select_choice(essence_choice, "FIRE")
+	_select_choice(behavior_choice, "SEEK")
+	_select_choice(release_choice, "PROJECTILE")
 	speed_control.value = ArcaneGrammar.DEFAULT_SPEED
 	size_control.value = ArcaneGrammar.DEFAULT_SIZE
 	status_label.text = ""
 	_refresh_blocks()
 
 
-func _on_manifestation_toggled(enabled: bool) -> void:
-	manifestation_settings.visible = enabled
+func _on_create_changed(_index: int) -> void:
+	manifestation_settings.visible = _choice_value(create_choice) != "NONE"
+
+
+func _choice_value(choice: OptionButton) -> String:
+	if choice == null or choice.selected < 0:
+		return ""
+	return str(choice.get_item_metadata(choice.selected))
 
 
 func _manifestation() -> Dictionary:
-	if not manifestation_toggle.button_pressed:
+	var create: String = _choice_value(create_choice)
+	if create == "NONE":
 		return {}
-	return {
-		"form": str(form_choice.get_item_metadata(form_choice.selected)),
-		"essence": str(essence_choice.get_item_metadata(essence_choice.selected)),
-		"delivery": "PROJECTILE",
-		"speed": speed_control.value,
-		"size": size_control.value
-	}
+	return ArcaneGrammar.make_recipe(
+		create, _choice_value(form_choice), _choice_value(essence_choice),
+		_choice_value(behavior_choice), _choice_value(release_choice),
+		speed_control.value, size_control.value
+	)
 
 
 func _choice_row(parent: Node, label: String, choices: Array) -> OptionButton:
