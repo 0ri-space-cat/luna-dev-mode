@@ -21,12 +21,15 @@ func _init(world_registry, relationship_service) -> void:
 	relationships = relationship_service
 
 
-func observe_damage(aggressor_id: String, victims: Array[String]) -> int:
+func observe_damage(aggressor_id: String, victims: Array) -> int:
 	var aggressor: Node = world.get_entity(aggressor_id)
 	if not (aggressor is Node3D) or victims.is_empty():
 		return 0
 	var actual_victims: Array[String] = []
-	for victim_id in victims:
+	for raw_victim in victims:
+		if typeof(raw_victim) != TYPE_STRING:
+			continue
+		var victim_id: String = str(raw_victim)
 		if victim_id == aggressor_id or actual_victims.has(victim_id):
 			continue
 		var target: Node = world.get_entity(victim_id)
