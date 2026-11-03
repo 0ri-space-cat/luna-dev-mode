@@ -74,3 +74,107 @@ func apply(effect: Dictionary, target_id: String, initiator_id: String, source_i
 		last_error = "Target rejected effect for %s" % key
 		return false
 	return true
+
+
+func apply_batch(actions: Array, target_id: String, initiator_id: String, source_id: String) -> bool:
+	## Plan the entire chain against an in-memory shadow state. All or nothing.
+	last_error = ""
+	var plan: Dictionary = preview_batch(actions, target_id)
+	if not bool(plan["ok"]):
+		return false
+	var prepared: Array[Dictionary] = plan["steps"]
+	if not commands.execute_batch(prepared, initiator_id, source_id):
+		last_error = "Failed to commit effect transaction"
+		return false
+	return true
+
+
+func preview_batch(actions: Array, target_id: String) -> Dictionary:
+	last_error = ""
+	if actions.is_empty() or actions.size() > 12:
+		return _reject_plan("An effect chain needs 1–12 steps")
+	var target: Node = world.get_entity(target_id)
+	if target == null:
+		return _reject_plan("Unknown target: %s" % target_id)
+	var virtual_values := {}
+	var planned: Array[Dictionary] = []
+	for effect in actions:
+		if typeof(effect) != TYPE_DICTIONARY:
+			return _reject_plan("Effect must be a dictionary")
+		var operation: String = str(effect.get("operation", ""))
+		if operation == "SET_RELATION":
+			if relationships == null:
+				return _reject_plan("No social relationship service")
+			var from_id: String = str(effect.get("subject_id", ""))
+			if world.get_entity(from_id) == null:
+				return _reject_plan("Unknown relationship subject")
+			if typeof(effect.get("value")) != TYPE_STRING:
+				return _reject_plan("Relationship value must be a string")
+			var attitude: String = effect["value"]
+			if from_id == target_id or not relationships.is_valid_attitude(attitude):
+				return _reject_plan("Invalid relationship")
+			var relation_key := "R:%s:%s" % [from_id, target_id]
+			var old_attitude: String = relationships.get_attitude(from_id, target_id)
+			if virtual_values.has(relation_key):
+				old_attitude = str(virtual_values[relation_key])
+			if attitude != old_attitude:
+				planned.append({
+					"kind": "relation", "relations": relationships,
+					"from_id": from_id, "to_id": target_id,
+					"before": old_attitude, "after": attitude
+				})
+			virtual_values[relation_key] = attitude
+			continue
+
+		if not target.has_method("get_parameter"):
+			return _reject_plan("Target has no editable parameters")
+		var record: Variant = target.get("record")
+		if record == null:
+			return _reject_plan("Target has no entity record")
+		var field: String = str(effect.get("parameter_id", ""))
+		var key := "P:%s:%s" % [target_id, field]
+		var before: Variant = target.call("get_parameter", field)
+		if before == null:
+			return _reject_plan("Unknown parameter: %s" % field)
+		if virtual_values.has(key):
+			before = virtual_values[key]
+		var proposed: Variant
+		match operation:
+			"SET":
+				if not effect.has("value"):
+					return _reject_plan("SET requires a value")
+				proposed = effect["value"]
+			"ADD", "MULTIPLY":
+				if not _numeric(before) or not _numeric(effect.get("value")):
+					return _reject_plan("%s needs numbers" % operation)
+				var amount := float(effect["value"])
+				var calculated: float = float(before) + amount if operation == "ADD" else float(before) * amount
+				if is_nan(calculated) or is_inf(calculated) or absf(calculated) > 100000000.0:
+					return _reject_plan("Numeric result is out of bounds")
+				proposed = int(roundf(calculated)) if typeof(before) == TYPE_INT else calculated
+			"TOGGLE":
+				if typeof(before) != TYPE_BOOL:
+					return _reject_plan("TOGGLE requires TRUE/FALSE")
+				proposed = not bool(before)
+			_:
+				return _reject_plan("Unsupported effect: %s" % operation)
+		var checked: Dictionary = record.registry.normalize(record.category, field, proposed)
+		if not bool(checked["ok"]):
+			return _reject_plan("Invalid value for %s: %s" % [field, str(checked["error"])])
+		var after: Variant = checked["value"]
+		if before != after:
+			planned.append({
+				"kind": "parameter", "target": target, "entity_id": target_id,
+				"parameter_id": field, "before": before, "after": after
+			})
+		virtual_values[key] = after
+	return {"ok": true, "steps": planned}
+
+
+func _numeric(value: Variant) -> bool:
+	return typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT
+
+
+func _reject_plan(reason: String) -> Dictionary:
+	last_error = reason
+	return {"ok": false, "steps": []}
