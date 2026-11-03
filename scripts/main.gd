@@ -16,6 +16,7 @@ const ProfileService = preload("res://scripts/core/profile_service.gd")
 const SpellService = preload("res://scripts/core/spell_service.gd")
 const SpellWorkshopService = preload("res://scripts/core/spell_workshop_service.gd")
 const SpellWorkshop = preload("res://scripts/spell_workshop.gd")
+const ArcaneProjectile = preload("res://scripts/spells/arcane_projectile.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
@@ -34,7 +35,7 @@ var profile_service
 var spell_service
 var spell_workshop_service
 var spell_workshop_panel
-var selected_spell_id := "AWAKEN"
+var selected_spell_id := "FIREBALL"
 var pending_spell_cast := false
 var spell_hint_label: Label
 var journal_panel: PanelContainer
@@ -53,6 +54,7 @@ func _ready() -> void:
 	event_bus = EventBus.new()
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	spell_service = SpellService.new(world_registry, effect_engine)
+	spell_service.projectile_requested.connect(_spawn_arcane_projectile)
 	spell_workshop_service = SpellWorkshopService.new(parameter_registry, spell_service)
 	if spell_workshop_service.has_library():
 		if not spell_workshop_service.load_library():
@@ -337,7 +339,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.9"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.10"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -552,3 +554,23 @@ func _select_next_spell() -> void:
 	var index: int = ids.find(selected_spell_id)
 	selected_spell_id = ids[(index + 1) % ids.size()]
 	_update_spell_hint()
+
+
+
+func _spawn_arcane_projectile(details: Dictionary) -> void:
+	var caster: Node = world_registry.get_entity(str(details["caster_id"]))
+	var target: Node = world_registry.get_entity(str(details["target_id"]))
+	if not (caster is Node3D) or not (target is Node3D):
+		return
+	var projectile := ArcaneProjectile.new()
+	add_child(projectile)
+	projectile.configure(
+		details["manifestation"], caster as Node3D, target as Node3D,
+		str(details["spell_id"]), str(details["caster_id"]), str(details["target_id"])
+	)
+	projectile.struck.connect(_on_arcane_impact)
+
+
+func _on_arcane_impact(spell_id: String, caster_id: String, target_id: String) -> void:
+	if not spell_service.resolve_impact(spell_id, caster_id, target_id):
+		_show_checkpoint_message(spell_service.last_error)
