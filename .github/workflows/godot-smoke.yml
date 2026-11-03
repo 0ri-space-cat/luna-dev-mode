@@ -65,3 +65,6 @@ jobs:
 
       - name: Run elemental status and interaction tests
         run: timeout 40s godot --headless --path . --script res://tests/test_elemental_status.gd
+
+      - name: Run chain lightning hop and transactional tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_chain_lightning.gd
