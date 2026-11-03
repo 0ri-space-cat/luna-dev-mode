@@ -1,4 +1,5 @@
 extends RefCounted
+const TargetResolver = preload("res://scripts/core/target_resolver.gd")
 ## Data-driven WHEN -> IF -> DO -> TARGET rules. No executable scripts in data.
 ## Rule definitions and run-local firing limits survive world checkpoints;
 ## monotonic cooldown clocks and event-chain counters never cross a restart.
@@ -10,7 +11,7 @@ const MAX_CONDITION_DEPTH := 5
 const MAX_CONDITION_BRANCHES := 8
 const MAX_FIRES_PER_ROOT := 8
 const MAX_TRACKED_ROOTS := 128
-const ALLOWED_TARGETS := ["EVENT_SOURCE", "EVENT_TARGET", "RULE_OWNER"]
+const ALLOWED_TARGETS := ["EVENT_SOURCE", "EVENT_TARGET", "RULE_OWNER", "SELECTOR"]
 const ALLOWED_OPERATIONS := ["SET", "ADD", "MULTIPLY", "TOGGLE", "SET_RELATION", "COPY_ENTITY", "DELETE_ENTITY"]
 const ALLOWED_COMPARISONS := ["EQ", "NE", "GT", "GTE", "LT", "LTE"]
 const ALLOWED_RELATIONS := ["NEUTRAL", "FRIEND", "HOSTILE", "AFRAID"]
@@ -120,11 +121,20 @@ func process_event(event: Dictionary) -> int:
 		var root_key := "%d:%s" % [root_id, rule_id]
 		if root_id > 0 and int(_root_counts.get(root_key, 0)) >= MAX_FIRES_PER_ROOT:
 			continue
-		var target_id: String = _resolve_target(str(rule["target"]), owner_id, event)
-		if target_id.is_empty():
-			continue
 		var initiator_id := "entity:%s" % owner_id if not owner_id.is_empty() else str(rule.get("author_id", "system"))
-		if effects.apply_batch(rule["effects"], target_id, initiator_id, "rule:%s" % rule_id):
+		var worked := false
+		if str(rule["target"]) == "SELECTOR":
+			var origin_id: String = _resolve_target(str(rule["selector_origin"]), owner_id, event)
+			if not origin_id.is_empty():
+				worked = effects.apply_to_selector(
+					rule["effects"], origin_id, rule["selector"],
+					initiator_id, "rule:%s" % rule_id
+				)
+		else:
+			var target_id: String = _resolve_target(str(rule["target"]), owner_id, event)
+			if not target_id.is_empty():
+				worked = effects.apply_batch(rule["effects"], target_id, initiator_id, "rule:%s" % rule_id)
+		if worked:
 			changes += (rule["effects"] as Array).size()
 			_last_fired[rule_id] = now_ms
 			_fire_counts[rule_id] = fired_count(rule_id) + 1
@@ -223,12 +233,31 @@ func _normalize_rule(input: Dictionary) -> Dictionary:
 		return {}
 	if not ALLOWED_TARGETS.has(str(input["target"])) or (owner_id.is_empty() and input["target"] == "RULE_OWNER"):
 		return {}
+	var selector: Dictionary = {}
+	var selector_origin := "RULE_OWNER" if not owner_id.is_empty() else "EVENT_SOURCE"
+	if str(input["target"]) == "SELECTOR":
+		if not TargetResolver.validate_selector(input.get("selector")):
+			return {}
+		selector = input["selector"].duplicate(true)
+		var requested_origin: Variant = input.get("selector_origin", selector_origin)
+		if typeof(requested_origin) != TYPE_STRING or requested_origin not in ["EVENT_SOURCE", "EVENT_TARGET", "RULE_OWNER"]:
+			return {}
+		if requested_origin == "RULE_OWNER" and owner_id.is_empty():
+			return {}
+		selector_origin = str(requested_origin)
+	elif input.has("selector") or input.has("selector_origin"):
+		if input.get("selector", {}) != {}:
+			return {}
+		if input.get("selector_origin", selector_origin) != selector_origin:
+			return {}
 	var actions: Variant = input["effects"]
 	if typeof(actions) != TYPE_ARRAY or actions.is_empty() or actions.size() > MAX_ACTIONS:
 		return {}
 	for action in actions:
 		if typeof(action) != TYPE_DICTIONARY or not _valid_action(action):
 			return {}
+		if str(input["target"]) == "SELECTOR" and action.has("target_id"):
+			return {} # A per-effect hard-coded ID cannot bypass a selector.
 	var where: Dictionary = {}
 	if input.has("where"):
 		if typeof(input["where"]) != TYPE_DICTIONARY:
@@ -268,6 +297,7 @@ func _normalize_rule(input: Dictionary) -> Dictionary:
 	return {
 		"id": rule_id, "owner_id": owner_id, "event_type": event_type,
 		"target": str(input["target"]), "effects": actions.duplicate(true),
+		"selector": selector, "selector_origin": selector_origin,
 		"where": where, "priority": int(priority), "cooldown_ms": int(cooldown),
 		"repeat_limit": int(repeats), "enabled": enabled, "author_id": author
 	}
