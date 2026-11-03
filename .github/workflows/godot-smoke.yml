@@ -56,3 +56,6 @@ jobs:
 
       - name: Run CREATE OBJECT CREATURE magic tests
         run: timeout 40s godot --headless --path . --script res://tests/test_create_magic.gd
+
+      - name: Run legacy magic recipe migration tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_legacy_magic_migration.gd
