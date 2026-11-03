@@ -1,7 +1,8 @@
 extends CharacterBody3D
 ## Placeholder for Luna: no external models required.
 
-const WALK_SPEED := 5.0
+const WALK_SPEED := 7.5
+const ACCELERATION := 42.0
 const GRAVITY := 18.0
 
 var visual_root: Node3D
@@ -34,8 +35,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var direction := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	velocity.x = direction.x * WALK_SPEED
-	velocity.z = direction.y * WALK_SPEED
+	velocity.x = move_toward(velocity.x, direction.x * WALK_SPEED, ACCELERATION * delta)
+	velocity.z = move_toward(velocity.z, direction.y * WALK_SPEED, ACCELERATION * delta)
 	velocity.y -= GRAVITY * delta
 	move_and_slide()
 	if direction.length_squared() > 0.01:

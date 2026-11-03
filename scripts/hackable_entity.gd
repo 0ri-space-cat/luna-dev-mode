@@ -14,7 +14,7 @@ var age := 0.0
 var rng := RandomNumberGenerator.new()
 
 
-func configure(entity_id: String, entity_type: String, start_position: Vector3) -> void:
+func configure(entity_id: String, entity_type: String, start_position: Vector3, parameter_registry) -> void:
 	name = entity_id
 	position = start_position
 	collision_layer = 2
@@ -23,10 +23,11 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3) 
 	var is_tree := entity_type == "tree"
 	var base_color := Color("b790dd") if is_tree else Color("87bfe8")
 	var label := "Дерево" if is_tree else "Холодильник"
-	record = EntityRecord.new(entity_id, entity_type, label, {
+	record = EntityRecord.new(entity_id, entity_type, label, parameter_registry, {
 		"color": base_color,
 		"size": 1.0,
 		"alive": false,
+		"ai_enabled": true,
 		"speed": 1.3 if is_tree else 2.6,
 		"health": 65 if is_tree else 100
 	})
@@ -76,7 +77,7 @@ func set_parameter(key: String, value: Variant) -> bool:
 
 func _physics_process(delta: float) -> void:
 	age += delta
-	if bool(record.get_parameter("alive")):
+	if bool(record.get_parameter("alive")) and bool(record.get_parameter("ai_enabled")):
 		wander_timer -= delta
 		if wander_timer <= 0.0:
 			wander_timer = rng.randf_range(1.0, 2.5)
@@ -94,6 +95,8 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, delta * 8.0)
 		velocity.z = move_toward(velocity.z, 0.0, delta * 8.0)
+		for leg in legs:
+			leg.rotation.x = 0.0
 	velocity.y -= GRAVITY * delta
 	move_and_slide()
 

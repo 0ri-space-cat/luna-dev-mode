@@ -4,15 +4,21 @@ extends Node3D
 const PlayerController = preload("res://scripts/player_controller.gd")
 const HackableEntity = preload("res://scripts/hackable_entity.gd")
 const HackEditor = preload("res://scripts/hack_editor.gd")
+const ParameterRegistry = preload("res://scripts/core/parameter_registry.gd")
+const CommandProcessor = preload("res://scripts/core/command_processor.gd")
 
 var luna: CharacterBody3D
 var camera: Camera3D
 var editor
 var pause_tint: ColorRect
 var pending_selection := Vector2(-1, -1)
+var parameter_registry
+var command_processor
 
 
 func _ready() -> void:
+	parameter_registry = ParameterRegistry.new()
+	command_processor = CommandProcessor.new()
 	_register_controls()
 	_build_environment()
 	_build_ground()
@@ -141,7 +147,7 @@ func _spawn_entities() -> void:
 func _spawn(entity_id: String, category: String, where: Vector3) -> void:
 	var entity := HackableEntity.new()
 	add_child(entity)
-	entity.configure(entity_id, category, where)
+	entity.configure(entity_id, category, where, parameter_registry)
 
 
 func _build_interface() -> void:
@@ -159,21 +165,21 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.1"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.2"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
 	layer.add_child(header)
 
 	var instructions := Label.new()
-	instructions.text = "WASD / стрелки — ходить    •    ЛКМ на дереве или холодильнике — взломать    •    Esc — закрыть"
+	instructions.text = "WASD / стрелки — ходить    •    ЛКМ на дереве или холодильнике — взломать    •    Esc — закрыть    •    Cmd/Ctrl+Z — отменить"
 	instructions.position = Vector2(24, 50)
 	instructions.add_theme_font_size_override("font_size", 15)
 	instructions.add_theme_color_override("font_color", Color("e0f7f4"))
 	layer.add_child(instructions)
 
 	var bottom := Label.new()
-	bottom.text = "Оживи холодильник: он отрастит ноги и начнёт самостоятельно гулять."
+	bottom.text = "IS_ALIVE: TRUE — оживление. AI_ENABLED: FALSE — остановить самостоятельное поведение."
 	bottom.position = Vector2(24, 750)
 	bottom.add_theme_color_override("font_color", Color("f7e2f4"))
 	bottom.add_theme_font_size_override("font_size", 16)
@@ -181,6 +187,7 @@ func _build_interface() -> void:
 
 	editor = HackEditor.new()
 	layer.add_child(editor)
+	editor.configure(parameter_registry, command_processor)
 	editor.closed.connect(_close_editor)
 
 
