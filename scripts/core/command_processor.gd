@@ -63,7 +63,7 @@ func execute_set(target: Node, parameter_id: String, requested_value: Variant, i
 
 ## Role and tag mutations are real commands with provenance and Undo/Redo.
 ## They change neither the origin category nor the derived CREATURE role.
-func execute_trait(target: Node, operation: String, trait: String,
+func execute_trait(target: Node, operation: String, trait_name: String,
 		initiator_id: String = "luna", source_id: String = "wand:luna") -> bool:
 	if not is_instance_valid(target) or operation not in ["ADD_ROLE", "REMOVE_ROLE", "ADD_TAG", "REMOVE_TAG"]:
 		return false
@@ -73,10 +73,10 @@ func execute_trait(target: Node, operation: String, trait: String,
 	var before := {"roles": record.get_stored_roles(), "tags": record.get_tags()}
 	var accepted := false
 	match operation:
-		"ADD_ROLE": accepted = record.add_role(trait)
-		"REMOVE_ROLE": accepted = record.remove_role(trait)
-		"ADD_TAG": accepted = record.add_tag(trait)
-		"REMOVE_TAG": accepted = record.remove_tag(trait)
+		"ADD_ROLE": accepted = record.add_role(trait_name)
+		"REMOVE_ROLE": accepted = record.remove_role(trait_name)
+		"ADD_TAG": accepted = record.add_tag(trait_name)
+		"REMOVE_TAG": accepted = record.remove_tag(trait_name)
 	if not accepted:
 		return false
 	var after := {"roles": record.get_stored_roles(), "tags": record.get_tags()}
@@ -86,7 +86,7 @@ func execute_trait(target: Node, operation: String, trait: String,
 		"target_ref": weakref(target), "entity_id": str(record.id),
 		"parameter_id": "ROLES_TAGS", "before": before, "after": after,
 		"initiator_id": initiator_id, "source_id": source_id,
-		"merge_key": "", "trait_operation": operation, "trait": trait
+		"merge_key": "", "trait_operation": operation, "trait": trait_name
 	}
 	_undo_stack.append(entry)
 	if _undo_stack.size() > MAX_UNDO:
