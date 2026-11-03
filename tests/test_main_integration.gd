@@ -68,6 +68,14 @@ func _run() -> void:
 	assert(stage.spell_workshop_panel.visible)
 	assert(paused)
 	var panel = stage.spell_workshop_panel
+	# The workshop now opens by dissecting the selected fireball.
+	assert(panel.manifestation_toggle.button_pressed)
+	assert(panel.draft.size() == 1)
+	assert(panel.form_choice.get_item_metadata(panel.form_choice.selected) == "ORB")
+	assert(panel.essence_choice.get_item_metadata(panel.essence_choice.selected) == "FIRE")
+	panel._on_new_recipe()
+	panel.manifestation_toggle.set_pressed_no_signal(false)
+	panel._on_manifestation_toggled(false)
 	panel.name_input.text = "Мой оживитель"
 	panel.field_choice.select(0)
 	panel._on_field_changed(0)
@@ -101,7 +109,7 @@ func _run() -> void:
 	assert(profile_after_restart.load_profile())
 	assert(profile_after_restart.has_discovered_category("fridge"))
 	assert(profile_after_restart.has_discovered_parameter("fridge", "luna_relation"))
-	for path in [RUN_TEST_PATH, PROFILE_TEST_PATH]:
+	for path in [RUN_TEST_PATH, PROFILE_TEST_PATH, SPELL_TEST_PATH]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("LUNA 0.9: live workshop, saved recipes and full scene passed")
 	quit(0)
