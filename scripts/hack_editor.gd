@@ -3,6 +3,7 @@ extends PanelContainer
 ## ParameterRegistry, and all edits go through CommandProcessor.
 signal closed
 signal duplicate_requested(entity: Node3D)
+signal delete_requested(entity: Node3D)
 
 const UiLanguage = preload("res://scripts/core/ui_language.gd")
 const TAB_IDS := [
@@ -26,6 +27,7 @@ var type_label: Label
 var tab_bar: TabBar
 var fields_container: VBoxContainer
 var duplicate_button: Button
+var delete_button: Button
 var close_button: Button
 var selected_tab := "GENERAL"
 
@@ -94,6 +96,9 @@ func _ready() -> void:
 	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	close_button.pressed.connect(func() -> void: closed.emit())
 	footer.add_child(close_button)
+	delete_button = Button.new()
+	delete_button.pressed.connect(_on_delete_pressed)
+	layout.add_child(delete_button)
 	refresh_language()
 	visible = false
 
@@ -123,6 +128,12 @@ func refresh_language() -> void:
 		)
 	if is_instance_valid(close_button):
 		close_button.text = ui_language.text("✓ DONE [ESC]", "✓ ГОТОВО [ESC]")
+	if is_instance_valid(delete_button):
+		delete_button.text = ui_language.text("× DELETE ENTITY", "× УДАЛИТЬ ОБЪЕКТ")
+		delete_button.tooltip_text = ui_language.text(
+			"Remove this entity from the world. You can undo it.",
+			"Удалить объект из мира. Действие можно отменить."
+		)
 	_update_identity()
 	_build_fields()
 	_sync_fields_from_target()
@@ -258,6 +269,11 @@ func _sync_fields_from_target() -> void:
 func _on_duplicate_pressed() -> void:
 	if is_instance_valid(target):
 		duplicate_requested.emit(target)
+
+
+func _on_delete_pressed() -> void:
+	if is_instance_valid(target):
+		delete_requested.emit(target)
 
 
 func _unhandled_input(event: InputEvent) -> void:
