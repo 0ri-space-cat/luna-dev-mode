@@ -8,6 +8,10 @@ const Hackable = preload("res://scripts/hackable_entity.gd")
 
 
 func _initialize() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
 	var parameters = Registry.new()
 	var world = WorldRegistry.new()
 	var fridge = Hackable.new()
