@@ -7,6 +7,7 @@ const HackEditor = preload("res://scripts/hack_editor.gd")
 const ParameterRegistry = preload("res://scripts/core/parameter_registry.gd")
 const CommandProcessor = preload("res://scripts/core/command_processor.gd")
 const WorldRegistry = preload("res://scripts/core/world_registry.gd")
+const EntityLifecycleService = preload("res://scripts/core/entity_lifecycle_service.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
@@ -37,6 +38,7 @@ var pending_selection := Vector2(-1, -1)
 var parameter_registry
 var command_processor
 var world_registry
+var entity_lifecycle
 var event_bus
 var effect_engine
 var rule_engine
@@ -95,12 +97,18 @@ func _ready() -> void:
 			push_warning("Profile could not be read: %s" % profile_service.last_error)
 	command_processor.parameter_changed.connect(_on_parameter_changed)
 	command_processor.trait_changed.connect(_on_trait_changed)
+	command_processor.entity_changed.connect(_on_entity_changed)
 	relationship_service.relationship_changed.connect(_on_relationship_changed)
 	_register_controls()
 	_build_environment()
 	_build_ground()
 	_spawn_player()
 	_spawn_entities()
+	entity_lifecycle = EntityLifecycleService.new(
+		world_registry, parameter_registry, relationship_service,
+		elemental_status_service, social_awareness,
+		Callable(self, "_spawn_lifecycle_actor")
+	)
 	_register_example_rules()
 	_build_interface()
 	if save_service.has_save():
@@ -279,12 +287,41 @@ func _spawn_entities() -> void:
 	_spawn("fridge_001", "fridge", Vector3(2.0, 0.1, -1.3))
 
 
-func _spawn(entity_id: String, category: String, where: Vector3) -> void:
+func _spawn(entity_id: String, category: String, where: Vector3) -> Node:
+	if world_registry.get_entity(entity_id) != null or category not in ["tree", "fridge"]:
+		return null
 	var entity := HackableEntity.new()
 	add_child(entity)
-	entity.configure(entity_id, category, where, parameter_registry, world_registry, relationship_service, {}, elemental_status_service, social_awareness)
-	world_registry.register_entity(entity_id, entity, category.to_upper())
+	entity.configure(entity_id, category, where, parameter_registry, world_registry,
+		relationship_service, {}, elemental_status_service, social_awareness)
+	if not world_registry.register_entity(entity_id, entity, category.to_upper()):
+		entity.queue_free()
+		return null
 	entity.target_acquired.connect(_on_target_acquired)
+	return entity
+
+
+func _spawn_lifecycle_actor(spec: Dictionary) -> Node:
+	var entity_id: String = str(spec["id"])
+	var category: String = str(spec["category"])
+	var location: Vector3 = spec["position"]
+	match category:
+		"tree", "fridge":
+			if spec.has("copy_origin"):
+				return _spawn_saved_duplicate(entity_id, category, location, str(spec["copy_origin"]))
+			return _spawn(entity_id, category, location)
+		_:
+			if category.begins_with("arcane_"):
+				return _spawn_arcane_actor_with_id(entity_id, spec["construct"], location)
+	return null
+
+
+func _restore_base_actor(entity_id: String, category: String, location: Vector3) -> Node:
+	return _spawn(entity_id, category, location)
+
+
+func _remove_saved_entity(entity_id: String) -> bool:
+	return entity_lifecycle.unload_entity(entity_id)
 
 
 func _register_example_rules() -> void:
@@ -352,6 +389,23 @@ func _on_parameter_changed(change: Dictionary) -> void:
 			"parameter_id": str(change["parameter_id"]),
 			"value": change["after"],
 			"initiator_id": str(change["initiator_id"])
+		}
+	})
+
+
+func _on_entity_changed(change: Dictionary) -> void:
+	var entity_id: String = str(change["entity_id"])
+	if not bool(change["present"]) and is_instance_valid(editor) and editor.visible \
+			and is_instance_valid(editor.target) and str(editor.target.record.id) == entity_id:
+		_close_editor()
+	event_bus.enqueue({
+		"type": "entity.created" if bool(change["present"]) else "entity.deleted",
+		"source_id": entity_id,
+		"target_id": entity_id,
+		"payload": {
+			"category": str(change["category"]),
+			"initiator_id": str(change["initiator_id"]),
+			"command_source_id": str(change["source_id"])
 		}
 	})
 
@@ -487,6 +541,7 @@ func _build_interface() -> void:
 	editor.configure(parameter_registry, command_processor, ui_language)
 	editor.closed.connect(_close_editor)
 	editor.duplicate_requested.connect(_on_duplicate_requested)
+	editor.delete_requested.connect(_on_delete_requested)
 
 	spell_workshop_panel = SpellWorkshop.new()
 	layer.add_child(spell_workshop_panel)
@@ -529,8 +584,19 @@ func _on_duplicate_requested(source: Node3D) -> void:
 		_show_checkpoint_message(ui_language.text("ENTITY COPIED", "ОБЪЕКТ СКОПИРОВАН"))
 
 
+func _on_delete_requested(source: Node3D) -> void:
+	if not is_instance_valid(source) or entity_lifecycle == null:
+		return
+	var entity_id: String = str(source.record.id)
+	_close_editor()
+	if not command_processor.execute_entity_delete(entity_lifecycle, entity_id, "luna", "wand:luna"):
+		_show_checkpoint_message(ui_language.text("DELETE FAILED", "ОШИБКА УДАЛЕНИЯ"))
+	else:
+		_show_checkpoint_message(ui_language.text("ENTITY DELETED", "ОБЪЕКТ УДАЛЁН"))
+
+
 func _duplicate_entity(source: Node3D) -> Node3D:
-	if not is_instance_valid(source) or not source.has_method("get_parameter"):
+	if not is_instance_valid(source) or entity_lifecycle == null:
 		return null
 	var count := 0
 	for entity_id in world_registry.list_ids():
@@ -541,32 +607,30 @@ func _duplicate_entity(source: Node3D) -> Node3D:
 		_show_checkpoint_message(ui_language.text("COPY LIMIT REACHED", "ДОСТИГНУТ ПРЕДЕЛ КОПИЙ"))
 		return null
 	var category: String = str(source.record.category)
-	var location: Vector3 = source.position + Vector3(1.7, 0.0, 0.8)
-	var copy: Node3D
+	if category not in ["tree", "fridge"] and not category.begins_with("arcane_"):
+		return null
+	var blueprint: Dictionary = entity_lifecycle.capture(str(source.record.id))
+	if blueprint.is_empty():
+		return null
+	blueprint["position"] = source.position + Vector3(1.7, 0.0, 0.8)
 	if category.begins_with("arcane_"):
 		arcane_serial += 1
 		var generated_id := "arcane_%04d" % arcane_serial
-		while world_registry.get_entity(generated_id) != null:
+		while world_registry.get_entity(generated_id) != null or world_registry.was_deleted(generated_id):
 			arcane_serial += 1
 			generated_id = "arcane_%04d" % arcane_serial
-		copy = _spawn_arcane_actor_with_id(generated_id, source.arcane_manifestation, location)
-	elif category in ["tree", "fridge"]:
+		blueprint["id"] = generated_id
+	else:
 		duplicate_serial += 1
 		var copy_id := "%s_copy_%04d" % [category, duplicate_serial]
-		while world_registry.get_entity(copy_id) != null:
+		while world_registry.get_entity(copy_id) != null or world_registry.was_deleted(copy_id):
 			duplicate_serial += 1
 			copy_id = "%s_copy_%04d" % [category, duplicate_serial]
-		copy = _spawn_saved_duplicate(copy_id, category, location, str(source.record.id))
-	else:
-		return null
-	if not is_instance_valid(copy):
-		return null
-	# Original type is retained; new entity gets an independent stable ID.
-	# Statuses/relationships are deliberately not shared between copies.
-	for key in source.record.parameters.keys():
-		copy.set_parameter(str(key), source.get_parameter(str(key)))
-	copy.record.set_traits(source.record.get_stored_roles(), source.record.get_tags())
-	return copy
+		blueprint["id"] = copy_id
+		blueprint["copy_origin"] = str(source.record.id)
+	var copied: Node = command_processor.execute_entity_create(entity_lifecycle, blueprint,
+		"luna", "wand:luna")
+	return copied as Node3D
 
 
 func _spawn_saved_duplicate(entity_id: String, category: String, location: Vector3, original_id: String) -> Node3D:
@@ -648,7 +712,8 @@ func _load_checkpoint(automatic: bool) -> void:
 		world_registry, luna, relationship_service,
 		Callable(self, "_restore_arcane_actor"), parameter_registry,
 		elemental_status_service, surface_field_service, social_awareness,
-		Callable(self, "_restore_saved_duplicate"), rule_engine
+		Callable(self, "_restore_saved_duplicate"), rule_engine,
+		Callable(self, "_remove_saved_entity"), Callable(self, "_restore_base_actor")
 	)
 	if success:
 		for entity_id in world_registry.list_ids():
@@ -656,9 +721,8 @@ func _load_checkpoint(automatic: bool) -> void:
 			var is_created: bool = entity_id.begins_with("arcane_") or (saved_actor != null and saved_actor.has_meta("copy_origin"))
 			if is_created and not save_service.last_restored_ids.has(entity_id):
 				var removed: Node = world_registry.get_entity(entity_id)
-				world_registry.unregister_entity(entity_id)
 				if removed != null:
-					removed.queue_free()
+					entity_lifecycle.unload_entity(entity_id)
 		_sync_luna_relationships()
 		# Restores do not count as player hacks, nor do pre-load queued events.
 		command_processor.clear_history()
