@@ -2,7 +2,12 @@ extends RefCounted
 ## UI-only localization. Game data, Entity IDs, parameter labels, recipe IDs and
 ## technical TRUE/FALSE values are deliberately stable across locales.
 const SETTINGS_PATH := "user://luna_ui_settings.cfg"
-const EN: Dictionary = {
+const EN = {
+	"Дерево": "TREE",
+	"Холодильник": "FRIDGE",
+	"Магическое существо": "MAGICAL CREATURE",
+	"Магический предмет": "MAGICAL OBJECT",
+	"Магическая энергия": "MAGICAL ENERGY",
 	"ЗАКРЫТЬ   [ESC]": "DONE  [ESC]",
 	"ЗАКРЫТЬ [B]": "CLOSE [B]",
 	"СОХРАНИТЬ ЗАКЛИНАНИЕ": "SAVE SPELL",
