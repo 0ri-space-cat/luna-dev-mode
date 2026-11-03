@@ -43,6 +43,9 @@ jobs:
 
       - name: Run advanced rule grammar and persistence tests
         run: bash ci/run_godot_script.sh res://tests/test_advanced_rules.gd
+
+      - name: Run composable entity role and tag tests
+        run: bash ci/run_godot_script.sh res://tests/test_entity_traits.gd
       - name: Run save and load smoke tests
         run: bash ci/run_godot_script.sh res://tests/test_save_service.gd
       - name: Run social relations smoke tests
