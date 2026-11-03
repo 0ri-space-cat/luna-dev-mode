@@ -178,3 +178,36 @@ func _numeric(value: Variant) -> bool:
 func _reject_plan(reason: String) -> Dictionary:
 	last_error = reason
 	return {"ok": false, "steps": []}
+
+
+
+func apply_to_targets(actions: Array, target_ids: Array[String],
+		initiator_id: String, source_id: String) -> bool:
+	## All affected targets are validated before a single world transaction.
+	last_error = ""
+	if actions.is_empty():
+		return true
+	if target_ids.is_empty() or target_ids.size() > 8:
+		last_error = "Invalid number of effect targets"
+		return false
+	var encountered := {}
+	var steps: Array[Dictionary] = []
+	for target_id in target_ids:
+		if encountered.has(target_id):
+			last_error = "A target was selected twice"
+			return false
+		encountered[target_id] = true
+		var preview: Dictionary = preview_batch(actions, target_id)
+		if not bool(preview["ok"]):
+			return false
+		for step in preview["steps"]:
+			steps.append(step)
+		if steps.size() > 32:
+			last_error = "Too many changes in a single spell"
+			return false
+	if steps.is_empty():
+		return true
+	if not commands.execute_batch(steps, initiator_id, source_id):
+		last_error = "Area transaction failed to commit"
+		return false
+	return true
