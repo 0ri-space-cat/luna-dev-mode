@@ -400,7 +400,7 @@ func _on_add_block() -> void:
 	var spec := _current_spec()
 	if spec.is_empty():
 		return
-	var operation := operation_choice.get_item_text(operation_choice.selected)
+	var operation := _selected_operation()
 	var block: Dictionary = {
 		"operation": operation,
 		"parameter_id": str(spec["id"])
