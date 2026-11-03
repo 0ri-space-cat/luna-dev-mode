@@ -76,7 +76,7 @@ func _run() -> void:
 	assert(social.get_alert("victim")["reason"] == "DIRECT")
 	assert(social.get_alert("witness")["reason"] == "WITNESS")
 	assert(social.get_alert("faraway").is_empty())
-	assert(social.get_alert("victim")["aggressor_id"] == "luna")
+	assert(social.get_alert("victim")["source_id"] == "luna")
 	# The signal-driven visual is intentionally simple in the graybox.
 	victim.show_social_alert(social.get_alert("victim"))
 	witness.show_social_alert(social.get_alert("witness"))
