@@ -471,13 +471,13 @@ func _build_interface() -> void:
 	pause_tint = ColorRect.new()
 	pause_tint.name = "HackModeTurquoiseMist"
 	pause_tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	pause_tint.color = Color(0.20, 0.89, 0.86, 0.13)
+	pause_tint.color = Color(0.21, 0.89, 0.86, 0.13)
 	pause_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pause_tint.visible = false
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.20"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.21"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
