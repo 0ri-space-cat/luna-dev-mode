@@ -1,6 +1,7 @@
 extends RefCounted
 
 const JsonStore = preload("res://scripts/core/json_store.gd")
+const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 ## Versioned world snapshots. Writes only data, never Node references or scripts.
 ## JSON is validated before any state is applied. Save uses temp + rename.
 ##
@@ -13,6 +14,7 @@ const DEFAULT_PATH := "user://luna_world_v1.json"
 
 var save_path: String
 var last_error := ""
+var last_restored_ids: Array[String] = []
 
 
 func _init(path: String = DEFAULT_PATH) -> void:
@@ -37,11 +39,16 @@ func snapshot(world, player: Node3D, relationships = null) -> Dictionary:
 		keys.sort()
 		for key in keys:
 			packed_parameters[str(key)] = _pack_value(record.parameters[key])
-		entities[entity_id] = {
+		var entry := {
 			"category": str(record.category),
 			"position": _pack_position((node as Node3D).position),
 			"parameters": packed_parameters
 		}
+		if str(record.category).begins_with("arcane_"):
+			var manifest: Dictionary = node.get("arcane_manifestation")
+			if ArcaneGrammar.valid(manifest) and not manifest.is_empty():
+				entry["construct"] = ArcaneGrammar.normalize(manifest)
+		entities[entity_id] = entry
 	return {
 		"version": FORMAT_VERSION,
 		"scene": SCENE_ID,
