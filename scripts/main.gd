@@ -177,7 +177,7 @@ func _physics_process(delta: float) -> void:
 func _exit_tree() -> void:
 	# Save on normal exit as well as on the periodic checkpoint.
 	if save_service != null and world_registry != null and is_instance_valid(luna):
-		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service, surface_field_service, social_awareness)
+		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service, surface_field_service, social_awareness, rule_engine)
 	if profile_service != null:
 		profile_service.save_profile()
 	if get_tree() != null:
@@ -616,7 +616,7 @@ func _save_checkpoint(notify_player: bool) -> void:
 		return
 	var success: bool = save_service.save_world(
 		world_registry, luna, relationship_service,
-		elemental_status_service, surface_field_service, social_awareness
+		elemental_status_service, surface_field_service, social_awareness, rule_engine
 	)
 	if notify_player or not success:
 		_show_checkpoint_message(ui_language.text("WORLD SAVED", "МИР СОХРАНЁН") if success else ui_language.text("SAVE ERROR: %s", "ОШИБКА СОХРАНЕНИЯ: %s") % save_service.last_error)
@@ -631,7 +631,7 @@ func _load_checkpoint(automatic: bool) -> void:
 		world_registry, luna, relationship_service,
 		Callable(self, "_restore_arcane_actor"), parameter_registry,
 		elemental_status_service, surface_field_service, social_awareness,
-		Callable(self, "_restore_saved_duplicate")
+		Callable(self, "_restore_saved_duplicate"), rule_engine
 	)
 	if success:
 		for entity_id in world_registry.list_ids():
