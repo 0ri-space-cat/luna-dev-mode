@@ -61,6 +61,33 @@ func observe_damage(aggressor_id: String, victims: Array) -> int:
 	return recorded
 
 
+
+func observe_magic(source_id: String, target_id: String) -> int:
+	## Innocuous magic is interesting to idle creatures. Prior danger has
+	## priority, and curiosity never changes a permanent relation.
+	var source: Node = world.get_entity(source_id)
+	var target: Node = world.get_entity(target_id)
+	if not (source is Node3D) or not (target is Node3D) or source_id == target_id:
+		return 0
+	var observers: Array[String] = []
+	if _is_aware_actor(target):
+		observers.append(target_id)
+	for candidate in world.candidates(target_id, (target as Node3D).global_position,
+			"ANY", WITNESS_RADIUS):
+		if observers.size() >= MAX_WITNESSES_PER_HIT:
+			break
+		var observer_id: String = str(candidate["id"])
+		if observer_id == source_id or observers.has(observer_id):
+			continue
+		if _is_aware_actor(world.get_entity(observer_id)):
+			observers.append(observer_id)
+	var interested := 0
+	for observer_id in observers:
+		if _remember(observer_id, source_id, "CURIOUS"):
+			interested += 1
+	return interested
+
+
 func get_alert(entity_id: String) -> Dictionary:
 	return (_alerts.get(entity_id, {}) as Dictionary).duplicate(true)
 
@@ -71,7 +98,7 @@ func advance(delta: float) -> void:
 	var elapsed: float = minf(delta, 1.0)
 	for entity_id in _alerts.keys():
 		var entry: Dictionary = _alerts[entity_id]
-		if world.get_entity(str(entity_id)) == null or world.get_entity(str(entry["aggressor_id"])) == null:
+		if world.get_entity(str(entity_id)) == null or world.get_entity(str(entry["source_id"])) == null:
 			_alerts.erase(entity_id)
 			alert_changed.emit(str(entity_id), {})
 			continue
@@ -105,11 +132,13 @@ func validate_data(data: Variant) -> bool:
 		if typeof(entries[entity_id]) != TYPE_DICTIONARY:
 			return false
 		var entry: Dictionary = entries[entity_id]
-		if entry.size() != 3 or typeof(entry.get("aggressor_id")) != TYPE_STRING:
+		# Older 0.17 files used aggressor_id for the source of danger.
+		var source: Variant = entry.get("source_id", entry.get("aggressor_id"))
+		if entry.size() != 3 or typeof(source) != TYPE_STRING:
 			return false
-		if str(entry["aggressor_id"]).is_empty() or str(entry["aggressor_id"]) == str(entity_id):
+		if str(source).is_empty() or str(source) == str(entity_id):
 			return false
-		if entry.get("reason") not in ["DIRECT", "WITNESS"]:
+		if entry.get("reason") not in ["DIRECT", "WITNESS", "CURIOUS"]:
 			return false
 		if typeof(entry.get("remaining")) not in [TYPE_INT, TYPE_FLOAT]:
 			return false
@@ -127,8 +156,12 @@ func import_data(data: Dictionary) -> bool:
 	if not data.is_empty():
 		for entity_id in data["alerts"].keys():
 			var entry: Dictionary = data["alerts"][entity_id]
-			if _is_aware_actor(world.get_entity(str(entity_id))) and world.get_entity(str(entry["aggressor_id"])) != null:
-				_alerts[entity_id] = entry.duplicate(true)
+			var source_id: String = str(entry.get("source_id", entry.get("aggressor_id", "")))
+			if _is_aware_actor(world.get_entity(str(entity_id))) and world.get_entity(source_id) != null:
+				var normalized: Dictionary = entry.duplicate(true)
+				normalized.erase("aggressor_id")
+				normalized["source_id"] = source_id
+				_alerts[entity_id] = normalized
 	for entity_id in previous_ids:
 		alert_changed.emit(str(entity_id), get_alert(str(entity_id)))
 	for entity_id in _alerts.keys():
@@ -147,10 +180,13 @@ func _remember(entity_id: String, aggressor_id: String, reason: String) -> bool:
 	if _alerts.size() >= MAX_ALERTS and not _alerts.has(entity_id):
 		return false
 	var existing: Dictionary = _alerts.get(entity_id, {})
-	if not existing.is_empty() and existing["reason"] == "DIRECT" and reason == "WITNESS":
-		return false
+	if not existing.is_empty():
+		if existing["reason"] == "DIRECT" and reason != "DIRECT":
+			return false
+		if existing["reason"] == "WITNESS" and reason == "CURIOUS":
+			return false
 	_alerts[entity_id] = {
-		"aggressor_id": aggressor_id,
+		"source_id": aggressor_id,
 		"reason": reason,
 		"remaining": ALERT_DURATION
 	}
