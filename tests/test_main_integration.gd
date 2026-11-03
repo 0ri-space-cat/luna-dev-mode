@@ -107,6 +107,19 @@ func _run() -> void:
 	assert(stage.command_processor.undo())
 	assert(is_equal_approx(float(fridge.get_parameter("speed")), before_speed))
 
+	# World-level frost status is visible and survives save/load.
+	assert(not fridge.elemental_label.visible)
+	assert(stage.elemental_status_service.apply_element("fridge_001", "FROST"))
+	assert(fridge.elemental_label.visible)
+	assert(fridge.elemental_label.text.contains("CHILL"))
+	stage._save_checkpoint(false)
+	assert(stage.elemental_status_service.import_data({}))
+	assert(not fridge.elemental_label.visible)
+	stage._load_checkpoint(false)
+	assert(stage.elemental_status_service.has_status("fridge_001", "CHILL"))
+	assert(fridge.elemental_label.visible)
+	assert(fridge.elemental_label.text.contains("CHILL"))
+
 	stage.free()
 	var profile_after_restart = ProfileService.new(PROFILE_TEST_PATH)
 	assert(profile_after_restart.load_profile())
@@ -114,5 +127,5 @@ func _run() -> void:
 	assert(profile_after_restart.has_discovered_parameter("fridge", "luna_relation"))
 	for path in [RUN_TEST_PATH, PROFILE_TEST_PATH, SPELL_TEST_PATH]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	print("LUNA 0.9: live workshop, saved recipes and full scene passed")
+	print("LUNA 0.13: elemental labels, workshop, saves and full scene passed")
 	quit(0)
