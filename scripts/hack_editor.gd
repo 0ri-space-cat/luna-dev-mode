@@ -76,7 +76,6 @@ func _ready() -> void:
 	layout.add_child(close_button)
 
 	visible = false
-	_refresh_history()
 
 
 func show_for(entity: Node3D) -> void:
