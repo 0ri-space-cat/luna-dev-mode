@@ -18,6 +18,7 @@ const ElementalStatusService = preload("res://scripts/core/elemental_status_serv
 const SpellWorkshopService = preload("res://scripts/core/spell_workshop_service.gd")
 const SpellWorkshop = preload("res://scripts/spell_workshop.gd")
 const ArcaneProjectile = preload("res://scripts/spells/arcane_projectile.gd")
+const ArcaneLink = preload("res://scripts/spells/arcane_link.gd")
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 
 var luna: CharacterBody3D
@@ -63,6 +64,7 @@ func _ready() -> void:
 	elemental_status_service.state_changed.connect(_on_elemental_state_changed)
 	spell_service = SpellService.new(world_registry, effect_engine, elemental_status_service)
 	spell_service.projectile_requested.connect(_spawn_arcane_projectile)
+	spell_service.chain_resolved.connect(_on_chain_resolved)
 	spell_service.manifestation_requested.connect(_on_arcane_place)
 	spell_workshop_service = SpellWorkshopService.new(parameter_registry, spell_service)
 	if spell_workshop_service.has_library():
@@ -350,7 +352,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.13"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.14"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -590,6 +592,20 @@ func _spawn_arcane_projectile(details: Dictionary) -> void:
 		str(details["spell_id"]), str(details["caster_id"]), str(details["target_id"])
 	)
 	projectile.struck.connect(_on_arcane_impact)
+
+
+func _on_chain_resolved(details: Dictionary) -> void:
+	for segment in details.get("links", []):
+		var from_actor: Node = world_registry.get_entity(str(segment["from_id"]))
+		var to_actor: Node = world_registry.get_entity(str(segment["to_id"]))
+		if not (from_actor is Node3D) or not (to_actor is Node3D):
+			continue
+		var link := ArcaneLink.new()
+		add_child(link)
+		link.configure(
+			(from_actor as Node3D).global_position + Vector3.UP * 1.3,
+			(to_actor as Node3D).global_position + Vector3.UP * 1.3
+		)
 
 
 func _on_arcane_impact(spell_id: String, caster_id: String, target_id: String) -> void:
