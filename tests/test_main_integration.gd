@@ -73,7 +73,10 @@ func _run() -> void:
 	assert(panel.draft.size() == 1)
 	assert(panel.form_choice.get_item_metadata(panel.form_choice.selected) == "ORB")
 	assert(panel.essence_choice.get_item_metadata(panel.essence_choice.selected) == "FIRE")
+	assert(panel._impact()["mode"] == "BURST")
+	assert(is_equal_approx(float(panel._impact()["radius"]), 2.5))
 	panel._on_new_recipe()
+	assert(panel._impact().is_empty())
 	panel._select_choice(panel.create_choice, "NONE")
 	panel._on_create_changed(panel.create_choice.selected)
 	panel.name_input.text = "Мой оживитель"
