@@ -4,6 +4,7 @@ extends RefCounted
 
 signal spell_cast(details: Dictionary)
 signal projectile_requested(details: Dictionary)
+signal manifestation_requested(details: Dictionary)
 
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 
@@ -53,7 +54,9 @@ func register_spell(spec: Dictionary) -> bool:
 	var manifest: Variant = spec.get("manifestation", {})
 	if typeof(manifest) != TYPE_DICTIONARY or not ArcaneGrammar.valid(manifest):
 		return false
-	_definitions[id] = spec.duplicate(true)
+	var stored: Dictionary = spec.duplicate(true)
+	stored["manifestation"] = ArcaneGrammar.normalize(manifest)
+	_definitions[id] = stored
 	_order.append(id)
 	return true
 
@@ -91,12 +94,19 @@ func cast_spell(spell_id: String, caster_id: String, target_id: String) -> bool:
 		return _fail("Не достаю! Подойди поближе.")
 	var manifest: Dictionary = spec.get("manifestation", {})
 	if not manifest.is_empty():
-		projectile_requested.emit({
+		var details := {
 			"spell_id": spell_id,
 			"caster_id": caster_id,
 			"target_id": target_id,
 			"manifestation": manifest.duplicate(true)
-		})
+		}
+		if str(manifest["release"]) == "PLACE":
+			# Placed spells resolve on contact immediately, then create the form.
+			if not resolve_impact(spell_id, caster_id, target_id):
+				return false
+			manifestation_requested.emit(details)
+		else:
+			projectile_requested.emit(details)
 	else:
 		if not resolve_impact(spell_id, caster_id, target_id):
 			return false
