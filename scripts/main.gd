@@ -189,6 +189,13 @@ func _exit_tree() -> void:
 		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service, surface_field_service, social_awareness, rule_engine)
 	if profile_service != null:
 		profile_service.save_profile()
+	# Undo entries hold the lifecycle service, whose spawn callback addresses
+	# this scene. Break that reference chain on teardown; saved snapshots do
+	# not rely on ephemeral undo history.
+	if command_processor != null:
+		command_processor.clear_history()
+	if entity_lifecycle != null:
+		entity_lifecycle.spawn_actor = Callable()
 	if get_tree() != null:
 		get_tree().paused = false
 
