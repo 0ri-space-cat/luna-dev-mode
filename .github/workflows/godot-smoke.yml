@@ -40,3 +40,5 @@ jobs:
         run: timeout 40s godot --headless --path . --script res://tests/test_relationships.gd
       - name: Run discovery profile smoke tests
         run: timeout 40s godot --headless --path . --script res://tests/test_profile_service.gd
+      - name: Run spell engine smoke tests
+        run: timeout 40s godot --headless --path . --script res://tests/test_spell_service.gd
