@@ -88,6 +88,29 @@ func observe_magic(source_id: String, target_id: String) -> int:
 	return interested
 
 
+## Delete both the actor's alert and alerts *about* this actor.
+## Restore only valid, still-present participants during Undo.
+func take_related_alerts(entity_id: String) -> Dictionary:
+	var captured := {}
+	for observer_id in _alerts.keys():
+		var item: Dictionary = _alerts[observer_id]
+		if str(observer_id) == entity_id or str(item.get("source_id", "")) == entity_id:
+			captured[str(observer_id)] = item.duplicate(true)
+			_alerts.erase(observer_id)
+			alert_changed.emit(str(observer_id), {})
+	return captured
+
+
+func restore_related_alerts(data: Dictionary) -> void:
+	for observer_id in data.keys():
+		if _alerts.size() >= MAX_ALERTS:
+			break
+		var entry: Dictionary = data[observer_id]
+		if _is_aware_actor(world.get_entity(str(observer_id))) and world.get_entity(str(entry.get("source_id", ""))) != null:
+			_alerts[str(observer_id)] = entry.duplicate(true)
+			alert_changed.emit(str(observer_id), get_alert(str(observer_id)))
+
+
 func get_alert(entity_id: String) -> Dictionary:
 	return (_alerts.get(entity_id, {}) as Dictionary).duplicate(true)
 
