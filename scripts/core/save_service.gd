@@ -25,7 +25,7 @@ func has_save() -> bool:
 	return FileAccess.file_exists(save_path)
 
 
-func snapshot(world, player: Node3D, relationships = null, elemental_statuses = null) -> Dictionary:
+func snapshot(world, player: Node3D, relationships = null, elemental_statuses = null, surface_fields = null) -> Dictionary:
 	var entities := {}
 	for entity_id in world.list_ids():
 		var node: Node = world.get_entity(entity_id)
@@ -55,30 +55,31 @@ func snapshot(world, player: Node3D, relationships = null, elemental_statuses = 
 		"player_position": _pack_position(player.position),
 		"entities": entities,
 		"relationships": relationships.export_data() if relationships != null else {},
-		"elemental_statuses": elemental_statuses.export_data() if elemental_statuses != null else {}
+		"elemental_statuses": elemental_statuses.export_data() if elemental_statuses != null else {},
+		"surface_fields": surface_fields.export_data() if surface_fields != null else {}
 	}
 
 
-func save_world(world, player: Node3D, relationships = null, elemental_statuses = null) -> bool:
+func save_world(world, player: Node3D, relationships = null, elemental_statuses = null, surface_fields = null) -> bool:
 	last_error = ""
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
-	var data := snapshot(world, player, relationships, elemental_statuses)
+	var data := snapshot(world, player, relationships, elemental_statuses, surface_fields)
 	var written: Dictionary = JsonStore.write_document(save_path, data)
 	if not bool(written["ok"]):
 		return _fail(str(written["error"]))
 	return true
 
 
-func load_world(world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null) -> bool:
+func load_world(world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null) -> bool:
 	last_error = ""
 	var received: Dictionary = JsonStore.read_document(save_path)
 	if not bool(received["ok"]):
 		return _fail(str(received["error"]))
-	return apply_snapshot(received["data"], world, player, relationships, create_actor, parameter_registry, elemental_statuses)
+	return apply_snapshot(received["data"], world, player, relationships, create_actor, parameter_registry, elemental_statuses, surface_fields)
 
 
-func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null) -> bool:
+func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = null, create_actor: Callable = Callable(), parameter_registry = null, elemental_statuses = null, surface_fields = null) -> bool:
 	last_error = ""
 	if not is_instance_valid(player):
 		return _fail("Player is unavailable")
@@ -98,6 +99,9 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 	var elemental_data: Variant = data.get("elemental_statuses", {})
 	if elemental_statuses != null and not elemental_statuses.validate_data(elemental_data):
 		return _fail("Invalid elemental status data")
+	var surface_data: Variant = data.get("surface_fields", {})
+	if surface_fields != null and not surface_fields.validate_data(surface_data):
+		return _fail("Invalid surface field data")
 	var plan: Array[Dictionary] = []
 	var ids_in_save: Array[String] = []
 	var generated_count := 0
@@ -193,6 +197,8 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		relationships.import_data(relationship_data)
 	if elemental_statuses != null:
 		elemental_statuses.import_data(elemental_data)
+	if surface_fields != null:
+		surface_fields.import_data(surface_data)
 	last_restored_ids = ids_in_save
 	return true
 

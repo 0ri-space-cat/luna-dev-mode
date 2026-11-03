@@ -15,6 +15,7 @@ const RelationshipService = preload("res://scripts/core/relationship_service.gd"
 const ProfileService = preload("res://scripts/core/profile_service.gd")
 const SpellService = preload("res://scripts/core/spell_service.gd")
 const ElementalStatusService = preload("res://scripts/core/elemental_status_service.gd")
+const SurfaceFieldService = preload("res://scripts/core/surface_field_service.gd")
 const SpellWorkshopService = preload("res://scripts/core/spell_workshop_service.gd")
 const SpellWorkshop = preload("res://scripts/spell_workshop.gd")
 const ArcaneProjectile = preload("res://scripts/spells/arcane_projectile.gd")
@@ -37,6 +38,8 @@ var relationship_service
 var profile_service
 var spell_service
 var elemental_status_service
+var surface_field_service
+var ice_visuals: Array[Node3D] = []
 var spell_workshop_service
 var spell_workshop_panel
 var selected_spell_id := "FIREBALL"
@@ -59,7 +62,10 @@ func _ready() -> void:
 	relationship_service = RelationshipService.new()
 	event_bus = EventBus.new()
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
-	elemental_status_service = ElementalStatusService.new(world_registry, effect_engine)
+	surface_field_service = SurfaceFieldService.new()
+	surface_field_service.fields_changed.connect(_on_surface_fields_changed)
+	elemental_status_service = ElementalStatusService.new(world_registry, effect_engine, surface_field_service)
+	elemental_status_service.fire_spread.connect(_on_fire_spread)
 	elemental_status_service.reaction_triggered.connect(_on_elemental_reaction)
 	elemental_status_service.state_changed.connect(_on_elemental_state_changed)
 	spell_service = SpellService.new(world_registry, effect_engine, elemental_status_service)
@@ -142,6 +148,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if elemental_status_service != null:
 		elemental_status_service.advance(delta)
+	if surface_field_service != null:
+		surface_field_service.advance(delta)
 	# Reactive events are delivered in a bounded batch, never recursively.
 	event_bus.drain(rule_engine)
 	# Physics queries are intentionally performed in a physics tick, not in input callbacks.
@@ -156,7 +164,7 @@ func _physics_process(delta: float) -> void:
 func _exit_tree() -> void:
 	# Save on normal exit as well as on the periodic checkpoint.
 	if save_service != null and world_registry != null and is_instance_valid(luna):
-		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service)
+		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service, surface_field_service)
 	if profile_service != null:
 		profile_service.save_profile()
 	if get_tree() != null:
@@ -245,6 +253,7 @@ func _build_ground() -> void:
 
 func _spawn_player() -> void:
 	luna = PlayerController.new()
+	luna.surface_service = surface_field_service
 	luna.position = Vector3(0, 0.1, 3.3)
 	add_child(luna)
 	world_registry.register_entity("luna", luna, "LUNA")
@@ -352,7 +361,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.14"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.15"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -480,7 +489,7 @@ func _load_checkpoint(automatic: bool) -> void:
 	var success: bool = save_service.load_world(
 		world_registry, luna, relationship_service,
 		Callable(self, "_restore_arcane_actor"), parameter_registry,
-		elemental_status_service
+		elemental_status_service, surface_field_service
 	)
 	if success:
 		for entity_id in world_registry.list_ids():
@@ -622,6 +631,35 @@ func _on_elemental_state_changed(entity_id: String, active: Dictionary) -> void:
 	var entity: Node = world_registry.get_entity(entity_id)
 	if entity != null and entity.has_method("show_elemental_statuses"):
 		entity.call("show_elemental_statuses", active)
+
+
+func _on_fire_spread(_details: Dictionary) -> void:
+	_show_checkpoint_message("Огонь перекинулся!")
+
+
+func _on_surface_fields_changed(fields: Array) -> void:
+	for visual in ice_visuals:
+		if is_instance_valid(visual):
+			visual.queue_free()
+	ice_visuals.clear()
+	for field in fields:
+		if field["kind"] != "ICE":
+			continue
+		var instance := MeshInstance3D.new()
+		var mesh := CylinderMesh.new()
+		mesh.top_radius = float(field["radius"])
+		mesh.bottom_radius = float(field["radius"])
+		mesh.height = 0.045
+		instance.mesh = mesh
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.52, 0.88, 1.0, 0.36)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		instance.material_override = mat
+		var origin: Vector3 = field["center"]
+		instance.position = Vector3(origin.x, 0.06, origin.z)
+		add_child(instance)
+		ice_visuals.append(instance)
 
 
 func _on_elemental_reaction(details: Dictionary) -> void:

@@ -6,6 +6,7 @@ const ACCELERATION := 42.0
 const GRAVITY := 18.0
 
 var visual_root: Node3D
+var surface_service
 
 
 func _ready() -> void:
@@ -35,8 +36,9 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var direction := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	velocity.x = move_toward(velocity.x, direction.x * WALK_SPEED, ACCELERATION * delta)
-	velocity.z = move_toward(velocity.z, direction.y * WALK_SPEED, ACCELERATION * delta)
+	var traction := surface_service.traction(global_position) if surface_service != null else 1.0
+	velocity.x = move_toward(velocity.x, direction.x * WALK_SPEED, ACCELERATION * traction * delta)
+	velocity.z = move_toward(velocity.z, direction.y * WALK_SPEED, ACCELERATION * traction * delta)
 	velocity.y -= GRAVITY * delta
 	move_and_slide()
 	if direction.length_squared() > 0.01:

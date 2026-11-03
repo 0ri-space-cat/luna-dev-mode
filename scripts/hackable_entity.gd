@@ -174,6 +174,8 @@ func _physics_process(delta: float) -> void:
 	_previous_engaged_target = engaged
 	# Acceleration and smooth heading are independent of the animation model.
 	var acceleration := 9.0
+	if elemental_statuses != null and elemental_statuses.surfaces != null:
+		acceleration *= elemental_statuses.surfaces.traction(global_position)
 	velocity.x = move_toward(velocity.x, wanted_velocity.x, acceleration * delta)
 	velocity.z = move_toward(velocity.z, wanted_velocity.z, acceleration * delta)
 	velocity.y -= GRAVITY * delta
