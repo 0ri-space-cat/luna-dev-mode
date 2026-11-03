@@ -119,13 +119,18 @@ func validate_data(data: Variant) -> bool:
 func import_data(data: Dictionary) -> bool:
 	if not validate_data(data):
 		return false
+	var previous_ids: Array = _alerts.keys()
 	_alerts.clear()
-	if data.is_empty():
-		return true
-	for entity_id in data["alerts"].keys():
-		var entry: Dictionary = data["alerts"][entity_id]
-		if _is_aware_actor(world.get_entity(str(entity_id))) and world.get_entity(str(entry["aggressor_id"])) != null:
-			_alerts[entity_id] = entry.duplicate(true)
+	if not data.is_empty():
+		for entity_id in data["alerts"].keys():
+			var entry: Dictionary = data["alerts"][entity_id]
+			if _is_aware_actor(world.get_entity(str(entity_id))) and world.get_entity(str(entry["aggressor_id"])) != null:
+				_alerts[entity_id] = entry.duplicate(true)
+	for entity_id in previous_ids:
+		alert_changed.emit(str(entity_id), get_alert(str(entity_id)))
+	for entity_id in _alerts.keys():
+		if not previous_ids.has(entity_id):
+			alert_changed.emit(str(entity_id), get_alert(str(entity_id)))
 	return true
 
 

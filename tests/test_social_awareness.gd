@@ -77,6 +77,11 @@ func _run() -> void:
 	assert(social.get_alert("witness")["reason"] == "WITNESS")
 	assert(social.get_alert("faraway").is_empty())
 	assert(social.get_alert("victim")["aggressor_id"] == "luna")
+	# The signal-driven visual is intentionally simple in the graybox.
+	victim.show_social_alert(social.get_alert("victim"))
+	witness.show_social_alert(social.get_alert("witness"))
+	assert(victim.social_label.visible and victim.social_label.text == "!")
+	assert(witness.social_label.visible and witness.social_label.text == "?")
 	assert(relations.export_data().is_empty())
 
 	# A neutral living victim flees; a witness also flees if no prior order.

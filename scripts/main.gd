@@ -63,6 +63,7 @@ func _ready() -> void:
 	world_registry = WorldRegistry.new()
 	relationship_service = RelationshipService.new()
 	social_awareness = SocialAwarenessService.new(world_registry, relationship_service)
+	social_awareness.alert_changed.connect(_on_social_alert_changed)
 	event_bus = EventBus.new()
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	surface_field_service = SurfaceFieldService.new()
@@ -300,6 +301,12 @@ func _on_target_acquired(source_id: String, target_id: String, target_group: Str
 		"target_id": target_id,
 		"payload": {"group": target_group}
 	})
+
+
+func _on_social_alert_changed(entity_id: String, alert: Dictionary) -> void:
+	var actor: Node = world_registry.get_entity(entity_id)
+	if actor != null and actor.has_method("show_social_alert"):
+		actor.call("show_social_alert", alert)
 
 
 func _on_spell_damage(details: Dictionary) -> void:

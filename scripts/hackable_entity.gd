@@ -19,6 +19,7 @@ var relationship_service
 var elemental_statuses
 var social_awareness
 var elemental_label: Label3D
+var social_label: Label3D
 var arcane_manifestation: Dictionary = {}
 var age := 0.0
 var _previous_engaged_target := ""
@@ -78,6 +79,14 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 	elemental_label.visible = false
 	add_child(elemental_label)
 
+	social_label = Label3D.new()
+	social_label.position = elemental_label.position + Vector3(0.0, 0.55, 0.0)
+	social_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	social_label.font_size = 36
+	social_label.pixel_size = 0.009
+	social_label.visible = false
+	add_child(social_label)
+
 	# The legs belong to the appearance, not the definition of life itself.
 	for x in [-0.3, 0.3]:
 		var leg := _make_box(Vector3(0.18, 0.46, 0.19), Vector3(x, 0.23, 0.0), Color("56456e"))
@@ -94,6 +103,20 @@ func configure(entity_id: String, entity_type: String, start_position: Vector3, 
 		set_parameter("speed", 2.5 if is_creature else 1.8)
 
 
+
+
+func show_social_alert(alert: Dictionary) -> void:
+	if not is_instance_valid(social_label):
+		return
+	social_label.visible = not alert.is_empty()
+	if alert.is_empty():
+		social_label.text = ""
+	elif str(alert.get("reason", "")) == "DIRECT":
+		social_label.text = "!"
+		social_label.modulate = Color("ffa75f")
+	else:
+		social_label.text = "?"
+		social_label.modulate = Color("cfb8ff")
 
 
 func show_elemental_statuses(active: Dictionary) -> void:

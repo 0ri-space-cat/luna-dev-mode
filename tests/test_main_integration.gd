@@ -107,6 +107,19 @@ func _run() -> void:
 	assert(stage.command_processor.undo())
 	assert(is_equal_approx(float(fridge.get_parameter("speed")), before_speed))
 
+	# Social alerts have a visible sign, survive a checkpoint, then fade.
+	assert(stage.social_awareness.observe_damage("luna", ["fridge_001"]) >= 1)
+	assert(fridge.social_label.visible and fridge.social_label.text == "!")
+	stage._save_checkpoint(false)
+	assert(stage.social_awareness.import_data({}))
+	assert(not fridge.social_label.visible)
+	stage._load_checkpoint(false)
+	assert(stage.social_awareness.get_alert("fridge_001")["reason"] == "DIRECT")
+	assert(fridge.social_label.visible)
+	for tick in range(5):
+		stage.social_awareness.advance(1.0)
+	assert(not fridge.social_label.visible)
+
 	# World-level frost status is visible and survives save/load.
 	assert(not fridge.elemental_label.visible)
 	assert(stage.elemental_status_service.apply_element("fridge_001", "FROST"))
@@ -137,5 +150,5 @@ func _run() -> void:
 	assert(profile_after_restart.has_discovered_parameter("fridge", "luna_relation"))
 	for path in [RUN_TEST_PATH, PROFILE_TEST_PATH, SPELL_TEST_PATH]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	print("LUNA 0.15: elemental labels, workshop, saves and full scene passed")
+	print("LUNA 0.17: social alerts, elemental labels and full scene passed")
 	quit(0)
