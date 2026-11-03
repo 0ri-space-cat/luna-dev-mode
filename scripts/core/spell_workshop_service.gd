@@ -40,7 +40,7 @@ func available_fields() -> Array[Dictionary]:
 	return result
 
 
-func create_recipe(label: String, cast_range: float, actions: Array[Dictionary], manifestation: Dictionary = {}) -> String:
+func create_recipe(label: String, cast_range: float, actions: Array, manifestation: Dictionary = {}) -> String:
 	last_error = ""
 	if _recipes.size() >= MAX_RECIPES:
 		last_error = "Палочка уже забита заклинаниями."
