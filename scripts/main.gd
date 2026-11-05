@@ -770,6 +770,8 @@ func _load_checkpoint(automatic: bool) -> void:
 		# Restores do not count as player hacks, nor do pre-load queued events.
 		command_processor.clear_history()
 		event_bus.clear_pending()
+		if zone_service != null:
+			zone_service.reset()
 		for entity_id in world_registry.list_ids():
 			var node: Node = world_registry.get_entity(entity_id)
 			if node != null and node.has_method("reset_after_load"):
