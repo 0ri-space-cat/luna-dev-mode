@@ -232,6 +232,14 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		ids_in_save.append(id)
 	# Rebuild missing actors only after every saved field has been validated.
 	# This keeps malformed files from partially changing the world.
+	# Save a reversible runtime checkpoint before any creation callback.
+	var before: Dictionary = _runtime_checkpoint(world, player, relationships,
+		elemental_statuses, surface_fields, social_awareness, rules)
+	for deleted_id in deleted:
+		var doomed: Node = world.get_entity(str(deleted_id))
+		if doomed != null and not _can_recreate_existing(str(deleted_id), doomed,
+				create_actor, create_duplicate, create_original):
+			return _fail("Cannot safely undo deletion: %s" % deleted_id)
 	var created: Array[Node] = []
 	for item in plan:
 		if item["node"] != null:
@@ -250,10 +258,9 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 				str(item["id"]), item["manifest"], item["position"]
 			)
 		if actor == null:
-			for added in created:
-				world.unregister_entity(str(added.record.id))
-				added.queue_free()
-			return _fail("Failed to recreate entity")
+			return _rollback_load("Failed to recreate entity", world, player, before,
+				created, relationships, elemental_statuses, surface_fields,
+				social_awareness, rules, create_actor, create_duplicate, create_original)
 		item["node"] = actor
 		created.append(actor)
 	for item in plan:
@@ -261,30 +268,40 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		node.position = item["position"]
 		for key in item["parameters"].keys():
 			if not node.call("set_parameter", key, item["parameters"][key]):
-				return _fail("Failed to restore %s" % key)
+				return _rollback_load("Failed to restore %s" % key, world, player,
+					before, created, relationships, elemental_statuses, surface_fields,
+					social_awareness, rules, create_actor, create_duplicate, create_original)
 		if not node.record.set_traits(item["roles"], item["tags"]):
-			return _fail("Failed to restore entity roles/tags")
+			return _rollback_load("Failed to restore entity roles/tags", world, player,
+				before, created, relationships, elemental_statuses, surface_fields,
+				social_awareness, rules, create_actor, create_duplicate, create_original)
 		if not node.record.set_components(item["components"]):
-			return _fail("Failed to restore entity components")
+			return _rollback_load("Failed to restore entity components", world, player,
+				before, created, relationships, elemental_statuses, surface_fields,
+				social_awareness, rules, create_actor, create_duplicate, create_original)
 	player.position = start["value"]
-	if relationships != null:
-		relationships.import_data(relationship_data)
-	if elemental_statuses != null:
-		elemental_statuses.import_data(elemental_data)
-	if surface_fields != null:
-		surface_fields.import_data(surface_data)
-	if social_awareness != null:
-		social_awareness.import_data(social_data)
-	if rules != null and not rule_data.is_empty():
-		rules.import_data(rule_data)
+	if (relationships != null and not relationships.import_data(relationship_data)) or \
+			(elemental_statuses != null and not elemental_statuses.import_data(elemental_data)) or \
+			(surface_fields != null and not surface_fields.import_data(surface_data)) or \
+			(social_awareness != null and not social_awareness.import_data(social_data)) or \
+			(rules != null and not rule_data.is_empty() and not rules.import_data(rule_data)):
+		return _rollback_load("Failed to restore world services", world, player,
+			before, created, relationships, elemental_statuses, surface_fields,
+			social_awareness, rules, create_actor, create_duplicate, create_original)
 	# Deletions are facts, not invisible defaults that respawn on restart.
 	# Clean active tombstoned actors only after the full snapshot validated.
 	for deleted_id in deleted:
 		if world.get_entity(str(deleted_id)) != null:
 			if not bool(remove_actor.call(str(deleted_id))):
-				return _fail("Unable to apply deletion: %s" % deleted_id)
+				return _rollback_load("Unable to apply deletion: %s" % deleted_id,
+					world, player, before, created, relationships, elemental_statuses,
+					surface_fields, social_awareness, rules,
+					create_actor, create_duplicate, create_original)
 	if not world.restore_deleted_ids(deleted):
-		return _fail("Unable to restore deleted-entity registry")
+		return _rollback_load("Unable to restore deleted-entity registry",
+			world, player, before, created, relationships, elemental_statuses,
+			surface_fields, social_awareness, rules,
+			create_actor, create_duplicate, create_original)
 	last_restored_ids = ids_in_save
 	return true
 
