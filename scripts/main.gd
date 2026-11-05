@@ -75,6 +75,7 @@ func _ready() -> void:
 	parameter_registry = ParameterRegistry.new()
 	command_processor = CommandProcessor.new()
 	world_registry = WorldRegistry.new()
+	command_processor.configure_world(world_registry)
 	relationship_service = RelationshipService.new()
 	social_awareness = SocialAwarenessService.new(world_registry, relationship_service)
 	social_awareness.alert_changed.connect(_on_social_alert_changed)
