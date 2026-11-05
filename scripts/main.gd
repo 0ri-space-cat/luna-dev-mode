@@ -11,6 +11,7 @@ const EntityLifecycleService = preload("res://scripts/core/entity_lifecycle_serv
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const InteractionService = preload("res://scripts/core/interaction_service.gd")
 const ZoneService = preload("res://scripts/core/zone_service.gd")
+const AbilityService = preload("res://scripts/core/ability_service.gd")
 const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
@@ -44,6 +45,7 @@ var entity_lifecycle
 var event_bus
 var interaction_service
 var zone_service
+var ability_service
 var effect_engine
 var rule_engine
 var save_service
@@ -80,6 +82,7 @@ func _ready() -> void:
 	interaction_service = InteractionService.new(world_registry, event_bus)
 	zone_service = ZoneService.new(world_registry, event_bus)
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
+	ability_service = AbilityService.new(world_registry, effect_engine, command_processor)
 	surface_field_service = SurfaceFieldService.new()
 	surface_field_service.fields_changed.connect(_on_surface_fields_changed)
 	elemental_status_service = ElementalStatusService.new(world_registry, effect_engine, surface_field_service)
@@ -772,6 +775,8 @@ func _load_checkpoint(automatic: bool) -> void:
 		event_bus.clear_pending()
 		if zone_service != null:
 			zone_service.reset()
+		if ability_service != null:
+			ability_service.reset_cooldowns()
 		for entity_id in world_registry.list_ids():
 			var node: Node = world_registry.get_entity(entity_id)
 			if node != null and node.has_method("reset_after_load"):
