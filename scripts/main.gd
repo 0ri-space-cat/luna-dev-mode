@@ -9,6 +9,8 @@ const CommandProcessor = preload("res://scripts/core/command_processor.gd")
 const WorldRegistry = preload("res://scripts/core/world_registry.gd")
 const EntityLifecycleService = preload("res://scripts/core/entity_lifecycle_service.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
+const InteractionService = preload("res://scripts/core/interaction_service.gd")
+const ZoneService = preload("res://scripts/core/zone_service.gd")
 const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
@@ -40,6 +42,8 @@ var command_processor
 var world_registry
 var entity_lifecycle
 var event_bus
+var interaction_service
+var zone_service
 var effect_engine
 var rule_engine
 var save_service
@@ -73,6 +77,8 @@ func _ready() -> void:
 	social_awareness = SocialAwarenessService.new(world_registry, relationship_service)
 	social_awareness.alert_changed.connect(_on_social_alert_changed)
 	event_bus = EventBus.new()
+	interaction_service = InteractionService.new(world_registry, event_bus)
+	zone_service = ZoneService.new(world_registry, event_bus)
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	surface_field_service = SurfaceFieldService.new()
 	surface_field_service.fields_changed.connect(_on_surface_fields_changed)
@@ -97,6 +103,7 @@ func _ready() -> void:
 			push_warning("Profile could not be read: %s" % profile_service.last_error)
 	command_processor.parameter_changed.connect(_on_parameter_changed)
 	command_processor.trait_changed.connect(_on_trait_changed)
+	command_processor.component_changed.connect(_on_component_changed)
 	command_processor.entity_changed.connect(_on_entity_changed)
 	relationship_service.relationship_changed.connect(_on_relationship_changed)
 	_register_controls()
@@ -182,7 +189,9 @@ func _physics_process(delta: float) -> void:
 		surface_field_service.advance(delta)
 	if social_awareness != null:
 		social_awareness.advance(delta)
-	# Reactive events are delivered in a bounded batch, never recursively.
+	# Zone sensors publish typed events; rules consume a bounded queue.
+	if zone_service != null:
+		zone_service.scan()
 	event_bus.drain(rule_engine)
 	# Physics queries are intentionally performed in a physics tick, not in input callbacks.
 	if pending_selection != Vector2(-1, -1):
@@ -425,6 +434,19 @@ func _on_entity_changed(change: Dictionary) -> void:
 		"target_id": entity_id,
 		"payload": {
 			"category": str(change["category"]),
+			"initiator_id": str(change["initiator_id"]),
+			"command_source_id": str(change["source_id"])
+		}
+	})
+
+
+func _on_component_changed(change: Dictionary) -> void:
+	# Component changes share the same provenance and event bus as parameters.
+	event_bus.enqueue({
+		"type": "entity.components_changed",
+		"source_id": str(change["entity_id"]),
+		"target_id": str(change["entity_id"]),
+		"payload": {
 			"initiator_id": str(change["initiator_id"]),
 			"command_source_id": str(change["source_id"])
 		}
