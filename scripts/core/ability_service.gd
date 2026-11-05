@@ -90,7 +90,8 @@ func revoke(entity_id: String, ability_id: String,
 	return true
 
 
-func activate(entity_id: String, ability_id: String, target_id: String) -> bool:
+func activate(entity_id: String, ability_id: String, target_id: String,
+		origin_id: String = "") -> bool:
 	last_error = ""
 	var actor: Node = world.get_entity(entity_id)
 	var target: Node = world.get_entity(target_id)
@@ -104,14 +105,27 @@ func activate(entity_id: String, ability_id: String, target_id: String) -> bool:
 	if not definitions.has(ability_id):
 		return _fail("Ability definition is unavailable")
 	var spec: Dictionary = definitions[ability_id]
+	# Carried artefacts cast from their owner, not from the last location
+	# where their invisible physical entity happened to be standing.
+	var casting_origin: Node3D = actor as Node3D
+	if not origin_id.is_empty():
+		var carried: Dictionary = record.get_component("PICKUP")
+		var carrier: Node = world.get_entity(origin_id)
+		if carried.is_empty() or str(carried["holder_id"]) != origin_id or not (carrier is Node3D):
+			return _fail("Item is not carried by the requested origin")
+		casting_origin = carrier as Node3D
 	var reach: float = float(spec["range"])
-	if (actor as Node3D).global_position.distance_squared_to((target as Node3D).global_position) > reach * reach:
+	if casting_origin.global_position.distance_squared_to((target as Node3D).global_position) > reach * reach:
 		return _fail("Ability target out of range")
 	var cooldown_key := "%s:%s" % [entity_id, ability_id]
 	var now: int = Time.get_ticks_msec()
 	if _last_used.has(cooldown_key) and now - int(_last_used[cooldown_key]) < int(spec["cooldown_ms"]):
 		return _fail("Ability on cooldown")
-	if not effects.apply_batch(spec["effects"], target_id, entity_id, "ability:%s" % ability_id):
+	var initiator_id: String = origin_id if not origin_id.is_empty() else entity_id
+	var source_id := "ability:%s" % ability_id
+	if not origin_id.is_empty():
+		source_id += "@%s" % entity_id
+	if not effects.apply_batch(spec["effects"], target_id, initiator_id, source_id):
 		return _fail(effects.last_error)
 	_last_used[cooldown_key] = now
 	return true
