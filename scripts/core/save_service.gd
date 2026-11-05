@@ -306,6 +306,109 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 	return true
 
 
+## A transient in-memory copy, intentionally never serialized. Includes
+## services and actors not mentioned by the incoming save, since deletion
+## callbacks may remove them during commit.
+func _runtime_checkpoint(world, player: Node3D, relationships, elemental_statuses,
+		surface_fields, social_awareness, rules) -> Dictionary:
+	var actors := {}
+	for entity_id in world.list_ids():
+		var node: Node = world.get_entity(entity_id)
+		if not (node is Node3D) or not node.has_method("get_parameter"):
+			continue
+		var record: Variant = node.get("record")
+		if record == null:
+			continue
+		var entry := {
+			"category": str(record.category),
+			"position": (node as Node3D).position,
+			"parameters": record.parameters.duplicate(true),
+			"roles": record.get_stored_roles(),
+			"tags": record.get_tags(),
+			"components": record.get_components()
+		}
+		if node.has_meta("copy_origin"):
+			entry["copy_origin"] = str(node.get_meta("copy_origin"))
+		if str(record.category).begins_with("arcane_"):
+			entry["construct"] = node.arcane_manifestation.duplicate(true)
+		actors[entity_id] = entry
+	return {
+		"actors": actors, "player_position": player.position,
+		"deleted": world.deleted_ids(),
+		"relationships": relationships.export_data() if relationships != null else {},
+		"elemental_statuses": elemental_statuses.export_data() if elemental_statuses != null else {},
+		"surface_fields": surface_fields.export_data() if surface_fields != null else {},
+		"social_awareness": social_awareness.export_data() if social_awareness != null else {},
+		"rules": rules.export_data() if rules != null else {}
+	}
+
+
+func _can_recreate_existing(entity_id: String, actor: Node, create_actor: Callable,
+		create_duplicate: Callable, create_original: Callable) -> bool:
+	var record: Variant = actor.get("record")
+	if record == null:
+		return false
+	var category: String = str(record.category)
+	if actor.has_meta("copy_origin"):
+		return category in ["tree", "fridge"] and create_duplicate.is_valid()
+	if category.begins_with("arcane_"):
+		return create_actor.is_valid() and ArcaneGrammar.valid(actor.arcane_manifestation)
+	return entity_id in ["tree_001", "tree_002", "fridge_001"] and create_original.is_valid()
+
+
+func _rollback_load(message: String, world, player: Node3D, before: Dictionary,
+		created: Array[Node], relationships, elemental_statuses, surface_fields,
+		social_awareness, rules, create_actor: Callable,
+		create_duplicate: Callable, create_original: Callable) -> bool:
+	var recovered := true
+	for node in created:
+		if not is_instance_valid(node):
+			continue
+		var record: Variant = node.get("record")
+		if record != null:
+			world.unregister_entity(str(record.id))
+		node.queue_free()
+	var originals: Dictionary = before["actors"]
+	for entity_id in originals.keys():
+		var saved: Dictionary = originals[entity_id]
+		var actor: Node = world.get_entity(str(entity_id))
+		if actor == null:
+			if saved.has("copy_origin") and create_duplicate.is_valid():
+				actor = create_duplicate.call(str(entity_id), str(saved["category"]),
+					saved["position"], str(saved["copy_origin"]))
+			elif saved.has("construct") and create_actor.is_valid():
+				actor = create_actor.call(str(entity_id), saved["construct"],
+					saved["position"])
+			elif create_original.is_valid():
+				actor = create_original.call(str(entity_id), str(saved["category"]),
+					saved["position"])
+		if not (actor is Node3D):
+			recovered = false
+			continue
+		(actor as Node3D).position = saved["position"]
+		for key in saved["parameters"].keys():
+			if not actor.call("set_parameter", str(key), saved["parameters"][key]):
+				recovered = false
+		if not actor.record.set_traits(saved["roles"], saved["tags"]):
+			recovered = false
+		if not actor.record.set_components(saved["components"]):
+			recovered = false
+	player.position = before["player_position"]
+	if relationships != null and not relationships.import_data(before["relationships"]):
+		recovered = false
+	if elemental_statuses != null and not elemental_statuses.import_data(before["elemental_statuses"]):
+		recovered = false
+	if surface_fields != null and not surface_fields.import_data(before["surface_fields"]):
+		recovered = false
+	if social_awareness != null and not social_awareness.import_data(before["social_awareness"]):
+		recovered = false
+	if rules != null and not rules.import_data(before["rules"]):
+		recovered = false
+	if not world.restore_deleted_ids(before["deleted"]):
+		recovered = false
+	return _fail(message if recovered else message + " (ROLLBACK INCOMPLETE)")
+
+
 func _pack_position(position: Vector3) -> Array:
 	return [position.x, position.y, position.z]
 
