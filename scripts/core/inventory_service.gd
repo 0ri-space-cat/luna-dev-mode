@@ -161,7 +161,8 @@ func sync_item(entity_id: String) -> void:
 		return
 	var data: Dictionary = _pickup_data(actor)
 	if data.is_empty():
-		_restore_presence(actor)
+		if actor.has_meta("inventory_original_layer"):
+			_restore_presence(actor)
 		return
 	if str(data["holder_id"]).is_empty():
 		_restore_presence(actor)
