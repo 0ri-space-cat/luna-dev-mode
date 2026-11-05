@@ -31,6 +31,9 @@ func _run() -> void:
 	assert(fridge.record.category == "fridge")
 	assert(not fridge.visible)
 	assert(fridge.collision_layer == 0)
+	for candidate in world.candidates("tree_001", tree.global_position, "ANY", 12.0):
+		assert(str(candidate["id"]) != "fridge_001")
+	assert(stage.effect_engine.world.get_entity("fridge_001") == fridge)
 
 	# The carried fridge can cast an independently granted ability from
 	# Luna's current position. Provenance identifies both carrier and item.
