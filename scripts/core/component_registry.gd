@@ -6,6 +6,9 @@ const DEFINITIONS := {
 		"verb": {"type": "enum", "default": "USE", "choices": ["USE", "TALK", "OPEN", "INSPECT"]},
 		"reach": {"type": "float", "default": 2.5, "min": 0.5, "max": 8.0}
 	},
+	"ABILITY_SET": {
+		"ids": {"type": "identifiers", "default": []}
+	},
 	"TRIGGER_ZONE": {
 		"enabled": {"type": "bool", "default": true},
 		"radius": {"type": "float", "default": 2.5, "min": 0.5, "max": 12.0},
@@ -35,6 +38,15 @@ static func validate(id: String, data: Variant) -> Dictionary:
 			"enum":
 				if typeof(value) != TYPE_STRING or not spec["choices"].has(value):
 					return {"ok": false}
+			"identifiers":
+				if typeof(value) != TYPE_ARRAY or value.size() > 16:
+					return {"ok": false}
+				var seen := {}
+				for ability_id in value:
+					if typeof(ability_id) != TYPE_STRING or not str(ability_id).is_valid_identifier() or str(ability_id).length() > 64 or seen.has(ability_id):
+						return {"ok": false}
+					seen[ability_id] = true
+				value = value.duplicate(true)
 			"float":
 				if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
 					return {"ok": false}
