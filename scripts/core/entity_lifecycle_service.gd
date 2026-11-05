@@ -4,6 +4,7 @@ extends RefCounted
 ## This service deliberately never touches Luna's controller or player profile.
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 const EntityRecord = preload("res://scripts/core/entity_record.gd")
+const ComponentRegistry = preload("res://scripts/core/component_registry.gd")
 const BASE_IDS := {"tree_001": "tree", "tree_002": "tree", "fridge_001": "fridge"}
 
 var world
@@ -38,7 +39,8 @@ func capture(entity_id: String) -> Dictionary:
 		"position": (actor as Node3D).position,
 		"parameters": record.parameters.duplicate(true),
 		"roles": record.get_stored_roles(),
-		"tags": record.get_tags()
+		"tags": record.get_tags(),
+		"components": record.get_components()
 	}
 	if actor.has_meta("copy_origin"):
 		spec["copy_origin"] = str(actor.get_meta("copy_origin"))
@@ -64,6 +66,8 @@ func validate_blueprint(data: Dictionary) -> bool:
 	if typeof(data.get("roles")) != TYPE_ARRAY or typeof(data.get("tags")) != TYPE_ARRAY or typeof(data.get("parameters")) != TYPE_DICTIONARY:
 		return false
 	if not EntityRecord.validate_trait_list(data["roles"]) or not EntityRecord.validate_trait_list(data["tags"]):
+		return false
+	if not ComponentRegistry.validate_collection(data.get("components", {})):
 		return false
 	if BASE_IDS.has(entity_id):
 		if str(BASE_IDS[entity_id]) != category or data.has("construct") or data.has("copy_origin"):
@@ -112,9 +116,9 @@ func restore_entity(data: Dictionary) -> Node:
 			_discard_actor(entity_id, false)
 			last_error = "Actor rejected saved parameter"
 			return null
-	if not actor.record.set_traits(data["roles"], data["tags"]):
+	if not actor.record.set_traits(data["roles"], data["tags"]) or not actor.record.set_components(data.get("components", {})):
 		_discard_actor(entity_id, false)
-		last_error = "Actor rejected saved traits"
+		last_error = "Actor rejected saved traits or components"
 		return null
 	if relationships != null:
 		relationships.restore_entity_links(data.get("links", {}))
