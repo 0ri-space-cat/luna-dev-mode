@@ -3,6 +3,7 @@ extends RefCounted
 const JsonStore = preload("res://scripts/core/json_store.gd")
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 const EntityRecord = preload("res://scripts/core/entity_record.gd")
+const ComponentRegistry = preload("res://scripts/core/component_registry.gd")
 ## Versioned world snapshots. Writes only data, never Node references or scripts.
 ## JSON is validated before any state is applied. Save uses temp + rename.
 ##
@@ -45,7 +46,8 @@ func snapshot(world, player: Node3D, relationships = null, elemental_statuses = 
 			"position": _pack_position((node as Node3D).position),
 			"parameters": packed_parameters,
 			"roles": record.get_stored_roles(),
-			"tags": record.get_tags()
+			"tags": record.get_tags(),
+			"components": record.get_components()
 		}
 		if str(record.category).begins_with("arcane_"):
 			var manifest: Dictionary = node.get("arcane_manifestation")
@@ -217,8 +219,11 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		var saved_tags: Variant = item.get("tags", EntityRecord.default_tags(category))
 		if not EntityRecord.validate_trait_list(saved_roles) or not EntityRecord.validate_trait_list(saved_tags):
 			return _fail("Invalid entity roles/tags: %s" % id)
+		var saved_components: Variant = item.get("components", {})
+		if not ComponentRegistry.validate_collection(saved_components):
+			return _fail("Invalid entity components: %s" % id)
 		plan.append({
-			"roles": saved_roles, "tags": saved_tags,
+			"roles": saved_roles, "tags": saved_tags, "components": saved_components,
 			"node": entity, "id": id, "manifest": manifest,
 			"copy_origin": copy_origin, "category": category,
 			"restore_base": restore_base,
@@ -259,6 +264,8 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 				return _fail("Failed to restore %s" % key)
 		if not node.record.set_traits(item["roles"], item["tags"]):
 			return _fail("Failed to restore entity roles/tags")
+		if not node.record.set_components(item["components"]):
+			return _fail("Failed to restore entity components")
 	player.position = start["value"]
 	if relationships != null:
 		relationships.import_data(relationship_data)
