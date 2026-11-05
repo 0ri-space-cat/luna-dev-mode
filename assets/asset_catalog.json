@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "assets": {
+    "luna.portrait": {"kind": "texture2d", "path": "res://assets/generated/luna_portrait.png", "fallback": "ui.avatar_placeholder"},
+    "luna.model": {"kind": "packed_scene", "path": "res://assets/generated/luna_character.tscn", "fallback": "character.graybox"},
+    "luna.animations": {"kind": "animation_library", "path": "res://assets/generated/luna_animations.tres", "fallback": "animation.idle_walk_placeholder"},
+    "ui.avatar_placeholder": {"kind": "procedural", "path": "", "fallback": "initials_badge"},
+    "ui.minimap": {"kind": "texture2d", "path": "res://assets/generated/minimap_frame.png", "fallback": "minimap.graybox"},
+    "ui.inventory_frame": {"kind": "texture2d", "path": "res://assets/generated/inventory_frame.png", "fallback": "panel.default"},
+    "ui.hack_frame": {"kind": "texture2d", "path": "res://assets/generated/hack_frame.png", "fallback": "panel.default"},
+    "ui.magic_frame": {"kind": "texture2d", "path": "res://assets/generated/magic_frame.png", "fallback": "panel.default"},
+    "icon.health": {"kind": "texture2d", "path": "res://assets/generated/icon_health.png", "fallback": "symbol.heart"},
+    "icon.mana": {"kind": "texture2d", "path": "res://assets/generated/icon_mana.png", "fallback": "symbol.crystal"},
+    "icon.stamina": {"kind": "texture2d", "path": "res://assets/generated/icon_stamina.png", "fallback": "symbol.boot"},
+    "icon.item_unknown": {"kind": "texture2d", "path": "res://assets/generated/icon_item_unknown.png", "fallback": "symbol.box"},
+    "audio.ui_open": {"kind": "audio_stream", "path": "res://assets/generated/ui_open.ogg", "fallback": "silent"},
+    "audio.ui_confirm": {"kind": "audio_stream", "path": "res://assets/generated/ui_confirm.ogg", "fallback": "silent"},
+    "vfx.hack_selection": {"kind": "packed_scene", "path": "res://assets/generated/hack_selection.tscn", "fallback": "selection.outline"}
+  }
+}
