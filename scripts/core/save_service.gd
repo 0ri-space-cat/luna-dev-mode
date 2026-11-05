@@ -232,6 +232,8 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 		ids_in_save.append(id)
 	# Rebuild missing actors only after every saved field has been validated.
 	# This keeps malformed files from partially changing the world.
+	if not _validate_carried_references(entries, world):
+		return _fail("Invalid inventory ownership or capacity")
 	# Save a reversible runtime checkpoint before any creation callback.
 	var before: Dictionary = _runtime_checkpoint(world, player, relationships,
 		elemental_statuses, surface_fields, social_awareness, rules)
@@ -309,6 +311,48 @@ func apply_snapshot(data: Dictionary, world, player: Node3D, relationships = nul
 ## A transient in-memory copy, intentionally never serialized. Includes
 ## services and actors not mentioned by the incoming save, since deletion
 ## callbacks may remove them during commit.
+func _validate_carried_references(entries: Dictionary, world) -> bool:
+	var usage := {}
+	for entity_id in entries.keys():
+		var components: Variant = entries[entity_id].get("components", {})
+		if typeof(components) != TYPE_DICTIONARY or not components.has("PICKUP"):
+			continue
+		var held: Dictionary = components["PICKUP"]
+		var owner_id: String = str(held.get("holder_id", ""))
+		if owner_id.is_empty():
+			continue
+		if owner_id == str(entity_id) or (world.get_entity(owner_id) == null and not entries.has(owner_id)):
+			return false
+		if owner_id != "luna" and not entries.has(owner_id):
+			return false
+		var max_slots := 12
+		var max_weight := 50.0
+		if owner_id != "luna":
+			var carrier_components: Variant = entries[owner_id].get("components", {})
+			if typeof(carrier_components) != TYPE_DICTIONARY or not carrier_components.has("INVENTORY"):
+				return false
+			var capacity: Dictionary = carrier_components["INVENTORY"]
+			max_slots = int(capacity["max_slots"])
+			max_weight = float(capacity["max_weight"])
+		var stats: Dictionary = usage.get(owner_id, {"count": 0, "weight": 0.0})
+		stats["count"] = int(stats["count"]) + 1
+		stats["weight"] = float(stats["weight"]) + float(held["weight"])
+		if int(stats["count"]) > max_slots or float(stats["weight"]) > max_weight:
+			return false
+		usage[owner_id] = stats
+		var visited := {}
+		var next_id: String = owner_id
+		while not next_id.is_empty() and next_id != "luna":
+			if next_id == str(entity_id) or visited.has(next_id):
+				return false
+			visited[next_id] = true
+			var next_components: Variant = entries[next_id].get("components", {})
+			if typeof(next_components) != TYPE_DICTIONARY:
+				return false
+			next_id = str(next_components.get("PICKUP", {}).get("holder_id", ""))
+	return true
+
+
 func _runtime_checkpoint(world, player: Node3D, relationships, elemental_statuses,
 		surface_fields, social_awareness, rules) -> Dictionary:
 	var actors := {}
