@@ -5,6 +5,7 @@ extends RefCounted
 
 signal parameter_changed(change: Dictionary)
 signal trait_changed(change: Dictionary)
+signal component_changed(change: Dictionary)
 signal entity_changed(change: Dictionary)
 signal history_changed
 
@@ -319,10 +320,73 @@ func _replay_world_batch(entry: Dictionary, forward: bool) -> bool:
 	return true
 
 
+## Components are gameplay data, not scripts or actor subclasses.
+func execute_component(target: Node, operation: String, component_id: String,
+		data: Dictionary = {}, initiator_id: String = "luna",
+		source_id: String = "wand:luna") -> bool:
+	if not is_instance_valid(target) or operation not in ["SET_COMPONENT", "REMOVE_COMPONENT"]:
+		return false
+	var record: Variant = target.get("record")
+	if record == null:
+		return false
+	var before: Dictionary = record.get_components()
+	var accepted: bool = false
+	if operation == "SET_COMPONENT":
+		accepted = record.set_component(component_id, data)
+	else:
+		accepted = record.remove_component(component_id)
+	if not accepted:
+		return false
+	var after: Dictionary = record.get_components()
+	if before == after:
+		return true
+	_sequence += 1
+	var entry := {
+		"kind": "components", "sequence": _sequence,
+		"target_ref": weakref(target), "entity_id": str(record.id),
+		"parameter_id": "COMPONENTS", "before": before, "after": after,
+		"initiator_id": initiator_id, "source_id": source_id,
+		"merge_key": "", "component_id": component_id
+	}
+	_undo_stack.append(entry)
+	if _undo_stack.size() > MAX_UNDO:
+		_undo_stack.pop_front()
+	_redo_stack.clear()
+	_append_audit("COMPONENT_SET", entry, before, after)
+	component_changed.emit(_latest_audit())
+	history_changed.emit()
+	return true
+
+
+func _replay_component_change(entry: Dictionary, forward: bool) -> bool:
+	var target: Object = (entry["target_ref"] as WeakRef).get_ref()
+	if not is_instance_valid(target):
+		return false
+	var record: Variant = target.get("record")
+	if record == null:
+		return false
+	var expected: Dictionary = entry["before"] if forward else entry["after"]
+	if record.get_components() != expected:
+		return false
+	var desired: Dictionary = entry["after"] if forward else entry["before"]
+	if not record.set_components(desired):
+		return false
+	_append_audit("REDO_COMPONENT" if forward else "UNDO_COMPONENT", entry, expected, desired)
+	component_changed.emit(_latest_audit())
+	return true
+
+
 func undo() -> bool:
 	if _undo_stack.is_empty():
 		return false
 	var entry: Dictionary = _undo_stack.back()
+	if str(entry.get("kind", "")) == "components":
+		if not _replay_component_change(entry, false):
+			return false
+		_undo_stack.pop_back()
+		_redo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if str(entry.get("kind", "")) == "world_batch":
 		if not _replay_world_batch(entry, false):
 			return false
@@ -366,6 +430,13 @@ func redo() -> bool:
 	if _redo_stack.is_empty():
 		return false
 	var entry: Dictionary = _redo_stack.back()
+	if str(entry.get("kind", "")) == "components":
+		if not _replay_component_change(entry, true):
+			return false
+		_redo_stack.pop_back()
+		_undo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if str(entry.get("kind", "")) == "world_batch":
 		if not _replay_world_batch(entry, true):
 			return false
