@@ -70,6 +70,12 @@ jobs:
 
       - name: Run stable ID history recreation tests
         run: bash ci/run_godot_script.sh res://tests/test_history_recreation.gd
+
+      - name: Run failure-injected save rollback tests
+        run: bash ci/run_godot_script.sh res://tests/test_save_rollback.gd
+
+      - name: Run entity inventory and portable item tests
+        run: bash ci/run_godot_script.sh res://tests/test_inventory.gd
       - name: Run save and load smoke tests
         run: bash ci/run_godot_script.sh res://tests/test_save_service.gd
       - name: Run social relations smoke tests
