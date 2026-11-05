@@ -151,3 +151,25 @@ func has_component(id: String) -> bool:
 
 func get_component(id: String) -> Dictionary:
 	return (_components.get(id, {}) as Dictionary).duplicate(true)
+
+func set_component(id: String, data: Dictionary) -> bool:
+	var checked: Dictionary = ComponentRegistry.validate(id, data)
+	if not bool(checked["ok"]):
+		return false
+	_components[id] = checked["value"].duplicate(true)
+	return true
+
+func remove_component(id: String) -> bool:
+	if not _components.has(id):
+		return false
+	_components.erase(id)
+	return true
+
+func set_components(data: Dictionary) -> bool:
+	if not ComponentRegistry.validate_collection(data):
+		return false
+	var next := {}
+	for id in data.keys():
+		next[str(id)] = ComponentRegistry.validate(str(id), data[id])["value"]
+	_components = next
+	return true
