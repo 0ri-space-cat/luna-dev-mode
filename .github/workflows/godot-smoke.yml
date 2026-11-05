@@ -64,6 +64,9 @@ jobs:
 
       - name: Run interaction and trigger zone tests
         run: bash ci/run_godot_script.sh res://tests/test_interaction_zones.gd
+
+      - name: Run portable ability component tests
+        run: bash ci/run_godot_script.sh res://tests/test_abilities.gd
       - name: Run save and load smoke tests
         run: bash ci/run_godot_script.sh res://tests/test_save_service.gd
       - name: Run social relations smoke tests
