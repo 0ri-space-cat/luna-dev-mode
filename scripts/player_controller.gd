@@ -45,6 +45,21 @@ func _physics_process(delta: float) -> void:
 		visual_root.rotation.y = lerp_angle(visual_root.rotation.y, atan2(-direction.x, -direction.y), minf(delta * 10.0, 1.0))
 
 
+func apply_visual_scene(scene: PackedScene) -> bool:
+	if scene == null:
+		return false
+	var instance: Node = scene.instantiate()
+	if not (instance is Node3D):
+		instance.queue_free()
+		return false
+	if is_instance_valid(visual_root):
+		visual_root.queue_free()
+	visual_root = instance
+	visual_root.name = "AssetAppearance"
+	add_child(visual_root)
+	return true
+
+
 func _material(color: Color) -> StandardMaterial3D:
 	var result := StandardMaterial3D.new()
 	result.albedo_color = color

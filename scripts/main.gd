@@ -28,6 +28,8 @@ const ArcaneProjectile = preload("res://scripts/spells/arcane_projectile.gd")
 const ArcaneLink = preload("res://scripts/spells/arcane_link.gd")
 const ArcaneGrammar = preload("res://scripts/core/arcane_grammar.gd")
 const UiLanguage = preload("res://scripts/core/ui_language.gd")
+const LunaShell = preload("res://scripts/luna_shell.gd")
+const AssetRegistry = preload("res://scripts/core/asset_registry.gd")
 
 var ui_language = UiLanguage.new()
 var ui_layer: CanvasLayer
@@ -70,10 +72,15 @@ var journal_label: Label
 var save_status_label: Label
 var _autosave_elapsed := 0.0
 var _save_message_seconds := 0.0
+var asset_registry
+var luna_shell
 const AUTO_SAVE_INTERVAL := 30.0
 
 
 func _ready() -> void:
+	asset_registry = AssetRegistry.new()
+	if not asset_registry.load_catalog():
+		push_warning("Asset catalog unavailable; graybox fallbacks remain active: %s" % asset_registry.last_error)
 	parameter_registry = ParameterRegistry.new()
 	command_processor = CommandProcessor.new()
 	world_registry = WorldRegistry.new()
@@ -315,6 +322,10 @@ func _spawn_player() -> void:
 	luna.surface_service = surface_field_service
 	luna.position = Vector3(0, 0.1, 3.3)
 	add_child(luna)
+	var luna_model: Resource = asset_registry.load_asset("luna.model")
+	if luna_model is PackedScene:
+		if not luna.apply_visual_scene(luna_model):
+			push_warning("Luna model asset has an incompatible root; using graybox")
 	world_registry.register_entity("luna", luna, "LUNA")
 
 
@@ -515,7 +526,7 @@ func _build_interface() -> void:
 	layer.add_child(pause_tint)
 
 	var header := Label.new()
-	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.26"
+	header.text = "LUNA: DEV MODE   ✦   ПРОТОТИП 0.27"
 	header.position = Vector2(24, 16)
 	header.add_theme_font_size_override("font_size", 22)
 	header.add_theme_color_override("font_color", Color("efe2ff"))
@@ -540,7 +551,7 @@ func _build_interface() -> void:
 	layer.add_child(instructions)
 
 	spell_hint_label = Label.new()
-	spell_hint_label.position = Vector2(24, 80)
+	spell_hint_label.position = Vector2(290, 80)
 	spell_hint_label.add_theme_font_size_override("font_size", 14)
 	spell_hint_label.add_theme_color_override("font_color", Color("ffe1f5"))
 	layer.add_child(spell_hint_label)
@@ -603,11 +614,30 @@ func _build_interface() -> void:
 	spell_workshop_panel.closed.connect(_close_workshop)
 	spell_workshop_panel.spell_created.connect(_on_custom_spell_created)
 	_refresh_language()
+	luna_shell = LunaShell.new()
+	luna_shell.name = "LunaAssetReadyShell"
+	layer.add_child(luna_shell)
+	luna_shell.configure(inventory_service, world_registry, ui_language.locale, asset_registry)
+	luna_shell.panel_requested.connect(_on_shell_panel_requested)
+	luna_shell.move_to_front()
+	# Keep existing controls reachable above the shell's decorative HUD.
+	journal_panel.move_to_front()
+	spell_workshop_panel.move_to_front()
+	editor.move_to_front()
+	language_choice.move_to_front()
 
 
 func _on_language_selected(index: int) -> void:
 	ui_language.set_locale("en" if index == 0 else "ru")
 	_refresh_language()
+	if is_instance_valid(luna_shell):
+		luna_shell.locale = ui_language.locale
+
+func _on_shell_panel_requested(panel_id: String) -> void:
+	if panel_id == "MAGIC":
+		_open_workshop()
+	elif panel_id == "JOURNAL":
+		_toggle_journal()
 
 
 func _refresh_language() -> void:

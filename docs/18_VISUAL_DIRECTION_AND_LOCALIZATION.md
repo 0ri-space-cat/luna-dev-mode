@@ -60,3 +60,7 @@
 - **Комментарии Луны пока черновые.** Конкретные шутки и формулировки перепишем отдельным редакторским проходом. Пример для `MOVE_SPEED`: «Быстрее. Ещё быстрее. Ой.»; не воспринимать остальные текущие шутки как утверждённые.
 - Кнопки строго `COPY DELETE DONE` в одном ряду, без перевода и без дополнительных слов.
 - Приоритет этого решения выше более ранней договорённости о показе технических имён без названия на родном языке.
+
+## Asset-ready graybox shell (05.11.2026)
+
+The first UI/art integration shell and its incomplete-feature boundaries are documented in [27_ASSET_READY_UI_FOUNDATION.md](27_ASSET_READY_UI_FOUNDATION.md). The portrait, mini-map, quick slots and resource bars are structural placeholders; resource values are not yet gameplay state. The inventory shell only reads existing carried Entity IDs and does not prescribe item UX.

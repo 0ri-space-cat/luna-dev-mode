@@ -20,6 +20,8 @@ jobs:
           sudo mv /tmp/Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
       - name: Import and parse project
         run: godot --headless --editor --path . --import --quit
+      - name: Run asset registry and UI foundation tests
+        run: bash ci/run_godot_script.sh res://tests/test_asset_ui_foundation.gd
       - name: Boot actual main scene headlessly
         run: |
           set -o pipefail
