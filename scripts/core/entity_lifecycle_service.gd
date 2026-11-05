@@ -135,6 +135,20 @@ func delete_entity(entity_id: String) -> Dictionary:
 	if snapshot.is_empty():
 		last_error = "Unknown or noneditable entity"
 		return {}
+	# Ownership references must never dangle: a container has to be
+	# emptied before destruction. This applies to Undo and magic too.
+	for other_id in world.list_ids():
+		if other_id == entity_id:
+			continue
+		var other: Node = world.get_entity(other_id)
+		if other == null:
+			continue
+		var other_record: Variant = other.get("record")
+		if other_record == null or not other_record.has_component("PICKUP"):
+			continue
+		if str(other_record.get_component("PICKUP").get("holder_id", "")) == entity_id:
+			last_error = "Cannot delete a carrier with items inside"
+			return {}
 	if not _discard_actor(entity_id, true):
 		last_error = "Unable to remove entity"
 		return {}
