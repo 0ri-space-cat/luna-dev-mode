@@ -280,6 +280,14 @@ func _preview_lifecycle(effect: Dictionary, source_id: String) -> Dictionary:
 		copy["id"] = "%s%04d" % [prefix, serial]
 	if category in ["tree", "fridge"]:
 		copy["copy_origin"] = source_id
+	var copied_components: Dictionary = copy.get("components", {})
+	if copied_components.has("PICKUP"):
+		var pickup: Dictionary = copied_components["PICKUP"]
+		pickup["holder_id"] = ""
+		var landing: Vector3 = copy["position"]
+		pickup["world_position"] = [landing.x, landing.y, landing.z]
+		copied_components["PICKUP"] = pickup
+		copy["components"] = copied_components
 	if not lifecycle.validate_blueprint(copy) or world.get_entity(str(copy["id"])) != null or world.was_deleted(str(copy["id"])):
 		last_error = "Invalid or reserved copy ID"
 		return {}
