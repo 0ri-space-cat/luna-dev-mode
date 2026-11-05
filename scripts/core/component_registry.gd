@@ -6,6 +6,16 @@ const DEFINITIONS := {
 		"verb": {"type": "enum", "default": "USE", "choices": ["USE", "TALK", "OPEN", "INSPECT"]},
 		"reach": {"type": "float", "default": 2.5, "min": 0.5, "max": 8.0}
 	},
+	"INVENTORY": {
+		"max_slots": {"type": "int", "default": 8, "min": 1, "max": 24},
+		"max_weight": {"type": "float", "default": 30.0, "min": 0.5, "max": 200.0}
+	},
+	"PICKUP": {
+		"enabled": {"type": "bool", "default": true},
+		"holder_id": {"type": "entity_id", "default": ""},
+		"weight": {"type": "float", "default": 1.0, "min": 0.1, "max": 100.0},
+		"world_position": {"type": "position", "default": [0.0, 0.0, 0.0]}
+	},
 	"ABILITY_SET": {
 		"ids": {"type": "identifiers", "default": []}
 	},
@@ -47,6 +57,26 @@ static func validate(id: String, data: Variant) -> Dictionary:
 						return {"ok": false}
 					seen[ability_id] = true
 				value = value.duplicate(true)
+			"entity_id":
+				if typeof(value) != TYPE_STRING or str(value).length() > 96:
+					return {"ok": false}
+				if not str(value).is_empty() and not str(value).is_valid_identifier():
+					return {"ok": false}
+			"position":
+				if typeof(value) != TYPE_ARRAY or value.size() != 3:
+					return {"ok": false}
+				var coords: Array = []
+				for coord in value:
+					if typeof(coord) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coord)) or absf(float(coord)) > 100000.0:
+						return {"ok": false}
+					coords.append(float(coord))
+				value = coords
+			"int":
+				if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != float(int(value)):
+					return {"ok": false}
+				if int(value) < int(spec["min"]) or int(value) > int(spec["max"]):
+					return {"ok": false}
+				value = int(value)
 			"float":
 				if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
 					return {"ok": false}
