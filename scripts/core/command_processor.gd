@@ -12,10 +12,15 @@ signal history_changed
 const MAX_UNDO := 120
 const MAX_AUDIT := 300
 
+var world_registry = null
 var _sequence := 0
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
 var _audit: Array[Dictionary] = []
+
+
+func configure_world(registry) -> void:
+	world_registry = registry
 
 
 func execute_set(target: Node, parameter_id: String, requested_value: Variant, initiator_id: String = "luna", source_id: String = "wand:luna", merge_key: String = "") -> bool:
@@ -101,7 +106,7 @@ func execute_trait(target: Node, operation: String, trait_name: String,
 
 
 func _replay_trait_change(entry: Dictionary, forward: bool) -> bool:
-	var target: Object = (entry["target_ref"] as WeakRef).get_ref()
+	var target: Object = _target_for_step(entry)
 	if not is_instance_valid(target):
 		return false
 	var record: Variant = target.get("record")
@@ -359,7 +364,7 @@ func execute_component(target: Node, operation: String, component_id: String,
 
 
 func _replay_component_change(entry: Dictionary, forward: bool) -> bool:
-	var target: Object = (entry["target_ref"] as WeakRef).get_ref()
+	var target: Object = _target_for_step(entry)
 	if not is_instance_valid(target):
 		return false
 	var record: Variant = target.get("record")
@@ -415,7 +420,7 @@ func undo() -> bool:
 		_redo_stack.append(entry)
 		history_changed.emit()
 		return true
-	var target: Object = (entry["target_ref"] as WeakRef).get_ref()
+	var target: Object = _target_for_step(entry)
 	if not is_instance_valid(target) or not bool(target.call("set_parameter", entry["parameter_id"], entry["before"])):
 		return false
 	_undo_stack.pop_back()
@@ -465,7 +470,7 @@ func redo() -> bool:
 		_undo_stack.append(entry)
 		history_changed.emit()
 		return true
-	var target: Object = (entry["target_ref"] as WeakRef).get_ref()
+	var target: Object = _target_for_step(entry)
 	if not is_instance_valid(target) or not bool(target.call("set_parameter", entry["parameter_id"], entry["after"])):
 		return false
 	_redo_stack.pop_back()
@@ -630,6 +635,11 @@ func _apply_step(step: Dictionary, forward: bool) -> bool:
 func _target_for_step(step: Dictionary) -> Object:
 	if step.has("target"):
 		return step["target"]
+	# A deleted Node can be recreated with the same persistent Entity ID.
+	# Archived WeakRefs alone would leave older Undo records pointing at
+	# a freed actor, even when that actor has been legitimately restored.
+	if world_registry != null and step.has("entity_id"):
+		return world_registry.get_entity(str(step["entity_id"]))
 	if step.has("target_ref"):
 		return (step["target_ref"] as WeakRef).get_ref()
 	return null
