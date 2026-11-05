@@ -156,6 +156,8 @@ static func select_by_properties(world, origin_id: String, selector: Dictionary,
 		var record: Variant = target.get("record")
 		if record == null:
 			continue
+		if record.has_component("PICKUP") and not str(record.get_component("PICKUP").get("holder_id", "")).is_empty():
+			continue # Hidden carried objects are absent from spatial targeting.
 		if selector.has("category") and str(record.category) != str(selector["category"]):
 			continue
 		if selector.has("role") and not record.has_role(str(selector["role"])):
