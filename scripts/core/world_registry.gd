@@ -84,6 +84,10 @@ func candidates(origin_id: String, position: Vector3, target_group: String, sens
 		var target: Node = get_entity(str(entity_id))
 		if target == null or not (target is Node3D):
 			continue
+		var record: Variant = target.get("record")
+		if record != null and record.has_component("PICKUP"):
+			if not str(record.get_component("PICKUP").get("holder_id", "")).is_empty():
+				continue # Carried entities have no physical presence.
 		var entry: Dictionary = _entries.get(entity_id, {})
 		if entry.is_empty():
 			continue
