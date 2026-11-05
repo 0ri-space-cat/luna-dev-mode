@@ -1,4 +1,5 @@
 extends RefCounted
+const ComponentRegistry = preload("res://scripts/core/component_registry.gd")
 ## Identity and classification for a single Entity. Base category NEVER changes
 ## when life, AI, appearance or roles are added. Stored roles are independent
 ## of the derived CREATURE role produced by IS_ALIVE.
@@ -141,3 +142,12 @@ static func validate_trait_list(values: Variant) -> bool:
 static func _valid_trait_name(value: String) -> bool:
 	return not value.is_empty() and value.length() <= MAX_TRAIT_LENGTH \
 		and value == value.to_upper() and value.is_valid_identifier()
+
+func get_components() -> Dictionary:
+	return _components.duplicate(true)
+
+func has_component(id: String) -> bool:
+	return _components.has(id)
+
+func get_component(id: String) -> Dictionary:
+	return (_components.get(id, {}) as Dictionary).duplicate(true)
