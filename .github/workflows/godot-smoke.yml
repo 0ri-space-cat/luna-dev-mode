@@ -58,6 +58,12 @@ jobs:
 
       - name: Run bounded role/tag/relationship selector integration tests
         run: bash ci/run_godot_script.sh res://tests/test_target_selectors.gd
+
+      - name: Run composable entity component and checkpoint tests
+        run: bash ci/run_godot_script.sh res://tests/test_entity_components.gd
+
+      - name: Run interaction and trigger zone tests
+        run: bash ci/run_godot_script.sh res://tests/test_interaction_zones.gd
       - name: Run save and load smoke tests
         run: bash ci/run_godot_script.sh res://tests/test_save_service.gd
       - name: Run social relations smoke tests
