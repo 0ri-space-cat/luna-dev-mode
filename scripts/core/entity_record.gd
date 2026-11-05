@@ -12,6 +12,7 @@ var parameters: Dictionary
 var registry
 var _roles: Array[String] = []
 var _tags: Array[String] = []
+var _components: Dictionary = {}
 
 
 func _init(entity_id: String, entity_category: String, label: String, parameter_registry, overrides: Dictionary = {}) -> void:
