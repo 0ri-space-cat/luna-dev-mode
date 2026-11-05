@@ -59,7 +59,7 @@ func _run() -> void:
 	assert(stage.save_service.save_world(world, stage.luna, stage.relationship_service,
 		stage.elemental_status_service, stage.surface_field_service,
 		stage.social_awareness, stage.rule_engine))
-	assert(fridge.record.remove_component("INTERACTION") or not is_instance_valid(fridge))
+	assert(restored.record.remove_component("INTERACTION"))
 	assert(stage.save_service.load_world(world, stage.luna,
 		stage.relationship_service, Callable(stage, "_restore_arcane_actor"),
 		stage.parameter_registry, stage.elemental_status_service,
