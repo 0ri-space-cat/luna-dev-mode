@@ -63,7 +63,7 @@ func _run() -> void:
 	assert(items.make_pickup("tree_001", 2.0))
 	assert(items.add_inventory("fridge_001", 1, 5.0))
 	assert(not items.pickup("fridge_001", "tree_001")) # Ownership cycle
-	assert(not items.transfer("tree_001", "luna", "fridge_001") == false)
+	assert(items.transfer("tree_001", "luna", "fridge_001"))
 	# Return the fridge to the tree for a valid checkpoint.
 	assert(items.transfer("luna", "tree_001", "fridge_001"))
 
