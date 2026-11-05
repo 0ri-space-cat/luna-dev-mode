@@ -12,6 +12,7 @@ const EventBus = preload("res://scripts/core/event_bus.gd")
 const InteractionService = preload("res://scripts/core/interaction_service.gd")
 const ZoneService = preload("res://scripts/core/zone_service.gd")
 const AbilityService = preload("res://scripts/core/ability_service.gd")
+const InventoryService = preload("res://scripts/core/inventory_service.gd")
 const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
@@ -46,6 +47,7 @@ var event_bus
 var interaction_service
 var zone_service
 var ability_service
+var inventory_service
 var effect_engine
 var rule_engine
 var save_service
@@ -84,6 +86,7 @@ func _ready() -> void:
 	zone_service = ZoneService.new(world_registry, event_bus)
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	ability_service = AbilityService.new(world_registry, effect_engine, command_processor)
+	inventory_service = InventoryService.new(world_registry, command_processor, ability_service, event_bus)
 	surface_field_service = SurfaceFieldService.new()
 	surface_field_service.fields_changed.connect(_on_surface_fields_changed)
 	elemental_status_service = ElementalStatusService.new(world_registry, effect_engine, surface_field_service)
@@ -428,6 +431,8 @@ func _on_parameter_changed(change: Dictionary) -> void:
 
 
 func _on_entity_changed(change: Dictionary) -> void:
+	if inventory_service != null and bool(change["present"]):
+		inventory_service.sync_item(str(change["entity_id"]))
 	var entity_id: String = str(change["entity_id"])
 	if not bool(change["present"]) and is_instance_valid(editor) and editor.visible \
 			and is_instance_valid(editor.target) and str(editor.target.record.id) == entity_id:
@@ -445,6 +450,8 @@ func _on_entity_changed(change: Dictionary) -> void:
 
 
 func _on_component_changed(change: Dictionary) -> void:
+	if inventory_service != null:
+		inventory_service.sync_item(str(change["entity_id"]))
 	# Component changes share the same provenance and event bus as parameters.
 	event_bus.enqueue({
 		"type": "entity.components_changed",
@@ -660,6 +667,16 @@ func _duplicate_entity(source: Node3D) -> Node3D:
 	if blueprint.is_empty():
 		return null
 	blueprint["position"] = source.position + Vector3(1.7, 0.0, 0.8)
+	# Duplication produces a new world object, never an extra invisible
+	# inventory entry with ownership copied accidentally from its ancestor.
+	var cloned_components: Dictionary = blueprint.get("components", {})
+	if cloned_components.has("PICKUP"):
+		var pickup: Dictionary = cloned_components["PICKUP"]
+		pickup["holder_id"] = ""
+		var copied_at: Vector3 = blueprint["position"]
+		pickup["world_position"] = [copied_at.x, copied_at.y, copied_at.z]
+		cloned_components["PICKUP"] = pickup
+		blueprint["components"] = cloned_components
 	if category.begins_with("arcane_"):
 		arcane_serial += 1
 		var generated_id := "arcane_%04d" % arcane_serial
@@ -762,6 +779,10 @@ func _load_checkpoint(automatic: bool) -> void:
 		Callable(self, "_restore_saved_duplicate"), rule_engine,
 		Callable(self, "_remove_saved_entity"), Callable(self, "_restore_base_actor")
 	)
+	# SaveService is data-only; reconcile carried world Entities whether a
+	# checkpoint committed or rolled back.
+	if inventory_service != null:
+		inventory_service.sync_all()
 	if success:
 		for entity_id in world_registry.list_ids():
 			var saved_actor: Node = world_registry.get_entity(entity_id)
