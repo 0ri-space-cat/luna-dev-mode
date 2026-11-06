@@ -4,7 +4,7 @@
 ## Что в репозитории уже существует как прототип
 Код на GDScript включает ядро Entity/parameter/command/effect, EventBus, rules, relations, базовую магию, материальные/элементальные реакции, некоторые компоненты, инвентарь, сохранения, редактор. Проверять актуальную работоспособность через тесты/CI перед новым функционалом. Система готова к расширению по архитектуре, но семи персонажей/полноценной карты/GUI визуального конструктора и мета-окна в коде пока нет.
 
-Базовые ссылки: [02 Entity](02_ENTITY_AND_GAMEPLAY_SYSTEMS.md), [03 Magic](03_MAGIC_AND_SPELLCRAFT.md), [05 Architecture](05_TECHNICAL_ARCHITECTURE.md), [20 Implementation Matrix](20_IMPLEMENTATION_MATRIX.md), техотчёты [07–27](../README.md).
+Базовые ссылки: [02 Entity](../02_ENTITY_AND_GAMEPLAY_SYSTEMS.md), [03 Magic](../03_MAGIC_AND_SPELLCRAFT.md), [05 Architecture](../05_TECHNICAL_ARCHITECTURE.md), [20 Implementation Matrix](../20_IMPLEMENTATION_MATRIX.md), техотчёты [07–27](../../README.md).
 
 ## Этап 0 — стабильный Godot foundation
 - Убедиться, что автоматические проверки 0.27 проходят, не менять их только ради новой истории.
