@@ -7,7 +7,8 @@
     "preferred_view": "three-quarter isolated prop",
     "icon": "transparent 512x512 PNG",
     "model": "3D game-ready GLB/FBX after approval",
-    "no": "letters, text, branding, hands or characters in artifact concept render"
+    "no": "letters, text, branding, hands or characters in artifact concept render",
+    "prompt_language": "English prompt and Russian prompt provided for each artifact; no generated files are implied"
   },
   "visibility_rule": "Each character-specific pickup is physically present from world load. Normal perception reveals it only through the associated character's layer; a knowledgeable player may detect and target it via collision, location address or deep scanning. A carried artifact remains a real Entity and may be transferable where mechanics allow. Never spawn it only when changing heroes.",
   "artifacts": [
@@ -25,7 +26,14 @@
       "reveal": "Читается в параметрическом слое Луны как отдельный предмет, тогда как остальным кажется плоской меткой",
       "limit": "Не создаёт произвольный код, не применяется к глобальным системам; ограничение числа активных правил",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: IF Stamp. Silhouette and construction: Круглая лавандовая сургучная печать на короткой ручке, внутри плавает пиксельный знак вопроса и три маленьких переключателя. Primary colors #9B7CF6/#68F0DC. Associated magical VFX motif: При касании вокруг цели на миг появляется кольцо WHEN → IF → DO."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a small round lavender wax stamp with a short handle, a floating mint-cyan pixel question mark at its center and three tiny toggle switches. Color palette: #9B7CF6/#68F0DC. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Круглая лавандовая сургучная печать на короткой ручке, внутри плавает пиксельный знак вопроса и три маленьких переключателя. Цвета: #9B7CF6/#68F0DC.",
+      "asset_files": {
+        "concept": "ART-LU-01_concept.png",
+        "icon": "ART-LU-01_icon.png",
+        "model": "ART-LU-01_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-LU-02",
@@ -41,7 +49,14 @@
       "reveal": "Видим Луной на слое EDIT_HISTORY, остальным выглядит пятном-потёртостью",
       "limit": "Только сохранённые ревизии данного объекта; не отменяет решения и действия других существ",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Oops Eraser. Silhouette and construction: Пухлая конфета-ластик с сиреневым корпусом, бирюзовыми пиксельными крошками и двумя ушками. Primary colors #BD8FF6/#FFE8FA. Associated magical VFX motif: Вытирает изменённые цифры как меловые и возвращает прежний вид объекта."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a plump wrapped candy-shaped pink-and-lavender eraser with tiny rabbit-like ears and turquoise pixel eraser crumbs. Color palette: #BD8FF6/#FFE8FA. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Пухлая конфета-ластик с сиреневым корпусом, бирюзовыми пиксельными крошками и двумя ушками. Цвета: #BD8FF6/#FFE8FA.",
+      "asset_files": {
+        "concept": "ART-LU-02_concept.png",
+        "icon": "ART-LU-02_icon.png",
+        "model": "ART-LU-02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-YU-01",
@@ -57,7 +72,14 @@
       "reveal": "Только в пространственной сетке Юки; другим кажется пустой петлёй на перилах",
       "limit": "Не создаёт несуществующие уровни; связь меняет маршрут, а не физическую геометрию",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Route Spool. Silhouette and construction: Маленькая парящая катушка с неоново-розовыми нитями и кубическими креплениями. Primary colors #FF69C8/#FFF1FB. Associated magical VFX motif: Нити тянутся по настоящим невидимым связям к пространственным якорям."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a little floating spool wrapped in bright neon pink threads, with suspended cubic clamps and holographic route strands. Color palette: #FF69C8/#FFF1FB. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Маленькая парящая катушка с неоново-розовыми нитями и кубическими креплениями. Цвета: #FF69C8/#FFF1FB.",
+      "asset_files": {
+        "concept": "ART-YU-01_concept.png",
+        "icon": "ART-YU-01_icon.png",
+        "model": "ART-YU-01_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-YU-02",
@@ -73,7 +95,14 @@
       "reveal": "Юки видит контур шва, остальные — странную пустую щель",
       "limit": "Работает только с безопасными поверхностями и проверенной коллизией; не дублирует межмировую портальную пушку",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Seam Stapler. Silhouette and construction: Игрушечный розово-металлический степлер с двумя разомкнутыми светящимися скобами. Primary colors #F65FB7/#91ECFF. Associated magical VFX motif: Сшивает две поверхности яркой пунктирной строчкой, внутри которой видна другая сторона."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a cute metallic pink toy stapler, with two open glowing turquoise staples capable of joining surfaces. Color palette: #F65FB7/#91ECFF. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Игрушечный розово-металлический степлер с двумя разомкнутыми светящимися скобами. Цвета: #F65FB7/#91ECFF.",
+      "asset_files": {
+        "concept": "ART-YU-02_concept.png",
+        "icon": "ART-YU-02_icon.png",
+        "model": "ART-YU-02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-OR-01",
@@ -89,7 +118,14 @@
       "reveal": "Детали и штамп проявляются в модульном зрении Ори",
       "limit": "Нельзя тихо заменить память/личность живого существа; только валидные готовые ассеты",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Asset Swap Stamp. Silhouette and construction: Белый цилиндрический штамп с вращающимися гранями в форме дерева, двери, гриба и чайника. Primary colors #EFFAFF/#85D9FF. Associated magical VFX motif: Предмет рассыпается на отдельные бело-голубые кубики и складывается в другую модель."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a thick white cylindrical stamp with four rotating facets shaped as a tree, a door, a mushroom and a teapot. Color palette: #EFFAFF/#85D9FF. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Белый цилиндрический штамп с вращающимися гранями в форме дерева, двери, гриба и чайника. Цвета: #EFFAFF/#85D9FF.",
+      "asset_files": {
+        "concept": "ART-OR-01_concept.png",
+        "icon": "ART-OR-01_icon.png",
+        "model": "ART-OR-01_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-OR-02",
@@ -105,7 +141,14 @@
       "reveal": "Видимы как отдельные компоненты только Ори; остальным кажутся крепёжными гайками",
       "limit": "Не переносит сознание, ID или отношения; при конфликте физических типов операция отменяется",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Component Clips. Silhouette and construction: Пара магнитных хромированных скоб, соединённых бело-голубым голографическим шнуром. Primary colors #EAF9FF/#A2C9FF. Associated magical VFX motif: Два предмета на секунду показывают схему своих внутренних компонентов и обмен меток."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a pair of chrome magnetic component clamps joined by a blue-white holographic tether, with swappable small tabs. Color palette: #EAF9FF/#A2C9FF. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Пара магнитных хромированных скоб, соединённых бело-голубым голографическим шнуром. Цвета: #EAF9FF/#A2C9FF.",
+      "asset_files": {
+        "concept": "ART-OR-02_concept.png",
+        "icon": "ART-OR-02_icon.png",
+        "model": "ART-OR-02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-MI-01",
@@ -121,7 +164,14 @@
       "reveal": "Мия видит плавающие линии течения и саму пипетку; другим — обычная мокрая отметка",
       "limit": "Не пропускает вещество сквозь герметичную стену и не создаёт бесконечные жидкости",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Flow Dropper. Silhouette and construction: Стеклянная капельница с четырьмя крошечными ножками и синей плавающей каплей вместо глазка. Primary colors #376FE8/#9FFFEF. Associated magical VFX motif: Капля рисует светящийся маршрут вдоль пола и труб, затем жидкость течёт по нему."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a transparent glass eyedropper walking on four tiny feet, with one floating blue droplet visible inside its chamber. Color palette: #376FE8/#9FFFEF. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Стеклянная капельница с четырьмя крошечными ножками и синей плавающей каплей вместо глазка. Цвета: #376FE8/#9FFFEF.",
+      "asset_files": {
+        "concept": "ART-MI-01_concept.png",
+        "icon": "ART-MI-01_icon.png",
+        "model": "ART-MI-01_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-MI-02",
@@ -137,7 +187,14 @@
       "reveal": "В эффектном зрении Мии выглядит яркой губкой; другим — сухая клякса",
       "limit": "Только один сохранённый эффект; не копирует состав и не нарушает типовые правила нейтрализации",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Residue Sponge. Silhouette and construction: Мягкая индиговая квадратная губка с миниатюрным разъёмом, внутри которой видны пузырьки цветного света. Primary colors #4B40BF/#6DCBFF. Associated magical VFX motif: Впитывает невидимый остаточный эффект, на поверхности появляются его пиксельные полосы."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a squishy indigo square sponge with a miniature USB-like plug and bubbles of colorful light embedded in its material. Color palette: #4B40BF/#6DCBFF. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Мягкая индиговая квадратная губка с миниатюрным разъёмом, внутри которой видны пузырьки цветного света. Цвета: #4B40BF/#6DCBFF.",
+      "asset_files": {
+        "concept": "ART-MI-02_concept.png",
+        "icon": "ART-MI-02_icon.png",
+        "model": "ART-MI-02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-LE-01",
@@ -153,7 +210,14 @@
       "reveal": "Видимы в аурах Леи между двумя связанными существами",
       "limit": "NPC может отказаться следовать; настройка не принуждает симпатию и не переписывает истинную волю",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Boundary Beads. Silhouette and construction: Две зелёные стеклянные бусины и золотой полумесяц на короткой гибкой нитке. Primary colors #65C47A/#EBCB79. Associated magical VFX motif: Мягкие золотые окружности вокруг NPC показывают комфортную дистанцию."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: two green glass beads threaded to a tiny gold crescent moon, connected by a short flexible green cord. Color palette: #65C47A/#EBCB79. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Две зелёные стеклянные бусины и золотой полумесяц на короткой гибкой нитке. Цвета: #65C47A/#EBCB79.",
+      "asset_files": {
+        "concept": "ART-LE-01_concept.png",
+        "icon": "ART-LE-01_icon.png",
+        "model": "ART-LE-01_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-LE-02",
@@ -169,7 +233,14 @@
       "reveal": "Сигнал и объект видны Лее в эмоциональной изнанке, остальные видят лишь шевеление травы",
       "limit": "Только знакомые/открытые направленные связи, действующие лица сохраняют право не реагировать",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Mood Seed. Silhouette and construction: Круглое салатовое семя, два листика-антенны и маленький золотой колокольчик. Primary colors #86E893/#F7C85B. Associated magical VFX motif: Из семечка расходятся волны, по существующим связям вспыхивают короткие цветные линии."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a round bright-green magic seed with two leaf antennas and a little gold bell nestled between them. Color palette: #86E893/#F7C85B. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Круглое салатовое семя, два листика-антенны и маленький золотой колокольчик. Цвета: #86E893/#F7C85B.",
+      "asset_files": {
+        "concept": "ART-LE-02_concept.png",
+        "icon": "ART-LE-02_icon.png",
+        "model": "ART-LE-02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-TO-01",
@@ -185,7 +256,14 @@
       "reveal": "Сам монокль и опорные линии видны только Тоффи в скрытой экологии",
       "limit": "Не переносит целый мир и не повреждает гигантское существо; крепление требует свободной поверхности",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Carrier Monocle. Silhouette and construction: Оранжевый монокль в форме улитки, внутри миниатюрный силуэт ската с платформой на спине. Primary colors #F9A44B/#FFED9E. Associated magical VFX motif: Подсвечивает, на ком реально стоит предмет, и тонкие линии крепления."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: an amber orange spiral-shaped monocle containing a tiny floating manta-ray silhouette with a miniature island on its back. Color palette: #F9A44B/#FFED9E. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Оранжевый монокль в форме улитки, внутри миниатюрный силуэт ската с платформой на спине. Цвета: #F9A44B/#FFED9E.",
+      "asset_files": {
+        "concept": "ART-TO-01_concept.png",
+        "icon": "ART-TO-01_icon.png",
+        "model": "ART-TO-01_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-TO-02",
@@ -201,7 +279,14 @@
       "reveal": "Тоффи видит предмет через слой HIDDEN_BEINGS; остальные — только тёплый отблеск на земле",
       "limit": "Взгляд может вызвать ответное внимание существа; не уничтожает его природную скрытность навсегда",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Shared Reveal Lantern. Silhouette and construction: Мягкий янтарный фонарик с полосатой ручкой и большим круглым глазком. Primary colors #FF9B39/#FFE47A. Associated magical VFX motif: Световые пузырьки ненадолго делают невидимое животное заметным для всех рядом."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a soft amber lantern with a striped candy-cane handle and one oversized friendly googly eye on its glass. Color palette: #FF9B39/#FFE47A. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Мягкий янтарный фонарик с полосатой ручкой и большим круглым глазком. Цвета: #FF9B39/#FFE47A.",
+      "asset_files": {
+        "concept": "ART-TO-02_concept.png",
+        "icon": "ART-TO-02_icon.png",
+        "model": "ART-TO-02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-ON-01",
@@ -217,7 +302,14 @@
       "reveal": "Прежде чем добыть, видна только Óни на временных следах; после получения можно передать другому герою",
       "limit": "Показывает зарегистрированное прошлое, не меняет его; без записи показывает пустой интервал",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Echo Ribbon. Silhouette and construction: Голубая катушка киноплёнки с полупрозрачной лентой, на которой светятся крошечные силуэты. Primary colors #70DFFF/#CBF6FF. Associated magical VFX motif: Разворачивает цепочку прозрачных предыдущих положений объекта, как у бегущего следа."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a light-blue film reel holding a flowing translucent cyan ribbon patterned with tiny luminous movement silhouettes. Color palette: #70DFFF/#CBF6FF. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Голубая катушка киноплёнки с полупрозрачной лентой, на которой светятся крошечные силуэты. Цвета: #70DFFF/#CBF6FF.",
+      "asset_files": {
+        "concept": "ART-ON-01_concept.png",
+        "icon": "ART-ON-01_icon.png",
+        "model": "ART-ON-01_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-ON-02",
@@ -233,7 +325,14 @@
       "reveal": "До получения виден Óни в слое FUTURE_PATH; после можно использовать любым героем с подходящей целью",
       "limit": "Не предсказывает гарантированное будущее, не контролирует чужую волю и не переписывает прошлое",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Next-Step Chalk. Silhouette and construction: Голубой трёхгранный мелок с тремя разными призрачными кончиками. Primary colors #58CFFF/#ADE8F7. Associated magical VFX motif: На земле веером возникают три возможных прозрачных траектории, одна становится чуть ярче."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a translucent triangular cyan chalk stick with three ghostly pointed tips casting three alternate motion trails. Color palette: #58CFFF/#ADE8F7. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Голубой трёхгранный мелок с тремя разными призрачными кончиками. Цвета: #58CFFF/#ADE8F7.",
+      "asset_files": {
+        "concept": "ART-ON-02_concept.png",
+        "icon": "ART-ON-02_icon.png",
+        "model": "ART-ON-02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "A02",
@@ -249,7 +348,14 @@
       "reveal": "Обычный физический артефакт, доступный любому",
       "limit": "Не перематывает время всего мира, не возвращает безнадёжно удалённые сохранения",
       "priority": "P0",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Time Anchor. Silhouette and construction: Латунные песочные часы в футуристическом ободке, одна песчинка зависла посредине. Primary colors #F9CC86/#71E8FC. Associated magical VFX motif: Объект накрывается тонким янтарным контуром снимка, затем может вернуться в сохранённое состояние."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a compact brass hourglass held inside a futuristic cyan circular ring, with a single golden grain suspended motionless in midair. Color palette: #F9CC86/#71E8FC. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Латунные песочные часы в футуристическом ободке, одна песчинка зависла посредине. Цвета: #F9CC86/#71E8FC.",
+      "asset_files": {
+        "concept": "A02_concept.png",
+        "icon": "A02_icon.png",
+        "model": "A02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "A05",
@@ -265,7 +371,14 @@
       "reveal": "Обычный артефакт, геометрия портала видна всем",
       "limit": "Не создаёт новых сцен или геометрии, проверяет физический безопасный выход",
       "priority": "P0",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Portal Tool. Silhouette and construction: Игрушечная портальная пушка со светящимися кольцами, двумя сменными цветами и очень коротким стволом. Primary colors #FF6FA8/#62E5F0. Associated magical VFX motif: На безопасных поверхностях возникают два кольца с узорами координат."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a playful compact portal gun with a very short muzzle, two illuminated concentric rings and pink-cyan interchangeable energy cartridges. Color palette: #FF6FA8/#62E5F0. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Игрушечная портальная пушка со светящимися кольцами, двумя сменными цветами и очень коротким стволом. Цвета: #FF6FA8/#62E5F0.",
+      "asset_files": {
+        "concept": "A05_concept.png",
+        "icon": "A05_icon.png",
+        "model": "A05_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-GL-01",
@@ -281,7 +394,14 @@
       "reveal": "Обычный артефакт с очень скрытым адресом; виден всем после нахождения",
       "limit": "Без глобального обратного хода на первом этапе: настоящий WORLD_REWIND потребует согласованных снапшотов всех сцен и отдельного технического решения",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: World Clock. Silhouette and construction: Круглый пузатый будильник с двумя стрелками, четырьмя ножками и висящим над ним маленьким ключом. Primary colors #D6A7FF/#62F2E3. Associated magical VFX motif: При ускорении окружение оставляет короткие шлейфы, при остановке пылинки зависают."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a round plump lavender alarm clock standing on four little feet, two hand pointers, with a floating winding key above it. Color palette: #D6A7FF/#62F2E3. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Круглый пузатый будильник с двумя стрелками, четырьмя ножками и висящим над ним маленьким ключом. Цвета: #D6A7FF/#62F2E3.",
+      "asset_files": {
+        "concept": "ART-GL-01_concept.png",
+        "icon": "ART-GL-01_icon.png",
+        "model": "ART-GL-01_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-GL-02",
@@ -297,7 +417,14 @@
       "reveal": "Физически видна всем; распознать пользу можно после изучения команд",
       "limit": "До 4 операций и 8 целей; не повторяет самоудаление, глобальные команды и опасные действия",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Command Cassette. Silhouette and construction: Полупрозрачная мини-кассета с пиксельным узором из трёх кнопок PLAY/REC/STOP и светящимися катушками. Primary colors #7D70E8/#F5A3E7. Associated magical VFX motif: Сыгранная операция изображается полосой световых пиктограмм и повторяется по объектам."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a translucent toy cassette tape with shining miniature reels, three unmarked geometric playback buttons and purple-pink pixel ornament. Color palette: #7D70E8/#F5A3E7. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Полупрозрачная мини-кассета с пиксельным узором из трёх кнопок PLAY/REC/STOP и светящимися катушками. Цвета: #7D70E8/#F5A3E7.",
+      "asset_files": {
+        "concept": "ART-GL-02_concept.png",
+        "icon": "ART-GL-02_icon.png",
+        "model": "ART-GL-02_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-GL-03",
@@ -313,7 +440,14 @@
       "reveal": "Обычный объект, может быть спрятан за секретным пространственным переходом",
       "limit": "Не управляет NPC, не становится FIRST/SECOND PERSON и не переносит героя через препятствия",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Curiosity Periscope. Silhouette and construction: Крошечный телескоп с объёмным стеклянным глазом, штативом в виде кошачьих лап и бирюзовой кнопкой. Primary colors #93E5F6/#A890FF. Associated magical VFX motif: От предмета вылетает полупрозрачный глазок-камера на светящейся леске."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a miniature telescope-periscope with a big glass eyeball lens, a tripod shaped like little cat paws and one turquoise control button. Color palette: #93E5F6/#A890FF. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Крошечный телескоп с объёмным стеклянным глазом, штативом в виде кошачьих лап и бирюзовой кнопкой. Цвета: #93E5F6/#A890FF.",
+      "asset_files": {
+        "concept": "ART-GL-03_concept.png",
+        "icon": "ART-GL-03_icon.png",
+        "model": "ART-GL-03_prop.glb"
+      },
+      "render_status": "not_generated"
     },
     {
       "id": "ART-GL-04",
@@ -329,7 +463,14 @@
       "reveal": "Обычный предмет после извлечения из UI; до этого виден как плоская декоративная заклёпка",
       "limit": "Не превращает все три открытых 3D-мира в полноценную 2D-игру; после финала та же настройка есть в рамке",
       "priority": "P3",
-      "image_prompt_en": "Single collectible magical artifact for LUNA: DEV MODE, clean stylized 3D that looks like 2D hand-painted cel shading, playful fantasy-tech, strong recognizable silhouette, precise readable form, isolated on neutral seamless background, three-quarter view, soft studio lighting, no text, no characters, no hands, no watermark. Artifact: Flat Pin. Silhouette and construction: Треугольная розово-бирюзовая булавка, одна половина которой выглядит полностью плоской как бумага. Primary colors #FF8ECD/#65E8F6. Associated magical VFX motif: При использовании объёмный мир складывается в боковую плоскость как объёмная книжка."
+      "image_prompt_en": "Single standalone collectible prop concept for an indie magical videogame. Cute clean stylized 3D with a hand-painted 2D cel-shaded look, crisp edges, high readability, polished fantasy-tech design, strong unique silhouette, three-quarter view, neutral seamless studio backdrop, centered object. No character, no hand, no scene, no captions, no text, no logo, no watermark. Object: a triangular dimensional pin, half modeled as a chunky glossy 3D solid and half as a perfectly flat paper-thin pink and cyan cutout. Color palette: #FF8ECD/#65E8F6. Subtle luminous functional magical accents, no words on the object.",
+      "image_prompt_ru": "Один коллекционный волшебно-технический предмет в стилистике LUNA: DEV MODE: чистая стилизованная 3D-модель с рисованным 2D-сел-шейдингом, узнаваемый силуэт, изолированно на нейтральном фоне, ракурс три четверти, без надписей, рук, персонажей и водяных знаков. Форма: Треугольная розово-бирюзовая булавка, одна половина которой выглядит полностью плоской как бумага. Цвета: #FF8ECD/#65E8F6.",
+      "asset_files": {
+        "concept": "ART-GL-04_concept.png",
+        "icon": "ART-GL-04_icon.png",
+        "model": "ART-GL-04_prop.glb"
+      },
+      "render_status": "not_generated"
     }
   ]
 }
