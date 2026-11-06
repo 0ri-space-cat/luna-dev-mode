@@ -1,5 +1,6 @@
 # 27 — Asset-ready UI and visual integration contracts (05.11.2026)
 
+> **Технический исторический мануал (ревизия ссылок 06.11.2026).** Актуальная концепция: [28 — Game Bible](28_AUTHORITATIVE_GAME_BIBLE.md), [29 — семь рутов](29_CHARACTER_ROUTES_AND_TOOLS.md), [30 — неизменность мира](30_BEYOND_PROJECTION_AND_OBSERVATION.md), [32 — три основных локации](32_WORLD_AND_CONTENT_PLAN.md), [33 — план разработки](33_IMPLEMENTATION_ROADMAP_2026.md), [34 — решения](34_DECISION_HISTORY_AND_BACKLOG.md). Технические возможности 0.27 не доказывают реализации новых рутов и пазлов. Кокомо исключён из обязательного игрового сценария; лаборатория — доступная отовсюду песочница; Этерния/Нью-Париж/Литтас — три главных области.\n
 **Status:** graybox UI foundation [IMPLEMENTED]; final art/audio [NOT CREATED]; several represented systems [NOT IMPLEMENTED]. This pass adds replaceable slots and navigation without claiming the design is final.
 
 ## What exists in the project now
