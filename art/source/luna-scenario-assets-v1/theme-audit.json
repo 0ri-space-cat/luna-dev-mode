@@ -1,0 +1,135 @@
+{
+  "luna": {
+    "existing_svg": 200,
+    "different_from_luna": null,
+    "remaining_luna_theme_colors": [],
+    "includes": [
+      "hack",
+      "minimap",
+      "tools",
+      "ui"
+    ],
+    "new_scenario_icons": 180,
+    "palette": {
+      "primary": "#ee82f5",
+      "secondary": "#76eef0",
+      "tertiary": "#ffd36c",
+      "panel": "#292342",
+      "text": "#f3e4ff"
+    }
+  },
+  "ori": {
+    "existing_svg": 200,
+    "different_from_luna": 194,
+    "remaining_luna_theme_colors": [],
+    "includes": [
+      "hack",
+      "minimap",
+      "tools",
+      "ui"
+    ],
+    "new_scenario_icons": 180,
+    "palette": {
+      "primary": "#83def2",
+      "secondary": "#edf8ff",
+      "tertiary": "#ffd473",
+      "panel": "#142b3d",
+      "text": "#e9f9ff"
+    }
+  },
+  "leya": {
+    "existing_svg": 200,
+    "different_from_luna": 194,
+    "remaining_luna_theme_colors": [],
+    "includes": [
+      "hack",
+      "minimap",
+      "tools",
+      "ui"
+    ],
+    "new_scenario_icons": 180,
+    "palette": {
+      "primary": "#a8e273",
+      "secondary": "#f5d675",
+      "tertiary": "#78d9af",
+      "panel": "#203527",
+      "text": "#eff7de"
+    }
+  },
+  "yuki": {
+    "existing_svg": 200,
+    "different_from_luna": 194,
+    "remaining_luna_theme_colors": [],
+    "includes": [
+      "hack",
+      "minimap",
+      "tools",
+      "ui"
+    ],
+    "new_scenario_icons": 180,
+    "palette": {
+      "primary": "#ff78bb",
+      "secondary": "#f9def0",
+      "tertiary": "#72e5ee",
+      "panel": "#3a203b",
+      "text": "#ffeaf7"
+    }
+  },
+  "toffi": {
+    "existing_svg": 200,
+    "different_from_luna": 194,
+    "remaining_luna_theme_colors": [],
+    "includes": [
+      "hack",
+      "minimap",
+      "tools",
+      "ui"
+    ],
+    "new_scenario_icons": 180,
+    "palette": {
+      "primary": "#ffbc77",
+      "secondary": "#ffe5b5",
+      "tertiary": "#f5a3b5",
+      "panel": "#3b2930",
+      "text": "#fff1da"
+    }
+  },
+  "miya": {
+    "existing_svg": 200,
+    "different_from_luna": 194,
+    "remaining_luna_theme_colors": [],
+    "includes": [
+      "hack",
+      "minimap",
+      "tools",
+      "ui"
+    ],
+    "new_scenario_icons": 180,
+    "palette": {
+      "primary": "#a2b4ff",
+      "secondary": "#e7f0ff",
+      "tertiary": "#8ddbec",
+      "panel": "#222e49",
+      "text": "#edf1ff"
+    }
+  },
+  "oni": {
+    "existing_svg": 200,
+    "different_from_luna": 194,
+    "remaining_luna_theme_colors": [],
+    "includes": [
+      "hack",
+      "minimap",
+      "tools",
+      "ui"
+    ],
+    "new_scenario_icons": 180,
+    "palette": {
+      "primary": "#66e6f7",
+      "secondary": "#79aff9",
+      "tertiary": "#d3f9ff",
+      "panel": "#142b42",
+      "text": "#e5f8ff"
+    }
+  }
+}

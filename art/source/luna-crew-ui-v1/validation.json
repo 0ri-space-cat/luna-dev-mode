@@ -1,0 +1,23 @@
+{
+  "svg_per_profile": {
+    "luna": 200,
+    "ori": 200,
+    "leya": 200,
+    "yuki": 200,
+    "toffi": 200,
+    "miya": 200,
+    "oni": 200
+  },
+  "svg_total": 1400,
+  "transparent_png_count": 14,
+  "same_asset_keys_in_all_profiles": true,
+  "xml_validation": "passed",
+  "gallery_javascript_syntax": "passed",
+  "godot": {
+    "version": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org",
+    "imported_textures": 1414,
+    "errors": []
+  },
+  "gameplay_integration": "not performed; asset preparation only",
+  "github_upload": false
+}

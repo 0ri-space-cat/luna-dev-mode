@@ -1,0 +1,926 @@
+{
+  "source_commit": "43cf1de",
+  "source_branch": "scenario/v2-editorial-revision",
+  "groups": {
+    "effects": 38,
+    "emots": 18,
+    "mixes": 12,
+    "potions": 24,
+    "spells": 20,
+    "systems": 61,
+    "vision": 7
+  },
+  "per_theme": 180,
+  "themes": [
+    "luna",
+    "ori",
+    "leya",
+    "yuki",
+    "toffi",
+    "miya",
+    "oni"
+  ],
+  "coverage": {
+    "entity_parameters": {
+      "label": "ENTITY PARAMETERS",
+      "source": "canon/01–05",
+      "group": "vision"
+    },
+    "hidden_geometry": {
+      "label": "HIDDEN GEOMETRY",
+      "source": "canon/01–05",
+      "group": "vision"
+    },
+    "asset_structure": {
+      "label": "ASSET STRUCTURE",
+      "source": "canon/01–05",
+      "group": "vision"
+    },
+    "active_effects": {
+      "label": "ACTIVE EFFECTS",
+      "source": "canon/01–05",
+      "group": "vision"
+    },
+    "emotional_links": {
+      "label": "EMOTIONAL LINKS",
+      "source": "canon/01–05",
+      "group": "vision"
+    },
+    "hidden_beings": {
+      "label": "HIDDEN BEINGS",
+      "source": "canon/01–05",
+      "group": "vision"
+    },
+    "causal_trace": {
+      "label": "CAUSAL TRACE",
+      "source": "canon/01–05",
+      "group": "vision"
+    },
+    "return": {
+      "label": "RETURN",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "rewind": {
+      "label": "REWIND",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "safe_anchor": {
+      "label": "SAFE ANCHOR",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "self_hack": {
+      "label": "SELF HACK",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "wand_upgrade": {
+      "label": "WAND UPGRADE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "developer_mode": {
+      "label": "DEVELOPER MODE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "scan_depth": {
+      "label": "SCAN DEPTH",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "route_map": {
+      "label": "ROUTE MAP",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "waypoint": {
+      "label": "WAYPOINT",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "address": {
+      "label": "ADDRESS",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "world_00": {
+      "label": "WORLD 00",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "eternia": {
+      "label": "ETERNIA",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "new_paris": {
+      "label": "NEW PARIS",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "littas": {
+      "label": "LITTAS",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "void": {
+      "label": "VOID",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "lab": {
+      "label": "LAB",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "pocket_inventory": {
+      "label": "POCKET INVENTORY",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "game_frame": {
+      "label": "GAME FRAME",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "editor_nested": {
+      "label": "EDITOR NESTED",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "first_person": {
+      "label": "FIRST PERSON",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "second_person": {
+      "label": "SECOND PERSON",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "third_person": {
+      "label": "THIRD PERSON",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "dimension_2d": {
+      "label": "DIMENSION 2D",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "dimension_3d": {
+      "label": "DIMENSION 3D",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "autonomous": {
+      "label": "AUTONOMOUS",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "character_archive": {
+      "label": "CHARACTER ARCHIVE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "memory_fragment": {
+      "label": "MEMORY FRAGMENT",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "world_pause": {
+      "label": "WORLD PAUSE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "world_resume": {
+      "label": "WORLD RESUME",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "world_slow": {
+      "label": "WORLD SLOW",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "world_fast": {
+      "label": "WORLD FAST",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "gravity_vector": {
+      "label": "GRAVITY VECTOR",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "multi_select": {
+      "label": "MULTI SELECT",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "replace_model": {
+      "label": "REPLACE MODEL",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "replace_entity": {
+      "label": "REPLACE ENTITY",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "release_emot": {
+      "label": "RELEASE EMOT",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "recall_emot": {
+      "label": "RECALL EMOT",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "feed_emot": {
+      "label": "FEED EMOT",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "residue": {
+      "label": "RESIDUE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "flow_pipe": {
+      "label": "FLOW PIPE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "dry_phase": {
+      "label": "DRY PHASE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "neutralize": {
+      "label": "NEUTRALIZE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "mix": {
+      "label": "MIX",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "pour": {
+      "label": "POUR",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "splash": {
+      "label": "SPLASH",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "coat": {
+      "label": "COAT",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "drink": {
+      "label": "DRINK",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "spray": {
+      "label": "SPRAY",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "place_source": {
+      "label": "PLACE SOURCE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "go_to_target": {
+      "label": "GO TO TARGET",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "follow": {
+      "label": "FOLLOW",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "manual": {
+      "label": "MANUAL",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "search": {
+      "label": "SEARCH",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "console": {
+      "label": "CONSOLE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "filter_all": {
+      "label": "FILTER ALL",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "filter_selected": {
+      "label": "FILTER SELECTED",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "attention": {
+      "label": "ATTENTION",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "forecast": {
+      "label": "FORECAST",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "past_trace": {
+      "label": "PAST TRACE",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "unlink_owner": {
+      "label": "UNLINK OWNER",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "checkpoint": {
+      "label": "CHECKPOINT",
+      "source": "canon/01–05",
+      "group": "systems"
+    },
+    "E01": {
+      "label": "SET_ALIVE",
+      "source": "docs/38: E01",
+      "group": "effects"
+    },
+    "E02": {
+      "label": "SCALE_SMALL",
+      "source": "docs/38: E02",
+      "group": "effects"
+    },
+    "E03": {
+      "label": "SCALE_LARGE",
+      "source": "docs/38: E03",
+      "group": "effects"
+    },
+    "E04": {
+      "label": "FLOAT",
+      "source": "docs/38: E04",
+      "group": "effects"
+    },
+    "E05": {
+      "label": "HEAVY",
+      "source": "docs/38: E05",
+      "group": "effects"
+    },
+    "E06": {
+      "label": "BOUNCE",
+      "source": "docs/38: E06",
+      "group": "effects"
+    },
+    "E07": {
+      "label": "STICK",
+      "source": "docs/38: E07",
+      "group": "effects"
+    },
+    "E08": {
+      "label": "SLIP",
+      "source": "docs/38: E08",
+      "group": "effects"
+    },
+    "E09": {
+      "label": "AFFECTION",
+      "source": "docs/38: E09",
+      "group": "effects"
+    },
+    "E10": {
+      "label": "FEAR",
+      "source": "docs/38: E10",
+      "group": "effects"
+    },
+    "E11": {
+      "label": "CALM",
+      "source": "docs/38: E11",
+      "group": "effects"
+    },
+    "E12": {
+      "label": "HOSTILITY",
+      "source": "docs/38: E12",
+      "group": "effects"
+    },
+    "E13": {
+      "label": "INVISIBLE",
+      "source": "docs/38: E13",
+      "group": "effects"
+    },
+    "E14": {
+      "label": "GLOW",
+      "source": "docs/38: E14",
+      "group": "effects"
+    },
+    "E15": {
+      "label": "COLOR_TINT",
+      "source": "docs/38: E15",
+      "group": "effects"
+    },
+    "E16": {
+      "label": "FIRE",
+      "source": "docs/38: E16",
+      "group": "effects"
+    },
+    "E17": {
+      "label": "FROST",
+      "source": "docs/38: E17",
+      "group": "effects"
+    },
+    "E18": {
+      "label": "STORM",
+      "source": "docs/38: E18",
+      "group": "effects"
+    },
+    "E19": {
+      "label": "HEAL",
+      "source": "docs/38: E19",
+      "group": "effects"
+    },
+    "E20": {
+      "label": "REPAIR",
+      "source": "docs/38: E20",
+      "group": "effects"
+    },
+    "E21": {
+      "label": "SLEEP",
+      "source": "docs/38: E21",
+      "group": "effects"
+    },
+    "E22": {
+      "label": "WAKE",
+      "source": "docs/38: E22",
+      "group": "effects"
+    },
+    "E23": {
+      "label": "METAMORPH",
+      "source": "docs/38: E23",
+      "group": "effects"
+    },
+    "E24": {
+      "label": "COPY_PROP",
+      "source": "docs/38: E24",
+      "group": "effects"
+    },
+    "E25": {
+      "label": "TIME_HOLD",
+      "source": "docs/38: E25",
+      "group": "effects"
+    },
+    "E26": {
+      "label": "RESTORE_STATE",
+      "source": "docs/38: E26",
+      "group": "effects"
+    },
+    "E27": {
+      "label": "RELATION_SWAP",
+      "source": "docs/38: E27",
+      "group": "effects"
+    },
+    "E28": {
+      "label": "GROW_PLANT",
+      "source": "docs/38: E28",
+      "group": "effects"
+    },
+    "E29": {
+      "label": "MARK_TRACE",
+      "source": "docs/38: E29",
+      "group": "effects"
+    },
+    "E30": {
+      "label": "CLEANSE",
+      "source": "docs/38: E30",
+      "group": "effects"
+    },
+    "E31": {
+      "label": "ATTRACT",
+      "source": "docs/38: E31",
+      "group": "effects"
+    },
+    "E32": {
+      "label": "REPEL",
+      "source": "docs/38: E32",
+      "group": "effects"
+    },
+    "E33": {
+      "label": "MIRROR_LAST",
+      "source": "docs/38: E33",
+      "group": "effects"
+    },
+    "E34": {
+      "label": "TELEPORT_TO_ANCHOR",
+      "source": "docs/38: E34",
+      "group": "effects"
+    },
+    "E35": {
+      "label": "SET_DOOR_DESTINATION",
+      "source": "docs/38: E35",
+      "group": "effects"
+    },
+    "E36": {
+      "label": "SET_VISIBILITY",
+      "source": "docs/38: E36",
+      "group": "effects"
+    },
+    "E37": {
+      "label": "UNLINK_OWNER",
+      "source": "docs/38: E37",
+      "group": "effects"
+    },
+    "E38": {
+      "label": "SET_FRAME_ACCESS",
+      "source": "docs/38: E38",
+      "group": "effects"
+    },
+    "P01": {
+      "label": "Карманная лужа",
+      "source": "docs/38: P01",
+      "group": "potions"
+    },
+    "P02": {
+      "label": "Сироп великана",
+      "source": "docs/38: P02",
+      "group": "potions"
+    },
+    "P03": {
+      "label": "Пузырь невесомости",
+      "source": "docs/38: P03",
+      "group": "potions"
+    },
+    "P04": {
+      "label": "Свинцовое варенье",
+      "source": "docs/38: P04",
+      "group": "potions"
+    },
+    "P05": {
+      "label": "Пружинный компот",
+      "source": "docs/38: P05",
+      "group": "potions"
+    },
+    "P06": {
+      "label": "Клейкие слёзы",
+      "source": "docs/38: P06",
+      "group": "potions"
+    },
+    "P07": {
+      "label": "Лунное мыло",
+      "source": "docs/38: P07",
+      "group": "potions"
+    },
+    "P08": {
+      "label": "Сироп симпатии",
+      "source": "docs/38: P08",
+      "group": "potions"
+    },
+    "P09": {
+      "label": "Перечный страх",
+      "source": "docs/38: P09",
+      "group": "potions"
+    },
+    "P10": {
+      "label": "Ласковый туман",
+      "source": "docs/38: P10",
+      "group": "potions"
+    },
+    "P11": {
+      "label": "Ссора в бутылке",
+      "source": "docs/38: P11",
+      "group": "potions"
+    },
+    "P12": {
+      "label": "Молоко пустоты",
+      "source": "docs/38: P12",
+      "group": "potions"
+    },
+    "P13": {
+      "label": "Фонарный нектар",
+      "source": "docs/38: P13",
+      "group": "potions"
+    },
+    "P14": {
+      "label": "Краска характера",
+      "source": "docs/38: P14",
+      "group": "potions"
+    },
+    "P15": {
+      "label": "Пряная искра",
+      "source": "docs/38: P15",
+      "group": "potions"
+    },
+    "P16": {
+      "label": "Ледяной чай",
+      "source": "docs/38: P16",
+      "group": "potions"
+    },
+    "P17": {
+      "label": "Грозовой коктейль",
+      "source": "docs/38: P17",
+      "group": "potions"
+    },
+    "P18": {
+      "label": "Сытный бульон",
+      "source": "docs/38: P18",
+      "group": "potions"
+    },
+    "P19": {
+      "label": "Ремонтная настойка",
+      "source": "docs/38: P19",
+      "group": "potions"
+    },
+    "P20": {
+      "label": "Сонное облачко",
+      "source": "docs/38: P20",
+      "group": "potions"
+    },
+    "P21": {
+      "label": "Бодрый чай",
+      "source": "docs/38: P21",
+      "group": "potions"
+    },
+    "P22": {
+      "label": "Случайная внешность",
+      "source": "docs/38: P22",
+      "group": "potions"
+    },
+    "P23": {
+      "label": "Противоядие",
+      "source": "docs/38: P23",
+      "group": "potions"
+    },
+    "P24": {
+      "label": "Настой повторения",
+      "source": "docs/38: P24",
+      "group": "potions"
+    },
+    "EM01": {
+      "label": "Уменьшайка, пушистая жёлтая горошина",
+      "source": "docs/38: EM01",
+      "group": "emots"
+    },
+    "EM02": {
+      "label": "Влюбляшка, розовая сердечная ленточка",
+      "source": "docs/38: EM02",
+      "group": "emots"
+    },
+    "EM03": {
+      "label": "Попрыгун, голубой прыгучий пузырёк",
+      "source": "docs/38: EM03",
+      "group": "emots"
+    },
+    "EM04": {
+      "label": "Вреднюга, рогатый фиолетовый комочек",
+      "source": "docs/38: EM04",
+      "group": "emots"
+    },
+    "EM05": {
+      "label": "Искроплав, прозрачная рыбка-проводник",
+      "source": "docs/38: EM05",
+      "group": "emots"
+    },
+    "EM06": {
+      "label": "Светлячница, прозрачная моль",
+      "source": "docs/38: EM06",
+      "group": "emots"
+    },
+    "EM07": {
+      "label": "Облачник, пушистая серая тучка",
+      "source": "docs/38: EM07",
+      "group": "emots"
+    },
+    "EM08": {
+      "label": "Семечко, зелёный корневой узелок",
+      "source": "docs/38: EM08",
+      "group": "emots"
+    },
+    "EM09": {
+      "label": "Тихоня, бархатный чернильный силуэт",
+      "source": "docs/38: EM09",
+      "group": "emots"
+    },
+    "EM10": {
+      "label": "Дрожик, радужная сороконожка",
+      "source": "docs/38: EM10",
+      "group": "emots"
+    },
+    "EM11": {
+      "label": "Следозавр, тонкая сияющая нить",
+      "source": "docs/38: EM11",
+      "group": "emots"
+    },
+    "EM12": {
+      "label": "Переливашка, цветная медуза",
+      "source": "docs/38: EM12",
+      "group": "emots"
+    },
+    "EM13": {
+      "label": "Успокайка, мягкий лиловый пушистик",
+      "source": "docs/38: EM13",
+      "group": "emots"
+    },
+    "EM14": {
+      "label": "Пугалочка, маленькая длинноногая тень",
+      "source": "docs/38: EM14",
+      "group": "emots"
+    },
+    "EM15": {
+      "label": "Липучка, овальное существо с листочками",
+      "source": "docs/38: EM15",
+      "group": "emots"
+    },
+    "EM16": {
+      "label": "Переключайка, двуликая прозрачная маска",
+      "source": "docs/38: EM16",
+      "group": "emots"
+    },
+    "EM17": {
+      "label": "Отменяшка, белое пушистое облачко",
+      "source": "docs/38: EM17",
+      "group": "emots"
+    },
+    "EM18": {
+      "label": "Повторюшка, крошечная зеркальная улитка",
+      "source": "docs/38: EM18",
+      "group": "emots"
+    },
+    "MIX01": {
+      "label": "SIZE_THEN_HEAVY",
+      "source": "docs/38: MIX01",
+      "group": "mixes"
+    },
+    "MIX02": {
+      "label": "FLOAT_AND_GLOW",
+      "source": "docs/38: MIX02",
+      "group": "mixes"
+    },
+    "MIX03": {
+      "label": "SLIP_AND_BOUNCE",
+      "source": "docs/38: MIX03",
+      "group": "mixes"
+    },
+    "MIX04": {
+      "label": "CALM_THEN_AFFECTION",
+      "source": "docs/38: MIX04",
+      "group": "mixes"
+    },
+    "MIX05": {
+      "label": "FROST_THEN_FIRE",
+      "source": "docs/38: MIX05",
+      "group": "mixes"
+    },
+    "MIX06": {
+      "label": "INVISIBLE_THEN_GLOW",
+      "source": "docs/38: MIX06",
+      "group": "mixes"
+    },
+    "MIX07": {
+      "label": "SLEEP_THEN_WAKE",
+      "source": "docs/38: MIX07",
+      "group": "mixes"
+    },
+    "MIX08": {
+      "label": "SHRINK_THEN_CLEANSE",
+      "source": "docs/38: MIX08",
+      "group": "mixes"
+    },
+    "MIX09": {
+      "label": "STICK_AND_HEAVY",
+      "source": "docs/38: MIX09",
+      "group": "mixes"
+    },
+    "MIX10": {
+      "label": "FEAR_AND_CALM",
+      "source": "docs/38: MIX10",
+      "group": "mixes"
+    },
+    "MIX11": {
+      "label": "STORM_AND_WET",
+      "source": "docs/38: MIX11",
+      "group": "mixes"
+    },
+    "MIX12": {
+      "label": "REPAIR_AND_TINT",
+      "source": "docs/38: MIX12",
+      "group": "mixes"
+    },
+    "create_energy": {
+      "label": "create energy",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "create_object": {
+      "label": "create object",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "create_creature": {
+      "label": "create creature",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "shape_orb": {
+      "label": "shape orb",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "shape_shard": {
+      "label": "shape shard",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "shape_bolt": {
+      "label": "shape bolt",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "seek": {
+      "label": "seek",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "straight": {
+      "label": "straight",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "wander": {
+      "label": "wander",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "chase": {
+      "label": "chase",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "flee": {
+      "label": "flee",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "idle": {
+      "label": "idle",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "projectile": {
+      "label": "projectile",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "place": {
+      "label": "place",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "FIREBALL": {
+      "label": "FIREBALL",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "FROST_SHARD": {
+      "label": "FROST SHARD",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "ARC_BOLT": {
+      "label": "ARC BOLT",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "AWAKEN": {
+      "label": "AWAKEN",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "PINKIFY": {
+      "label": "PINKIFY",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    },
+    "QUICKEN": {
+      "label": "QUICKEN",
+      "source": "docs/38: spell grammar",
+      "group": "spells"
+    }
+  },
+  "excluded": "Legacy collectible A02 and obsolete office hardware; Oni detective quest UI excluded. Emot drawings are small UI signs, not final mob concepts."
+}

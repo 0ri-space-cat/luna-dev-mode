@@ -1,0 +1,2164 @@
+{
+  "assets": {
+    "entity_parameters": {
+      "path": "res://assets/ui/scenario_icons/miya/vision/entity_parameters.svg",
+      "label": "ENTITY PARAMETERS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "hidden_geometry": {
+      "path": "res://assets/ui/scenario_icons/miya/vision/hidden_geometry.svg",
+      "label": "HIDDEN GEOMETRY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "asset_structure": {
+      "path": "res://assets/ui/scenario_icons/miya/vision/asset_structure.svg",
+      "label": "ASSET STRUCTURE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "active_effects": {
+      "path": "res://assets/ui/scenario_icons/miya/vision/active_effects.svg",
+      "label": "ACTIVE EFFECTS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "emotional_links": {
+      "path": "res://assets/ui/scenario_icons/miya/vision/emotional_links.svg",
+      "label": "EMOTIONAL LINKS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "hidden_beings": {
+      "path": "res://assets/ui/scenario_icons/miya/vision/hidden_beings.svg",
+      "label": "HIDDEN BEINGS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "causal_trace": {
+      "path": "res://assets/ui/scenario_icons/miya/vision/causal_trace.svg",
+      "label": "CAUSAL TRACE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "return": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/return.svg",
+      "label": "RETURN",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "rewind": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/rewind.svg",
+      "label": "REWIND",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "safe_anchor": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/safe_anchor.svg",
+      "label": "SAFE ANCHOR",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "self_hack": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/self_hack.svg",
+      "label": "SELF HACK",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "wand_upgrade": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/wand_upgrade.svg",
+      "label": "WAND UPGRADE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "developer_mode": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/developer_mode.svg",
+      "label": "DEVELOPER MODE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "scan_depth": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/scan_depth.svg",
+      "label": "SCAN DEPTH",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "route_map": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/route_map.svg",
+      "label": "ROUTE MAP",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "waypoint": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/waypoint.svg",
+      "label": "WAYPOINT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "address": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/address.svg",
+      "label": "ADDRESS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "world_00": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/world_00.svg",
+      "label": "WORLD 00",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "eternia": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/eternia.svg",
+      "label": "ETERNIA",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "new_paris": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/new_paris.svg",
+      "label": "NEW PARIS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "littas": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/littas.svg",
+      "label": "LITTAS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "void": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/void.svg",
+      "label": "VOID",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "lab": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/lab.svg",
+      "label": "LAB",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "pocket_inventory": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/pocket_inventory.svg",
+      "label": "POCKET INVENTORY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "game_frame": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/game_frame.svg",
+      "label": "GAME FRAME",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "editor_nested": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/editor_nested.svg",
+      "label": "EDITOR NESTED",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "first_person": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/first_person.svg",
+      "label": "FIRST PERSON",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "second_person": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/second_person.svg",
+      "label": "SECOND PERSON",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "third_person": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/third_person.svg",
+      "label": "THIRD PERSON",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "dimension_2d": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/dimension_2d.svg",
+      "label": "DIMENSION 2D",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "dimension_3d": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/dimension_3d.svg",
+      "label": "DIMENSION 3D",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "autonomous": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/autonomous.svg",
+      "label": "AUTONOMOUS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "character_archive": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/character_archive.svg",
+      "label": "CHARACTER ARCHIVE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "memory_fragment": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/memory_fragment.svg",
+      "label": "MEMORY FRAGMENT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "world_pause": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/world_pause.svg",
+      "label": "WORLD PAUSE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "world_resume": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/world_resume.svg",
+      "label": "WORLD RESUME",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "world_slow": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/world_slow.svg",
+      "label": "WORLD SLOW",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "world_fast": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/world_fast.svg",
+      "label": "WORLD FAST",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "gravity_vector": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/gravity_vector.svg",
+      "label": "GRAVITY VECTOR",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "multi_select": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/multi_select.svg",
+      "label": "MULTI SELECT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "replace_model": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/replace_model.svg",
+      "label": "REPLACE MODEL",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "replace_entity": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/replace_entity.svg",
+      "label": "REPLACE ENTITY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "release_emot": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/release_emot.svg",
+      "label": "RELEASE EMOT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "recall_emot": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/recall_emot.svg",
+      "label": "RECALL EMOT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "feed_emot": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/feed_emot.svg",
+      "label": "FEED EMOT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "residue": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/residue.svg",
+      "label": "RESIDUE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "flow_pipe": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/flow_pipe.svg",
+      "label": "FLOW PIPE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "dry_phase": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/dry_phase.svg",
+      "label": "DRY PHASE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "neutralize": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/neutralize.svg",
+      "label": "NEUTRALIZE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "mix": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/mix.svg",
+      "label": "MIX",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "pour": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/pour.svg",
+      "label": "POUR",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "splash": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/splash.svg",
+      "label": "SPLASH",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "coat": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/coat.svg",
+      "label": "COAT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "drink": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/drink.svg",
+      "label": "DRINK",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "spray": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/spray.svg",
+      "label": "SPRAY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "place_source": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/place_source.svg",
+      "label": "PLACE SOURCE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "go_to_target": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/go_to_target.svg",
+      "label": "GO TO TARGET",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "follow": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/follow.svg",
+      "label": "FOLLOW",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "manual": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/manual.svg",
+      "label": "MANUAL",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "search": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/search.svg",
+      "label": "SEARCH",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "console": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/console.svg",
+      "label": "CONSOLE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "filter_all": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/filter_all.svg",
+      "label": "FILTER ALL",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "filter_selected": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/filter_selected.svg",
+      "label": "FILTER SELECTED",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "attention": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/attention.svg",
+      "label": "ATTENTION",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "forecast": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/forecast.svg",
+      "label": "FORECAST",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "past_trace": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/past_trace.svg",
+      "label": "PAST TRACE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "unlink_owner": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/unlink_owner.svg",
+      "label": "UNLINK OWNER",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "checkpoint": {
+      "path": "res://assets/ui/scenario_icons/miya/systems/checkpoint.svg",
+      "label": "CHECKPOINT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "canon/01–05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E01": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E01.svg",
+      "label": "SET_ALIVE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E01",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E02": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E02.svg",
+      "label": "SCALE_SMALL",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E02",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E03": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E03.svg",
+      "label": "SCALE_LARGE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E03",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E04": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E04.svg",
+      "label": "FLOAT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E04",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E05": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E05.svg",
+      "label": "HEAVY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E06": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E06.svg",
+      "label": "BOUNCE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E06",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E07": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E07.svg",
+      "label": "STICK",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E07",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E08": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E08.svg",
+      "label": "SLIP",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E08",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E09": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E09.svg",
+      "label": "AFFECTION",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E09",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E10": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E10.svg",
+      "label": "FEAR",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E10",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E11": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E11.svg",
+      "label": "CALM",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E11",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E12": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E12.svg",
+      "label": "HOSTILITY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E12",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E13": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E13.svg",
+      "label": "INVISIBLE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E13",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E14": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E14.svg",
+      "label": "GLOW",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E14",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E15": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E15.svg",
+      "label": "COLOR_TINT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E15",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E16": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E16.svg",
+      "label": "FIRE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E16",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E17": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E17.svg",
+      "label": "FROST",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E17",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E18": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E18.svg",
+      "label": "STORM",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E18",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E19": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E19.svg",
+      "label": "HEAL",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E19",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E20": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E20.svg",
+      "label": "REPAIR",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E20",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E21": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E21.svg",
+      "label": "SLEEP",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E21",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E22": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E22.svg",
+      "label": "WAKE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E22",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E23": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E23.svg",
+      "label": "METAMORPH",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E23",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E24": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E24.svg",
+      "label": "COPY_PROP",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E24",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E25": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E25.svg",
+      "label": "TIME_HOLD",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E25",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E26": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E26.svg",
+      "label": "RESTORE_STATE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E26",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E27": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E27.svg",
+      "label": "RELATION_SWAP",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E27",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E28": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E28.svg",
+      "label": "GROW_PLANT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E28",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E29": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E29.svg",
+      "label": "MARK_TRACE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E29",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E30": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E30.svg",
+      "label": "CLEANSE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E30",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E31": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E31.svg",
+      "label": "ATTRACT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E31",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E32": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E32.svg",
+      "label": "REPEL",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E32",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E33": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E33.svg",
+      "label": "MIRROR_LAST",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E33",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E34": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E34.svg",
+      "label": "TELEPORT_TO_ANCHOR",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E34",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E35": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E35.svg",
+      "label": "SET_DOOR_DESTINATION",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E35",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E36": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E36.svg",
+      "label": "SET_VISIBILITY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E36",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E37": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E37.svg",
+      "label": "UNLINK_OWNER",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E37",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "E38": {
+      "path": "res://assets/ui/scenario_icons/miya/effects/E38.svg",
+      "label": "SET_FRAME_ACCESS",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: E38",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P01": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P01.svg",
+      "label": "Карманная лужа",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P01",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P02": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P02.svg",
+      "label": "Сироп великана",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P02",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P03": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P03.svg",
+      "label": "Пузырь невесомости",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P03",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P04": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P04.svg",
+      "label": "Свинцовое варенье",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P04",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P05": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P05.svg",
+      "label": "Пружинный компот",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P06": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P06.svg",
+      "label": "Клейкие слёзы",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P06",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P07": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P07.svg",
+      "label": "Лунное мыло",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P07",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P08": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P08.svg",
+      "label": "Сироп симпатии",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P08",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P09": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P09.svg",
+      "label": "Перечный страх",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P09",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P10": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P10.svg",
+      "label": "Ласковый туман",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P10",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P11": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P11.svg",
+      "label": "Ссора в бутылке",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P11",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P12": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P12.svg",
+      "label": "Молоко пустоты",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P12",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P13": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P13.svg",
+      "label": "Фонарный нектар",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P13",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P14": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P14.svg",
+      "label": "Краска характера",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P14",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P15": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P15.svg",
+      "label": "Пряная искра",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P15",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P16": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P16.svg",
+      "label": "Ледяной чай",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P16",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P17": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P17.svg",
+      "label": "Грозовой коктейль",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P17",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P18": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P18.svg",
+      "label": "Сытный бульон",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P18",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P19": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P19.svg",
+      "label": "Ремонтная настойка",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P19",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P20": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P20.svg",
+      "label": "Сонное облачко",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P20",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P21": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P21.svg",
+      "label": "Бодрый чай",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P21",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P22": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P22.svg",
+      "label": "Случайная внешность",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P22",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P23": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P23.svg",
+      "label": "Противоядие",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P23",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "P24": {
+      "path": "res://assets/ui/scenario_icons/miya/potions/P24.svg",
+      "label": "Настой повторения",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: P24",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM01": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM01.svg",
+      "label": "Уменьшайка, пушистая жёлтая горошина",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM01",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM02": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM02.svg",
+      "label": "Влюбляшка, розовая сердечная ленточка",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM02",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM03": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM03.svg",
+      "label": "Попрыгун, голубой прыгучий пузырёк",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM03",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM04": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM04.svg",
+      "label": "Вреднюга, рогатый фиолетовый комочек",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM04",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM05": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM05.svg",
+      "label": "Искроплав, прозрачная рыбка-проводник",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM06": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM06.svg",
+      "label": "Светлячница, прозрачная моль",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM06",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM07": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM07.svg",
+      "label": "Облачник, пушистая серая тучка",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM07",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM08": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM08.svg",
+      "label": "Семечко, зелёный корневой узелок",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM08",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM09": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM09.svg",
+      "label": "Тихоня, бархатный чернильный силуэт",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM09",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM10": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM10.svg",
+      "label": "Дрожик, радужная сороконожка",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM10",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM11": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM11.svg",
+      "label": "Следозавр, тонкая сияющая нить",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM11",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM12": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM12.svg",
+      "label": "Переливашка, цветная медуза",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM12",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM13": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM13.svg",
+      "label": "Успокайка, мягкий лиловый пушистик",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM13",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM14": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM14.svg",
+      "label": "Пугалочка, маленькая длинноногая тень",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM14",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM15": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM15.svg",
+      "label": "Липучка, овальное существо с листочками",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM15",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM16": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM16.svg",
+      "label": "Переключайка, двуликая прозрачная маска",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM16",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM17": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM17.svg",
+      "label": "Отменяшка, белое пушистое облачко",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM17",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "EM18": {
+      "path": "res://assets/ui/scenario_icons/miya/emots/EM18.svg",
+      "label": "Повторюшка, крошечная зеркальная улитка",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: EM18",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX01": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX01.svg",
+      "label": "SIZE_THEN_HEAVY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX01",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX02": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX02.svg",
+      "label": "FLOAT_AND_GLOW",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX02",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX03": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX03.svg",
+      "label": "SLIP_AND_BOUNCE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX03",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX04": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX04.svg",
+      "label": "CALM_THEN_AFFECTION",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX04",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX05": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX05.svg",
+      "label": "FROST_THEN_FIRE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX05",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX06": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX06.svg",
+      "label": "INVISIBLE_THEN_GLOW",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX06",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX07": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX07.svg",
+      "label": "SLEEP_THEN_WAKE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX07",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX08": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX08.svg",
+      "label": "SHRINK_THEN_CLEANSE",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX08",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX09": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX09.svg",
+      "label": "STICK_AND_HEAVY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX09",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX10": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX10.svg",
+      "label": "FEAR_AND_CALM",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX10",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX11": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX11.svg",
+      "label": "STORM_AND_WET",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX11",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "MIX12": {
+      "path": "res://assets/ui/scenario_icons/miya/mixes/MIX12.svg",
+      "label": "REPAIR_AND_TINT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: MIX12",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "create_energy": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/create_energy.svg",
+      "label": "create energy",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "create_object": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/create_object.svg",
+      "label": "create object",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "create_creature": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/create_creature.svg",
+      "label": "create creature",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "shape_orb": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/shape_orb.svg",
+      "label": "shape orb",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "shape_shard": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/shape_shard.svg",
+      "label": "shape shard",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "shape_bolt": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/shape_bolt.svg",
+      "label": "shape bolt",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "seek": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/seek.svg",
+      "label": "seek",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "straight": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/straight.svg",
+      "label": "straight",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "wander": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/wander.svg",
+      "label": "wander",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "chase": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/chase.svg",
+      "label": "chase",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "flee": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/flee.svg",
+      "label": "flee",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "idle": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/idle.svg",
+      "label": "idle",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "projectile": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/projectile.svg",
+      "label": "projectile",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "place": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/place.svg",
+      "label": "place",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "FIREBALL": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/FIREBALL.svg",
+      "label": "FIREBALL",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "FROST_SHARD": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/FROST_SHARD.svg",
+      "label": "FROST SHARD",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "ARC_BOLT": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/ARC_BOLT.svg",
+      "label": "ARC BOLT",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "AWAKEN": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/AWAKEN.svg",
+      "label": "AWAKEN",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "PINKIFY": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/PINKIFY.svg",
+      "label": "PINKIFY",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    },
+    "QUICKEN": {
+      "path": "res://assets/ui/scenario_icons/miya/spells/QUICKEN.svg",
+      "label": "QUICKEN",
+      "size": [
+        64,
+        64
+      ],
+      "source": "docs/archive/38: spell grammar",
+      "text_baked": false,
+      "style": "existing authored SVG stroke system",
+      "status": "art_only"
+    }
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "direction": "portrait pixel inspector; no side entity card",
+  "assets": {
+    "panel_cyan.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "panel_magenta.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "avatar_frame.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "tab_normal.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "tab_active.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "tab_hover.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "tab_disabled.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "value_normal.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "value_hover.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "value_focused.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "value_error.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "button_normal.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "button_hover.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "button_danger.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "button_save.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    }
+  }
+}

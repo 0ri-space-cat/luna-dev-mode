@@ -1,0 +1,20 @@
+{
+  "source_canon_commit": "5c514f5beae8f3687f15a37f0f4205c6b560dda6",
+  "active_svg": 2844,
+  "active_transparent_png": 58,
+  "artifacts": 21,
+  "character_themes": 7,
+  "icons_per_theme": 180,
+  "godot_import_version": "4.7.2",
+  "godot_imported_textures": 2902,
+  "godot_import_errors": 0,
+  "asset_ui_foundation_test": "passed",
+  "actual_main_scene_boot": "passed; 8 frames",
+  "gallery_javascript_syntax": "passed",
+  "gallery_static_links": "passed",
+  "source_image_integrity": "3197 images accounted for",
+  "game_scripts_and_scenes_changed": false,
+  "runtime_catalog_changed": false,
+  "three_d_models_generated": 0,
+  "github_ci": "Godot 4.3 workflow runs on push; inspect matching commit run for final result"
+}

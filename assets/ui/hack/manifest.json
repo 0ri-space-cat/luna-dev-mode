@@ -1,0 +1,850 @@
+{
+  "version": 2,
+  "direction": "portrait pixel inspector; no side entity card",
+  "assets": {
+    "panel_cyan.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "panel_magenta.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "avatar_frame.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "tab_normal.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "tab_active.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "tab_hover.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "tab_disabled.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "value_normal.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "value_hover.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "value_focused.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "value_error.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "button_normal.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "button_hover.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "button_danger.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "button_save.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "rows/normal.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "rows/hover.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "rows/focused.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "rows/invalid.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "rows/readonly.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "rows/disabled.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "rows/changed.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "popups/enum.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "popups/palette.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "popups/target.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "popups/tooltip.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "popups/tooltip_warning.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "popups/empty.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "popups/option_selected.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "popups/option_hover.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "popups/option_disabled.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "swatches/lavender.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "swatches/mint.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "swatches/pink.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "swatches/blue.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "swatches/peach.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "swatches/violet.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "swatches/selected_border.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        6,
+        6,
+        6,
+        6
+      ]
+    },
+    "scroll/track.svg": {
+      "size": [
+        12,
+        48
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        4,
+        8,
+        4,
+        8
+      ]
+    },
+    "scroll/thumb.svg": {
+      "size": [
+        12,
+        48
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        4,
+        8,
+        4,
+        8
+      ]
+    },
+    "scroll/thumb_hover.svg": {
+      "size": [
+        12,
+        48
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        4,
+        8,
+        4,
+        8
+      ]
+    },
+    "feedback/saving.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "feedback/saved.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "feedback/failed.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "feedback/input_error.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "feedback/no_target.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "button_save_disabled.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "button_save_hover.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "button_save_pressed.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "button_icon_pressed.svg": {
+      "size": [
+        40,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "icons/general.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/appearance.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/physics.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/mind.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/behavior.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/relationships.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/abilities.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/reactions.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/auras.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/tags.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/copy.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/delete.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/save.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/lock.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/chevron.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "icons/warning.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    }
+  }
+}

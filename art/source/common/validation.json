@@ -1,0 +1,9 @@
+{
+  "engine": "Godot 4.7.2 local import",
+  "texture_count": 120,
+  "import_errors": [],
+  "scenario_count": 51,
+  "scenario_status": "usage coverage, not implemented gameplay flows",
+  "prototype_js_syntax": "node --check passed",
+  "prototype_visual_runtime": "not browser-verified"
+}

@@ -1,0 +1,49 @@
+{
+  "repository": "0ri-space-cat/luna-dev-mode",
+  "main": "0c3efae",
+  "art_source_branch": "scenario/v2-editorial-revision",
+  "art_source_commit": "43cf1de",
+  "canon_priority": "docs/canon above legacy docs; direct author palette corrections override source colors",
+  "documents": {
+    "03_WORLD_ADDRESS_AND_VOID.md": {
+      "sha256": "a83ca396a37b0c63954bbd203f9f65766476ec4e90ce11978f1dc040d8c2aa11",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/03_WORLD_ADDRESS_AND_VOID.md"
+    },
+    "01_GAME_BIBLE.md": {
+      "sha256": "b630badacc542da30c5eb3db70e64b5d01aecf92bcec590373f81e641b83d9dc",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/01_GAME_BIBLE.md"
+    },
+    "04_HACKING_MANUAL.md": {
+      "sha256": "4db3ecbc88048a1a0867e6e895f2744eff46785cf21241293da876849b334c3d",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/04_HACKING_MANUAL.md"
+    },
+    "asset_manifest.json": {
+      "sha256": "162b3ffee9d25c42284f623f88660a012910c107693919e20d6eac82e8996b98",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/asset_manifest.json"
+    },
+    "05_CAMPAIGN_AND_SCENES.md": {
+      "sha256": "63f761bd5e9d5ff0136ca54aad0629219a4e321c0882248763ed620d8eb43751",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/05_CAMPAIGN_AND_SCENES.md"
+    },
+    "02_CHARACTERS_AND_SIDE_STORIES.md": {
+      "sha256": "2b298aa6f7754014de32b7eb9251186152a770cdbbc4bbfe31d414184a7227f3",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/02_CHARACTERS_AND_SIDE_STORIES.md"
+    },
+    "06_MIGRATION_AND_PRODUCTION.md": {
+      "sha256": "c4e6e72a9b7732c69083403b1f0b3a99baa3f10dd87b17e5dc1054053451be18",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/06_MIGRATION_AND_PRODUCTION.md"
+    },
+    "07_ARTIFACT_CATALOG.md": {
+      "sha256": "4cf053ca72de49831a500dd902ffd45787572b034768ebe0e5c72693ff0ddd93",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/07_ARTIFACT_CATALOG.md"
+    },
+    "00_START_HERE.md": {
+      "sha256": "bab4d65550b45149d451aaa6d089aa9a395cb8eefd2d6ff8ba6ed4aa9f018545",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/00_START_HERE.md"
+    },
+    "08_ARTIFACT_AGENT_HANDOFF.md": {
+      "sha256": "091640f41b26fd7526f1eda4c4ea4ccfe8aedb2c37721f2c7cc29af0f264c592",
+      "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/43cf1de/docs/canon/08_ARTIFACT_AGENT_HANDOFF.md"
+    }
+  }
+}

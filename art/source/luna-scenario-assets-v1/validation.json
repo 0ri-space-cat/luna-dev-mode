@@ -1,0 +1,24 @@
+{
+  "unique_scenario_icons": 180,
+  "themed_svg_count": 1260,
+  "source_svg_count": 180,
+  "total_svg": 1440,
+  "unique_artifact_illustrations": 20,
+  "artifact_png_files": 40,
+  "concept_and_icon_share_same_master": true,
+  "author_locked_originals": [
+    "ART-LU-01",
+    "ART-GL-04"
+  ],
+  "xml": "passed",
+  "transparent_png_alpha": "40 passed",
+  "registry_paths": "passed",
+  "gallery_javascript_syntax": "passed",
+  "godot_version": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org",
+  "godot_imported_textures": 1480,
+  "godot_errors": [],
+  "svg_colors_after_godot_import": "all seven passed",
+  "game_code_changed": false,
+  "commits_or_uploads": false,
+  "three_d_models_created": 0
+}

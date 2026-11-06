@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate prepared art paths and canonical IDs
+        run: python3 ci/validate_prepared_assets.py
       - name: Install Godot 4.3
         run: |
           curl -fL --retry 3 \

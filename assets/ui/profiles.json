@@ -1,0 +1,250 @@
+{
+  "version": 1,
+  "profiles": {
+    "luna": {
+      "name": "Луна",
+      "primary": "#ee82f5",
+      "secondary": "#76eef0",
+      "tertiary": "#ffd36c",
+      "panel": "#292342",
+      "text": "#f3e4ff",
+      "tool": "wand",
+      "bag": "Звёздная ведьминская сумка",
+      "id": "luna",
+      "portrait": "res://assets/characters/luna/ui/portrait.png",
+      "backpack": "res://assets/characters/luna/ui/backpack.png",
+      "backpack_safe_uv": [
+        0.255,
+        0.405,
+        0.49,
+        0.43
+      ],
+      "assets_root": "res://assets/ui/themes/luna",
+      "hack_icon": "res://assets/ui/themes/luna/tools/hack.svg",
+      "close_eyes_icon": "res://assets/ui/themes/luna/tools/close_eyes_normal.svg",
+      "perception_profile_id": "luna",
+      "perception_provider": null,
+      "animation": {
+        "portrait_idle": null,
+        "static_fallback": "res://assets/characters/luna/ui/portrait.png"
+      },
+      "minimap": {
+        "content_source": "runtime world-to-map projection",
+        "mask": "res://assets/ui/themes/luna/minimap/mask.svg",
+        "frame": "res://assets/ui/themes/luna/minimap/frame.svg",
+        "visibility_source": "unimplemented; no secret rules inferred from lore"
+      }
+    },
+    "ori": {
+      "name": "Ори",
+      "primary": "#83def2",
+      "secondary": "#edf8ff",
+      "tertiary": "#ffd473",
+      "panel": "#142b3d",
+      "text": "#e9f9ff",
+      "tool": "light_sword",
+      "bag": "Космический исследователь",
+      "id": "ori",
+      "portrait": "res://assets/characters/ori/ui/portrait.png",
+      "backpack": "res://assets/characters/ori/ui/backpack.png",
+      "backpack_safe_uv": [
+        0.27,
+        0.36,
+        0.46,
+        0.48
+      ],
+      "assets_root": "res://assets/ui/themes/ori",
+      "hack_icon": "res://assets/ui/themes/ori/tools/hack.svg",
+      "close_eyes_icon": "res://assets/ui/themes/ori/tools/close_eyes_normal.svg",
+      "perception_profile_id": "ori",
+      "perception_provider": null,
+      "animation": {
+        "portrait_idle": null,
+        "static_fallback": "res://assets/characters/ori/ui/portrait.png"
+      },
+      "minimap": {
+        "content_source": "runtime world-to-map projection",
+        "mask": "res://assets/ui/themes/ori/minimap/mask.svg",
+        "frame": "res://assets/ui/themes/ori/minimap/frame.svg",
+        "visibility_source": "unimplemented; no secret rules inferred from lore"
+      }
+    },
+    "leya": {
+      "name": "Лея",
+      "primary": "#a8e273",
+      "secondary": "#f5d675",
+      "tertiary": "#78d9af",
+      "panel": "#203527",
+      "text": "#eff7de",
+      "tool": "moon_amulet",
+      "bag": "Звёздный зелёный рюкзак",
+      "id": "leya",
+      "portrait": "res://assets/characters/leya/ui/portrait.png",
+      "backpack": "res://assets/characters/leya/ui/backpack.png",
+      "backpack_safe_uv": [
+        0.255,
+        0.5,
+        0.49,
+        0.34
+      ],
+      "assets_root": "res://assets/ui/themes/leya",
+      "hack_icon": "res://assets/ui/themes/leya/tools/hack.svg",
+      "close_eyes_icon": "res://assets/ui/themes/leya/tools/close_eyes_normal.svg",
+      "perception_profile_id": "leya",
+      "perception_provider": null,
+      "animation": {
+        "portrait_idle": null,
+        "static_fallback": "res://assets/characters/leya/ui/portrait.png"
+      },
+      "minimap": {
+        "content_source": "runtime world-to-map projection",
+        "mask": "res://assets/ui/themes/leya/minimap/mask.svg",
+        "frame": "res://assets/ui/themes/leya/minimap/frame.svg",
+        "visibility_source": "unimplemented; no secret rules inferred from lore"
+      }
+    },
+    "yuki": {
+      "name": "Юки",
+      "primary": "#ff78bb",
+      "secondary": "#f9def0",
+      "tertiary": "#72e5ee",
+      "panel": "#3a203b",
+      "text": "#ffeaf7",
+      "tool": "holo_console",
+      "bag": "Хаотичная переносная лаборатория",
+      "id": "yuki",
+      "portrait": "res://assets/characters/yuki/ui/portrait.png",
+      "backpack": "res://assets/characters/yuki/ui/backpack.png",
+      "backpack_safe_uv": [
+        0.31,
+        0.43,
+        0.4,
+        0.42
+      ],
+      "assets_root": "res://assets/ui/themes/yuki",
+      "hack_icon": "res://assets/ui/themes/yuki/tools/hack.svg",
+      "close_eyes_icon": "res://assets/ui/themes/yuki/tools/close_eyes_normal.svg",
+      "perception_profile_id": "yuki",
+      "perception_provider": null,
+      "animation": {
+        "portrait_idle": null,
+        "static_fallback": "res://assets/characters/yuki/ui/portrait.png"
+      },
+      "minimap": {
+        "content_source": "runtime world-to-map projection",
+        "mask": "res://assets/ui/themes/yuki/minimap/mask.svg",
+        "frame": "res://assets/ui/themes/yuki/minimap/frame.svg",
+        "visibility_source": "unimplemented; no secret rules inferred from lore"
+      }
+    },
+    "toffi": {
+      "name": "Тоффи",
+      "primary": "#ffbc77",
+      "secondary": "#ffe5b5",
+      "tertiary": "#f5a3b5",
+      "panel": "#3b2930",
+      "text": "#fff1da",
+      "tool": "lollipop",
+      "bag": "Плюшевая лисичка",
+      "id": "toffi",
+      "portrait": "res://assets/characters/toffi/ui/portrait.png",
+      "backpack": "res://assets/characters/toffi/ui/backpack.png",
+      "backpack_safe_uv": [
+        0.31,
+        0.48,
+        0.37,
+        0.37
+      ],
+      "assets_root": "res://assets/ui/themes/toffi",
+      "hack_icon": "res://assets/ui/themes/toffi/tools/hack.svg",
+      "close_eyes_icon": "res://assets/ui/themes/toffi/tools/close_eyes_normal.svg",
+      "perception_profile_id": "toffi",
+      "perception_provider": null,
+      "animation": {
+        "portrait_idle": null,
+        "static_fallback": "res://assets/characters/toffi/ui/portrait.png"
+      },
+      "minimap": {
+        "content_source": "runtime world-to-map projection",
+        "mask": "res://assets/ui/themes/toffi/minimap/mask.svg",
+        "frame": "res://assets/ui/themes/toffi/minimap/frame.svg",
+        "visibility_source": "unimplemented; no secret rules inferred from lore"
+      }
+    },
+    "miya": {
+      "name": "Мия",
+      "primary": "#a2b4ff",
+      "secondary": "#e7f0ff",
+      "tertiary": "#8ddbec",
+      "panel": "#222e49",
+      "text": "#edf1ff",
+      "tool": "potion",
+      "bag": "Строгий химический ранец",
+      "id": "miya",
+      "portrait": "res://assets/characters/miya/ui/portrait.png",
+      "backpack": "res://assets/characters/miya/ui/backpack.png",
+      "backpack_safe_uv": [
+        0.26,
+        0.43,
+        0.48,
+        0.42
+      ],
+      "assets_root": "res://assets/ui/themes/miya",
+      "hack_icon": "res://assets/ui/themes/miya/tools/hack.svg",
+      "close_eyes_icon": "res://assets/ui/themes/miya/tools/close_eyes_normal.svg",
+      "perception_profile_id": "miya",
+      "perception_provider": null,
+      "animation": {
+        "portrait_idle": null,
+        "static_fallback": "res://assets/characters/miya/ui/portrait.png"
+      },
+      "minimap": {
+        "content_source": "runtime world-to-map projection",
+        "mask": "res://assets/ui/themes/miya/minimap/mask.svg",
+        "frame": "res://assets/ui/themes/miya/minimap/frame.svg",
+        "visibility_source": "unimplemented; no secret rules inferred from lore"
+      }
+    },
+    "oni": {
+      "name": "Они",
+      "primary": "#66e6f7",
+      "secondary": "#79aff9",
+      "tertiary": "#d3f9ff",
+      "panel": "#142b42",
+      "text": "#e5f8ff",
+      "tool": "hand",
+      "bag": "Роботизированный жёсткий корпус",
+      "id": "oni",
+      "portrait": "res://assets/characters/oni/ui/portrait.png",
+      "backpack": "res://assets/characters/oni/ui/backpack.png",
+      "backpack_safe_uv": [
+        0.27,
+        0.44,
+        0.46,
+        0.37
+      ],
+      "assets_root": "res://assets/ui/themes/oni",
+      "hack_icon": "res://assets/ui/themes/oni/tools/hack.svg",
+      "close_eyes_icon": "res://assets/ui/themes/oni/tools/close_eyes_normal.svg",
+      "perception_profile_id": "oni",
+      "perception_provider": null,
+      "animation": {
+        "portrait_idle": null,
+        "static_fallback": "res://assets/characters/oni/ui/portrait.png"
+      },
+      "minimap": {
+        "content_source": "runtime world-to-map projection",
+        "mask": "res://assets/ui/themes/oni/minimap/mask.svg",
+        "frame": "res://assets/ui/themes/oni/minimap/frame.svg",
+        "visibility_source": "unimplemented; no secret rules inferred from lore"
+      }
+    }
+  },
+  "semantics": {
+    "danger": "#ff8fa2",
+    "warning": "#ffcf69",
+    "success": "#85e5bc"
+  },
+  "integration": "asset preparation only; no character-switching or perception gameplay implemented",
+  "integration_status": "Art prepared only; gameplay switching and perception not connected"
+}

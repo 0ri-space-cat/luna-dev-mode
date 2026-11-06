@@ -1,0 +1,2994 @@
+{
+  "profile": {
+    "name": "Луна",
+    "primary": "#ee82f5",
+    "secondary": "#76eef0",
+    "tertiary": "#ffd36c",
+    "panel": "#292342",
+    "text": "#f3e4ff",
+    "tool": "wand",
+    "bag": "Звёздная ведьминская сумка",
+    "id": "luna",
+    "portrait": "portraits/luna.png",
+    "backpack": "backpacks/luna.png",
+    "backpack_safe_uv": [
+      0.255,
+      0.405,
+      0.49,
+      0.43
+    ],
+    "assets_root": "themes/luna",
+    "hack_icon": "themes/luna/tools/hack.svg",
+    "close_eyes_icon": "themes/luna/tools/close_eyes_normal.svg",
+    "perception_profile_id": "luna",
+    "perception_provider": null,
+    "animation": {
+      "portrait_idle": null,
+      "static_fallback": "portraits/luna.png"
+    },
+    "minimap": {
+      "content_source": "runtime world-to-map projection",
+      "mask": "themes/luna/minimap/mask.svg",
+      "frame": "themes/luna/minimap/frame.svg",
+      "visibility_source": "unimplemented; no secret rules inferred from lore"
+    }
+  },
+  "assets": {
+    "ui/panels/window.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "ui/panels/hack.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "ui/panels/magic.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "ui/panels/dialogue.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "ui/panels/tooltip.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "ui/buttons/normal.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "ui/buttons/hover.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "ui/buttons/pressed.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "ui/buttons/disabled.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "ui/buttons/danger.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "ui/buttons/confirm.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "ui/slots/empty.svg": {
+      "size": [
+        80,
+        80
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/slots/hover.svg": {
+      "size": [
+        80,
+        80
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/slots/selected.svg": {
+      "size": [
+        80,
+        80
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/slots/locked.svg": {
+      "size": [
+        80,
+        80
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/bars/track.svg": {
+      "size": [
+        128,
+        24
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        8,
+        10,
+        8
+      ]
+    },
+    "ui/bars/health_fill.svg": {
+      "size": [
+        128,
+        24
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "usage": "TextureProgressBar fill; no gameplay value implied"
+    },
+    "ui/bars/mana_fill.svg": {
+      "size": [
+        128,
+        24
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "usage": "TextureProgressBar fill; no gameplay value implied"
+    },
+    "ui/bars/stamina_fill.svg": {
+      "size": [
+        128,
+        24
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "usage": "TextureProgressBar fill; no gameplay value implied"
+    },
+    "ui/frames/portrait.svg": {
+      "size": [
+        160,
+        160
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "stretch": "keep aspect; do not nine-slice",
+      "interior_circle": [
+        80,
+        80,
+        62
+      ]
+    },
+    "ui/frames/minimap.svg": {
+      "size": [
+        160,
+        160
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "stretch": "keep aspect; do not nine-slice",
+      "interior_circle": [
+        80,
+        80,
+        62
+      ]
+    },
+    "ui/icons/health.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/mana.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/stamina.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/copy.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/delete.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/done.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/close.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/plus.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/minus.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/backpack.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/magic.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/journal.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/map.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/dialogue.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/settings.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/help.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/player_marker.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/lock.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/unknown_item.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/arrow_left.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/arrow_right.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/inspect.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/hack.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/icons/save.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "ui/fields/normal.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/fields/hover.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/fields/focused.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/fields/disabled.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/fields/error.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/fields/readonly.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/fields/success.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/tabs/normal.svg": {
+      "size": [
+        96,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/tabs/hover.svg": {
+      "size": [
+        96,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/tabs/focused.svg": {
+      "size": [
+        96,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/tabs/disabled.svg": {
+      "size": [
+        96,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/tabs/error.svg": {
+      "size": [
+        96,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/tabs/readonly.svg": {
+      "size": [
+        96,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/tabs/success.svg": {
+      "size": [
+        96,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/switches/off.svg": {
+      "size": [
+        80,
+        40
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "keep aspect; segmented TRUE/FALSE buttons are separate live text controls"
+    },
+    "ui/switches/on.svg": {
+      "size": [
+        80,
+        40
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "keep aspect; segmented TRUE/FALSE buttons are separate live text controls"
+    },
+    "ui/switches/disabled.svg": {
+      "size": [
+        80,
+        40
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "keep aspect; segmented TRUE/FALSE buttons are separate live text controls"
+    },
+    "ui/scrollbars/thumb_normal.svg": {
+      "size": [
+        24,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        9,
+        12,
+        9,
+        12
+      ],
+      "content_margin": [
+        9,
+        12,
+        9,
+        12
+      ]
+    },
+    "ui/scrollbars/thumb_hover.svg": {
+      "size": [
+        24,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        9,
+        12,
+        9,
+        12
+      ],
+      "content_margin": [
+        9,
+        12,
+        9,
+        12
+      ]
+    },
+    "ui/scrollbars/thumb_pressed.svg": {
+      "size": [
+        24,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        9,
+        12,
+        9,
+        12
+      ],
+      "content_margin": [
+        9,
+        12,
+        9,
+        12
+      ]
+    },
+    "ui/scrollbars/thumb_disabled.svg": {
+      "size": [
+        24,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        9,
+        12,
+        9,
+        12
+      ],
+      "content_margin": [
+        9,
+        12,
+        9,
+        12
+      ]
+    },
+    "ui/scrollbars/track.svg": {
+      "size": [
+        24,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        9,
+        10,
+        9,
+        10
+      ],
+      "content_margin": [
+        9,
+        10,
+        9,
+        10
+      ]
+    },
+    "ui/bars/slider_thumb_normal.svg": {
+      "size": [
+        28,
+        28
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "keep aspect"
+    },
+    "ui/bars/slider_thumb_hover.svg": {
+      "size": [
+        28,
+        28
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "keep aspect"
+    },
+    "ui/bars/slider_thumb_pressed.svg": {
+      "size": [
+        28,
+        28
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "keep aspect"
+    },
+    "ui/bars/slider_thumb_disabled.svg": {
+      "size": [
+        28,
+        28
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "keep aspect"
+    },
+    "ui/fields/dropdown_row_default.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "content_margin": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "ui/fields/dropdown_row_selected.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "content_margin": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "ui/fields/dropdown_row_hover.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "content_margin": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "ui/fields/dropdown_row_disabled.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "content_margin": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "ui/notifications/default.svg": {
+      "size": [
+        128,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/notifications/warning.svg": {
+      "size": [
+        128,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/notifications/error.svg": {
+      "size": [
+        128,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/notifications/success.svg": {
+      "size": [
+        128,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/notifications/info.svg": {
+      "size": [
+        128,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/badges/new.svg": {
+      "size": [
+        48,
+        32
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "live text or icon overlaid by engine",
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/badges/count.svg": {
+      "size": [
+        48,
+        32
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "live text or icon overlaid by engine",
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/badges/warning.svg": {
+      "size": [
+        48,
+        32
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "live text or icon overlaid by engine",
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/badges/locked.svg": {
+      "size": [
+        48,
+        32
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "live text or icon overlaid by engine",
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/badges/equipped.svg": {
+      "size": [
+        48,
+        32
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "live text or icon overlaid by engine",
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "ui/panels/context_menu.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/panels/dropdown.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/panels/tooltip_rich.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/panels/confirmation.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/panels/dialogue_choices.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/panels/journal_page.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/panels/settings.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/panels/spell_socket.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        16,
+        16,
+        16,
+        16
+      ]
+    },
+    "ui/overlays/pause_tint.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "stretch fullscreen; mouse_filter IGNORE for visual layers; danger_vignette is uniform color layer for later shader, not finished edge gradient"
+    },
+    "ui/overlays/modal_scrim.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "stretch fullscreen; mouse_filter IGNORE for visual layers; danger_vignette is uniform color layer for later shader, not finished edge gradient"
+    },
+    "ui/overlays/selection_wash.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "stretch fullscreen; mouse_filter IGNORE for visual layers; danger_vignette is uniform color layer for later shader, not finished edge gradient"
+    },
+    "ui/icons/appearance.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/physics.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/mind.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/behavior.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/relationships.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/abilities.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/reactions.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/auras.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/tags.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/warning.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/info.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/chevron_down.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/transfer.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/drop.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/use.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/portal.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/speaker.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/volume_muted.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/fullscreen.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/empty_inventory.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/icons/spell_invalid.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ]
+    },
+    "ui/overlays/danger_tint.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "usage": "stretch fullscreen; mouse_filter IGNORE for visual layers; danger_vignette is uniform color layer for later shader, not finished edge gradient",
+      "status": "uniform tint; actual vignette requires shader or mask"
+    },
+    "hack/panel_cyan.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/panel_magenta.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/avatar_frame.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/tab_normal.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/tab_active.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/tab_hover.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/tab_disabled.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/value_normal.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/value_hover.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/value_focused.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/value_error.svg": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/button_normal.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/button_hover.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/button_danger.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/button_save.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "filter": "nearest",
+      "text_baked": false
+    },
+    "hack/rows/normal.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/rows/hover.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/rows/focused.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/rows/invalid.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/rows/readonly.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/rows/disabled.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/rows/changed.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/popups/enum.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "hack/popups/palette.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "hack/popups/target.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "hack/popups/tooltip.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "hack/popups/tooltip_warning.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "hack/popups/empty.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "hack/popups/option_selected.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/popups/option_hover.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/popups/option_disabled.svg": {
+      "size": [
+        128,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "hack/swatches/lavender.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "hack/swatches/mint.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "hack/swatches/pink.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "hack/swatches/blue.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "hack/swatches/peach.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "hack/swatches/violet.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    "hack/swatches/selected_border.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        6,
+        6,
+        6,
+        6
+      ]
+    },
+    "hack/scroll/track.svg": {
+      "size": [
+        12,
+        48
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        4,
+        8,
+        4,
+        8
+      ]
+    },
+    "hack/scroll/thumb.svg": {
+      "size": [
+        12,
+        48
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        4,
+        8,
+        4,
+        8
+      ]
+    },
+    "hack/scroll/thumb_hover.svg": {
+      "size": [
+        12,
+        48
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        4,
+        8,
+        4,
+        8
+      ]
+    },
+    "hack/feedback/saving.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/feedback/saved.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/feedback/failed.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/feedback/input_error.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/feedback/no_target.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/button_save_disabled.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/button_save_hover.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/button_save_pressed.svg": {
+      "size": [
+        128,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/button_icon_pressed.svg": {
+      "size": [
+        40,
+        40
+      ],
+      "filter": "nearest",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    "hack/icons/general.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/appearance.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/physics.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/mind.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/behavior.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/relationships.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/abilities.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/reactions.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/auras.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/tags.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/copy.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/delete.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/save.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/lock.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/chevron.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "hack/icons/warning.svg": {
+      "size": [
+        16,
+        16
+      ],
+      "filter": "nearest",
+      "scale": "integer multiples; native 16px; use 32px at 2x",
+      "text_baked": false
+    },
+    "tools/hack.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "text_baked": false,
+      "kind": "wand"
+    },
+    "tools/close_eyes_normal.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "text_baked": false,
+      "kind": "close eyes to see world underside; perception effect unspecified"
+    },
+    "tools/close_eyes_hover.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "text_baked": false,
+      "kind": "close eyes to see world underside; perception effect unspecified"
+    },
+    "tools/close_eyes_active.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "text_baked": false,
+      "kind": "close eyes to see world underside; perception effect unspecified"
+    },
+    "tools/close_eyes_disabled.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "text_baked": false,
+      "kind": "close eyes to see world underside; perception effect unspecified"
+    },
+    "tools/change_character.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "text_baked": false
+    },
+    "minimap/frame.svg": {
+      "size": [
+        160,
+        160
+      ],
+      "text_baked": false,
+      "stretch": "keep aspect"
+    },
+    "minimap/mask.svg": {
+      "size": [
+        160,
+        160
+      ],
+      "text_baked": false,
+      "usage": "alpha mask for generated map layer; NOT a map image"
+    },
+    "minimap/background.svg": {
+      "size": [
+        160,
+        160
+      ],
+      "text_baked": false,
+      "stretch": "keep aspect"
+    },
+    "minimap/fog_tile.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "text_baked": false,
+      "usage": "runtime visibility mask; profile-specific rules not authored"
+    },
+    "minimap/compass_ticks.svg": {
+      "size": [
+        160,
+        160
+      ],
+      "text_baked": false,
+      "stretch": "keep aspect"
+    },
+    "minimap/player.svg": {
+      "size": [
+        32,
+        32
+      ],
+      "text_baked": false
+    },
+    "minimap/poi_known.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "text_baked": false
+    },
+    "minimap/poi_unknown.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "text_baked": false
+    },
+    "minimap/portal.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "text_baked": false
+    },
+    "minimap/objective.svg": {
+      "size": [
+        24,
+        24
+      ],
+      "text_baked": false
+    }
+  }
+}

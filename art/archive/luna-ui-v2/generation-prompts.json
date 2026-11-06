@@ -1,0 +1,16 @@
+{
+  "method": "built-in image_gen; transparent_background=true; generated raster files preserved without image editing",
+  "luna_portrait": {
+    "references": [
+      "08_preferred_character_lineup.png",
+      "02_style_gameplay_concept.png"
+    ],
+    "prompt": "Use case: stylized-concept. Asset type: production 2D game HUD portrait, transparent PNG, one isolated character bust. Image 1 is AUTHORITATIVE character design reference: Luna is the LEFTMOST girl, with large round thin dark glasses, shoulder-length wavy lilac/pink hair, purple floppy witch hat with pale stars and a tiny pompom on bent tip, purple hoodie with small pink cat motif and crescent pendant, warm light skin, curious cheerful face. Preserve her recognizable design. Image 2 is ONLY reference for crisp dark-purple cartoon outlines, bright clean cel-shaded pink/lilac palette and cheerful game polish. Draw only Luna, frontal head and shoulders, friendly open-eyed slight smile, glasses readable at 64px, hat entirely within canvas, centered square composition with 10% safe padding. Hair follows the shoulder-length author design, not long flowing poster hair. No UI frame, no circle backdrop, no neon effects, no text, no numbers, no scene, no other characters. Actual transparent background including outer margins. Clean silhouette and controlled highlights, suitable for an orthographic cozy magical hacking game."
+  },
+  "inventory_backpack": {
+    "references": [
+      "02_style_gameplay_concept.png"
+    ],
+    "prompt": "Use case: stylized-concept. Asset type: single production game UI inventory backpack background illustration, transparent PNG. Reference image shows an inventory backpack at the LEFT; use that as design direction. Draw ONLY one empty front-facing purple fantasy school backpack UI shell, orthographic flat symmetrical front view, no perspective, clean thick dark-purple cartoon outlines, lilac fabric side pockets, small gold buckles, pink cat emblem on top flap, gold crescent charm on right side. Backpack body occupies central 80% of square image, complete handle and straps inside canvas with transparent margin. Crucially make the LARGE FRONT POCKET a perfectly flat, blank, dark aubergine rectangular inset with subtly clipped corners: this is empty usable space where the engine draws grid slots and text. This blank inset occupies roughly x=25% to75%, y=38% to85% of whole canvas. Keep outlines, buckles, zipper and decoration OUTSIDE blank inset. No baked grid, no items, no text, no labels, no letters, no numbers, no window buttons, no characters, no scenery, no opaque backdrop. Reference aesthetic bright cozy magical hacking RPG, pink and cyan edge accents restrained, matte cartoon materials, clear readable silhouette. Actual alpha transparency outside backpack."
+  }
+}

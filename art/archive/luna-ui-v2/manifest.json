@@ -1,0 +1,803 @@
+{
+  "version": 2,
+  "status": "first art pass; visual approval pending",
+  "assets": {
+    "panels/window.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "panels/hack.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "panels/magic.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "panels/dialogue.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "panels/tooltip.svg": {
+      "size": [
+        128,
+        128
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "content_margin": [
+        20,
+        20,
+        20,
+        20
+      ]
+    },
+    "buttons/normal.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "buttons/hover.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "buttons/pressed.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "buttons/disabled.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "buttons/danger.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "buttons/confirm.svg": {
+      "size": [
+        128,
+        48
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        18,
+        10,
+        18,
+        10
+      ]
+    },
+    "slots/empty.svg": {
+      "size": [
+        80,
+        80
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "slots/hover.svg": {
+      "size": [
+        80,
+        80
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "slots/selected.svg": {
+      "size": [
+        80,
+        80
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "slots/locked.svg": {
+      "size": [
+        80,
+        80
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "content_margin": [
+        12,
+        12,
+        12,
+        12
+      ]
+    },
+    "bars/track.svg": {
+      "size": [
+        128,
+        24
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        8,
+        10,
+        8
+      ]
+    },
+    "bars/health_fill.svg": {
+      "size": [
+        128,
+        24
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "usage": "TextureProgressBar fill; no gameplay value implied"
+    },
+    "bars/mana_fill.svg": {
+      "size": [
+        128,
+        24
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "usage": "TextureProgressBar fill; no gameplay value implied"
+    },
+    "bars/stamina_fill.svg": {
+      "size": [
+        128,
+        24
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "nine_patch": [
+        10,
+        8,
+        10,
+        8
+      ],
+      "usage": "TextureProgressBar fill; no gameplay value implied"
+    },
+    "frames/portrait.svg": {
+      "size": [
+        160,
+        160
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "stretch": "keep aspect; do not nine-slice",
+      "interior_circle": [
+        80,
+        80,
+        62
+      ]
+    },
+    "frames/minimap.svg": {
+      "size": [
+        160,
+        160
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "stretch": "keep aspect; do not nine-slice",
+      "interior_circle": [
+        80,
+        80,
+        62
+      ]
+    },
+    "icons/health.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/mana.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/stamina.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/copy.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/delete.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/done.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/close.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/plus.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/minus.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/backpack.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/magic.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/journal.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/map.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/dialogue.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/settings.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/help.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/player_marker.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/lock.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/unknown_item.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/arrow_left.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/arrow_right.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/inspect.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/hack.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "icons/save.svg": {
+      "size": [
+        64,
+        64
+      ],
+      "format": "svg",
+      "text_baked": false,
+      "render_at": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "note": "multicolor accents are authored; use white modulation to preserve palette; test contrast at 24px",
+      "revision": 2
+    },
+    "illustrations/luna_portrait.png": {
+      "format": "png",
+      "alpha": true,
+      "usage": "TextureRect; keep aspect; face must not be cropped",
+      "status": "generated interpretation awaiting author approval"
+    },
+    "illustrations/inventory_backpack.png": {
+      "format": "png",
+      "alpha": true,
+      "usage": "keep aspect; overlay controls independently; never nine-slice entire illustration",
+      "safe_content_uv": [
+        0.245,
+        0.405,
+        0.5,
+        0.42
+      ],
+      "safe_content_note": "conservative rectangle within front inset; confirm at final in-game size"
+    }
+  },
+  "palette": {
+    "ink": "#211137",
+    "panel": "#241337",
+    "pink": "#f65bff",
+    "cyan": "#5be9ef",
+    "gold": "#ffce63",
+    "muted": "#857094"
+  }
+}

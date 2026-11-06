@@ -1,0 +1,15 @@
+{
+  "method": "built-in image_gen",
+  "prompt": "Use case: stylized-concept. Asset type: standalone transparent inventory artifact illustration and 2D concept for LUNA: DEV MODE. Draw ONE 'Crystal Heart', a magical artifact that grants empathy. The object itself is a solid heart-shaped cut crystal: two rounded upper lobes, a clear notch, tapered bottom point, lovely clean readable heart silhouette, thick glass volume with broad elegant facets. Clear translucent rose quartz / warm blush pink and soft ruby-red edges, peach highlights, tiny icy-cyan iridescent reflections confined to a few facet edges, a warm honey-gold light softly glowing deep inside like a compassionate living pulse. It should feel tender and magical rather than like a health pickup, candy or plastic jewel. No metal frame, no pendant loop, no chain, no wings, no humanoid/anatomical heart, no face. Match the established LUNA inventory props: polished hand-drawn cartoon fantasy, stylized 3D volume expressed in clean 2D cel shading, precise dark plum contour, crisp luminous specular streaks, saturated but restrained colors, charming readable shapes, very limited fine detail. Center the complete object with 12 percent transparent margin in a square composition, gentle three-quarter view to show crystal thickness, almost upright heart. A few small warm star-like light motes close to the crystal, not a large aura. Actual fully transparent background, no ground, no backdrop, no rectangular shadow, no UI frame, no lettering, text, logo, watermark, characters or other props. Readable as a heart at 48-64 pixels. Render only this one artifact.",
+  "source": "exec-43f078d7-1484-40f5-aa33-f01ee06f9d9e.png",
+  "artifact": "Хрустальное сердце",
+  "ability": "эмпатия",
+  "canonical_id": null,
+  "size": [
+    1254,
+    1254
+  ],
+  "alpha_verified": true,
+  "sha256": "a812bc427c9010e6d0541f28bbd9538b4a786637f1a599b6b0c0bb7e1cab638a",
+  "concept_and_icon_share_master": true
+}
