@@ -5,6 +5,7 @@ const Inspector = preload("res://scripts/2d/hack_inspector_2d.gd")
 const HUD = preload("res://scripts/2d/meadow_hud_2d.gd")
 const Session = preload("res://scripts/2d/hack_session_2d.gd")
 const Save2D = preload("res://scripts/2d/meadow_save_2d.gd")
+const Lifecycle2D = preload("res://scripts/2d/meadow_lifecycle_2d.gd")
 const Registry = preload("res://scripts/core/parameter_registry.gd")
 const Processor = preload("res://scripts/core/command_processor.gd")
 const World = preload("res://scripts/core/world_registry.gd")
@@ -20,6 +21,7 @@ var processor = Processor.new()
 var world = World.new()
 var session = Session.new()
 var save_game = Save2D.new()
+var lifecycle
 var selected: Node
 var actors: Array = []
 var hud: CanvasLayer
@@ -37,6 +39,7 @@ func _ready() -> void:
 	_spawn("sheep_01", "arcane_creature", "Овечка", Vector2(650, 610), {"color": Color("#f5e8ff"), "alive": true})
 	_spawn("duck_01", "arcane_creature", "Уточка", Vector2(750, 660), {"color": Color("#ffdb66"), "alive": true})
 	_spawn("slime_01", "arcane_creature", "Сонный слайм", Vector2(925, 380), {"color": Color("#83e3f0"), "alive": true})
+	lifecycle = Lifecycle2D.new(world, $Entities, registry, player, actors)
 	hud = HUD.new()
 	add_child(hud)
 	hud.set_targets(player, actors)
@@ -47,6 +50,8 @@ func _ready() -> void:
 	inspector.position = Vector2(826, 145)
 	inspector_layer.add_child(inspector)
 	inspector.save_requested.connect(_save)
+	inspector.copy_requested.connect(_copy_actor)
+	inspector.delete_requested.connect(_delete_actor)
 	inspector.set_character_theme("luna")
 	_show("Луна проснулась в Этернии. Разлом мерцает слева.")
 
@@ -134,12 +139,14 @@ func _input(event: InputEvent) -> void:
 				_show("Для самовзлома нужна отдельная копия взломанной палочки.")
 		KEY_Z:
 			if processor.undo():
+				hud.set_targets(player, actors)
 				puppet.trigger_action("cast",0.22)
 				_show("Последнее изменение отменено.")
 				if inspector.visible:
 					inspector._refresh()
 		KEY_Y:
 			if processor.redo():
+				hud.set_targets(player, actors)
 				puppet.trigger_action("cast",0.22)
 				_show("Изменение повторено.")
 				if inspector.visible:
@@ -188,6 +195,32 @@ func _open_object(actor: Node) -> void:
 	inspector.open_actor(actor, processor, registry, session)
 	_show("Открыт редактор: " + str(actor.record.display_name))
 
+func _copy_actor(actor: Node) -> void:
+	var at: Vector2 = (actor as Node2D).position + Vector2(85, 35)
+	at = at.clamp(Vector2(45,100),Vector2(1410,710))
+	var blueprint: Dictionary = lifecycle.clone_blueprint(str(actor.record.id), at)
+	if blueprint.is_empty():
+		_show("Нельзя создать ещё одну копию этого объекта.")
+		return
+	var created: Node = processor.execute_entity_create(lifecycle, blueprint)
+	if created == null:
+		_show("Не удалось скопировать объект.")
+		return
+	inspector.hide()
+	selected = created
+	hud.set_targets(player, actors)
+	puppet.trigger_action("cast", 0.65)
+	_show("Копия создана: " + str(created.record.display_name) + ". Можно отменить Z.")
+
+func _delete_actor(actor: Node) -> void:
+	if processor.execute_entity_delete(lifecycle, str(actor.record.id)):
+		inspector.hide()
+		selected = null
+		hud.set_targets(player, actors)
+		_show("Сущность удалена. Нажми Z, чтобы вернуть.")
+	else:
+		_show("Объект сейчас удалить нельзя.")
+
 func _save() -> void:
 	if save_game.write(player, world, session):
 		_show("Поляна сохранена (F9 — загрузить).")
@@ -198,7 +231,7 @@ func _load() -> void:
 	if not save_game.has_save():
 		_show("Сохранение пока не создано.")
 		return
-	if save_game.read(player, world, session, registry):
+	if save_game.read(player, world, session, registry, lifecycle):
 		_show("Поляна и состояние палочки загружены.")
 		if inspector.visible:
 			inspector._refresh()
