@@ -4,6 +4,7 @@ const Profiles = preload("res://scripts/2d/character_ui_profile.gd")
 const Minimap = preload("res://scripts/2d/meadow_minimap_2d.gd")
 var character_id := "luna"
 var portrait: TextureRect
+var backpack_texture: TextureRect
 var header: Label
 var status: Label
 var prompt: Label
@@ -58,6 +59,7 @@ func _ready() -> void:
 	bag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	bag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bag.name = "BagTexture"
+	backpack_texture = bag
 	overlay.add_child(bag)
 	status = Label.new()
 	status.position = Vector2(235, 735)
@@ -82,7 +84,7 @@ func set_character(id: String) -> void:
 		portrait.texture = load(p)
 	var bag_path := "res://assets/characters/%s/ui/backpack.png" % id
 	if ResourceLoader.exists(bag_path):
-		get_node("Control/BagTexture").texture = load(bag_path)
+		backpack_texture.texture = load(bag_path)
 
 func set_status(message: String) -> void:
 	if is_instance_valid(status):
