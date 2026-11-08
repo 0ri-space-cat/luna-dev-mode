@@ -3,11 +3,15 @@ extends Node2D
 ## joint-animated legs/arms, independent idle/walk/run/cast/hit/turn states.
 ## Pixels are imported SVG; animation changes only bones and overlays.
 const ART := "res://assets/2d/characters/luna/"
+const PixelArt = preload("res://scripts/2d/pixel_art_pipeline_2d.gd")
+const PIXEL_SHEET := "res://assets/2d/characters/luna/pixel/luna_sheet.png"
+const PIXEL_SHEET_WEBP := "res://assets/2d/characters/luna/pixel/luna_sheet.webp"
 const DRAWING_SCALE := 0.68
 var front: Texture2D
 var back: Texture2D
 var side: Texture2D
 var body: Sprite2D
+var animated: AnimatedSprite2D
 var left_arm: Line2D
 var right_arm: Line2D
 var wand: Node2D
@@ -45,6 +49,10 @@ func _ready() -> void:
 	add_child(wand)
 	wand.position = Vector2(39, -36)
 	_select_drawing()
+	# Install the authored pixel sheet if present; otherwise keep the legacy SVG skin.
+	var source_path := PIXEL_SHEET if ResourceLoader.exists(PIXEL_SHEET) else PIXEL_SHEET_WEBP
+	if ResourceLoader.exists(source_path):
+		install_pixel_sprite(load(source_path) as Texture2D)
 
 func _arm(tint: Color, width: float) -> Line2D:
 	var line := Line2D.new()
@@ -62,6 +70,40 @@ func _rig_sprite(id: String, factor: float) -> Sprite2D:
 	icon.scale = Vector2.ONE * factor
 	add_child(icon)
 	return icon
+
+func install_pixel_sprite(source: Texture2D) -> bool:
+	# Three drawn views: down, side (mirrored for left), and up. Two frames each.
+	var names := ["idle_down", "idle_right", "idle_up", "walk_down", "walk_right", "walk_up", "cast_down", "cast_right", "cast_up"]
+	var plan := {}
+	for i in range(names.size()):
+		plan[names[i]] = {"row":i, "frames":2, "loop":true}
+	var frames: SpriteFrames = PixelArt.build_sprite_frames(source, Vector2i(48, 64), plan, 6.0)
+	if frames == null:
+		push_warning("Luna pixel sheet must be 96x576 for the first two-frame prototype.")
+		return false
+	if not is_instance_valid(animated):
+		animated = AnimatedSprite2D.new()
+		animated.name = "PixelFrames"
+		add_child(animated)
+	if not PixelArt.configure_animated_sprite(animated, frames, 2):
+		return false
+	animated.position = Vector2(0, -64)
+	for item in [body, left_arm, right_arm, left_hand, right_hand, boot_left, boot_right, wand]:
+		if is_instance_valid(item):
+			item.visible = false
+	animated.play("idle_down")
+	return true
+
+func _update_pixel_animation(moving: bool, running: bool) -> void:
+	if not is_instance_valid(animated):
+		return
+	var direction := "right" if facing in ["left","right"] else facing
+	var action := "cast" if mode in ["cast","interact","surprise"] else ("walk" if moving else "idle")
+	var animation_name := action + "_" + direction
+	if animated.animation != animation_name:
+		animated.play(animation_name)
+	animated.flip_h = facing == "left"
+	animated.speed_scale = 1.4 if running and action == "walk" else 1.0
 
 func trigger_action(action: String, duration: float = 0.5) -> void:
 	if action in ["cast", "hurt", "interact", "surprise"]:
@@ -87,6 +129,10 @@ func set_motion(movement: Vector2, running: bool, delta: float, aim: Vector2 = V
 	else:
 		mode = "run" if moving and running else ("walk" if moving else "idle")
 	animation_time += delta
+	if is_instance_valid(animated):
+		_update_pixel_animation(moving, running)
+		queue_redraw()
+		return
 	_select_drawing()
 	var stride_speed := 14.5 if mode == "run" else 9.2
 	var weight := 1.0 if mode == "run" else (0.72 if mode == "walk" else 0.0)
@@ -148,6 +194,9 @@ func _update_hands(swing: float) -> void:
 	right_hand.visible = right_arm.visible
 
 func _draw() -> void:
+	if is_instance_valid(animated):
+		draw_ellipse_shadow()
+		return
 	var weight := 1.0 if mode == "run" else (0.68 if mode == "walk" else 0.0)
 	var phase := elapsed * (14.5 if mode == "run" else 9.2)
 	var left_x := -12.0 + sin(phase) * 7.0 * weight
