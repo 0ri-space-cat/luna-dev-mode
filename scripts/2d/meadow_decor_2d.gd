@@ -241,7 +241,7 @@ func _draw_crystal_clusters() -> void:
 	for origin in [Vector2(135,660),Vector2(1120,435),Vector2(1307,640),Vector2(733,113)]:
 		for j in range(3):
 			var shift := Vector2(float(j-1)*18,8.0)
-			var p := origin+shift
+			var p: Vector2 = origin+shift
 			var height := float(28+j*12)
 			var color := Color("#f38ff0") if j%2==0 else Color("#9ae9f9")
 			draw_colored_polygon(PackedVector2Array([
