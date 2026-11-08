@@ -124,6 +124,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func _input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
+	if inspector.visible and event.keycode in [KEY_E, KEY_U, KEY_SPACE, KEY_Q]:
+		return
 	match event.keycode:
 		KEY_SPACE:
 			puppet.call("trigger_action", "cast",0.55)
@@ -240,6 +242,10 @@ func _load() -> void:
 		_show("Сохранение пока не создано.")
 		return
 	if save_game.read(player, world, session, registry, lifecycle):
+		processor.clear_history()
+		inspector.hide()
+		selected = null
+		hud.set_targets(player, actors)
 		_show("Поляна и состояние палочки загружены.")
 		if inspector.visible:
 			inspector._refresh()
