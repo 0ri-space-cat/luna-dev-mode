@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "biome": "Eternia starter meadow",
+  "tile_size": [
+    64,
+    64
+  ],
+  "terrain": {
+    "variants": 12,
+    "path_pattern": "terrain/grass_{index}.png",
+    "border_contract": "All first/last rows and columns match across all variants; no tile borders",
+    "qa": "python3 ci/check_terrain_seams.py"
+  },
+  "props": {
+    "flower_bush": {
+      "file": "props/flower_bush.webp",
+      "anchor": "bottom_center",
+      "animated": false
+    },
+    "moss_arch": {
+      "file": "props/moss_arch.webp",
+      "anchor": "bottom_center",
+      "animated": false
+    },
+    "pink_crystals": {
+      "file": "props/pink_crystals.webp",
+      "anchor": "bottom_center",
+      "animated": false
+    },
+    "oracle_pedestal": {
+      "file": "props/oracle_pedestal.webp",
+      "anchor": "bottom_center",
+      "animated": false
+    },
+    "walking_fridge": {
+      "file": "props/walking_fridge.webp",
+      "anchor": "bottom_center",
+      "animated": false,
+      "warning": "Single view only; do not replace multi-angle animated NPC until turnarounds exist"
+    },
+    "berry_tree": {
+      "file": "props/berry_tree.webp",
+      "anchor": "bottom_center",
+      "animated": false,
+      "warning": "Static tree art only; source roots require anatomy review before activation"
+    }
+  },
+  "source": "LUNA_Eternia_Asset_Pack_01 original generated prop atlas, curated transparent cutouts, optimized v2",
+  "test_scene": "res://scenes/2d/world_2d.tscn"
+}
