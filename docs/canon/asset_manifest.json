@@ -1,12 +1,12 @@
 {
   "schema": "luna.artifact.asset.v1",
-  "edition": "2026-11-07 / Crystal Heart empathy revision / 21 artifacts",
+  "edition": "2026-11-08 / all-2D game, property transfer, Russian UI and Oracle",
   "status": "21 2D masters prepared; artifact gameplay and 3D props remain design only",
   "art_direction": {
-    "style": "Simple recognizable enchanted props, soft fantasy magic, stylized 3D with clean 2D cel shading. Avoid office stationery mechanisms, toy eyes, excessive limbs or buttons; magical runes and small natural crystals are allowed.",
+    "style": "Hand-drawn colorful 2D game sprites with clean dark outlines, simple recognizable magical prop silhouettes; flexible cutout/pivot/overlay integration. Do not require 3D models.",
     "preferred_view": "three-quarter isolated prop",
     "icon": "transparent 512x512 PNG",
-    "model": "Game-ready 3D GLB/FBX is future output only; no models yet created",
+    "model": "Historical 3D plans superseded by 2D sprites/atlases; model=null for every artifact.",
     "no": "office hardware, modern USB plugs, alarm clocks, needle/pin for Prism, text, logos, letters, eyes, legs, humanoids or hands unless explicitly requested",
     "prompt_language": "English prompt and Russian prompt provided for each artifact; no generated files are implied"
   },
@@ -26,8 +26,8 @@
       "reveal": "Обычный артефакт с очень скрытым адресом; виден всем после нахождения",
       "limit": "Без глобального обратного хода на первом этапе: настоящий WORLD_REWIND потребует согласованных снапшотов всех сцен и отдельного технического решения",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: one elegant magical glass hourglass with delicate silver frame and a few floating grains of violet-cyan luminous sand, a clear hourglass silhouette; absolutely no alarm clock, hands or gears. Color palette #D6A7FF/#62F2E3. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Изысканные песочные часы из прозрачного стекла с тонкой серебряной оправой; внутри магический фиолетово-бирюзовый песок может парить вверх, застывать или падать. Палитра: #D6A7FF/#62F2E3. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: one elegant magical glass hourglass with delicate silver frame and a few floating grains of violet-cyan luminous sand, a clear hourglass silhouette; absolutely no alarm clock, hands or gears. Color palette #D6A7FF/#62F2E3. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Изысканные песочные часы из прозрачного стекла с тонкой серебряной оправой; внутри магический фиолетово-бирюзовый песок может парить вверх, застывать или падать. Палитра: #D6A7FF/#62F2E3. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-GL-01/ART-GL-01_concept.png",
         "icon": "assets/artifacts/ART-GL-01/ART-GL-01_icon.png",
@@ -35,7 +35,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-GL-01/ART-GL-01_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -46,7 +46,8 @@
         "sha256": "0f5b43a3ba24ab399e44d7b62789e0536e8766a33c4bf9eca12cff94901b20c5",
         "palette_as_drawn": "#E7AB36/#49C9FF",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-GL-02",
@@ -62,8 +63,8 @@
       "reveal": "Физически видна всем; распознать пользу можно после изучения команд",
       "limit": "До 4 операций и 8 целей; не повторяет самоудаление, глобальные команды и опасные действия",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small partially unrolled magical parchment scroll held by two carved wooden rods with tiny crystal caps, glowing violet and cyan runic symbols appearing on the parchment; no buttons or tape. Color palette #7D70E8/#F5A3E7. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Короткий древний свиток светлого пергамента с бирюзово-фиолетовыми рунами, которые сами появляются при разворачивании; деревянные концы украшены кристаллами. Палитра: #7D70E8/#F5A3E7. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small partially unrolled magical parchment scroll held by two carved wooden rods with tiny crystal caps, glowing violet and cyan runic symbols appearing on the parchment; no buttons or tape. Color palette #7D70E8/#F5A3E7. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Короткий древний свиток светлого пергамента с бирюзово-фиолетовыми рунами, которые сами появляются при разворачивании; деревянные концы украшены кристаллами. Палитра: #7D70E8/#F5A3E7. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-GL-02/ART-GL-02_concept.png",
         "icon": "assets/artifacts/ART-GL-02/ART-GL-02_icon.png",
@@ -71,7 +72,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-GL-02/ART-GL-02_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -82,7 +83,8 @@
         "sha256": "c3bb998d24c4511a0c94fc38def466ec00a0a299edc8b841ab920b09b4790507",
         "palette_as_drawn": "#EFD79C/#AC5D27/#7CE2BD",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-GL-03",
@@ -98,8 +100,8 @@
       "reveal": "Обычный объект, может быть спрятан за секретным пространственным переходом",
       "limit": "Не управляет NPC, не становится FIRST/SECOND PERSON и не переносит героя через препятствия",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small oval enchanted hand mirror with ornate but simple silver frame and a softly glowing lilac glass surface showing a tiny distant landscape silhouette; no telescope, eye, tripod or lens tubes. Color palette #93E5F6/#A890FF. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшое овальное волшебное зеркало в тонкой серебряной резной оправе, внутри вместо отражения мерцает чужой вид на мир. Палитра: #93E5F6/#A890FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small oval enchanted hand mirror with ornate but simple silver frame and a softly glowing lilac glass surface showing a tiny distant landscape silhouette; no telescope, eye, tripod or lens tubes. Color palette #93E5F6/#A890FF. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшое овальное волшебное зеркало в тонкой серебряной резной оправе, внутри вместо отражения мерцает чужой вид на мир. Палитра: #93E5F6/#A890FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-GL-03/ART-GL-03_concept.png",
         "icon": "assets/artifacts/ART-GL-03/ART-GL-03_icon.png",
@@ -107,7 +109,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-GL-03/ART-GL-03_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -118,7 +120,8 @@
         "sha256": "00922e060b5c7f0c3cf98f39b7fced749e81430f85271beecf93465e5b87e045",
         "palette_as_drawn": "#93E5F6/#4769BA/#DFE9F4",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-GL-04",
@@ -127,15 +130,15 @@
       "en": "Prism",
       "shape": "Маленький цельный прозрачный треугольный кристалл-призма с фиолетово-бирюзовыми переливами; внутри плавает крошечный плоский силуэт мира, никаких оправ и креплений",
       "palette": "#FF8ECD/#65E8F6",
-      "fx": "Призма поворачивается ребром к камере, и объёмный мир складывается в плоскую 2D-платформерную секцию словно страница сказочной книги",
-      "control": "Открывает секретный параметр GAME_DIMENSION и позволяет переходить из 3D в специально созданную 2D-платформерную секцию; после финала эта же опция доступна через рамку игры",
-      "fields": "GAME_DIMENSION, DIMENSION_TARGET_SCENE, RETURN_TO_3D",
+      "fx": "Призма поворачивается ребром, и 2D-экран на мгновение расходится на полупрозрачные карточки фона, игровой поверхности и переднего плана. Выбранный реальный Entity можно проявить на активном слое.",
+      "control": "Разделяет изображение 2D-сцены на задний, игровой и передний визуальные слои: показывает скрытые объекты и позволяет временно вытягивать доступные декоративные Entity из фоновой проекции в игровой слой; игра остаётся целиком 2D",
+      "fields": "RENDER_LAYER, SOURCE_LAYER_ID, LAYER_ACTIVATION, LAYER_INSPECT",
       "place": "Секретный слой интерфейса WORLD 00, замаскирована под обычный декоративный кристалл; достать можно ранним мета-взломом",
       "reveal": "Обычный предмет после извлечения из UI; до этого виден как плоская декоративная заклёпка",
-      "limit": "Не превращает все три открытых 3D-мира в полноценную 2D-игру; после финала та же настройка есть в рамке",
+      "limit": "Не переключает 3D/2D и не создаёт новый мир; редактирует только представление и доступ к существующим Entity, по реальным правилам WorldTruth. Не копирует скрытые мосты Юки и не даёт бесплатного телепорта.",
       "priority": "P3",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: one simple transparent triangular glass prism crystal, iridescent lavender, violet and cyan refractions, a tiny flat landscape silhouette suspended inside; no pin, needle, metal frame or buttons. Color palette #FF8ECD/#65E8F6. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Маленький цельный прозрачный треугольный кристалл-призма с фиолетово-бирюзовыми переливами; внутри плавает крошечный плоский силуэт мира, никаких оправ и креплений. Палитра: #FF8ECD/#65E8F6. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game collectible with clear cartoon outlines, consistent 2D game sprite view, centered isolated neutral backdrop, readable details, light magical glow. Object: one simple transparent triangular glass prism crystal, iridescent lavender, violet and cyan refractions, a tiny flat landscape silhouette suspended inside; no pin, needle, metal frame or buttons. Color palette #FF8ECD/#65E8F6. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, единый ракурс 2D-пропса, нейтральный фон, аккуратное свечение. Предмет: Маленький цельный прозрачный треугольный кристалл-призма с фиолетово-бирюзовыми переливами; внутри плавает крошечный плоский силуэт мира, никаких оправ и креплений. Палитра: #FF8ECD/#65E8F6. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-GL-04/ART-GL-04_concept.png",
         "icon": "assets/artifacts/ART-GL-04/ART-GL-04_icon.png",
@@ -143,7 +146,8 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-GL-04/ART-GL-04_prop.glb"
+        "sprite_2d": "assets/artifacts/ART-GL-04/ART-GL-04_icon.png",
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -154,7 +158,9 @@
         "sha256": "1b772a0f48c5209109556033d8e24200ecb07d7b2f9cdec285ec1a248fd65c0b",
         "palette_as_drawn": "#FF8ECD/#65E8F6",
         "author_locked": true
-      }
+      },
+      "production_notes": "Форма и исходный PNG/sha256 сохранены (одобрены ранее). Новая способность — работа с визуальными слоями 2D-сцены; код не реализован. Нет GAME_DIMENSION, нет 3D-режима.",
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-GL-05",
@@ -170,8 +176,8 @@
       "reveal": "Обычный физический артефакт, но достижение площадки — пространственный секрет",
       "limit": "Ограниченная зона, плавная смена вектора, безопасный сброс; не перекраивает гравитацию всего мироздания и не ломает сохранения",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small round ornate gold magical compass with a luminous crystal needle floating just above its glass face, the needle pointing upward; a simple elegant compass silhouette. Color palette #F1CE79/#87DFF7. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшой золотой волшебный компас с кристальной стрелкой, которая свободно парит над циферблатом и может указывать вверх, вбок или вниз. Палитра: #F1CE79/#87DFF7. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small round ornate gold magical compass with a luminous crystal needle floating just above its glass face, the needle pointing upward; a simple elegant compass silhouette. Color palette #F1CE79/#87DFF7. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшой золотой волшебный компас с кристальной стрелкой, которая свободно парит над циферблатом и может указывать вверх, вбок или вниз. Палитра: #F1CE79/#87DFF7. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-GL-05/ART-GL-05_concept.png",
         "icon": "assets/artifacts/ART-GL-05/ART-GL-05_icon.png",
@@ -179,7 +185,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-GL-05/ART-GL-05_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -190,7 +196,8 @@
         "sha256": "ca6d91011026b480ee72981a7c102bf20ee3b25b2f22fa5e615b7997a53aa798",
         "palette_as_drawn": "#F1CE79/#87DFF7/#173950",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-GL-06",
@@ -206,7 +213,7 @@
       "reveal": "Обычный физический предмет, виден всем; Луна может найти его очень рано, но он не привязан к уровню, квесту или XP",
       "limit": "Кристалл только показывает грубый эмоциональный сигнал; более точное понимание потребностей животных, направленных отношений, причин чувств и тонкая работа со связями — врождённая особенность Леи. Луна может через палочку править простые MOOD_STATE/MOOD_INTENSITY, если цель доступна, но без точной диагностики и редактирования сложных отношений",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. A small elegant transparent heart-shaped crystal, soft lavender and rose-pink glass, one subtle multicolored floating light inside; clean playful fantasy design, stylized 3D with hand-painted 2D cel shading, three-quarter studio view, centered object isolated neutral backdrop, clear simple recognizable heart silhouette, no text, no hands, no other props, no faces, no watermark.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. A small elegant transparent heart-shaped crystal, soft lavender and rose-pink glass, one subtle multicolored floating light inside; clean playful fantasy design, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered object isolated neutral backdrop, clear simple recognizable heart silhouette, no text, no hands, no other props, no faces, no watermark.",
       "image_prompt_ru": "Один волшебный артефакт LUNA: DEV MODE: небольшое прозрачное сердце из цельного розово-сиреневого кристалла, внутри пульсирует маленький многоцветный огонёк; простой узнаваемый силуэт, сказочный стилизованный 3D с чистым сел-шейдингом, ракурс три четверти, нейтральный фон; никаких лиц, ножек, надписей, рук или других предметов.",
       "asset_files": {
         "concept": "assets/artifacts/ART-GL-06/ART-GL-06_concept.png",
@@ -215,7 +222,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-GL-06/ART-GL-06_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -226,7 +233,8 @@
         "sha256": "a812bc427c9010e6d0541f28bbd9538b4a786637f1a599b6b0c0bb7e1cab638a",
         "palette_as_drawn": "#E7859F/#FFE59C",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-LE-01",
@@ -242,8 +250,8 @@
       "reveal": "Видимы в аурах Леи между двумя связанными существами",
       "limit": "NPC может отказаться следовать; настройка не принуждает симпатию и не переписывает истинную волю",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: three simple enchanted translucent green beads threaded on a fine gold cord, tiny golden heart-shaped light trapped inside the glass; no moon pendant. Color palette #65C47A/#EBCB79. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Несколько зелёных зачарованных стеклянных бусин на тонкой золотой нити, с маленькими символами-сердечками внутри. Палитра: #65C47A/#EBCB79. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: three simple enchanted translucent green beads threaded on a fine gold cord, tiny golden heart-shaped light trapped inside the glass; no moon pendant. Color palette #65C47A/#EBCB79. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Несколько зелёных зачарованных стеклянных бусин на тонкой золотой нити, с маленькими символами-сердечками внутри. Палитра: #65C47A/#EBCB79. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-LE-01/ART-LE-01_concept.png",
         "icon": "assets/artifacts/ART-LE-01/ART-LE-01_icon.png",
@@ -251,7 +259,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-LE-01/ART-LE-01_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -262,7 +270,8 @@
         "sha256": "9a89927a829abaa2336875bb850ee8c72da0c45c70e8dc117baad66038b7dec0",
         "palette_as_drawn": "#65C47A/#EBCB79",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-LE-02",
@@ -278,8 +287,8 @@
       "reveal": "Сигнал и объект видны Лее в эмоциональной изнанке, остальные видят лишь шевеление травы",
       "limit": "Только знакомые/открытые направленные связи, действующие лица сохраняют право не реагировать",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a tiny glowing golden-green magical seed with two short curling leaf shoots and a warm halo, simple organic shape; no antenna or bell. Color palette #86E893/#F7C85B. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Маленькое золотисто-зелёное светящееся семечко, из которого прорастают две крошечные волшебные завитые веточки. Палитра: #86E893/#F7C85B. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a tiny glowing golden-green magical seed with two short curling leaf shoots and a warm halo, simple organic shape; no antenna or bell. Color palette #86E893/#F7C85B. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Маленькое золотисто-зелёное светящееся семечко, из которого прорастают две крошечные волшебные завитые веточки. Палитра: #86E893/#F7C85B. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-LE-02/ART-LE-02_concept.png",
         "icon": "assets/artifacts/ART-LE-02/ART-LE-02_icon.png",
@@ -287,7 +296,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-LE-02/ART-LE-02_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -298,7 +307,8 @@
         "sha256": "cd045ea59c99616e5488b3044d665c842224700682e45f43b1a57ed292e1dbae",
         "palette_as_drawn": "#86E893/#F7C85B",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-LU-01",
@@ -314,8 +324,8 @@
       "reveal": "Читается в параметрическом слое Луны как отдельный предмет, тогда как остальным кажется плоской меткой",
       "limit": "Не создаёт произвольный код, не применяется к глобальным системам; ограничение числа активных правил",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small levitating lavender rune stone with one clear cyan engraved magic glyph; no handle, no stamp head, no office hardware. Color palette #9B7CF6/#68F0DC. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшой гладкий лавандовый камень с одним светящимся бирюзовым руническим символом; слегка парит, без рукоятки и механических кнопок. Палитра: #9B7CF6/#68F0DC. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small levitating lavender rune stone with one clear cyan engraved magic glyph; no handle, no stamp head, no office hardware. Color palette #9B7CF6/#68F0DC. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшой гладкий лавандовый камень с одним светящимся бирюзовым руническим символом; слегка парит, без рукоятки и механических кнопок. Палитра: #9B7CF6/#68F0DC. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-LU-01/ART-LU-01_concept.png",
         "icon": "assets/artifacts/ART-LU-01/ART-LU-01_icon.png",
@@ -323,7 +333,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-LU-01/ART-LU-01_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -334,7 +344,8 @@
         "sha256": "5dd3dcf07e71958050ea248b1a3d4203e87d10148e3ed18b0a8ea83daf07882c",
         "palette_as_drawn": "#9B7CF6/#68F0DC",
         "author_locked": true
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-LU-02",
@@ -350,8 +361,8 @@
       "reveal": "Видим Луной на слое EDIT_HISTORY, остальным выглядит пятном-потёртостью",
       "limit": "Только сохранённые ревизии данного объекта; не отменяет решения и действия других существ",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a simple elongated pale pink magical crystal eraser with a softly glowing faceted tip and drifting dustlike magic runes, no candy wrapper or bunny ears. Color palette #BD8FF6/#FFE8FA. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшой вытянутый розово-сиреневый кристалл с мягко закруглёнными гранями, светящимся стирающим кончиком и пылинками рун вокруг. Палитра: #BD8FF6/#FFE8FA. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a simple elongated pale pink magical crystal eraser with a softly glowing faceted tip and drifting dustlike magic runes, no candy wrapper or bunny ears. Color palette #BD8FF6/#FFE8FA. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшой вытянутый розово-сиреневый кристалл с мягко закруглёнными гранями, светящимся стирающим кончиком и пылинками рун вокруг. Палитра: #BD8FF6/#FFE8FA. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-LU-02/ART-LU-02_concept.png",
         "icon": "assets/artifacts/ART-LU-02/ART-LU-02_icon.png",
@@ -359,7 +370,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-LU-02/ART-LU-02_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -370,7 +381,8 @@
         "sha256": "5b5bc6273651774ece9dbfeec004afafb78640f20adc876a603011624b9e10ab",
         "palette_as_drawn": "#FF916E/#FFE6A0/#EFBF58",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-MI-01",
@@ -386,8 +398,8 @@
       "reveal": "Мия видит плавающие линии течения и саму пипетку; другим — обычная мокрая отметка",
       "limit": "Не пропускает вещество сквозь герметичную стену и не создаёт бесконечные жидкости",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a delicate transparent crystal alchemical pipette with one floating blue magic droplet inside and one subtle spiral rune along its glass tube; no feet or eyes. Color palette #376FE8/#9FFFEF. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Изящная хрустальная пипетка с голубой волшебной каплей, свободно парящей внутри; на корпусе одна спиральная руна. Палитра: #376FE8/#9FFFEF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a delicate transparent crystal alchemical pipette with one floating blue magic droplet inside and one subtle spiral rune along its glass tube; no feet or eyes. Color palette #376FE8/#9FFFEF. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Изящная хрустальная пипетка с голубой волшебной каплей, свободно парящей внутри; на корпусе одна спиральная руна. Палитра: #376FE8/#9FFFEF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-MI-01/ART-MI-01_concept.png",
         "icon": "assets/artifacts/ART-MI-01/ART-MI-01_icon.png",
@@ -395,7 +407,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-MI-01/ART-MI-01_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -406,7 +418,8 @@
         "sha256": "38eed23870384808e73539ddb441cc2ed28e0f4845074eaea52affc41a89c70b",
         "palette_as_drawn": "#376FE8/#9FFFEF",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-MI-02",
@@ -422,8 +435,8 @@
       "reveal": "В эффектном зрении Мии выглядит яркой губкой; другим — сухая клякса",
       "limit": "Только один сохранённый эффект; не копирует состав и не нарушает типовые правила нейтрализации",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small irregular deep-indigo natural sea sponge with translucent pores glowing gently with turquoise magical residue; no plug, USB hardware or electronic parts. Color palette #4B40BF/#6DCBFF. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшая пористая тёмно-синяя морская губка с мягким перламутровым свечением внутри пор, без проводов и разъёмов. Палитра: #4B40BF/#6DCBFF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small irregular deep-indigo natural sea sponge with translucent pores glowing gently with turquoise magical residue; no plug, USB hardware or electronic parts. Color palette #4B40BF/#6DCBFF. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшая пористая тёмно-синяя морская губка с мягким перламутровым свечением внутри пор, без проводов и разъёмов. Палитра: #4B40BF/#6DCBFF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-MI-02/ART-MI-02_concept.png",
         "icon": "assets/artifacts/ART-MI-02/ART-MI-02_icon.png",
@@ -431,7 +444,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-MI-02/ART-MI-02_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -442,7 +455,8 @@
         "sha256": "c3263ea1b950e8ef4d552e6e2b7350d60238a955aedeb706c4bca83f338a96e4",
         "palette_as_drawn": "#264CB8/#6DCBFF",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-ON-01",
@@ -458,8 +472,8 @@
       "reveal": "Прежде чем добыть, видна только Óни на временных следах; после получения можно передать другому герою",
       "limit": "Показывает зарегистрированное прошлое, не меняет его; без записи показывает пустой интервал",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a delicate floating loop of translucent pale blue enchanted silk ribbon displaying tiny ghostly motion afterimages along its length; no film reel or cassette. Color palette #70DFFF/#CBF6FF. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Узкая воздушная полупрозрачная голубая шёлковая лента, свободно свернувшаяся в кольцо, с призрачными световыми силуэтами на ткани. Палитра: #70DFFF/#CBF6FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a delicate floating loop of translucent pale blue enchanted silk ribbon displaying tiny ghostly motion afterimages along its length; no film reel or cassette. Color palette #70DFFF/#CBF6FF. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Узкая воздушная полупрозрачная голубая шёлковая лента, свободно свернувшаяся в кольцо, с призрачными световыми силуэтами на ткани. Палитра: #70DFFF/#CBF6FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-ON-01/ART-ON-01_concept.png",
         "icon": "assets/artifacts/ART-ON-01/ART-ON-01_icon.png",
@@ -467,7 +481,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-ON-01/ART-ON-01_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -478,7 +492,8 @@
         "sha256": "5ab80c1f781e5c3bc0dfb085cc2ad91b59ebb03277c6fbc2689fc981f4e42083",
         "palette_as_drawn": "#70DFFF/#CBF6FF",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-ON-02",
@@ -494,8 +509,8 @@
       "reveal": "До получения виден Óни в слое FUTURE_PATH; после можно использовать любым героем с подходящей целью",
       "limit": "Не предсказывает гарантированное будущее, не контролирует чужую волю и не переписывает прошлое",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a simple short sky-blue magical chalk stick with softly glowing crystalline edges, drawing three faint translucent alternate paths through the air; single chalk only. Color palette #58CFFF/#ADE8F7. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Простой короткий небесно-голубой магический мелок со слегка светящимися гранями, от кончика тянутся три призрачные линии. Палитра: #58CFFF/#ADE8F7. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a simple short sky-blue magical chalk stick with softly glowing crystalline edges, drawing three faint translucent alternate paths through the air; single chalk only. Color palette #58CFFF/#ADE8F7. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Простой короткий небесно-голубой магический мелок со слегка светящимися гранями, от кончика тянутся три призрачные линии. Палитра: #58CFFF/#ADE8F7. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-ON-02/ART-ON-02_concept.png",
         "icon": "assets/artifacts/ART-ON-02/ART-ON-02_icon.png",
@@ -503,7 +518,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-ON-02/ART-ON-02_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -514,7 +529,8 @@
         "sha256": "b4c3ba779c22193318a8b4e9e11385132f6cbb402585658d6e6018f9e256f7f7",
         "palette_as_drawn": "#58CFFF/#ADE8F7",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-OR-01",
@@ -530,8 +546,8 @@
       "reveal": "Детали и штамп проявляются в модульном зрении Ори",
       "limit": "Нельзя тихо заменить память/личность живого существа; только валидные готовые ассеты",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a thin floating ivory-and-ice-blue magical stencil plate with carved silhouette cutouts of a tree, door, mushroom and tiny creature; elegant enchanted craftsmanship, no office stamp. Color palette #EFFAFF/#85D9FF. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Тонкая бело-голубая парящая волшебная пластина со сквозными силуэтами дерева, двери, грибка и маленького зверя; изображения плавно меняются. Палитра: #EFFAFF/#85D9FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a thin floating ivory-and-ice-blue magical stencil plate with carved silhouette cutouts of a tree, door, mushroom and tiny creature; elegant enchanted craftsmanship, no office stamp. Color palette #EFFAFF/#85D9FF. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Тонкая бело-голубая парящая волшебная пластина со сквозными силуэтами дерева, двери, грибка и маленького зверя; изображения плавно меняются. Палитра: #EFFAFF/#85D9FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-OR-01/ART-OR-01_concept.png",
         "icon": "assets/artifacts/ART-OR-01/ART-OR-01_icon.png",
@@ -539,7 +555,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-OR-01/ART-OR-01_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -550,7 +566,8 @@
         "sha256": "a5415c8660ae038a849d7107b522b863ddae3208a866baac0dc7353328ee53e1",
         "palette_as_drawn": "#EFFAFF/#85D9FF",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-OR-02",
@@ -566,8 +583,8 @@
       "reveal": "Видимы как отдельные компоненты только Ори; остальным кажутся крепёжными гайками",
       "limit": "Не переносит сознание, ID или отношения; при конфликте физических типов операция отменяется",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a matched pair of small elegant silver-white magic rings engraved with cyan runes, connected by a single luminous blue filament; no industrial clips. Color palette #EAF9FF/#A2C9FF. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Два маленьких серебряно-белых зачарованных кольца с голубыми рунами, соединённые тонкой светящейся нитью. Палитра: #EAF9FF/#A2C9FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a matched pair of small elegant silver-white magic rings engraved with cyan runes, connected by a single luminous blue filament; no industrial clips. Color palette #EAF9FF/#A2C9FF. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Два маленьких серебряно-белых зачарованных кольца с голубыми рунами, соединённые тонкой светящейся нитью. Палитра: #EAF9FF/#A2C9FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-OR-02/ART-OR-02_concept.png",
         "icon": "assets/artifacts/ART-OR-02/ART-OR-02_icon.png",
@@ -575,7 +592,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-OR-02/ART-OR-02_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -586,7 +603,8 @@
         "sha256": "f26815beb215384f6fbc6ea1d69a9d410d06adc7c11be4718bf51126335b9bbc",
         "palette_as_drawn": "#EAF9FF/#A2C9FF",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-TO-01",
@@ -602,8 +620,8 @@
       "reveal": "Сам монокль и опорные линии видны только Тоффи в скрытой экологии",
       "limit": "Не переносит целый мир и не повреждает гигантское существо; крепление требует свободной поверхности",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: an elegant antique monocle with a warm amber-gold metal rim, thin dangling chain, and transparent lens containing faint magical concentric refractions; no sculpted ray animal. Color palette #F9A44B/#FFED9E. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Старинный круглый монокль в тёплой золотисто-янтарной оправе с тонкой цепочкой и линзой с загадочными концентрическими переливами. Палитра: #F9A44B/#FFED9E. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: an elegant antique monocle with a warm amber-gold metal rim, thin dangling chain, and transparent lens containing faint magical concentric refractions; no sculpted ray animal. Color palette #F9A44B/#FFED9E. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Старинный круглый монокль в тёплой золотисто-янтарной оправе с тонкой цепочкой и линзой с загадочными концентрическими переливами. Палитра: #F9A44B/#FFED9E. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-TO-01/ART-TO-01_concept.png",
         "icon": "assets/artifacts/ART-TO-01/ART-TO-01_icon.png",
@@ -611,7 +629,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-TO-01/ART-TO-01_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -622,7 +640,8 @@
         "sha256": "5bc95f5f42312c92ced7deffe3b78a46468352ba110158ff3e2b0c9f6e479dde",
         "palette_as_drawn": "#F9A44B/#FFED9E",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-TO-02",
@@ -638,8 +657,8 @@
       "reveal": "Тоффи видит предмет через слой HIDDEN_BEINGS; остальные — только тёплый отблеск на земле",
       "limit": "Взгляд может вызвать ответное внимание существа; не уничтожает его природную скрытность навсегда",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small charming fairy-tale brass lantern with rounded amber glass panels, a simple curved handle and one floating golden flame inside; no googly eyes, striped handle or face. Color palette #FF9B39/#FFE47A. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Маленький сказочный латунный фонарь с янтарным стеклом и простой изогнутой ручкой; внутри плавает огонёк. Палитра: #FF9B39/#FFE47A. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small charming fairy-tale brass lantern with rounded amber glass panels, a simple curved handle and one floating golden flame inside; no googly eyes, striped handle or face. Color palette #FF9B39/#FFE47A. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Маленький сказочный латунный фонарь с янтарным стеклом и простой изогнутой ручкой; внутри плавает огонёк. Палитра: #FF9B39/#FFE47A. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-TO-02/ART-TO-02_concept.png",
         "icon": "assets/artifacts/ART-TO-02/ART-TO-02_icon.png",
@@ -647,7 +666,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-TO-02/ART-TO-02_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -658,7 +677,8 @@
         "sha256": "0e40253cb7a0140950dc9ff60fa782a7bcd57203863bd7c10315c48d3aeaa439",
         "palette_as_drawn": "#FF9B39/#FFE47A",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-YU-01",
@@ -674,8 +694,8 @@
       "reveal": "Только в пространственной сетке Юки; другим кажется пустой петлёй на перилах",
       "limit": "Не создаёт несуществующие уровни; связь меняет маршрут, а не физическую геометрию",
       "priority": "P1",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a simple round enchanted ball of rose-pink yarn floating in midair, with several strands unwinding by themselves into luminous route lines; no mechanical spool or clamps. Color palette #FF69C8/#FFF1FB. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Круглый клубок розово-лиловых волшебных нитей, которые сами разматываются и зависают в воздухе; никаких креплений и кнопок. Палитра: #FF69C8/#FFF1FB. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a simple round enchanted ball of rose-pink yarn floating in midair, with several strands unwinding by themselves into luminous route lines; no mechanical spool or clamps. Color palette #FF69C8/#FFF1FB. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Круглый клубок розово-лиловых волшебных нитей, которые сами разматываются и зависают в воздухе; никаких креплений и кнопок. Палитра: #FF69C8/#FFF1FB. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-YU-01/ART-YU-01_concept.png",
         "icon": "assets/artifacts/ART-YU-01/ART-YU-01_icon.png",
@@ -683,7 +703,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-YU-01/ART-YU-01_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -694,7 +714,8 @@
         "sha256": "ca21f3dd5eda3524fe1b2a5f9420830450d02efdbafd8ce54f8c1af62e42b840",
         "palette_as_drawn": "#FF69C8/#FFF1FB",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "ART-YU-02",
@@ -710,8 +731,8 @@
       "reveal": "Юки видит контур шва, остальные — странную пустую щель",
       "limit": "Работает только с безопасными поверхностями и проверенной коллизией; не дублирует межмировую портальную пушку",
       "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: one simple ornate golden horseshoe-shaped magical clasp with a pink gemstone and two curved prongs, delicate runic engraving; no stapler or office device. Color palette #F65FB7/#91ECFF. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Одна изящная золотая изогнутая скоба с розовым самоцветом, тонкими рунами по краю и двумя парящими кончиками. Палитра: #F65FB7/#91ECFF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: one simple ornate golden horseshoe-shaped magical clasp with a pink gemstone and two curved prongs, delicate runic engraving; no stapler or office device. Color palette #F65FB7/#91ECFF. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Одна изящная золотая изогнутая скоба с розовым самоцветом, тонкими рунами по краю и двумя парящими кончиками. Палитра: #F65FB7/#91ECFF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-YU-02/ART-YU-02_concept.png",
         "icon": "assets/artifacts/ART-YU-02/ART-YU-02_icon.png",
@@ -719,7 +740,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/ART-YU-02/ART-YU-02_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -730,7 +751,8 @@
         "sha256": "1089d1d069f938f775b2dbe5239c39134a5691d56aaf84f28da34ffffa965de2",
         "palette_as_drawn": "#F4BD58/#FF70BE/#91ECFF",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
       "id": "A05",
@@ -746,8 +768,8 @@
       "reveal": "Обычный артефакт, геометрия портала видна всем",
       "limit": "Не создаёт новых сцен или геометрии, проверяет физический безопасный выход",
       "priority": "P0",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, stylized 3D with polished hand-painted 2D cel shading, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a compact whimsical fantasy portal device with a short wide bell-shaped nozzle, pale enchanted metal and two levitating pink-cyan magical rings; not a real weapon. Color palette #FF6FA8/#62E5F0. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, стилизованное 3D с чистым рисованным сел-шейдингом, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшая сказочная портальная пушка из светлого металла с парой плавающих разноцветных магических колец и коротким широким раструбом. Палитра: #FF6FA8/#62E5F0. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a compact whimsical fantasy portal device with a short wide bell-shaped nozzle, pale enchanted metal and two levitating pink-cyan magical rings; not a real weapon. Color palette #FF6FA8/#62E5F0. No lettering, no hands, no other props, no character, no watermark.",
+      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшая сказочная портальная пушка из светлого металла с парой плавающих разноцветных магических колец и коротким широким раструбом. Палитра: #FF6FA8/#62E5F0. Без надписей, персонажей, рук, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/A05/A05_concept.png",
         "icon": "assets/artifacts/A05/A05_icon.png",
@@ -755,7 +777,7 @@
       },
       "render_status": "2d_master_generated",
       "planned_asset_files": {
-        "model": "assets/artifacts/A05/A05_prop.glb"
+        "model": null
       },
       "model_status": "not_generated",
       "gameplay_status": "design_only",
@@ -766,7 +788,8 @@
         "sha256": "dc6885ddc4ed7a8d91bbf28d8be2ea23f63b6675376d8e430beb0165c4dd1efd",
         "palette_as_drawn": "#FF6FA8/#62E5F0",
         "author_locked": false
-      }
+      },
+      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     }
   ],
   "design_principles": [
@@ -775,7 +798,10 @@
     "An early wand-copy trick allows the copy to hack and upgrade the original wand; changing SCAN_DEPTH, TARGET_RANGE, RULE_DEPTH and DEVELOPER_MODE unlocks advanced edits without plot flags.",
     "ART-GL-01 magical hourglass changes WORLD_TIME_SCALE and can pause/accelerate entire simulation, with holder/controls safely exempt from pause; it is not a local object snapshot.",
     "Removed A02 Time Anchor as a collectible from current 20-item catalog; its record remains historical in docs/38. Safe RETURN/REWIND for player recovery is a separate engine mechanic, not loot.",
-    "ART-GL-04 Prism crystal opens a secret 2D platformer; normal mode is 3D, and the same GAME_DIMENSION parameter is accessible after finale via game-frame editor.",
-    "ART-GL-06 Crystal Heart grants coarse emotional aura perception to Luna or any bearer: emotion and intensity only. Lea's innate empathic perception additionally shows needs of creatures (especially animals), directed relationships, causes, and supports more subtle interventions. Basic wand may edit simple mood variables without granting Lea's interpretive layer."
+    "ART-GL-04 Prism is a transparent triangular crystal for inspecting and temporarily activating existing background/foreground 2D scene layers; it does not switch dimension or create a 3D mode.",
+    "ART-GL-06 Crystal Heart grants coarse emotional aura perception to Luna or any bearer: emotion and intensity only. Lea's innate empathic perception additionally shows needs of creatures (especially animals), directed relationships, causes, and supports more subtle interventions. Basic wand may edit simple mood variables without granting Lea's interpretive layer.",
+    "All game UI labels and actions are Russian; only technical machine field keys and ability IDs are uppercase English, initially gibberish until Oracle language knowledge in current save slot.",
+    "Abilities are transferable using a real property bank, with only OPEN/LOCKED transfer states, scan-depth visibility and 2D anchor-based visual recipes; no perk system.",
+    "The entire game is native 2D; perception underside uses one shared light-cyan neon outline style, character-specific views are overlays, not recolored tile atlases."
   ]
 }
