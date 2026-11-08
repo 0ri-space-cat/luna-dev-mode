@@ -26,3 +26,6 @@ A separate `scenes/2d/world_2d.tscn` with `Node2D`, `CharacterBody2D`, `Camera2D
 - Attach an Entity ID to 2D visual actors, with commands updating the canonical record.
 - Add collision-aware TileMapLayer test grounds and build two terrain compositions from the same tiles.
 - Implement deterministic atlas slicing and seam-check tooling before bulk image generation.
+
+## Milestone update — 08.11.2026
+Первый headless CI прогнал Godot 4.3, старые тесты и изолированный тест 2D-сцены. После исправления ошибки привязки рюкзака тесты прошли. В экспериментальной ветке startup переключён на \`scenes/2d/world_2d.tscn\`, но старые \`scenes/main.tscn\` и \`scripts/main.gd\` оставлены для регрессий и отката. **main не менялся.** Для следующего CI необходима повторная проверка после переключения startup.
