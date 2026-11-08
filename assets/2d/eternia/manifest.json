@@ -77,5 +77,24 @@
     }
   },
   "source": "LUNA_Eternia_Asset_Pack_01 original generated prop atlas, curated transparent cutouts, optimized v2",
-  "test_scene": "res://scenes/2d/world_2d.tscn"
+  "test_scene": "res://scenes/2d/world_2d.tscn",
+  "pixel_art": {
+    "status": "runtime-ready; artwork not installed",
+    "source_tile_size": [
+      32,
+      32
+    ],
+    "world_tile_size": [
+      64,
+      64
+    ],
+    "world_scale": 2,
+    "grass_atlas": "pixel/grass_32_atlas.png",
+    "grass_atlas_expected_size": [
+      128,
+      96
+    ],
+    "spritesheet_contract": "scripts/2d/pixel_art_pipeline_2d.gd",
+    "reference": "docs/art/PIXEL_STYLE_RUNTIME.md"
+  }
 }

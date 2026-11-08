@@ -1,6 +1,11 @@
 extends TileMapLayer
 ## Eternia meadow foundation. Twelve subtly distinct grass tiles with an identical
 ## edge color. Changes are interior-only; no per-cell borders or baked props.
+const PixelArt = preload("res://scripts/2d/pixel_art_pipeline_2d.gd")
+const PIXEL_ATLAS := "res://assets/2d/eternia/pixel/grass_32_atlas.png"
+const PIXEL_COLUMNS := 4
+const PIXEL_ROWS := 3
+var using_pixel_art := false
 const TILE := 64
 const COLUMNS := 23
 const ROWS := 16
@@ -9,6 +14,8 @@ const ART_ROOT := "res://assets/2d/eternia/terrain/"
 const BASE := Color("#83c258")
 
 func _ready() -> void:
+	if _try_pixel_atlas():
+		return
 	# Bring painted grass closer to the deeper forest palette without tinting characters.
 	modulate = Color(0.90, 0.94, 0.88)
 	var tiles := TileSet.new()
@@ -27,6 +34,22 @@ func _ready() -> void:
 		for x in range(COLUMNS):
 			var variety := _variant_at(x, y)
 			set_cell(Vector2i(x, y), variety, Vector2i.ZERO)
+
+func _try_pixel_atlas() -> bool:
+	# Strict dimensions prevent accidental activation by concept art or bad exports.
+	if not ResourceLoader.exists(PIXEL_ATLAS):
+		return false
+	var atlas := load(PIXEL_ATLAS) as Texture2D
+	if not PixelArt.configure_tile_layer(self, atlas, PixelArt.SOURCE_TILE, PIXEL_COLUMNS, PIXEL_ROWS):
+		push_warning("Pixel grass atlas dimensions must be 128x96; retaining old meadow textures.")
+		return false
+	modulate = Color.WHITE
+	using_pixel_art = true
+	for y in range(ROWS):
+		for x in range(COLUMNS):
+			var variant := _variant_at(x, y)
+			set_cell(Vector2i(x, y), 0, Vector2i(variant % PIXEL_COLUMNS, int(variant / PIXEL_COLUMNS)))
+	return true
 
 func _variant_at(x: int, y: int) -> int:
 	# Clumped color variation, but repeatable independently of machine clock.

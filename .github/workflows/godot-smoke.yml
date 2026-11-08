@@ -145,6 +145,9 @@ jobs:
       - name: Run social witness reactions and temporary memory tests
         run: bash ci/run_godot_script.sh res://tests/test_social_awareness.gd
 
+      - name: Check pixel-art atlas and sprite-sheet pipeline
+        run: bash ci/run_godot_script.sh res://tests/test_pixel_art_pipeline_2d.gd
+
       - name: Verify two-tier magical access and Oracle Eye
         run: bash ci/run_godot_script.sh res://tests/test_2d_access_policy.gd
 
