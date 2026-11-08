@@ -12,7 +12,9 @@ func _run() -> void:
 	var ground := meadow.get_node("GroundSurface") as Sprite2D
 	assert(ground != null and ground.texture != null)
 	assert(ground.region_enabled and not ground.centered)
-	assert(ground.region_rect.size == Vector2(1472, 1024))
+	assert(ground.region_rect.size * ground.scale == Vector2(1472, 1024))
+	assert(ground.source_path == ground.PRIMARY)
+	assert(ground.scale == Vector2(2, 2))
 	assert(ground.texture_repeat == CanvasItem.TEXTURE_REPEAT_ENABLED)
 	assert(ground.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST)
 	assert(ground.get("source_path") != "")

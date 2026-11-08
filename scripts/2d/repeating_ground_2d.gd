@@ -23,8 +23,10 @@ func _ready() -> void:
 	if texture == null:
 		push_error("No authored ground texture: " + PRIMARY + " / " + FALLBACK)
 		return
-	# Repeat in world space; never stretch one tile across the whole meadow.
-	region_rect = Rect2(Vector2.ZERO, WORLD_SIZE)
+	# Exact native 32px ImageGen tile is enlarged 2x, preserving the 64-unit grid.
+	var pixel_scale := 2.0 if source_path == PRIMARY and texture.get_width() == 32 and texture.get_height() == 32 else 1.0
+	scale = Vector2.ONE * pixel_scale
+	region_rect = Rect2(Vector2.ZERO, WORLD_SIZE / pixel_scale)
 	var old_ground := get_parent().get_node_or_null("Terrain") as CanvasItem
 	if old_ground != null:
 		old_ground.visible = false
