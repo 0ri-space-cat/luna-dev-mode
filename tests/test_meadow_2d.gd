@@ -59,6 +59,12 @@ func _run() -> void:
 		assert(ResourceLoader.exists(filename), "Missing game-ready SVG: " + filename)
 	for icon_id in ["wand","hourglass","donut","apple","crystal","book","health","mana","stamina","copy","delete","done"]:
 		assert(ResourceLoader.exists("res://assets/2d/ui/icons/" + icon_id + ".svg"))
+	for tile_id in range(1,13):
+		var art := "res://assets/2d/eternia/terrain/grass_%d.png" % tile_id
+		assert(ResourceLoader.exists(art), "Expected imported PNG terrain: " + art)
+	for prop in ["flower_bush","moss_arch","pink_crystals","oracle_pedestal","walking_fridge","berry_tree"]:
+		var asset := "res://assets/2d/eternia/props/" + prop + ".webp"
+		assert(ResourceLoader.exists(asset), "Expected imported RGBA prop: " + asset)
 	assert(not hack.can_edit("alive"))
 	hack.touch_rift()
 	assert(hack.edit(tree, "alive", true, processor))
