@@ -144,7 +144,10 @@ func _add_static_sprites() -> void:
 func _draw() -> void:
 	_draw_upper_terraces()
 	_draw_falls_cliffs()
-	_draw_lower_cliffs()
+	# A painted TileMapLayer replaces the lower cliff, with the old drawing
+	# only retained as a fallback if an imported texture is unavailable.
+	if not _painted_lower_cliff_ready():
+		_draw_lower_cliffs()
 	_draw_paths()
 	_draw_stream_and_waterfall()
 	_draw_lake()
@@ -180,6 +183,10 @@ func _draw_upper_terraces() -> void:
 	for x in range(718,1460,47):
 		var y := 120.0 + sin(float(x) * 0.056) * 6.0
 		draw_line(Vector2(x,y),Vector2(x+30,y+1),Color("#664180",0.34),3.0)
+
+func _painted_lower_cliff_ready() -> bool:
+	var cliff: TileMapLayer = get_node_or_null("../CliffFacePilot") as TileMapLayer
+	return cliff != null and cliff.tile_set != null and cliff.get_cell_source_id(Vector2i.ZERO) == 0
 
 func _draw_lower_cliffs() -> void:
 	var lip := PackedVector2Array()

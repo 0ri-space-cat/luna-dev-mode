@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/2d/world_2d.gd" id="1_world"]
 [ext_resource type="Script" path="res://scripts/2d/terrain_2d.gd" id="2_ground"]
 [ext_resource type="Script" path="res://scripts/2d/luna_puppet_2d.gd" id="3_visual"]
 [ext_resource type="Script" path="res://scripts/2d/meadow_decor_2d.gd" id="4_decor"]
 [ext_resource type="Script" path="res://scripts/2d/cliff_lip_2d.gd" id="5_cliff"]
+[ext_resource type="Script" path="res://scripts/2d/cliff_face_2d.gd" id="6_face"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -17,6 +18,10 @@ script = ExtResource("2_ground")
 
 [node name="Decor" type="Node2D" parent="."]
 script = ExtResource("4_decor")
+
+[node name="CliffFacePilot" type="TileMapLayer" parent="."]
+position = Vector2(0, 784)
+script = ExtResource("6_face")
 
 [node name="CliffLipPilot" type="TileMapLayer" parent="."]
 position = Vector2(0, 720)

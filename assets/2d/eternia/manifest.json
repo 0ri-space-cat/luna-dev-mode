@@ -24,6 +24,22 @@
       "art_status": "illustrated pilot; not yet artistically approved",
       "integration": "scenes/2d/world_2d.tscn -> CliffLipPilot",
       "note": "Overlay along existing lower cliff. Painted-face and waterfall batches still pending."
+    },
+    "cliff_face_pilot": {
+      "file": "terrain/cliff_face_01.svg",
+      "atlas_size": [
+        192,
+        64
+      ],
+      "tile_size": [
+        64,
+        64
+      ],
+      "columns": 3,
+      "rows": 4,
+      "art_status": "illustrated tile layer pilot; needs visual acceptance",
+      "integration": "scenes/2d/world_2d.tscn -> CliffFacePilot (under cliff lip)",
+      "fallback": "Old procedural lower cliff only if layer cannot load"
     }
   },
   "props": {
