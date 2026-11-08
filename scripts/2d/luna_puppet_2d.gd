@@ -114,12 +114,12 @@ func _select_drawing() -> void:
 			body.flip_h = false
 
 func _update_hands(swing: float) -> void:
-	var lift := -38.0 if mode == "cast" else 0.0
-	left_arm.points = PackedVector2Array([Vector2(-25,-37), Vector2(-37, -19 - swing)])
-	right_arm.points = PackedVector2Array([Vector2(24,-37), Vector2(34,-22 + swing + lift)])
+	var body_shift := body.position.y + 59.0
+	var lift := -29.0 if mode == "cast" else 0.0
+	left_arm.points = PackedVector2Array([Vector2(-25,-37+body_shift),Vector2(-37,-19-swing+body_shift+(lift if facing == "left" else 0.0))])
+	right_arm.points = PackedVector2Array([Vector2(24,-37+body_shift),Vector2(34,-22+swing+body_shift+(lift if facing != "left" else 0.0))])
 	left_arm.visible = facing != "up"
 	right_arm.visible = facing != "up"
-	# Two pink hands; no accidental extra fingers or appendages.
 
 func _draw() -> void:
 	var weight := 1.0 if mode == "run" else (0.68 if mode == "walk" else 0.0)
