@@ -123,7 +123,7 @@ func _refresh() -> void:
 	access_caption.text = "Доступ: " + ("АРХИТЕКТОР" if hack_session.wand["ACCESS_TIER"] == "ARCHITECT" else "ШАЛОСТИ")
 	copy_button.disabled = not hack_session.can_action("COPY")
 	delete_button.disabled = not hack_session.can_action("DELETE")
-	status_caption.text = "Базовые чары доступны. Глубокие руны переводит Глаз Оракула." if not hack_session.oracle_eye_equipped else "Параметры понятны. Изменения применяются сразу."
+	status_caption.text = "Глубокие руны переводит Глаз Оракула." if not hack_session.oracle_eye_equipped else "Изменения применяются сразу."
 	for child in rows.get_children():
 		rows.remove_child(child)
 		child.queue_free()
@@ -172,6 +172,7 @@ func _add_parameter(spec: Dictionary) -> void:
 		"color":
 			var picker := ColorPickerButton.new()
 			picker.color = target.get_parameter(key)
+			picker.custom_minimum_size = Vector2(110,28)
 			picker.color_changed.connect(_on_value.bind(key))
 			line.add_child(picker)
 		"enum":
@@ -232,6 +233,8 @@ func _style_button(button: Button) -> void:
 	hovered.border_color = Color("#e9b2fb")
 	var pressed := normal.duplicate() as StyleBoxFlat
 	pressed.bg_color = Color("#8650aa")
+	button.custom_minimum_size.y = 38
+	button.expand_icon = true
 	button.add_theme_stylebox_override("normal",normal)
 	button.add_theme_stylebox_override("hover",hovered)
 	button.add_theme_stylebox_override("pressed",pressed)
