@@ -100,7 +100,7 @@ func _physics_process(_delta: float) -> void:
 	var running := Input.is_key_pressed(KEY_SHIFT)
 	player.velocity = Vector2.ZERO if inspector.visible else _movement_vector() * (RUN_SPEED if running else WALK_SPEED)
 	player.move_and_slide()
-	puppet.call("set_motion", player.velocity, running, _delta)
+	puppet.call("set_motion", player.velocity, running, _delta, get_global_mouse_position() - player.global_position)
 	player.position = player.position.clamp(Vector2(45, 95), Vector2(1420, 714))
 	if inspector.visible:
 		hud.set_prompt("Редактор: изменения сразу • F5 сохранить • Esc закрыть")

@@ -69,15 +69,17 @@ func trigger_action(action: String, duration: float = 0.5) -> void:
 		action_remaining = maxf(0.1, duration)
 		animation_time = 0.0
 
-func set_motion(movement: Vector2, running: bool, delta: float) -> void:
+func set_motion(movement: Vector2, running: bool, delta: float, aim: Vector2 = Vector2.ZERO) -> void:
 	elapsed += delta
 	var moving := movement.length_squared() > 16.0
 	var changed_direction := false
-	if moving:
-		if absf(movement.x) > absf(movement.y) * 1.18:
-			facing = "right" if movement.x > 0.0 else "left"
+	# Cursor aim takes priority over WASD; older tests/callers can omit aim.
+	var looking := aim if aim.length_squared() > 625.0 else (movement if moving else Vector2.ZERO)
+	if looking.length_squared() > 0.01:
+		if absf(looking.x) > absf(looking.y) * 1.18:
+			facing = "right" if looking.x > 0.0 else "left"
 		else:
-			facing = "down" if movement.y > 0.0 else "up"
+			facing = "down" if looking.y > 0.0 else "up"
 		changed_direction = facing != _last_facing
 	_last_facing = facing
 	if action_remaining > 0.0:

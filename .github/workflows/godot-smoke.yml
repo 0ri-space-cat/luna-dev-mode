@@ -147,6 +147,8 @@ jobs:
 
       - name: Check pixel-art atlas and sprite-sheet pipeline
         run: bash ci/run_godot_script.sh res://tests/test_pixel_art_pipeline_2d.gd
+      - name: Check repeating ground, transparent decor and cursor-facing
+        run: bash ci/run_godot_script.sh res://tests/test_modular_meadow_2d.gd
 
       - name: Verify two-tier magical access and Oracle Eye
         run: bash ci/run_godot_script.sh res://tests/test_2d_access_policy.gd
