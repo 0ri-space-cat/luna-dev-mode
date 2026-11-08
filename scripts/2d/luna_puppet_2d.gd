@@ -86,14 +86,14 @@ func set_motion(movement: Vector2, running: bool, delta: float) -> void:
 	body.modulate = Color("#ffb6ca") if mode == "hurt" else Color.WHITE
 	# Stylized bone positions; never create or remove limbs mid-animation.
 	_update_hands(shoulder_swing)
+	var body_shift := body.position.y + 59.0
+	var wrist := Vector2(-37,-19-shoulder_swing+body_shift) if facing == "left" else Vector2(34,-22+shoulder_swing+body_shift)
 	if mode == "cast":
-		wand.position = Vector2(38, -63 + action_lift)
-		wand.rotation = -0.4
-		wand.visible = true
-	else:
-		wand.position = Vector2(36 if facing != "left" else -36, -32 + shoulder_swing * 0.4)
-		wand.rotation = 0.22 * sin(phase) * weight
-		wand.visible = facing != "up"
+		wrist.y -= 29.0
+	wand.position = wrist - Vector2(0,16)
+	wand.rotation = -0.4 if mode == "cast" else (0.16 * sin(phase) * weight)
+	wand.visible = facing != "up"
+
 	queue_redraw()
 
 func _select_drawing() -> void:
