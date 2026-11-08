@@ -89,6 +89,8 @@ func _draw() -> void:
 	draw_set_transform(Vector2(0,11),0.0,Vector2(1.3,0.36))
 	draw_circle(Vector2.ZERO, 20.0 if kind == "tree" else 15.0, shadow)
 	draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
+	if selected:
+		draw_arc(Vector2(0,-34),54,0,TAU,48,Color("#72fcff",0.8),2)
 	if kind == "slime":
 		if moving:
 			draw_arc(Vector2(0,0),27,0,PI,16,Color("#79f2ff",0.7),3)
@@ -99,7 +101,7 @@ func _draw() -> void:
 		_draw_boot(-14.0 + stride, 9.0, Color("#ac7381"), 11)
 		_draw_boot(14.0 - stride, 9.0, Color("#ac7381"), 11)
 		return
-	if kind == "fridge":
+	if kind == "fridge" and alive:
 		_draw_boot(-18.0 + stride, 10.0, Color("#8657c5"), 13)
 		_draw_boot(18.0 - stride, 10.0, Color("#8657c5"), 13)
 		var arm_wiggle := sin(t*5) * (8.0 if moving else 3.0)
@@ -119,10 +121,7 @@ func _draw() -> void:
 			# Ducks have exactly two legs; no generative extra appendages.
 			_draw_boot(-12.0 + stride, 9.0,leg_color, 8)
 			_draw_boot(12.0 - stride, 9.0,leg_color, 8)
-	if selected:
-		draw_arc(Vector2(0,-34),54,0,TAU,48,Color("#72fcff",0.8),2)
-
-func _draw_boot(x: float, y: float, tint: Color, radius: float) -> void:
+	func _draw_boot(x: float, y: float, tint: Color, radius: float) -> void:
 	draw_line(Vector2(x*0.65,-7),Vector2(x,y-1),Color("#41265c"),radius+5.0,true)
 	draw_line(Vector2(x*0.65,-7),Vector2(x,y-1),tint,radius+1.0,true)
 	draw_circle(Vector2(x+3,y),radius*0.5,Color("#41265c"))
@@ -132,7 +131,13 @@ func _update_directional_texture() -> void:
 	if not is_instance_valid(sprite):
 		return
 	var variant := kind
-	if kind in ["sheep","duck","fridge"]:
+	var actor: CharacterBody2D = get_parent() as CharacterBody2D
+	var alive := true
+	if actor != null and actor.get("record") != null:
+		alive = bool(actor.call("get_parameter","alive"))
+	if not alive and kind in ["tree","fridge"]:
+		variant = kind + "_dormant"
+	elif kind in ["sheep","duck","fridge"]:
 		if absf(direction.y) >= absf(direction.x) * 1.05:
 			var suffix := "_front" if direction.y >= 0.0 else "_back"
 			if kind == "fridge" and suffix == "_front":
