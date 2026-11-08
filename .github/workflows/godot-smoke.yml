@@ -20,11 +20,11 @@ jobs:
         run: |
           set -euo pipefail
           for source in \
+            "https://downloads.godotengine.org/?version=4.3&flavor=stable&platform=linux.64&slug=linux.x86_64.zip" \
             "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip" \
-            "https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip" \
-            "https://downloads.godotengine.org/?version=4.3&flavor=stable&platform=linux.64&slug=linux.x86_64.zip"; do
+            "https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"; do
             echo "Trying a Godot 4.3 mirror"
-            if curl -fL --connect-timeout 15 --max-time 120 --retry 2 --retry-all-errors \
+            if curl -fL --connect-timeout 15 --max-time 70 --retry 1 --retry-all-errors \
               -o /tmp/godot.zip "$source" && unzip -tq /tmp/godot.zip >/dev/null; then
               break
             fi
