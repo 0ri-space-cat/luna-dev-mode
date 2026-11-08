@@ -68,8 +68,8 @@ func _label(parent: Node, text: String, at: Vector2, font_size: int, color: Colo
 func _build_vitals() -> void:
 	var frame := _frame(root_ui, Vector2(10, 10), Vector2(390, 140), Color("#bf73ec"))
 	portrait = TextureRect.new()
-	portrait.position = Vector2(8,8)
-	portrait.size = Vector2(114,114)
+	portrait.position = Vector2(12,17)
+	portrait.size = Vector2(90,95)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -78,8 +78,8 @@ func _build_vitals() -> void:
 	var frame_svg := "res://assets/ui/common/frames/portrait.svg"
 	if ResourceLoader.exists(frame_svg):
 		border.texture = load(frame_svg)
-	border.position = Vector2(8,8)
-	border.size = Vector2(114,114)
+	border.position = Vector2(7,11)
+	border.size = Vector2(101,108)
 	border.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(border)
