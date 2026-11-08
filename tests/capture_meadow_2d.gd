@@ -28,5 +28,22 @@ func _capture() -> void:
 		quit(1)
 		return
 	print("ETERNIA_SCREENSHOT_OK: " + ProjectSettings.globalize_path(path))
+
+	# Separate screenshot of the actual parameter editor, no mockup or baked art.
+	var hack: Variant = scene.get("session")
+	hack.touch_rift()
+	var environment: Variant = scene.get("world")
+	var actor: Node = environment.get_entity("tree_01")
+	var editor: Control = scene.get("inspector")
+	editor.call("open_actor", actor, scene.get("processor"), scene.get("registry"), hack)
+	for i in range(5):
+		await process_frame
+	var editor_image: Image = root.get_texture().get_image()
+	var editor_path := "user://eternia_editor_preview.png"
+	if editor_image != null and not editor_image.is_empty():
+		var saved: Error = editor_image.save_png(editor_path)
+		if saved == OK:
+			print("ETERNIA_EDITOR_SCREENSHOT_OK: " + ProjectSettings.globalize_path(editor_path))
+
 	scene.queue_free()
 	quit()
