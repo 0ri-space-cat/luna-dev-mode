@@ -1,5 +1,6 @@
 extends Node2D
 const Actor = preload("res://scripts/2d/entity_actor_2d.gd")
+const Inspector = preload("res://scripts/2d/hack_inspector_2d.gd")
 const Registry = preload("res://scripts/core/parameter_registry.gd")
 const Processor = preload("res://scripts/core/command_processor.gd")
 const World = preload("res://scripts/core/world_registry.gd")
@@ -10,6 +11,7 @@ var world = World.new()
 var selected
 var actors = []
 var info: Label
+var inspector: PanelContainer
 func _ready() -> void:
  processor.configure_world(world)
  _spawn("tree_01","tree","Клён",Vector2(420,300),Color("#9bd65b"))
@@ -21,6 +23,9 @@ func _ready() -> void:
  info.position = Vector2(20,20)
  info.text = "♡ HEALTH 120/120   ◇ MANA 80/80   ⚡ STAMINA 100/100"
  layer.add_child(info)
+ inspector = Inspector.new()
+ inspector.position = Vector2(900, 150)
+ layer.add_child(inspector)
  queue_redraw()
 func _spawn(id: String, category: String, title: String, at: Vector2, color: Color) -> void:
  var actor = Actor.new()
@@ -41,12 +46,15 @@ func _unhandled_input(event: InputEvent) -> void:
     selected = actor
     break
   if selected != null:
+   inspector.open_actor(selected,processor,registry)
    info.text = "%s | %s | IS_ALIVE=%s | click SPACE to toggle, Z undo" % [selected.record.display_name,selected.record.id,str(selected.get_parameter("alive"))]
  if event is InputEventKey and event.pressed and selected != null:
   if event.keycode == KEY_SPACE:
    processor.execute_set(selected,"alive",not bool(selected.get_parameter("alive")),"luna","wand:luna")
   if event.keycode == KEY_Z:
    processor.undo()
+   if inspector.visible:
+    inspector._refresh()
   info.text = "%s | IS_ALIVE=%s" % [selected.record.display_name,str(selected.get_parameter("alive"))]
 func _draw() -> void:
  draw_rect(Rect2(0,0,1280,800),Color("#91d650"))
