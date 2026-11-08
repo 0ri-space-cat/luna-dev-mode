@@ -6,7 +6,7 @@ const COLUMNS := 23
 const ROWS := 16
 const VARIANTS := 12
 const ART_ROOT := "res://assets/2d/eternia/terrain/"
-const BASE := Color("#95d64d")
+const BASE := Color("#83c258")
 
 func _ready() -> void:
 	var tiles := TileSet.new()
@@ -51,13 +51,13 @@ func _generate_tile(index: int) -> Texture2D:
 			edge_mask *= edge_mask
 			var slow := sin(u*8.0 + index*1.71)*cos(v*6.0 + index*0.76)
 			var fine := sin(u*29.0 + index*4.01)*sin(v*21.0 + index*3.13)
-			var shade := edge_mask * (slow * 0.035 + fine * 0.018)
+			var shade := edge_mask * (slow * 0.070 + fine * 0.030)
 			var red := clampf(BASE.r + shade * 0.58, 0.0, 1.0)
 			var green := clampf(BASE.g + shade * 0.75, 0.0, 1.0)
 			var blue := clampf(BASE.b + shade * 0.36, 0.0, 1.0)
 			image.set_pixel(x, y, Color(red, green, blue, 1.0))
 	var seed := (index + 1) * 21911
-	for mark in range(22):
+	for mark in range(34):
 		var x := 8 + (seed * (mark + 3) * 17 + mark*49) % 48
 		var y := 8 + (seed * (mark + 7) * 13 + mark*73) % 48
 		var blade := Color("#73b443", 0.55) if mark % 2 == 0 else Color("#c9ea69", 0.75)
