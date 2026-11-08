@@ -130,7 +130,7 @@ func _build_inventory() -> void:
 		var col := index % 3
 		var row := index / 3
 		var p := _frame(root_ui,Vector2(62+col*44,636+row*43),Vector2(38,38),Color("#b67ae6"))
-		var title: String = ["✦","⌛","◉","","","","","",""][index]
+		var title: String = ["","","","","","","","",""][index]
 		if not title.is_empty():
 			_label(p,title,Vector2(7,2),21,Color("#ffe5ff"))
 
