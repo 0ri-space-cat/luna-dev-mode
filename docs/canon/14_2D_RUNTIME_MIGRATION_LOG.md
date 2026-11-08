@@ -1,31 +1,43 @@
-# 14 — 2D runtime migration log
+# 14 — Фактический статус миграции Godot в 2D
 
-Status: experimental branch `feat/2d-runtime-foundation`. Main game entry remains legacy 3D until acceptance tests pass.
+**Сверено по веткам 08.11.2026.** Этот файл отслеживает реализацию и не изменяет сценарный канон [00–13](00_START_HERE.md).
 
-## Verified from source
-- `project.godot` points at `scenes/main.tscn`.
-- `scenes/main.tscn` is a `Node3D` scene.
-- `scripts/main.gd` extends `Node3D` and creates a `CharacterBody3D` and `Camera3D`.
-- `scripts/core/entity_record.gd` is a `RefCounted` data model independent of 3D nodes.
-- Current 2D scene is a disposable visual/physics smoke-test scaffold, NOT the final world and NOT wired to gameplay services.
+## Разделение веток
 
-## Guardrails
-1. Keep `main` and the existing 3D scene runnable until 2D parity is verified.
-2. Preserve Entity IDs, typed parameters, transactions, provenance and Undo/Redo.
-3. Extract game service composition from legacy `main.gd` into a presentation-independent context before swapping startup scenes.
-4. Define and test save migration for 3D x/z coordinates into 2D x/y; never silently reinterpret coordinates.
-5. Build tile terrain from seamless base textures and boundary geometry; do not bake tile-grid outlines into art.
-6. Validate 2D collision, camera, entity editing, save/load and headless tests before removing legacy 3D code.
+| Ветка | Стартовая сцена | Состояние |
+| --- | --- | --- |
+| `main` | `scenes/main.tscn` → `Node3D` | Рабочий graybox 0.27, сохранён для тестов и отката |
+| `feat/2d-runtime-foundation` (draft PR #5) | `scenes/2d/world_2d.tscn` → `Node2D` | Играбельная 2D-поляна; ещё не принята художественно |
 
-## First milestone
-A separate `scenes/2d/world_2d.tscn` with `Node2D`, `CharacterBody2D`, `Camera2D` and a code-drawn test ground. This is not yet connected to `project.godot` and has not been run through Godot CLI in this environment.
+Оба набора файлов присутствуют в экспериментальной ветке. **Сохраняем 3D-код до безопасного завершения миграции**, но новые визуальные решения делаем только в 2D.
 
-## Next technical tasks
-- Run Godot headless parse/import of the isolated scene; fix any errors.
-- Move service initialization out of legacy `main.gd` into a reusable 2D-neutral game context.
-- Attach an Entity ID to 2D visual actors, with commands updating the canonical record.
-- Add collision-aware TileMapLayer test grounds and build two terrain compositions from the same tiles.
-- Implement deterministic atlas slicing and seam-check tooling before bulk image generation.
+## Что действительно работает в экспериментальной ветке
 
-## Milestone update — 08.11.2026
-Первый headless CI прогнал Godot 4.3, старые тесты и изолированный тест 2D-сцены. После исправления ошибки привязки рюкзака тесты прошли. В экспериментальной ветке startup переключён на \`scenes/2d/world_2d.tscn\`, но старые \`scenes/main.tscn\` и \`scripts/main.gd\` оставлены для регрессий и отката. **main не менялся.** Для следующего CI необходима повторная проверка после переключения startup.
+- `TileMapLayer` загружает 12 реальных PNG-тайлов травы 64×64, с кодовым fallback при недостающем ресурсе.
+- Сцена содержит `CharacterBody2D`, камеру, несколько Entity и действия с разломом, озером, Оракулом и редактором. Это ограниченный вертикальный срез, а не вся будущая кампания.
+- Часть растрового окружения установлена: шесть WebP-пропсов, из них кусты, кристаллы, арка и постамент Оракула используются как декорации. Остальные не должны заменять анимированных персонажей без QA.
+- Есть отдельный путь сохранений `user://luna_meadow_2d_v3.json`; существующий 3D-путь `user://luna_world_v1.json` сохранён. Автоматическая миграция старых 3D-сохранений **не реализована**.
+- `CommandProcessor` и `WorldRegistry` переиспользуются в 2D-сцене; части старой системы магии, отношений, инвентаря и полного Банка способностей пока не перенесены.
+- Последний просмотренный успешный CI: [run 42483899630](https://github.com/0ri-space-cat/luna-dev-mode/actions/runs/42483899630) на Godot 4.3. Ручной плейтест Godot 4.7.2 на Mac пока остаётся отдельной проверкой.
+
+## Что НЕ готово и не должно выдаваться за завершённое
+
+1. Финальные тайлы уступов, переходы травы в скалы и тропы, анимированные водопады и водоёмы. Часть текущей среды рисуется `draw_*` и SVG-заглушками.
+2. Единый художественный 2D-риг Луны и существ, четыре направления и полный комплект idle/walk/run/cast с проверенной анатомией.
+3. Полная интеграция UI-ассетов, адаптивного расположения панелей, предметов, переключаемых героев и всех модулей способностей.
+4. Сейвы с переносом из старого 3D-формата, регрессионные тесты смыслового соответствия и приёмка на пользовательской версии Godot.
+5. Четыре авторских концепта в `art/references/approved-luna-concepts/`: папка есть, сами PNG в Git пока отсутствуют. Старое ТЗ на 3D-моделирование не определяет текущий 2D-пайплайн.
+
+## Безопасная последовательность
+
+1. **Сначала одна арт-партия:** [нарисованные уступы и переходы](../art/NEXT_ETERNIA_ASSET_BATCH.md); принять отдельные тайлы, не разрушая старую работающую сцену.
+2. Заменить конкретные кодовые заглушки в 2D-поляне на тайловые/спрайтовые ресурсы, проверить коллизии, Y-sort и кадры сцены.
+3. Следующая партия отдельно: циклическая вода и FX. Позже — риг Луны, существа и перенесённые способности.
+4. Сохранять draft PR #5 до визуальной приёмки. После каждой партии проверять импорт/тесты/скриншоты; `main` не менять преждевременно.
+
+## Неприкосновенные принципы
+
+- Единые ID и параметры Entity; не превращать общий `WorldTruth` в две несовместимые игры.
+- Перенос старых сохранений только явным конвертером и с копией данных; `Vector3` никогда не читать молча как `Vector2`.
+- Не удалять `docs/archive/` или `docs/01–27`: это справочный материал и техническая история. Источник текущих творческих решений — `docs/canon/`.
+- Не вводить назад XP/перки, семь обязательных кампаний, 3D↔2D-переключение и старый вертикальный редактор из архивов.

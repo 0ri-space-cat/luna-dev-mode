@@ -151,7 +151,7 @@ jobs:
       - name: Verify playable 2D meadow and independent saves
         run: bash ci/run_godot_script.sh res://tests/test_meadow_2d.gd
 
-      - name: Boot experimental 2D scene separately (main remains 3D)
+      - name: Boot 2D scene explicitly (also configured as startup on this branch)
         run: |
           set -o pipefail
           godot --headless --path . res://scenes/2d/world_2d.tscn --quit-after 20 2>&1 | tee /tmp/luna-meadow-2d.log
