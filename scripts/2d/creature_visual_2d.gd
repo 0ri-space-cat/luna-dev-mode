@@ -109,8 +109,16 @@ func _draw() -> void:
 		draw_line(Vector2(33,-35),Vector2(47,-19 - arm_wiggle),Color("#c9a4df"),7,true)
 	else:
 		var leg_color := Color("#f5bcde") if kind == "sheep" else Color("#ed943b")
-		_draw_boot(-12.0 + stride, 9.0,leg_color, 8)
-		_draw_boot(12.0 - stride, 9.0,leg_color, 8)
+		if kind == "sheep":
+			# Exactly four legs in every state: two hind + two front.
+			_draw_boot(-29.0 + stride*0.7, 6.0, leg_color.darkened(0.16), 7)
+			_draw_boot(27.0 - stride*0.7, 6.0, leg_color.darkened(0.16), 7)
+			_draw_boot(-16.0 - stride, 11.0, leg_color, 8)
+			_draw_boot(16.0 + stride, 11.0, leg_color, 8)
+		else:
+			# Ducks have exactly two legs; no generative extra appendages.
+			_draw_boot(-12.0 + stride, 9.0,leg_color, 8)
+			_draw_boot(12.0 - stride, 9.0,leg_color, 8)
 	if selected:
 		draw_arc(Vector2(0,-34),54,0,TAU,48,Color("#72fcff",0.8),2)
 
