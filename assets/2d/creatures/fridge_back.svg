@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="146" height="184"><defs><linearGradient id="white" x2=".8" y2="1"><stop stop-color="#fffaff"/><stop offset=".6" stop-color="#eee0fa"/><stop offset="1" stop-color="#c9b7e3"/></linearGradient><linearGradient id="yellow" x2=".8" y2="1"><stop stop-color="#fffca5"/><stop offset=".7" stop-color="#ffe16a"/><stop offset="1" stop-color="#f0a842"/></linearGradient><linearGradient id="fridge" x2=".8" y2="1"><stop stop-color="#f5dcff"/><stop offset=".6" stop-color="#c9a8e9"/><stop offset="1" stop-color="#9276d1"/></linearGradient></defs><g stroke="#40235d" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+<rect x="29" y="11" width="88" height="148" rx="17" fill="url(#fridge)"/>
+<rect x="43" y="33" width="61" height="83" rx="7" fill="#8c77b5" stroke="#674c8c" stroke-width="3"/>
+<path d="M52 44H95M52 54H95M52 64H95M52 74H95M52 84H95M52 94H95M52 104H95" stroke="#c6b3dc" stroke-width="3"/>
+<circle cx="46" cy="136" r="4" fill="#fde1fd" stroke-width="2"/>
+<circle cx="99" cy="136" r="4" fill="#fde1fd" stroke-width="2"/>
+<path d="M39 19H108" stroke="#fff" stroke-width="4" opacity=".8"/>
+</g></svg>

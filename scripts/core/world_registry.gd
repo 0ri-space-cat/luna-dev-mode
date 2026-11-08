@@ -152,3 +152,26 @@ func query_ids(selector: Dictionary, limit: int = 16) -> Array[String]:
 		if result.size() >= limit:
 			break
 	return result
+
+## 2D counterpart to candidates(). Keep the legacy 3D selector intact.
+func candidates_2d(origin_id: String, position: Vector2, target_group: String, sensing_distance: float) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	var max_squared := sensing_distance * sensing_distance
+	for entity_id in list_ids():
+		if entity_id == origin_id:
+			continue
+		var target := get_entity(entity_id)
+		if not (target is Node2D):
+			continue
+		var record: Variant = target.get("record")
+		if record != null and record.has_component("PICKUP"):
+			if not str(record.get_component("PICKUP").get("holder_id", "")).is_empty():
+				continue
+		var entry: Dictionary = _entries.get(entity_id, {})
+		var group := str(entry.get("group", ""))
+		if target_group != "ANY" and target_group != group:
+			continue
+		var where: Vector2 = (target as Node2D).global_position
+		if position.distance_squared_to(where) <= max_squared:
+			found.append({"id": entity_id, "position": where, "group": group})
+	return found

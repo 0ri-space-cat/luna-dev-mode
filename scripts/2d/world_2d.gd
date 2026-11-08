@@ -1,0 +1,292 @@
+extends Node2D
+## The first standalone playable 2D meadow. Legacy main stays unchanged.
+const Actor = preload("res://scripts/2d/entity_actor_2d.gd")
+const Inspector = preload("res://scripts/2d/hack_inspector_2d.gd")
+const HUD = preload("res://scripts/2d/meadow_hud_2d.gd")
+const Session = preload("res://scripts/2d/hack_session_2d.gd")
+const Save2D = preload("res://scripts/2d/meadow_save_2d.gd")
+const Lifecycle2D = preload("res://scripts/2d/meadow_lifecycle_2d.gd")
+const Registry = preload("res://scripts/core/parameter_registry.gd")
+const Processor = preload("res://scripts/core/command_processor.gd")
+const World = preload("res://scripts/core/world_registry.gd")
+const RIFT := Vector2(335, 245)
+const LAKE := Vector2(985, 600)
+const ORACLE := Vector2(1140, 275)
+const TERMINAL := Vector2(1260, 560)
+const WALK_SPEED := 225.0
+const RUN_SPEED := 335.0
+
+@onready var player: CharacterBody2D = $Entities/Player
+var registry = Registry.new()
+var processor = Processor.new()
+var world = World.new()
+var session = Session.new()
+var save_game = Save2D.new()
+var lifecycle
+var selected: Node
+var actors: Array = []
+var hud: CanvasLayer
+var inspector: PanelContainer
+var inspector_layer: CanvasLayer
+var debug_character := 0
+@onready var puppet: Node2D = $Entities/Player/Visual
+const THEME_ORDER := ["luna", "yuki", "ori", "mia", "leya", "toffi", "oni"]
+
+func _ready() -> void:
+	processor.configure_world(world)
+	_spawn("tree_01", "tree", "Клён", Vector2(430, 350), {"color": Color("#a9db5c")})
+	_spawn("fridge_01", "fridge", "Холодильник", Vector2(790, 410), {"color": Color("#e3b9f1")})
+	_spawn("tree_02", "tree", "Вишня", Vector2(1030, 380), {"color": Color("#f9a6d5")})
+	_spawn("sheep_01", "arcane_creature", "Овечка", Vector2(650, 610), {"color": Color("#f5e8ff"), "alive": true})
+	_spawn("duck_01", "arcane_creature", "Уточка", Vector2(750, 660), {"color": Color("#ffdb66"), "alive": true})
+	_spawn("slime_01", "arcane_creature", "Сонный слайм", Vector2(925, 380), {"color": Color("#83e3f0"), "alive": true})
+	lifecycle = Lifecycle2D.new(world, $Entities, registry, player, actors)
+	hud = HUD.new()
+	add_child(hud)
+	hud.set_targets(player, actors)
+	inspector_layer = CanvasLayer.new()
+	inspector_layer.layer = 3
+	add_child(inspector_layer)
+	inspector = Inspector.new()
+	inspector_layer.add_child(inspector)
+	# Fit after the container completes its first layout; its final size can grow.
+	call_deferred("_position_inspector")
+	get_viewport().size_changed.connect(_position_inspector)
+	inspector.save_requested.connect(_save)
+	inspector.copy_requested.connect(_copy_actor)
+	inspector.delete_requested.connect(_delete_actor)
+	inspector.set_character_theme("luna")
+	_show("Луна проснулась в Этернии. Разлом мерцает слева.")
+
+func _position_inspector() -> void:
+	if not is_instance_valid(inspector):
+		return
+	var viewport_size := get_viewport_rect().size
+	var panel_size := inspector.size
+	var available := Vector2(maxf(1.0, viewport_size.x - 32.0), maxf(1.0, viewport_size.y - 32.0))
+	var fit := minf(1.0, minf(available.x / maxf(panel_size.x, 1.0), available.y / maxf(panel_size.y, 1.0)))
+	inspector.scale = Vector2.ONE * fit
+	var display_size := panel_size * fit
+	inspector.position = Vector2(maxf(0.0, viewport_size.x - display_size.x - 16.0), maxf(0.0, viewport_size.y - display_size.y - 16.0))
+
+func _spawn(id: String, category: String, title: String, at: Vector2, overrides: Dictionary) -> void:
+	var actor := Actor.new()
+	actor.position = at
+	$Entities.add_child(actor)
+	actor.setup(id, category, title, registry, overrides)
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 17.0
+	shape.shape = circle
+	actor.add_child(shape)
+	world.register_entity(id, actor, category.to_upper())
+	actor.set_context(player, world)
+	actors.append(actor)
+
+func _movement_vector() -> Vector2:
+	var vector := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	if Input.is_key_pressed(KEY_A):
+		vector.x -= 1.0
+	if Input.is_key_pressed(KEY_D):
+		vector.x += 1.0
+	if Input.is_key_pressed(KEY_W):
+		vector.y -= 1.0
+	if Input.is_key_pressed(KEY_S):
+		vector.y += 1.0
+	return vector.limit_length(1.0)
+
+func _physics_process(_delta: float) -> void:
+	# A fullscreen editor never freezes the host OS; just stop player motion.
+	var running := Input.is_key_pressed(KEY_SHIFT)
+	player.velocity = Vector2.ZERO if inspector.visible else _movement_vector() * (RUN_SPEED if running else WALK_SPEED)
+	player.move_and_slide()
+	puppet.call("set_motion", player.velocity, running, _delta, get_global_mouse_position() - player.global_position)
+	player.position = player.position.clamp(Vector2(45, 95), Vector2(1420, 714))
+	if inspector.visible:
+		hud.set_prompt("Редактор: изменения сразу • F5 сохранить • Esc закрыть")
+	elif player.position.distance_to(RIFT) < 94.0:
+		hud.set_prompt("[E] Исследовать мерцающий разлом")
+	elif player.position.distance_to(LAKE) < 115.0:
+		hud.set_prompt("[E] Озеро отражений: создать копию палочки")
+	elif player.position.distance_to(ORACLE) < 100.0:
+		hud.set_prompt("[E] Оракул и механический глаз")
+	elif player.position.distance_to(TERMINAL) < 95.0:
+		hud.set_prompt("[E] Узел связей (требует высокого доступа)")
+	elif not session.duplicate.is_empty() and not session.wand["is_hacked"]:
+		hud.set_prompt("[U] Применить копию палочки к оригиналу")
+	else:
+		hud.set_prompt("ЛКМ: выбрать объект • F5: сохранить • F9: загрузить")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var at := get_global_mouse_position()
+		var closest := 57.0
+		var picked: Node = null
+		for actor in actors:
+			var distance: float = actor.global_position.distance_to(at)
+			if distance < closest:
+				closest = distance
+				picked = actor
+		var decor: Sprite2D = $GroundDecorScatter.decoration_at(at, 26.0)
+		if decor != null and (picked == null or decor.global_position.distance_to(at) < closest):
+			if bool(session.wand.get("rift_enabled", false)) and player.global_position.distance_to(decor.get_meta("ground_point")) <= 195.0:
+				var promoted: Node = _promote_decoration(decor)
+				if promoted != null:
+					picked = promoted
+		if picked != null:
+			for actor in actors:
+				if is_instance_valid(actor.visual):
+					actor.visual.selected = actor == picked
+			_open_object(picked)
+			puppet.call("trigger_action", "cast",0.36)
+
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	if inspector.visible and event.keycode in [KEY_E, KEY_U, KEY_SPACE, KEY_Q]:
+		return
+	match event.keycode:
+		KEY_SPACE:
+			puppet.call("trigger_action", "cast",0.55)
+			_show("Луна взмахнула палочкой. Звёзды послушно вспыхнули.")
+		KEY_Q:
+			puppet.call("trigger_action", "surprise",0.55)
+			_show("Луна: «Ой! Кажется, я что-то заметила...»")
+		KEY_E:
+			_interact()
+		KEY_U:
+			if session.upgrade_original():
+				_show("Палочка изменила себя! Доступ: АРХИТЕКТОР.")
+				if inspector.visible:
+					inspector._refresh()
+			else:
+				_show("Для самовзлома нужна отдельная копия взломанной палочки.")
+		KEY_Z:
+			if processor.undo():
+				hud.set_targets(player, actors)
+				puppet.call("trigger_action", "cast",0.22)
+				_show("Последнее изменение отменено.")
+				if inspector.visible:
+					inspector._refresh()
+		KEY_Y:
+			if processor.redo():
+				hud.set_targets(player, actors)
+				puppet.call("trigger_action", "cast",0.22)
+				_show("Изменение повторено.")
+				if inspector.visible:
+					inspector._refresh()
+		KEY_F5:
+			_save()
+		KEY_F9:
+			_load()
+		KEY_ESCAPE:
+			inspector.hide()
+		KEY_F6:
+			# Temporary visual test: switches themes only, not physical characters.
+			debug_character = (debug_character + 1) % THEME_ORDER.size()
+			hud.set_character(THEME_ORDER[debug_character])
+			inspector.set_character_theme(THEME_ORDER[debug_character])
+			_show("Предпросмотр интерфейса: " + THEME_ORDER[debug_character] + ". Управление остаётся у Луны.")
+
+func _interact() -> void:
+	puppet.call("trigger_action", "interact",0.40)
+	if player.position.distance_to(RIFT) < 94.0:
+		session.touch_rift()
+		_show("Палочка заискрилась! Теперь можно редактировать простые свойства вещей.")
+	elif player.position.distance_to(LAKE) < 115.0:
+		if session.copy_wand():
+			_show("Отражение превратилось в настоящую копию палочки. Нажми U для самовзлома.")
+		else:
+			_show("Озеро ничего не копирует. Сперва найди разлом или убери уже созданную копию.")
+	elif player.position.distance_to(ORACLE) < 100.0:
+		if session.collect_oracle_eye():
+			_show("Получен Глаз Оракула! Технические символы стали понятными.")
+			if inspector.visible:
+				inspector._refresh()
+		else:
+			_show("Оракул: «Глаз откликнется только на палочку, коснувшуюся разлома».")
+	elif player.position.distance_to(TERMINAL) < 95.0:
+		if bool(session.wand.get("is_hacked",false)):
+			_show("Узел связей распознал АРХИТЕКТОРА. Кто-то уже оставил здесь чужие изменения...")
+		else:
+			_show("Узел связей: «Палочка с простыми чарами сюда не проходит».")
+	else:
+		_show("Рядом ничего не откликается. Посмотри на поляну внимательнее.")
+
+func _promote_decoration(decor: Sprite2D) -> Node:
+	# A previously lightweight decoration acquires stable Entity identity on demand.
+	var entity_id := str(decor.get_meta("entity_id"))
+	if world.get_entity(entity_id) != null:
+		return world.get_entity(entity_id)
+	var category := "arcane_object"
+	var label := "Цветок" if str(decor.get_meta("decor_kind")) == "flower" else "Кристалл"
+	_spawn(entity_id, category, label, decor.get_meta("ground_point"), {"alive":false,"ai_enabled":true})
+	var created: Node = world.get_entity(entity_id)
+	if created != null:
+		$GroundDecorScatter.hide_promoted(decor)
+		hud.set_targets(player, actors)
+	return created
+
+func _open_object(actor: Node) -> void:
+	if player.global_position.distance_to(actor.global_position) > 195.0:
+		_show("Слишком далеко для взлома. Подойди к объекту поближе.")
+		return
+	if not bool(session.wand["rift_enabled"]):
+		_show("Луна: «Палочка показывает только обычные заклинания. Что за странный разлом?»")
+		return
+	selected = actor
+	inspector.open_actor(actor, processor, registry, session)
+	_show("Открыт редактор: " + str(actor.record.display_name))
+
+func _copy_actor(actor: Node) -> void:
+	var at: Vector2 = (actor as Node2D).position + Vector2(85, 35)
+	at = at.clamp(Vector2(45,100),Vector2(1410,710))
+	var blueprint: Dictionary = lifecycle.clone_blueprint(str(actor.get("record").id), at)
+	if blueprint.is_empty():
+		_show("Нельзя создать ещё одну копию этого объекта.")
+		return
+	var created: Node = processor.execute_entity_create(lifecycle, blueprint)
+	if created == null:
+		_show("Не удалось скопировать объект.")
+		return
+	inspector.hide()
+	selected = created
+	hud.set_targets(player, actors)
+	puppet.call("trigger_action", "cast", 0.65)
+	_show("Копия создана: " + str(blueprint["name"]) + ". Можно отменить Z.")
+
+func _delete_actor(actor: Node) -> void:
+	if processor.execute_entity_delete(lifecycle, str(actor.get("record").id)):
+		inspector.hide()
+		selected = null
+		hud.set_targets(player, actors)
+		_show("Сущность удалена. Нажми Z, чтобы вернуть.")
+	else:
+		_show("Объект сейчас удалить нельзя.")
+
+func _save() -> void:
+	if save_game.write(player, world, session):
+		_show("Поляна сохранена (F9 — загрузить).")
+	else:
+		_show("Ошибка сохранения: " + save_game.last_error)
+
+func _load() -> void:
+	if not save_game.has_save():
+		_show("Сохранение пока не создано.")
+		return
+	if save_game.read(player, world, session, registry, lifecycle):
+		processor.clear_history()
+		inspector.hide()
+		selected = null
+		$GroundDecorScatter.reconcile_promoted(world)
+		hud.set_targets(player, actors)
+		_show("Поляна и состояние палочки загружены.")
+		if inspector.visible:
+			inspector._refresh()
+	else:
+		_show("Не удалось загрузить: " + save_game.last_error)
+
+func _show(text: String) -> void:
+	if is_instance_valid(hud):
+		hud.set_status(text)
+		hud.set_quest_state(session)

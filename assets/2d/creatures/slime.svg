@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="152" height="132" viewBox="0 0 152 132">
+<defs><linearGradient id="jelly" x2=".8" y2="1"><stop stop-color="#aaf5ff"/><stop offset=".5" stop-color="#6ddef3"/><stop offset="1" stop-color="#a875ea"/></linearGradient></defs>
+<g stroke="#40235d" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+<path d="M24 95Q14 70 30 44Q51 9 83 18Q117 16 133 59Q145 88 131 105Q109 126 66 118Q34 115 24 95Z" fill="url(#jelly)"/>
+<path d="M40 56Q53 32 82 31" fill="none" stroke="#fff" stroke-width="7" opacity=".85"/>
+<ellipse cx="59" cy="79" rx="7" ry="10" fill="#45346f" stroke="none"/>
+<ellipse cx="98" cy="79" rx="7" ry="10" fill="#45346f" stroke="none"/>
+<circle cx="61" cy="75" r="3" fill="white" stroke="none"/><circle cx="100" cy="75" r="3" fill="white" stroke="none"/>
+<path d="M68 92Q80 104 89 92" fill="none" stroke="#ac518a" stroke-width="4"/>
+<ellipse cx="45" cy="91" rx="10" ry="5" fill="#f7a5e6" opacity=".75" stroke="none"/>
+<ellipse cx="111" cy="91" rx="10" ry="5" fill="#f7a5e6" opacity=".75" stroke="none"/>
+<circle cx="122" cy="58" r="5" fill="#fff" opacity=".75" stroke="none"/>
+</g></svg>

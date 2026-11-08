@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="235" height="144" viewBox="0 0 235 144">
+<defs><linearGradient id="leaves" x2=".7" y2="1"><stop stop-color="#b8f171"/><stop offset=".55" stop-color="#6fcb71"/><stop offset="1" stop-color="#368c7b"/></linearGradient></defs>
+<g stroke="#375b5a" stroke-width="4" stroke-linejoin="round">
+<path d="M8 123Q14 88 41 87Q37 60 64 53Q78 26 105 39Q126 18 149 39Q177 30 189 57Q221 58 217 87Q239 111 216 126Z" fill="url(#leaves)"/>
+<path d="M22 112Q49 94 69 107M83 76Q107 57 127 76M155 95Q176 76 200 98" stroke="#b8f4a3" stroke-width="7" fill="none" opacity=".6"/>
+<path d="M20 134Q55 115 78 126Q95 111 120 129Q149 109 183 131Q208 121 227 132" fill="none" stroke="#418b63" stroke-width="9"/>
+</g>
+<g stroke="#b66eab" stroke-width="2">
+<g transform="translate(67 86)"><circle cx="0" cy="-9" r="7" fill="#f9a7e5"/><circle cx="8" cy="-1" r="7" fill="#f9a7e5"/><circle cx="0" cy="7" r="7" fill="#f9a7e5"/><circle cx="-8" cy="-1" r="7" fill="#f9a7e5"/><circle cx="0" cy="0" r="5" fill="#ffe17a" stroke="none"/></g>
+<g transform="translate(154 76)"><circle cx="0" cy="-8" r="6" fill="#fdf3fb"/><circle cx="7" cy="0" r="6" fill="#fdf3fb"/><circle cx="0" cy="8" r="6" fill="#fdf3fb"/><circle cx="-7" cy="0" r="6" fill="#fdf3fb"/><circle cx="0" cy="0" r="4" fill="#f8cf75" stroke="none"/></g>
+<g transform="translate(194 110)"><circle cx="0" cy="-7" r="6" fill="#ffb0df"/><circle cx="7" cy="0" r="6" fill="#ffb0df"/><circle cx="0" cy="7" r="6" fill="#ffb0df"/><circle cx="-7" cy="0" r="6" fill="#ffb0df"/><circle cx="0" cy="0" r="4" fill="#ffe17a" stroke="none"/></g>
+</g></svg>

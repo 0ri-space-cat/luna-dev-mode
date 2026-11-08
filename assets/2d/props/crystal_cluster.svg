@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="205" height="190" viewBox="0 0 205 190">
+<defs><linearGradient id="pink" x2=".8" y2="1"><stop stop-color="#ffe1ff"/><stop offset=".45" stop-color="#ef80e9"/><stop offset="1" stop-color="#af69d6"/></linearGradient><linearGradient id="blue" x2=".8" y2="1"><stop stop-color="#eaffff"/><stop offset=".6" stop-color="#69ddf2"/><stop offset="1" stop-color="#5d92da"/></linearGradient></defs>
+<g stroke="#6b3c9e" stroke-width="4" stroke-linejoin="round">
+<path d="M58 166L58 58L83 12L107 57L107 167Z" fill="url(#pink)"/><path d="M83 16L83 168" stroke="#fff4ff" stroke-width="4"/><path d="M60 59L83 73L104 60" fill="none" stroke="#fff4ff" stroke-width="3"/>
+<path d="M105 169L115 75L139 47L162 80L160 168Z" fill="url(#blue)"/><path d="M139 51L138 167" fill="none" stroke="#e8ffff" stroke-width="3"/>
+<path d="M21 169L24 113L45 91L65 112L67 168Z" fill="url(#blue)"/><path d="M45 95L45 170" fill="none" stroke="#fff" stroke-width="3"/>
+<path d="M151 170L157 122L175 103L191 129L189 170Z" fill="url(#pink)"/><path d="M175 108L174 169" fill="none" stroke="#fff" stroke-width="3"/>
+<path d="M17 174Q51 164 79 171Q119 156 152 172Q180 161 197 176" fill="#7a5a9c" stroke="#574074" stroke-width="5"/>
+</g></svg>

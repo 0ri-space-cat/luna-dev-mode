@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="146" height="184"><defs><linearGradient id="white" x2=".8" y2="1"><stop stop-color="#fffaff"/><stop offset=".6" stop-color="#eee0fa"/><stop offset="1" stop-color="#c9b7e3"/></linearGradient><linearGradient id="yellow" x2=".8" y2="1"><stop stop-color="#fffca5"/><stop offset=".7" stop-color="#ffe16a"/><stop offset="1" stop-color="#f0a842"/></linearGradient><linearGradient id="fridge" x2=".8" y2="1"><stop stop-color="#f5dcff"/><stop offset=".6" stop-color="#c9a8e9"/><stop offset="1" stop-color="#9276d1"/></linearGradient></defs><g stroke="#40235d" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+<path d="M36 12L112 19L105 162L31 156Z" fill="url(#fridge)"/>
+<path d="M30 14L53 9L118 18L110 160L50 158L31 153Z" fill="#bd91df"/>
+<path d="M53 20L108 25L103 147L52 146Z" fill="#edd1fb"/>
+<rect x="58" y="37" width="45" height="45" rx="7" fill="#3d2864" stroke="#7c51a9" stroke-width="3"/>
+<path d="M71 58Q78 48 85 58Q92 48 99 58" stroke="#ffacfa" stroke-width="3" fill="none"/>
+<path d="M53 91L106 93M61 102L62 137" stroke="#9f70c4" stroke-width="3" fill="none"/>
+<path d="M78 111l4-7 4 7 8 1-6 6 2 7-8-4-6 4 2-7-6-6Z" fill="#ffde8c" stroke-width="2"/>
+</g></svg>

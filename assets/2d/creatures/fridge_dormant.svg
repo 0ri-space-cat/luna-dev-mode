@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="146" height="184" viewBox="0 0 146 184">
+<defs><linearGradient id="fr" x2=".8" y2="1"><stop stop-color="#f2dbff"/><stop offset=".55" stop-color="#d8a6ed"/><stop offset="1" stop-color="#ae83d7"/></linearGradient><linearGradient id="lcd" x2="0" y2="1"><stop stop-color="#3b245e"/><stop offset="1" stop-color="#25174e"/></linearGradient></defs>
+<g stroke="#40235d" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+<rect x="29" y="12" width="89" height="156" rx="18" fill="#7e55ae"/>
+<rect x="24" y="8" width="88" height="153" rx="16" fill="url(#fr)"/>
+<rect x="31" y="18" width="75" height="58" rx="10" fill="url(#lcd)" stroke="#76539c" stroke-width="4"/>
+<path d="M43 55H92" fill="none" stroke="#5d4384" stroke-width="3" opacity=".4"/>
+<path d="M32 84H106" fill="none" stroke="#8b5ab8" stroke-width="4"/>
+<rect x="39" y="91" width="6" height="38" rx="3" fill="#79549c" stroke="none"/>
+<path d="M78 116l7-11 7 11 12 2-9 9 3 13-13-7-12 7 3-13-8-9Z" fill="#ffe379" stroke="#ae65a7" stroke-width="2"/>
+<path d="M61 142q12-13 23 0l-5 10-12 0Z" fill="#f3a3d9" stroke="#ae65a7" stroke-width="2"/>
+<path d="M58 145l6-6 6 5 7-5 6 6" stroke="#fff3ec" stroke-width="2" fill="none"/>
+<path d="M44 18H88" stroke="#fff" stroke-width="4" opacity=".75"/>
+</g></svg>
