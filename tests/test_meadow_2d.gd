@@ -63,7 +63,7 @@ func _run() -> void:
 		var art := "res://assets/2d/eternia/terrain/grass_%d.png" % tile_id
 		assert(ResourceLoader.exists(art), "Expected imported PNG terrain: " + art)
 	for prop in ["flower_bush","moss_arch","pink_crystals","oracle_pedestal","walking_fridge","berry_tree"]:
-		var asset := "res://assets/2d/eternia/props/" + prop + ".webp"
+		var asset: String = "res://assets/2d/eternia/props/" + str(prop) + ".webp"
 		assert(ResourceLoader.exists(asset), "Expected imported RGBA prop: " + asset)
 	assert(not hack.can_edit("alive"))
 	hack.touch_rift()
