@@ -47,7 +47,7 @@ func edit(target: Node, key: String, value: Variant, processor) -> bool:
 	return processor.execute_set(target, key, value, "luna", "wand:luna")
 
 func machine_label(key: String, readable: String) -> String:
-	if oracle_eye_owned and oracle_eye_equipped:
+	if Access.BASE_KEYS.has(key) or (oracle_eye_owned and oracle_eye_equipped):
 		return readable
 	# Stable visible cipher per technical key; real parameter identifiers never change.
 	var marks := ["✧", "◇", "◈", "⊹", "∴", "⊙"]
