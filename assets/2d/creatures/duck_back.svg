@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="142" height="145"><defs><linearGradient id="white" x2=".8" y2="1"><stop stop-color="#fffaff"/><stop offset=".6" stop-color="#eee0fa"/><stop offset="1" stop-color="#c9b7e3"/></linearGradient><linearGradient id="yellow" x2=".8" y2="1"><stop stop-color="#fffca5"/><stop offset=".7" stop-color="#ffe16a"/><stop offset="1" stop-color="#f0a842"/></linearGradient><linearGradient id="fridge" x2=".8" y2="1"><stop stop-color="#f5dcff"/><stop offset=".6" stop-color="#c9a8e9"/><stop offset="1" stop-color="#9276d1"/></linearGradient></defs><g stroke="#40235d" stroke-width="5" stroke-linejoin="round">
+<path d="M47 50Q45 28 62 21Q95 12 102 42Q106 52 97 66Q124 83 110 111Q75 130 39 108Q24 82 47 50Z" fill="url(#yellow)"/>
+<path d="M43 87Q24 72 28 105Q39 114 51 102M100 85Q122 72 115 105Q104 115 92 103" fill="#ffeaa0"/>
+<path d="M63 115L69 127L78 113M57 30Q72 16 91 29" fill="none" stroke="#fff8b7" stroke-width="5"/>
+</g></svg>
