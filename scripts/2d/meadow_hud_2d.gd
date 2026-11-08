@@ -128,13 +128,13 @@ func _build_inventory() -> void:
 	backpack_texture = bag
 	root_ui.add_child(bag)
 	# Overlay slots remain user-interface children, not baked into bag textures.
-	for index in range(9):
+	for index in range(6):
 		var col := index % 3
-		var row := index / 3
-		var p := _frame(root_ui,Vector2(62+col*44,636+row*43),Vector2(38,38),Color("#b67ae6"))
-		var title: String = ["","","","","","","","",""][index]
-		if not title.is_empty():
-			_label(p,title,Vector2(7,2),21,Color("#ffe5ff"))
+		var row := int(index / 3)
+		var art := ItemIcon.new(ITEMS[index])
+		art.position = Vector2(62+col*44,636+row*43)
+		art.size = Vector2(37,37)
+		root_ui.add_child(art)
 
 func _build_hotbar() -> void:
 	for i in range(5):
