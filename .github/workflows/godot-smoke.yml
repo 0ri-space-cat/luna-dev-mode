@@ -169,13 +169,15 @@ jobs:
             --script res://tests/capture_meadow_2d.gd
           find "$HOME/.local/share/godot/app_userdata" -name eternia_preview.png \
             -exec cp '{}' /tmp/luna-preview/meadow.png \;
+          find "$HOME/.local/share/godot/app_userdata" -name eternia_editor_preview.png \
+            -exec cp '{}' /tmp/luna-preview/editor.png \;
 
       - name: Upload Godot screenshot for visual QA
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: eternia-2d-preview
-          path: /tmp/luna-preview/meadow.png
+          path: /tmp/luna-preview/*.png
           if-no-files-found: warn
 
   asset-importer:
