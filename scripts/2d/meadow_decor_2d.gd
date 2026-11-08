@@ -1,60 +1,284 @@
 extends Node2D
-## Geometry-layer prototype. This will accept production assets via the importer.
+## Layered Eternia set dressing. Surface tiling stays borderless; cliffs,
+## stones, water, flowers and ruins are independently placed continuous art.
 const RIFT := Vector2(265, 245)
 const LAKE := Vector2(985, 600)
 const ORACLE := Vector2(1140, 275)
-func _draw() -> void:
-	# One continuous river and cliff contours; never tile-edge borders.
-	draw_rect(Rect2(0, 740, 1472, 284), Color("#7653a6"))
-	draw_rect(Rect2(0, 728, 1472, 18), Color("#bbe678"))
-	draw_rect(Rect2(0, 804, 1472, 220), Color("#564180"))
-	# Water flows across tiled ground as an independent translucent layer.
-	draw_rect(Rect2(480, 0, 170, 290), Color("#39bada"))
-	draw_rect(Rect2(505, 0, 60, 300), Color("#8af7ff"))
-	draw_rect(Rect2(480, 280, 180, 13), Color("#e2fcff"))
-	draw_circle(Vector2(580, 300), 57, Color("#49c3e1"))
-	draw_circle(Vector2(580, 300), 44, Color("#75e5f3"))
-	draw_circle(LAKE, 86, Color("#42b8df"))
-	draw_circle(LAKE, 70, Color("#69daee"))
-	draw_circle(LAKE, 40, Color("#88edf5"))
-	# Hand-painted cutout-style boulders, foliage and crystals.
-	for i in range(35):
-		var x := 27 + (i * 173) % 1420
-		var y := 112 + (i * 151) % 580
-		if Vector2(x,y).distance_to(RIFT) < 85 or Vector2(x,y).distance_to(LAKE) < 110:
-			continue
-		draw_circle(Vector2(x,y), 4 + (i % 4), Color("#f4a0d2") if i % 3 == 0 else Color("#f8f3e6"))
-		draw_circle(Vector2(x + 2,y - 2), 2, Color("#ffee91"))
-	for p in [Vector2(100,610),Vector2(1090,410),Vector2(1380,610)]:
-		draw_colored_polygon(PackedVector2Array([p+Vector2(-16,20),p+Vector2(-2,-44),p+Vector2(26,20)]),Color("#ce80ef"))
-		draw_line(p+Vector2(-2,-38),p+Vector2(12,8),Color("#f5c2ff"),3)
-	# The rift is a physical discovery point, with a stable address.
-	draw_circle(RIFT, 49, Color("#3d286d"))
-	draw_arc(RIFT, 47, 0, TAU, 48, Color("#b86bf1"), 6)
-	draw_arc(RIFT, 32, 0, TAU, 48, Color("#51f5ff"), 5)
-	draw_circle(RIFT, 12, Color("#f8a8fa"))
-	# Oracle stand and visible mechanical Eye, even before the rift.
-	draw_rect(Rect2(ORACLE + Vector2(-18, 11), Vector2(36, 41)), Color("#6d4b9e"))
-	draw_circle(ORACLE, 22, Color("#d59a57"))
-	draw_circle(ORACLE, 13, Color("#54e2e5"))
-	draw_circle(ORACLE, 6, Color("#353364"))
-
+var t := 0.0
+var animation_budget := 0.0
+var _flowers: Array[Dictionary] = []
+var _rocks: Array[Dictionary] = []
+var _pollen: Array[Dictionary] = []
 
 func _ready() -> void:
-	# These are independent decorative layers; never replace logical Entities.
-	var extras := [
-		{"id": "flower_bush", "pos": Vector2(250, 500), "scale": 0.26},
-		{"id": "pink_crystals", "pos": Vector2(1190, 550), "scale": 0.27},
-		{"id": "moss_arch", "pos": Vector2(710, 195), "scale": 0.31},
-		{"id": "oracle_pedestal", "pos": ORACLE, "scale": 0.20}
-	]
-	for spec in extras:
-		var path := "res://assets/2d/eternia/props/%s.png" % spec["id"]
-		if not ResourceLoader.exists(path):
+	_build_collision()
+	_seed_decorations()
+	_add_static_sprites()
+
+func _process(delta: float) -> void:
+	t += delta
+	animation_budget += delta
+	if animation_budget > 0.06:
+		animation_budget = 0.0
+		queue_redraw()
+
+func _build_collision() -> void:
+	var water := StaticBody2D.new()
+	water.name = "WaterBoundary"
+	add_child(water)
+	var stream_shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(170, 282)
+	stream_shape.shape = rect
+	stream_shape.position = Vector2(565, 140)
+	water.add_child(stream_shape)
+	var lake := StaticBody2D.new()
+	lake.name = "LakeBoundary"
+	add_child(lake)
+	var body := CollisionPolygon2D.new()
+	var poly := PackedVector2Array()
+	for i in range(24):
+		var angle := float(i) / 24.0 * TAU
+		poly.append(LAKE + Vector2(cos(angle), sin(angle)) * 79.0)
+	body.polygon = poly
+	lake.add_child(body)
+
+func _seed_decorations() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261108
+	for i in range(135):
+		var pos := Vector2(rng.randf_range(20, 1452),rng.randf_range(95, 725))
+		if pos.distance_to(RIFT) < 85 or pos.distance_to(LAKE) < 130 or (pos.x > 455 and pos.x < 660 and pos.y < 320):
 			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = load(path)
-		var factor: float = float(spec["scale"])
-		sprite.scale = Vector2.ONE * factor
-		sprite.position = spec["pos"] - Vector2(0, 190.0 * factor)
-		add_child(sprite)
+		var color := ["#fca8e2","#fff5e9","#ffda89","#cba2f3","#91effa"][i % 5]
+		_flowers.append({"pos":pos,"size":rng.randf_range(2.1,5.1),"color":Color(color),"phase":rng.randf_range(0,TAU)})
+	for i in range(44):
+		var pos := Vector2(rng.randf_range(30, 1440),rng.randf_range(105, 725))
+		if pos.distance_to(LAKE) < 120 or pos.distance_to(RIFT) < 65:
+			continue
+		_rocks.append({"pos":pos,"size":rng.randf_range(5,13),"shade":i % 4})
+	for i in range(32):
+		_pollen.append({
+			"center":Vector2(rng.randf_range(20,1440),rng.randf_range(90,700)),
+			"phase":rng.randf_range(0, TAU),"speed":rng.randf_range(0.4,1.1),
+			"radius":rng.randf_range(2,3.5)
+		})
+
+func _add_static_sprites() -> void:
+	# Small, intentionally sparse decorations: not a wall of repeated stickers.
+	var tree_file := "res://assets/2d/creatures/tree.svg"
+	if ResourceLoader.exists(tree_file):
+		var picture: Texture2D = load(tree_file)
+		for entry in [
+			{"at":Vector2(100,330),"s":0.65,"tint":"#d2ef9c"},
+			{"at":Vector2(1350,485),"s":0.72,"tint":"#d3f2aa"},
+			{"at":Vector2(1220,170),"s":0.47,"tint":"#b6d8ef"}
+		]:
+			var sprite := Sprite2D.new()
+			sprite.texture = picture
+			sprite.position = entry["at"] + Vector2(0,-62)
+			sprite.scale = Vector2.ONE * float(entry["s"])
+			sprite.modulate = Color(str(entry["tint"]))
+			add_child(sprite)
+	for spec in [
+		{"id":"flower_bush","at":Vector2(246,488),"size":0.27},
+		{"id":"pink_crystals","at":Vector2(1150,515),"size":0.25},
+		{"id":"moss_arch","at":Vector2(695,180),"size":0.30},
+		{"id":"oracle_pedestal","at":ORACLE,"size":0.20}
+	]:
+		var filename := "res://assets/2d/eternia/props/%s.png" % spec["id"]
+		if ResourceLoader.exists(filename):
+			var decoration := Sprite2D.new()
+			decoration.texture = load(filename)
+			decoration.position = spec["at"] + Vector2(0, -100.0 * float(spec["size"]))
+			decoration.scale = Vector2.ONE * float(spec["size"])
+			add_child(decoration)
+
+func _draw() -> void:
+	_draw_upper_terraces()
+	_draw_lower_cliffs()
+	_draw_paths()
+	_draw_stream_and_waterfall()
+	_draw_lake()
+	_draw_rocks_and_flowers()
+	_draw_crystal_clusters()
+	_draw_rift()
+	_draw_oracle()
+	_draw_pollen()
+
+func _draw_upper_terraces() -> void:
+	var edge := PackedVector2Array([
+		Vector2(0, 100), Vector2(135, 105),Vector2(200,87),
+		Vector2(330,95),Vector2(420,110),Vector2(470,114),
+		Vector2(470,0),Vector2(0,0)
+	])
+	draw_colored_polygon(edge,Color("#6e4fa1",0.58))
+	draw_polyline(PackedVector2Array([
+		Vector2(0,104),Vector2(135,109),Vector2(200,91),Vector2(330,99),Vector2(420,114),Vector2(470,118)
+	]),Color("#bfeb76"),8.0,true)
+	var far := PackedVector2Array([
+		Vector2(700,90),Vector2(805,78),Vector2(866,100),
+		Vector2(956,79),Vector2(1044,94),Vector2(1133,81),
+		Vector2(1220,90),Vector2(1320,84),Vector2(1472,105),
+		Vector2(1472,0),Vector2(700,0)])
+	draw_colored_polygon(far,Color("#7a559f",0.58))
+	draw_polyline(PackedVector2Array([
+		Vector2(700,93),Vector2(805,82),Vector2(866,104),
+		Vector2(956,83),Vector2(1044,98),Vector2(1133,85),
+		Vector2(1220,94),Vector2(1320,88),Vector2(1472,109)
+	]),Color("#b6e16e"),9.0,true)
+	# Brick strata in the distant wall (shapes, not tile borders).
+	for x in range(718,1460,47):
+		var y := 120.0 + sin(float(x) * 0.056) * 6.0
+		draw_line(Vector2(x,y),Vector2(x+30,y+1),Color("#664180",0.34),3.0)
+
+func _draw_lower_cliffs() -> void:
+	var lip := PackedVector2Array()
+	var bottom := PackedVector2Array()
+	for x in range(0,1473,48):
+		var y := 733.0 + sin(float(x)*0.017)*8.0 + cos(float(x)*0.051)*4.0
+		lip.append(Vector2(x,y))
+		bottom.append(Vector2(x,1024))
+	var face := lip.duplicate()
+	bottom.reverse()
+	face.append_array(bottom)
+	draw_colored_polygon(face, Color("#7758a1"))
+	var lower := PackedVector2Array()
+	for p in lip:
+		lower.append(p+Vector2(0,70))
+	draw_polyline(lower,Color("#5c428a",0.7),7.0,true)
+	draw_polyline(lip,Color("#4eae65"),15.0,true)
+	for i in range(1,lip.size()):
+		var p: Vector2 = lip[i]
+		draw_line(p+Vector2(-18,19),p+Vector2(-12,51),Color("#644b90",0.45),3)
+	for x in range(0,1472,55):
+		draw_line(Vector2(x,847),Vector2(x+39,853),Color("#513b79",0.28),4.0)
+
+func _draw_paths() -> void:
+	_paving(PackedVector2Array([Vector2(663,450),Vector2(535,433),Vector2(409,366),Vector2(287,296)]),46)
+	_paving(PackedVector2Array([Vector2(680,456),Vector2(831,414),Vector2(995,357),Vector2(1144,319)]),42)
+	_paving(PackedVector2Array([Vector2(838,480),Vector2(886,517),Vector2(931,563)]),22)
+
+func _paving(points: PackedVector2Array, amount: int) -> void:
+	var cumulative := 0.0
+	var segments: Array[float] = [0.0]
+	for i in range(points.size()-1):
+		cumulative += points[i].distance_to(points[i+1])
+		segments.append(cumulative)
+	for n in range(amount):
+		var dist := float(n)/float(maxi(amount-1,1)) * cumulative
+		var index := 0
+		for i in range(segments.size()-1):
+			if dist >= segments[i] and dist <= segments[i+1]:
+				index = i
+				break
+		var step := (dist-segments[index])/maxf(segments[index+1]-segments[index],0.001)
+		var p := points[index].lerp(points[index+1],step)
+		p.y += sin(float(n)*1.78)*7.0
+		var w := 14.0 + 4.0*sin(float(n)*1.48)
+		var c := Color("#d19bd5") if n%3 == 0 else (Color("#b78fc2") if n%3 == 1 else Color("#d8accd"))
+		draw_colored_polygon(PackedVector2Array([
+			p+Vector2(-w,-8),p+Vector2(w,-7),p+Vector2(w-3,7),p+Vector2(-w+3,8)
+		]),c)
+		draw_line(p+Vector2(-w+1,-7),p+Vector2(w-1,-7),Color("#f0cae5",0.5),2.0)
+
+func _draw_stream_and_waterfall() -> void:
+	var channel := Rect2(480,0,170,282)
+	draw_rect(channel, Color("#319ac1"))
+	for stream in range(13):
+		var x := 489.0 + float(stream)*12.0 + sin(t*2.2 + float(stream))*3.0
+		var line := PackedVector2Array()
+		for j in range(10):
+			var y := float(j)*32.0
+			line.append(Vector2(x+sin(y*0.08 + t*5.0 + stream)*3.0, y))
+		draw_polyline(line,Color("#a3f8ff",0.47 + 0.18*sin(t*2.4+stream)),2.8,true)
+	draw_rect(Rect2(480,278,170,12),Color("#dbfaff",0.76))
+	for i in range(12):
+		var theta := float(i)*TAU/12.0+t*0.5
+		var at := Vector2(568,302)+Vector2(cos(theta)*76,sin(theta)*20)
+		draw_circle(at,2.4,Color("#fcffff",0.8))
+	draw_circle(Vector2(565,303),69,Color("#47bad8",0.58))
+	draw_arc(Vector2(565,303),57,0,TAU,64,Color("#c2faff",0.46),3.0)
+
+func _draw_lake() -> void:
+	draw_set_transform(LAKE,0.0,Vector2(1.28,0.76))
+	draw_circle(Vector2.ZERO,91,Color("#387fa9"))
+	draw_circle(Vector2.ZERO,84,Color("#2da6c4"))
+	draw_circle(Vector2(2,-2),76,Color("#63d5e3",0.72))
+	for i in range(7):
+		var radius := 18.0+float(i)*10.0+3.0*sin(t*2.3+i)
+		draw_arc(Vector2.ZERO,radius,0.4,2.6,24,Color("#cbfaff",0.38),1.7)
+	draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
+	for i in range(6):
+		var angle := (float(i)/6.0)*TAU + t*0.18
+		var pos := LAKE+Vector2(cos(angle)*52.0,sin(angle)*41.0)
+		draw_circle(pos,5.5,Color("#62b668"))
+		draw_circle(pos+Vector2(-1,-1),3.0,Color("#a2eb91"))
+
+func _draw_rocks_and_flowers() -> void:
+	for entry in _rocks:
+		var p: Vector2 = entry["pos"]
+		var size: float = entry["size"]
+		var shade: int = entry["shade"]
+		var body_color := [Color("#826eac"),Color("#a18fc4"),Color("#9781af"),Color("#7a6c9e")][shade]
+		draw_colored_polygon(PackedVector2Array([
+			p+Vector2(-size,4),p+Vector2(-size*0.65,-size*0.8),
+			p+Vector2(size*0.35,-size),p+Vector2(size,size*0.3),
+			p+Vector2(size*0.52,size*0.7),p+Vector2(-size*0.6,size*0.72)
+		]),body_color)
+		draw_line(p+Vector2(-size*0.5,-size*0.66),p+Vector2(size*0.22,-size*0.76),Color("#cdbfe2",0.78),2.5)
+	for entry in _flowers:
+		var p: Vector2 = entry["pos"]
+		var size: float = entry["size"]
+		var color: Color = entry["color"]
+		for petal in range(5):
+			var angle := float(petal)*TAU/5.0 + 0.11
+			var at := p+Vector2(cos(angle),sin(angle))*size
+			draw_circle(at,size*0.72,color)
+		draw_circle(p,size*0.46,Color("#ffdc6e"))
+
+func _draw_crystal_clusters() -> void:
+	for origin in [Vector2(135,660),Vector2(1120,435),Vector2(1307,640),Vector2(733,113)]:
+		for j in range(3):
+			var shift := Vector2(float(j-1)*18,8.0)
+			var p := origin+shift
+			var height := float(28+j*12)
+			var color := Color("#f38ff0") if j%2==0 else Color("#9ae9f9")
+			draw_colored_polygon(PackedVector2Array([
+				p+Vector2(-13,0),p+Vector2(-9,-height*0.72),p+Vector2(0,-height),
+				p+Vector2(10,-height*0.72),p+Vector2(13,0)
+			]),color)
+			draw_polyline(PackedVector2Array([p+Vector2(-9,0),p+Vector2(0,-height),p+Vector2(0,0)]),Color("#fff1fc",0.68),2.0)
+
+func _draw_rift() -> void:
+	var strength := 0.25+0.07*sin(t*2.2)
+	draw_circle(RIFT,57.0+3*sin(t*1.8),Color("#8855c9",strength))
+	draw_circle(RIFT,49,Color("#372461"))
+	draw_arc(RIFT,46.0+2*sin(t*3),0,TAU,72,Color("#c87bf4"),6)
+	draw_arc(RIFT,30.0,0,TAU,68,Color("#80f1ff"),4)
+	for n in range(8):
+		var theta := t*0.42+TAU*float(n)/8.0
+		var p := RIFT+Vector2(cos(theta),sin(theta))*37.0
+		draw_circle(p,3,Color("#fff2ff"))
+	draw_circle(RIFT,13.0+2*sin(t*3.0),Color("#ffb6f2"))
+
+func _draw_oracle() -> void:
+	draw_colored_polygon(PackedVector2Array([
+		ORACLE+Vector2(-22,38),ORACLE+Vector2(-12,4),
+		ORACLE+Vector2(13,4),ORACLE+Vector2(24,38)
+	]),Color("#9c6bac"))
+	draw_circle(ORACLE,24,Color("#daaa59"))
+	draw_circle(ORACLE,18,Color("#8d60b2"))
+	draw_circle(ORACLE,13,Color("#50cfe1"))
+	draw_circle(ORACLE,7,Color("#e2ffff"))
+	draw_arc(ORACLE,27,0,TAU,42,Color("#ffe5a3",0.8),3.0)
+
+func _draw_pollen() -> void:
+	for item in _pollen:
+		var c: Vector2 = item["center"]
+		var phase: float = item["phase"]
+		var speed: float = item["speed"]
+		var p := c+Vector2(sin(t*speed+phase)*12.0,cos(t*speed*0.75+phase)*9.0)
+		var radius: float = item["radius"]
+		draw_circle(p,radius*2,Color("#e8b5fc",0.07))
+		draw_circle(p,radius,Color("#fff1c7",0.68))
