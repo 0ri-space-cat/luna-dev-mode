@@ -11,6 +11,10 @@ var body: Sprite2D
 var left_arm: Line2D
 var right_arm: Line2D
 var wand: Node2D
+var left_hand: Sprite2D
+var right_hand: Sprite2D
+var boot_left: Sprite2D
+var boot_right: Sprite2D
 var facing := "down"
 var mode := "idle"
 var elapsed := 0.0
@@ -32,6 +36,10 @@ func _ready() -> void:
 	add_child(body)
 	left_arm = _arm(Color("#af72dd"), 9.0)
 	right_arm = _arm(Color("#ad6cdb"), 9.0)
+	left_hand = _rig_sprite("hand",0.42)
+	right_hand = _rig_sprite("hand",0.42)
+	boot_left = _rig_sprite("boot",0.45)
+	boot_right = _rig_sprite("boot",0.45)
 	wand = Node2D.new()
 	wand.set_script(preload("res://scripts/2d/wand_visual_2d.gd"))
 	add_child(wand)
