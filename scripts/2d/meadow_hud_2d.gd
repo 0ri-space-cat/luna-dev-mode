@@ -66,40 +66,47 @@ func _label(parent: Node, text: String, at: Vector2, font_size: int, color: Colo
 	return label
 
 func _build_vitals() -> void:
-	var frame := _frame(root_ui, Vector2(10, 10), Vector2(390, 140), Color("#bf73ec"))
+	var frame := _frame(root_ui, Vector2(10,10), Vector2(390,140), Color("#bf73ec"))
+	# Render a fixed-size ring before the portrait: no source SVG intrinsic-size bleed.
+	var ring := Panel.new()
+	ring.position = Vector2(10,14)
+	ring.size = Vector2(106,108)
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ring_skin := _skin(Color("#3b245a"),Color("#de86fa"),54,4)
+	ring_skin.shadow_color = Color("#d65df2",0.42)
+	ring_skin.shadow_size = 6
+	ring.add_theme_stylebox_override("panel",ring_skin)
+	frame.add_child(ring)
 	portrait = TextureRect.new()
-	portrait.position = Vector2(12,17)
-	portrait.size = Vector2(90,95)
+	portrait.position = Vector2(17,21)
+	portrait.size = Vector2(92,93)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.clip_contents = true
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(portrait)
-	var border := TextureRect.new()
-	var frame_svg := "res://assets/ui/common/frames/portrait.svg"
-	if ResourceLoader.exists(frame_svg):
-		border.texture = load(frame_svg)
-	border.position = Vector2(7,11)
-	border.size = Vector2(101,108)
-	border.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(border)
-	header = _label(frame,"ЛУНА • ПАЛОЧКА",Vector2(131,8),15,Color("#fff5fc"))
+	header = _label(frame,"ЛУНА  ·  ПАЛОЧКА",Vector2(135,12),14,Color("#fff5fc"))
 	var entries := [
-		{"name":"HEALTH", "value":"120 / 120", "color":Color("#f56ca3")},
-		{"name":"MANA", "value":"80 / 80", "color":Color("#57d4fa")},
-		{"name":"STAMINA", "value":"100 / 100", "color":Color("#f7d05d")}
+		{"name":"HEALTH","value":"120 / 120","icon":"health","color":Color("#f56ca3")},
+		{"name":"MANA","value":"80 / 80","icon":"mana","color":Color("#57d4fa")},
+		{"name":"STAMINA","value":"100 / 100","icon":"stamina","color":Color("#f7d05d")}
 	]
 	for i in range(entries.size()):
+		var y := 41+i*30
+		var icon := ItemIcon.new(str(entries[i]["icon"]))
+		icon.position = Vector2(135,y)
+		icon.size = Vector2(23,23)
+		frame.add_child(icon)
 		var bar := ProgressBar.new()
-		bar.position = Vector2(159, 38 + i * 31)
-		bar.size = Vector2(217,24)
-		bar.value = 100
+		bar.position = Vector2(165,y+1)
+		bar.size = Vector2(210,22)
+		bar.value = 100.0
 		bar.show_percentage = false
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.add_theme_stylebox_override("background",_skin(Color("#4c326f"),Color("#6f5194"),7,1))
-		bar.add_theme_stylebox_override("fill",_skin(entries[i]["color"],Color("#fff3fa"),7,1))
+		bar.add_theme_stylebox_override("background",_skin(Color("#4c326f"),Color("#795394"),7,1))
+		bar.add_theme_stylebox_override("fill",_skin(entries[i]["color"],Color("#fff0fa"),7,1))
 		frame.add_child(bar)
-		_label(frame,str(entries[i]["name"]) + "  " + str(entries[i]["value"]), Vector2(138,40+i*31), 13,Color("#291d45"))
+		_label(frame,str(entries[i]["name"])+"   "+str(entries[i]["value"]),Vector2(174,y+2),12,Color("#28183e"))
 
 func _build_quest_log() -> void:
 	var log := _frame(root_ui,Vector2(12,158),Vector2(256,142),Color("#af65eb"))
