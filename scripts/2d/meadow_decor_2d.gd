@@ -38,3 +38,23 @@ func _draw() -> void:
 	draw_circle(ORACLE, 22, Color("#d59a57"))
 	draw_circle(ORACLE, 13, Color("#54e2e5"))
 	draw_circle(ORACLE, 6, Color("#353364"))
+
+
+func _ready() -> void:
+	# These are independent decorative layers; never replace logical Entities.
+	var extras := [
+		{"id": "flower_bush", "pos": Vector2(250, 500), "scale": 0.26},
+		{"id": "pink_crystals", "pos": Vector2(1190, 550), "scale": 0.27},
+		{"id": "moss_arch", "pos": Vector2(710, 195), "scale": 0.31},
+		{"id": "oracle_pedestal", "pos": ORACLE, "scale": 0.20}
+	]
+	for spec in extras:
+		var path := "res://assets/2d/eternia/props/%s.png" % spec["id"]
+		if not ResourceLoader.exists(path):
+			continue
+		var sprite := Sprite2D.new()
+		sprite.texture = load(path)
+		var factor: float = float(spec["scale"])
+		sprite.scale = Vector2.ONE * factor
+		sprite.position = spec["pos"] - Vector2(0, 190.0 * factor)
+		add_child(sprite)
