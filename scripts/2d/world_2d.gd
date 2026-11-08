@@ -86,7 +86,7 @@ func _physics_process(_delta: float) -> void:
 	var running := Input.is_key_pressed(KEY_SHIFT)
 	player.velocity = Vector2.ZERO if inspector.visible else _movement_vector() * (RUN_SPEED if running else WALK_SPEED)
 	player.move_and_slide()
-	puppet.set_motion(player.velocity, running, _delta)
+	puppet.call("set_motion", player.velocity, running, _delta)
 	player.position = player.position.clamp(Vector2(45, 95), Vector2(1420, 714))
 	if inspector.visible:
 		hud.set_prompt("Редактор: Сохранить мир или Закрыть")
@@ -116,17 +116,17 @@ func _unhandled_input(event: InputEvent) -> void:
 				if is_instance_valid(actor.visual):
 					actor.visual.selected = actor == picked
 			_open_object(picked)
-			puppet.trigger_action("cast",0.36)
+			puppet.call("trigger_action", "cast",0.36)
 
 func _input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	match event.keycode:
 		KEY_SPACE:
-			puppet.trigger_action("cast",0.55)
+			puppet.call("trigger_action", "cast",0.55)
 			_show("Луна взмахнула палочкой. Звёзды послушно вспыхнули.")
 		KEY_Q:
-			puppet.trigger_action("surprise",0.55)
+			puppet.call("trigger_action", "surprise",0.55)
 			_show("Луна: «Ой! Кажется, я что-то заметила...»")
 		KEY_E:
 			_interact()
@@ -140,14 +140,14 @@ func _input(event: InputEvent) -> void:
 		KEY_Z:
 			if processor.undo():
 				hud.set_targets(player, actors)
-				puppet.trigger_action("cast",0.22)
+				puppet.call("trigger_action", "cast",0.22)
 				_show("Последнее изменение отменено.")
 				if inspector.visible:
 					inspector._refresh()
 		KEY_Y:
 			if processor.redo():
 				hud.set_targets(player, actors)
-				puppet.trigger_action("cast",0.22)
+				puppet.call("trigger_action", "cast",0.22)
 				_show("Изменение повторено.")
 				if inspector.visible:
 					inspector._refresh()
@@ -165,7 +165,7 @@ func _input(event: InputEvent) -> void:
 			_show("Предпросмотр интерфейса: " + THEME_ORDER[debug_character] + ". Управление остаётся у Луны.")
 
 func _interact() -> void:
-	puppet.trigger_action("interact",0.40)
+	puppet.call("trigger_action", "interact",0.40)
 	if player.position.distance_to(RIFT) < 94.0:
 		session.touch_rift()
 		_show("Палочка заискрилась! Теперь можно редактировать простые свойства вещей.")
@@ -209,7 +209,7 @@ func _copy_actor(actor: Node) -> void:
 	inspector.hide()
 	selected = created
 	hud.set_targets(player, actors)
-	puppet.trigger_action("cast", 0.65)
+	puppet.call("trigger_action", "cast", 0.65)
 	_show("Копия создана: " + str(created.record.display_name) + ". Можно отменить Z.")
 
 func _delete_actor(actor: Node) -> void:
