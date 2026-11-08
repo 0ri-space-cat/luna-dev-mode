@@ -1,6 +1,6 @@
 {
   "schema": "luna.artifact.asset.v1",
-  "edition": "2026-11-08 / all-2D game, property transfer, Russian UI and Oracle",
+  "edition": "2026-11-08 / Prism hands-free underside; Oracle Eye physical item and same-slot fast loops",
   "status": "21 2D masters prepared; artifact gameplay and 3D props remain design only",
   "art_direction": {
     "style": "Hand-drawn colorful 2D game sprites with clean dark outlines, simple recognizable magical prop silhouettes; flexible cutout/pivot/overlay integration. Do not require 3D models.",
@@ -130,12 +130,12 @@
       "en": "Prism",
       "shape": "Маленький цельный прозрачный треугольный кристалл-призма с фиолетово-бирюзовыми переливами; внутри плавает крошечный плоский силуэт мира, никаких оправ и креплений",
       "palette": "#FF8ECD/#65E8F6",
-      "fx": "Призма поворачивается ребром, и 2D-экран на мгновение расходится на полупрозрачные карточки фона, игровой поверхности и переднего плана. Выбранный реальный Entity можно проявить на активном слое.",
-      "control": "Разделяет изображение 2D-сцены на задний, игровой и передний визуальные слои: показывает скрытые объекты и позволяет временно вытягивать доступные декоративные Entity из фоновой проекции в игровой слой; игра остаётся целиком 2D",
-      "fields": "RENDER_LAYER, SOURCE_LAYER_ID, LAYER_ACTIVATION, LAYER_INSPECT",
-      "place": "Секретный слой интерфейса WORLD 00, замаскирована под обычный декоративный кристалл; достать можно ранним мета-взломом",
-      "reveal": "Обычный предмет после извлечения из UI; до этого виден как плоская декоративная заклёпка",
-      "limit": "Не переключает 3D/2D и не создаёт новый мир; редактирует только представление и доступ к существующим Entity, по реальным правилам WorldTruth. Не копирует скрытые мосты Юки и не даёт бесплатного телепорта.",
+      "fx": "Кристалл мягко мерцает, вокруг мира проявляются знакомые светло-голубые контуры изнанки; Луна продолжает бежать, не поднимая палочку.",
+      "control": "Включает общий светло-голубой неоновый вид изнанки без необходимости держать и направлять палочку; сохраняет свободное передвижение и доступ к остальным инструментам. Те же реальные скрытые Entity и один WorldTruth.",
+      "fields": "UNDERSIDE_VIEW_ENABLED, UNDERSIDE_VIEW_RADIUS, AUTO_FOCUS_HIDDEN",
+      "place": "Обычный сюжетный путь — поздняя секретная находка после знакомства с устройством изнанки; знающий игрок может получить её раньше через тайник UI в WORLD 00, если умеет туда добраться.",
+      "reveal": "Физический кристалл с самого начала существует в WORLD 00; обычный маршрут знакомит с ним позднее, ранний доступ — знание-first, без XP/уровня.",
+      "limit": "Не создаёт вторую изнанку и не переносит Entity между визуальными слоями. Даёт удобство постоянного наблюдения, но не заменяет активные операции взлома палочкой и не выдаёт особое восприятие других героев.",
       "priority": "P3",
       "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game collectible with clear cartoon outlines, consistent 2D game sprite view, centered isolated neutral backdrop, readable details, light magical glow. Object: one simple transparent triangular glass prism crystal, iridescent lavender, violet and cyan refractions, a tiny flat landscape silhouette suspended inside; no pin, needle, metal frame or buttons. Color palette #FF8ECD/#65E8F6. No lettering, no hands, no other props, no character, no watermark.",
       "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, единый ракурс 2D-пропса, нейтральный фон, аккуратное свечение. Предмет: Маленький цельный прозрачный треугольный кристалл-призма с фиолетово-бирюзовыми переливами; внутри плавает крошечный плоский силуэт мира, никаких оправ и креплений. Палитра: #FF8ECD/#65E8F6. Без надписей, персонажей, рук, логотипов и водяных знаков.",
@@ -159,7 +159,7 @@
         "palette_as_drawn": "#FF8ECD/#65E8F6",
         "author_locked": true
       },
-      "production_notes": "Форма и исходный PNG/sha256 сохранены (одобрены ранее). Новая способность — работа с визуальными слоями 2D-сцены; код не реализован. Нет GAME_DIMENSION, нет 3D-режима.",
+      "production_notes": "Утверждённый 2D PNG/sha256 и форма кристалла остаются без изменений. Новое назначение: hands-free доступ к тому же базовому светло-голубому фильтру изнанки, который доступен через палочку. Отдельных тайлсетов/миров не создавать.",
       "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
     },
     {
@@ -798,10 +798,11 @@
     "An early wand-copy trick allows the copy to hack and upgrade the original wand; changing SCAN_DEPTH, TARGET_RANGE, RULE_DEPTH and DEVELOPER_MODE unlocks advanced edits without plot flags.",
     "ART-GL-01 magical hourglass changes WORLD_TIME_SCALE and can pause/accelerate entire simulation, with holder/controls safely exempt from pause; it is not a local object snapshot.",
     "Removed A02 Time Anchor as a collectible from current 20-item catalog; its record remains historical in docs/38. Safe RETURN/REWIND for player recovery is a separate engine mechanic, not loot.",
-    "ART-GL-04 Prism is a transparent triangular crystal for inspecting and temporarily activating existing background/foreground 2D scene layers; it does not switch dimension or create a 3D mode.",
+    "ART-GL-04 Prism is a late-found optional hands-free access to the SAME light-cyan simulation underside otherwise viewed with the wand. No separate underside layers, no environment mutation, early knowledge-based discovery still allowed.",
     "ART-GL-06 Crystal Heart grants coarse emotional aura perception to Luna or any bearer: emotion and intensity only. Lea's innate empathic perception additionally shows needs of creatures (especially animals), directed relationships, causes, and supports more subtle interventions. Basic wand may edit simple mood variables without granting Lea's interpretive layer.",
     "All game UI labels and actions are Russian; only technical machine field keys and ability IDs are uppercase English, initially gibberish until Oracle language knowledge in current save slot.",
     "Abilities are transferable using a real property bank, with only OPEN/LOCKED transfer states, scan-depth visibility and 2D anchor-based visual recipes; no perk system.",
-    "The entire game is native 2D; perception underside uses one shared light-cyan neon outline style, character-specific views are overlays, not recolored tile atlases."
+    "The entire game is native 2D; perception underside uses one shared light-cyan neon outline style, character-specific views are overlays, not recolored tile atlases.",
+    "Oracle Eye is a separate physical story tool (STORY_ORACLE_EYE) outside the 21 generated collectible masters, located near spawn, granted only after Luna's wand has been hacked at the rift. It makes machine identifiers legible only while equipped. Same-slot restarts remember tutorial/locations but require a quick rift interaction and physical eye pickup each new loop; ordinary load retains actual saved physical state."
   ]
 }
