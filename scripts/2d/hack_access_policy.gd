@@ -4,7 +4,7 @@ const PLAYFUL := "PLAYFUL"
 const ARCHITECT := "ARCHITECT"
 const BASE_KEYS := ["alive", "health", "speed", "size", "color", "behavior_mode"]
 const DEEP_KEYS := ["ai_enabled", "material", "target_group", "luna_relation", "sense_range", "follow_distance"]
-const BASE_ACTIONS := ["INSPECT", "TINT", "RESIZE", "RENAME", "UNDO", "COPY"]
+const BASE_ACTIONS := ["INSPECT", "TINT", "RESIZE", "RENAME", "UNDO", "COPY", "DELETE"]
 const DEEP_ACTIONS := ["EDIT_ROUTE", "TRANSFER_ABILITY", "EDIT_GRAVITY", "EDIT_TIME", "EDIT_RELATIONS", "EDIT_PORTAL", "EDIT_AVATAR"]
 
 static func can_read(wand: Dictionary, key: String) -> bool:
