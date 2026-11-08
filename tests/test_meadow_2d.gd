@@ -21,8 +21,12 @@ func _run() -> void:
 	var luna = meadow.get_node("Entities/Player/Visual")
 	luna.call("set_motion", Vector2.RIGHT*200.0, false, 0.1)
 	assert(luna.facing == "right")
+	assert(luna.right_hand != null and luna.left_hand != null)
+	assert(luna.boot_left != null and luna.boot_right != null)
+	assert(luna.wand.position.distance_to(luna.right_hand.position-Vector2(0,16)) < 1.1)
 	luna.call("set_motion", Vector2.LEFT*200.0, false, 0.1)
 	assert(luna.facing == "left")
+	assert(luna.wand.position.distance_to(luna.left_hand.position-Vector2(0,16)) < 1.1)
 	luna.call("set_motion", Vector2.UP*200.0, true, 0.1)
 	assert(luna.facing == "up" and luna.mode == "run")
 	luna.call("set_motion", Vector2.DOWN*200.0, false, 0.1)
@@ -45,9 +49,16 @@ func _run() -> void:
 		"res://assets/2d/creatures/duck_front.svg",
 		"res://assets/2d/creatures/duck_back.svg",
 		"res://assets/2d/creatures/fridge_side.svg",
-		"res://assets/2d/creatures/fridge_back.svg"
+		"res://assets/2d/creatures/fridge_back.svg",
+		"res://assets/2d/characters/luna/hand.svg",
+		"res://assets/2d/characters/luna/boot.svg",
+		"res://assets/2d/props/portal.svg",
+		"res://assets/2d/props/waterfall.svg",
+		"res://assets/2d/props/lake.svg"
 	]:
 		assert(ResourceLoader.exists(filename), "Missing game-ready SVG: " + filename)
+	for icon_id in ["wand","hourglass","donut","apple","crystal","book","health","mana","stamina","copy","delete","done"]:
+		assert(ResourceLoader.exists("res://assets/2d/ui/icons/" + icon_id + ".svg"))
 	assert(not hack.can_edit("alive"))
 	hack.touch_rift()
 	assert(hack.edit(tree, "alive", true, processor))
