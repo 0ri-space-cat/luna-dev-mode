@@ -156,6 +156,24 @@ jobs:
             exit 1
           fi
 
+
+      - name: Render GUI preview in virtual display
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/luna-preview
+          xvfb-run -a godot --path . --rendering-driver opengl3 \
+            --script res://tests/capture_meadow_2d.gd
+          find "$HOME/.local/share/godot/app_userdata" -name eternia_preview.png \
+            -exec cp '{}' /tmp/luna-preview/meadow.png \;
+
+      - name: Upload Godot screenshot for visual QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eternia-2d-preview
+          path: /tmp/luna-preview/meadow.png
+          if-no-files-found: warn
+
   asset-importer:
     runs-on: ubuntu-latest
     steps:
