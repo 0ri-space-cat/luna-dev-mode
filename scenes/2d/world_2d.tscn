@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/2d/world_2d.gd" id="1_world"]
 [ext_resource type="Script" path="res://scripts/2d/terrain_2d.gd" id="2_ground"]
-[ext_resource type="Script" path="res://scripts/2d/player_visual_2d.gd" id="3_visual"]
+[ext_resource type="Script" path="res://scripts/2d/luna_puppet_2d.gd" id="3_visual"]
 [ext_resource type="Script" path="res://scripts/2d/meadow_decor_2d.gd" id="4_decor"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
