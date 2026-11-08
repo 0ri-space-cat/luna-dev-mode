@@ -20,7 +20,8 @@ func _initialize() -> void:
 	assert(game.collect_oracle_eye())
 	assert(game.machine_label("health", "HEALTH") == "HEALTH")
 	game.oracle_eye_equipped = false
-	assert(game.machine_label("health", "HEALTH") != "HEALTH")
+	assert(game.machine_label("health", "HEALTH") == "HEALTH")
+	assert(game.machine_label("ai_enabled", "AI_ENABLED") != "AI_ENABLED")
 	var data: Dictionary = game.export_data()
 	var restore = Session.new()
 	assert(restore.import_data(data))
