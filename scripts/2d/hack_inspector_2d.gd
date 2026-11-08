@@ -6,6 +6,7 @@ signal delete_requested(actor: Node)
 const Profiles = preload("res://scripts/2d/character_ui_profile.gd")
 var copy_button: Button
 var delete_button: Button
+var save_button: Button
 var confirmation: ConfirmationDialog
 var target: Node
 var processor
@@ -65,7 +66,8 @@ func _ready() -> void:
 	var footer := HBoxContainer.new()
 	outer.add_child(footer)
 	copy_button = Button.new()
-	copy_button.text = "COPY"
+	copy_button.text = ""
+	copy_button.tooltip_text = "Копировать объект"
 	copy_button.icon = load("res://assets/2d/ui/icons/copy.svg")
 	copy_button.pressed.connect(func() -> void:
 		if is_instance_valid(target):
@@ -73,7 +75,8 @@ func _ready() -> void:
 	footer.add_child(copy_button)
 	_style_button(copy_button)
 	delete_button = Button.new()
-	delete_button.text = "DELETE"
+	delete_button.text = ""
+	delete_button.tooltip_text = "Удалить объект"
 	delete_button.icon = load("res://assets/2d/ui/icons/delete.svg")
 	delete_button.pressed.connect(func() -> void: confirmation.popup_centered())
 	footer.add_child(delete_button)
@@ -85,13 +88,24 @@ func _ready() -> void:
 		if is_instance_valid(target):
 			delete_requested.emit(target))
 	add_child(confirmation)
+	save_button = Button.new()
+	save_button.text = "Сохранить"
+	save_button.tooltip_text = "Сохранить мир сейчас"
+	save_button.icon = load("res://assets/ui/hack/icons/save.svg")
+	save_button.pressed.connect(_request_save)
+	footer.add_child(save_button)
+	_style_button(save_button)
+	save_button.expand_icon = false
 	var close_button := Button.new()
-	close_button.text = "DONE"
+	close_button.text = "Закрыть"
 	close_button.icon = load("res://assets/2d/ui/icons/done.svg")
 	close_button.pressed.connect(hide)
 	footer.add_child(close_button)
 	_style_button(close_button)
 	hide()
+
+func _request_save() -> void:
+	save_requested.emit()
 
 func open_actor(actor: Node, commands, parameters, session) -> void:
 	target = actor
