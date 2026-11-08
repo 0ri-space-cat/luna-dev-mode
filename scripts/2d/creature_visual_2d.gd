@@ -6,7 +6,9 @@ var kind := "slime"
 var sprite: Sprite2D
 var t := 0.0
 var foot_phase := 0.0
-var direction := Vector2.RIGHT
+var direction := Vector2.DOWN
+var current_art := ""
+var frame_cache: Dictionary = {}
 var state := "idle"
 var action_time := 0.0
 var blink_clock := 0.0
@@ -27,9 +29,8 @@ func _ready() -> void:
 func _assign_texture() -> void:
 	if kind not in ["sheep", "fridge", "duck", "slime", "tree"]:
 		kind = "slime"
-	var source := ART + kind + ".svg"
-	if ResourceLoader.exists(source):
-		sprite.texture = load(source)
+	current_art = ""
+	_update_directional_texture()
 	var sizes := {"sheep": 0.62, "fridge": 0.56, "duck": 0.67, "slime": 0.63, "tree": 0.78}
 	var k: float = float(sizes.get(kind, 0.60))
 	sprite.scale = Vector2.ONE * k
@@ -67,8 +68,7 @@ func _process(delta: float) -> void:
 		sprite.rotation += 0.025 * sin(t * 1.5)
 	else:
 		sprite.scale.y = absf(sprite.scale.x) * (1.0 + 0.015 * sin(t*3.0))
-	if kind in ["sheep", "fridge", "duck", "slime"]:
-		sprite.flip_h = direction.x < -0.05
+	_update_directional_texture()
 	var color: Color = actor.get_parameter("color")
 	visual_tint = Color.WHITE.lerp(color, 0.28)
 	sprite.modulate = visual_tint
@@ -119,3 +119,25 @@ func _draw_boot(x: float, y: float, tint: Color, radius: float) -> void:
 	draw_line(Vector2(x*0.65,-7),Vector2(x,y-1),tint,radius+1.0,true)
 	draw_circle(Vector2(x+3,y),radius*0.5,Color("#41265c"))
 	draw_circle(Vector2(x+3,y-1),radius*0.37,tint.lightened(0.2))
+
+func _update_directional_texture() -> void:
+	if not is_instance_valid(sprite):
+		return
+	var variant := kind
+	if kind in ["sheep","duck","fridge"]:
+		if absf(direction.y) >= absf(direction.x) * 1.05:
+			var suffix := "_front" if direction.y >= 0.0 else "_back"
+			if kind == "fridge" and suffix == "_front":
+				variant = "fridge"
+			else:
+				variant = kind + suffix
+		elif kind == "fridge":
+			variant = "fridge_side"
+	if variant != current_art:
+		var filename := ART + variant + ".svg"
+		if not frame_cache.has(variant) and ResourceLoader.exists(filename):
+			frame_cache[variant] = load(filename)
+		if frame_cache.has(variant):
+			sprite.texture = frame_cache[variant]
+			current_art = variant
+	sprite.flip_h = direction.x < -0.05 and variant in ["sheep","duck","fridge_side"]
