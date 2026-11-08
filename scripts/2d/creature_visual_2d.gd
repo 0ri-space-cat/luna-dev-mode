@@ -44,9 +44,9 @@ func react(kind_of_reaction: String = "surprised") -> void:
 func _process(delta: float) -> void:
 	t += delta
 	var actor: CharacterBody2D = get_parent() as CharacterBody2D
-	if actor == null or actor.record == null or not is_instance_valid(sprite):
+	if actor == null or actor.get("record") == null or not is_instance_valid(sprite):
 		return
-	var alive := bool(actor.get_parameter("alive"))
+	var alive := bool(actor.call("get_parameter", "alive"))
 	var moving := alive and actor.velocity.length_squared() > 80.0
 	if action_time > 0.0:
 		action_time = maxf(0.0, action_time - delta)
@@ -69,7 +69,7 @@ func _process(delta: float) -> void:
 	else:
 		sprite.scale.y = absf(sprite.scale.x) * (1.0 + 0.015 * sin(t*3.0))
 	_update_directional_texture()
-	var color: Color = actor.get_parameter("color")
+	var color: Color = actor.call("get_parameter", "color")
 	visual_tint = Color.WHITE.lerp(color, 0.28)
 	sprite.modulate = visual_tint
 	if not alive:
@@ -80,9 +80,9 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var actor: CharacterBody2D = get_parent() as CharacterBody2D
-	if actor == null or actor.record == null:
+	if actor == null or actor.get("record") == null:
 		return
-	var alive := bool(actor.get_parameter("alive"))
+	var alive := bool(actor.call("get_parameter", "alive"))
 	var moving := alive and actor.velocity.length_squared() > 80.0
 	var stride := sin(foot_phase) * (12.0 if kind == "fridge" else 7.5) if moving else 0.0
 	var shadow := Color(0.10,0.04,0.19,0.22)
