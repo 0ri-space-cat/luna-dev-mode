@@ -26,12 +26,12 @@ func _draw() -> void:
 	draw_circle(_project(Vector2(985,600)),7.2,Color("#2f9cc2"))
 	draw_circle(_project(Vector2(985,600)),5.7,Color("#7adcea"))
 	var roads := [
-		PackedVector2Array([_project(Vector2(270,300)),_project(Vector2(540,432)),_project(Vector2(680,450))]),
+		PackedVector2Array([_project(Vector2(355,296)),_project(Vector2(540,432)),_project(Vector2(680,450))]),
 		PackedVector2Array([_project(Vector2(680,450)),_project(Vector2(1000,356)),_project(Vector2(1140,320))])
 	]
 	for road in roads:
 		draw_polyline(road,Color("#d7a0d5",0.65),2.0,true)
-	draw_circle(_project(Vector2(265,245)),4.8,Color("#e777fb"))
+	draw_circle(_project(Vector2(335,245)),4.8,Color("#e777fb"))
 	draw_circle(_project(Vector2(1140,275)),4.5,Color("#fce1a2"))
 	for item in markers:
 		if is_instance_valid(item):
