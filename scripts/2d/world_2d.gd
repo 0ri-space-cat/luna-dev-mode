@@ -12,6 +12,7 @@ const RIFT := Vector2(265, 245)
 const LAKE := Vector2(985, 600)
 const ORACLE := Vector2(1140, 275)
 const WALK_SPEED := 225.0
+const RUN_SPEED := 335.0
 
 @onready var player: CharacterBody2D = $Entities/Player
 var registry = Registry.new()
@@ -25,6 +26,7 @@ var hud: CanvasLayer
 var inspector: PanelContainer
 var inspector_layer: CanvasLayer
 var debug_character := 0
+@onready var puppet: Node2D = $Entities/Player/Visual
 const THEME_ORDER := ["luna", "yuki", "ori", "mia", "leya", "toffi", "oni"]
 
 func _ready() -> void:
@@ -33,6 +35,8 @@ func _ready() -> void:
 	_spawn("fridge_01", "fridge", "Холодильник", Vector2(790, 410), {"color": Color("#e3b9f1")})
 	_spawn("tree_02", "tree", "Вишня", Vector2(1030, 380), {"color": Color("#f9a6d5")})
 	_spawn("sheep_01", "arcane_creature", "Овечка", Vector2(650, 610), {"color": Color("#f5e8ff"), "alive": true})
+	_spawn("duck_01", "arcane_creature", "Уточка", Vector2(750, 660), {"color": Color("#ffdb66"), "alive": true})
+	_spawn("slime_01", "arcane_creature", "Сонный слайм", Vector2(925, 380), {"color": Color("#83e3f0"), "alive": true})
 	hud = HUD.new()
 	add_child(hud)
 	hud.set_targets(player, actors)
@@ -57,6 +61,7 @@ func _spawn(id: String, category: String, title: String, at: Vector2, overrides:
 	shape.shape = circle
 	actor.add_child(shape)
 	world.register_entity(id, actor, category.to_upper())
+	actor.set_context(player, world)
 	actors.append(actor)
 
 func _movement_vector() -> Vector2:
@@ -73,8 +78,10 @@ func _movement_vector() -> Vector2:
 
 func _physics_process(_delta: float) -> void:
 	# A fullscreen editor never freezes the host OS; just stop player motion.
-	player.velocity = Vector2.ZERO if inspector.visible else _movement_vector() * WALK_SPEED
+	var running := Input.is_key_pressed(KEY_SHIFT)
+	player.velocity = Vector2.ZERO if inspector.visible else _movement_vector() * (RUN_SPEED if running else WALK_SPEED)
 	player.move_and_slide()
+	puppet.set_motion(player.velocity, running, _delta)
 	player.position = player.position.clamp(Vector2(45, 95), Vector2(1420, 714))
 	if inspector.visible:
 		hud.set_prompt("Редактор: Сохранить мир или Закрыть")
@@ -100,12 +107,22 @@ func _unhandled_input(event: InputEvent) -> void:
 				closest = distance
 				picked = actor
 		if picked != null:
+			for actor in actors:
+				if is_instance_valid(actor.visual):
+					actor.visual.selected = actor == picked
 			_open_object(picked)
+			puppet.trigger_action("cast",0.36)
 
 func _input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	match event.keycode:
+		KEY_SPACE:
+			puppet.trigger_action("cast",0.55)
+			_show("Луна взмахнула палочкой. Звёзды послушно вспыхнули.")
+		KEY_Q:
+			puppet.trigger_action("surprise",0.55)
+			_show("Луна: «Ой! Кажется, я что-то заметила...»")
 		KEY_E:
 			_interact()
 		KEY_U:
@@ -117,11 +134,13 @@ func _input(event: InputEvent) -> void:
 				_show("Для самовзлома нужна отдельная копия взломанной палочки.")
 		KEY_Z:
 			if processor.undo():
+				puppet.trigger_action("cast",0.22)
 				_show("Последнее изменение отменено.")
 				if inspector.visible:
 					inspector._refresh()
 		KEY_Y:
 			if processor.redo():
+				puppet.trigger_action("cast",0.22)
 				_show("Изменение повторено.")
 				if inspector.visible:
 					inspector._refresh()
@@ -139,6 +158,7 @@ func _input(event: InputEvent) -> void:
 			_show("Предпросмотр интерфейса: " + THEME_ORDER[debug_character] + ". Управление остаётся у Луны.")
 
 func _interact() -> void:
+	puppet.trigger_action("interact",0.40)
 	if player.position.distance_to(RIFT) < 94.0:
 		session.touch_rift()
 		_show("Палочка заискрилась! Теперь можно редактировать простые свойства вещей.")
@@ -158,6 +178,9 @@ func _interact() -> void:
 		_show("Рядом ничего не откликается. Посмотри на поляну внимательнее.")
 
 func _open_object(actor: Node) -> void:
+	if player.global_position.distance_to(actor.global_position) > 195.0:
+		_show("Слишком далеко для взлома. Подойди к объекту поближе.")
+		return
 	if not bool(session.wand["rift_enabled"]):
 		_show("Луна: «Палочка показывает только обычные заклинания. Что за странный разлом?»")
 		return
