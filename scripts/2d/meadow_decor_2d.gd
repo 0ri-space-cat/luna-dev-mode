@@ -4,6 +4,7 @@ extends Node2D
 const RIFT := Vector2(265, 245)
 const LAKE := Vector2(985, 600)
 const ORACLE := Vector2(1140, 275)
+const TERMINAL := Vector2(1260, 560)
 var t := 0.0
 var animation_budget := 0.0
 var _flowers: Array[Dictionary] = []
@@ -104,6 +105,7 @@ func _draw() -> void:
 	_draw_crystal_clusters()
 	_draw_rift()
 	_draw_oracle()
+	_draw_terminal()
 	_draw_pollen()
 
 func _draw_upper_terraces() -> void:
@@ -282,3 +284,20 @@ func _draw_pollen() -> void:
 		var radius: float = item["radius"]
 		draw_circle(p,radius*2,Color("#e8b5fc",0.07))
 		draw_circle(p,radius,Color("#fff1c7",0.68))
+
+func _draw_terminal() -> void:
+	# A tangible magic network node. No programming syntax required.
+	draw_rect(Rect2(TERMINAL+Vector2(-23,18),Vector2(46,40)),Color("#704b9d"))
+	draw_colored_polygon(PackedVector2Array([
+		TERMINAL+Vector2(-24,-41),TERMINAL+Vector2(23,-41),
+		TERMINAL+Vector2(31,16),TERMINAL+Vector2(-32,16)
+	]),Color("#9675ce"))
+	draw_rect(Rect2(TERMINAL+Vector2(-18,-30),Vector2(36,33)),Color("#2e245e"))
+	var center := TERMINAL + Vector2(0,-13)
+	draw_circle(center,13,Color("#4de0eb",0.24))
+	for i in range(5):
+		var phase := float(i)*TAU/5.0 + t*0.7
+		var p := center + Vector2(cos(phase),sin(phase))*11
+		draw_circle(p,2.7,Color("#ecb2fd"))
+	draw_arc(center,6.0,0,TAU,20,Color("#b9f8fd"),3.0)
+	draw_line(TERMINAL+Vector2(-15,20),TERMINAL+Vector2(15,20),Color("#d29ded"),3.0)
