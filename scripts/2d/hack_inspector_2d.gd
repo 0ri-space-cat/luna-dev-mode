@@ -16,8 +16,8 @@ var heading: Label
 var access_caption: Label
 var status_caption: Label
 var tab_buttons: HBoxContainer
-var active_tab := "GENERAL"
-const GROUPS := {"GENERAL": "Общее", "APPEARANCE": "Облик", "BEHAVIOR": "Поведение", "OTHER": "Свойства"}
+var active_tab := "ALL"
+const GROUPS := {"ALL": "Всё", "GENERAL": "Общее", "APPEARANCE": "Облик", "BEHAVIOR": "Поведение", "OTHER": "Свойства"}
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(410, 430)
@@ -44,6 +44,8 @@ func _ready() -> void:
 	for group in GROUPS.keys():
 		var button := Button.new()
 		button.text = str(GROUPS[group])
+		button.add_theme_font_size_override("font_size",12)
+		_style_button(button)
 		button.pressed.connect(_switch_tab.bind(str(group)))
 		tab_buttons.add_child(button)
 	var scroller := ScrollContainer.new()
@@ -66,10 +68,12 @@ func _ready() -> void:
 		if is_instance_valid(target):
 			copy_requested.emit(target))
 	footer.add_child(copy_button)
+	_style_button(copy_button)
 	delete_button = Button.new()
 	delete_button.text = "✕ DELETE"
 	delete_button.pressed.connect(func() -> void: confirmation.popup_centered())
 	footer.add_child(delete_button)
+	_style_button(delete_button)
 	confirmation = ConfirmationDialog.new()
 	confirmation.title = "Удалить сущность?"
 	confirmation.dialog_text = "Удалить выбранный объект? Действие можно отменить клавишей Z."
@@ -77,14 +81,11 @@ func _ready() -> void:
 		if is_instance_valid(target):
 			delete_requested.emit(target))
 	add_child(confirmation)
-	var save_button := Button.new()
-	save_button.text = "Сохранить мир"
-	save_button.pressed.connect(func() -> void: save_requested.emit())
-	footer.add_child(save_button)
 	var close_button := Button.new()
-	close_button.text = "✓ Закрыть"
+	close_button.text = "✓ DONE"
 	close_button.pressed.connect(hide)
 	footer.add_child(close_button)
+	_style_button(close_button)
 	hide()
 
 func open_actor(actor: Node, commands, parameters, session) -> void:
@@ -92,7 +93,7 @@ func open_actor(actor: Node, commands, parameters, session) -> void:
 	processor = commands
 	registry = parameters
 	hack_session = session
-	active_tab = "GENERAL"
+	active_tab = "ALL"
 	_refresh()
 	show()
 
@@ -117,15 +118,24 @@ func _refresh() -> void:
 	access_caption.text = "Доступ: " + ("АРХИТЕКТОР" if hack_session.wand["ACCESS_TIER"] == "ARCHITECT" else "ШАЛОСТИ")
 	copy_button.disabled = not hack_session.can_action("COPY")
 	delete_button.disabled = not hack_session.can_action("DELETE")
-	status_caption.text = "Технические символы читает Глаз Оракула." if not hack_session.oracle_eye_equipped else "Выбирай свойства. Изменения происходят сразу."
+	status_caption.text = "Базовые чары доступны. Глубокие руны переводит Глаз Оракула." if not hack_session.oracle_eye_equipped else "Параметры понятны. Изменения применяются сразу."
 	for child in rows.get_children():
 		rows.remove_child(child)
 		child.queue_free()
 	var count := 0
+	var previous := ""
 	for spec in registry.get_specs_for(target.record.category):
 		var key := str(spec["id"])
-		if _group_for(spec) != active_tab or not hack_session.can_edit(key):
+		var group := _group_for(spec)
+		if (active_tab != "ALL" and group != active_tab) or not hack_session.can_edit(key):
 			continue
+		if active_tab == "ALL" and group != previous:
+			var category := Label.new()
+			category.text = str(GROUPS.get(group, "Свойства")).to_upper()
+			category.add_theme_font_size_override("font_size", 12)
+			category.add_theme_color_override("font_color",Color("#85e0ef"))
+			rows.add_child(category)
+			previous = group
 		count += 1
 		_add_parameter(spec)
 	if count == 0:
@@ -175,8 +185,14 @@ func _add_parameter(spec: Dictionary) -> void:
 			slider.max_value = float(spec["max"])
 			slider.step = float(spec["step"])
 			slider.value = float(target.get_parameter(key))
-			slider.value_changed.connect(_on_slider.bind(key, str(spec["kind"])))
+			var value_text := Label.new()
+			value_text.custom_minimum_size.x = 39
+			value_text.text = ("%.1f" % float(slider.value)) if str(spec["kind"]) != "int" else str(int(slider.value))
+			slider.value_changed.connect(func(v: float) -> void:
+				value_text.text = ("%.1f" % v) if str(spec["kind"]) != "int" else str(int(v))
+				_on_slider(v, key, str(spec["kind"])))
 			line.add_child(slider)
+			line.add_child(value_text)
 
 func _on_slider(value: float, key: String, kind: String) -> void:
 	_on_value(int(value) if kind == "int" else value, key)
@@ -196,3 +212,21 @@ func set_character_theme(character_id: String) -> void:
 		style.border_color = profile["accent"]
 		style.bg_color = Color("#26203c").lerp(profile["accent"], 0.10)
 		queue_redraw()
+
+func _style_button(button: Button) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color("#382854")
+	normal.border_color = Color("#ac76df")
+	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(6)
+	normal.set_content_margin_all(6)
+	var hovered := normal.duplicate() as StyleBoxFlat
+	hovered.bg_color = Color("#69448d")
+	hovered.border_color = Color("#e9b2fb")
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = Color("#8650aa")
+	button.add_theme_stylebox_override("normal",normal)
+	button.add_theme_stylebox_override("hover",hovered)
+	button.add_theme_stylebox_override("pressed",pressed)
+	button.add_theme_color_override("font_color",Color("#f7eaff"))
+	button.add_theme_color_override("font_hover_color",Color("#fff5ff"))
