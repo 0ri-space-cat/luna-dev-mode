@@ -94,20 +94,32 @@ func _add_static_sprites() -> void:
 		sprite.position = entry["position"] - Vector2(0,sprite.texture.get_height()*factor*0.48)
 		sprite.modulate = Color(str(entry["tint"]))
 		add_child(sprite)
-	# Optional approved raster replacements can be installed later without
-	# changing map geometry or anything in the gameplay simulation.
-	for spec in [
-		{"id":"flower_bush","at":Vector2(260,500),"size":0.23},
-		{"id":"pink_crystals","at":Vector2(1155,530),"size":0.20},
-		{"id":"moss_arch","at":Vector2(704,170),"size":0.27}
-	]:
-		var filename := "res://assets/2d/eternia/props/%s.png" % str(spec["id"])
-		if ResourceLoader.exists(filename):
-			var decoration := Sprite2D.new()
-			decoration.texture = load(filename)
-			decoration.position = spec["at"] + Vector2(0,-60.0 * float(spec["size"]))
-			decoration.scale = Vector2.ONE * float(spec["size"])
-			add_child(decoration)
+	# Authored, transparent raster props from the real Eternia asset atlas.
+	# Position is the visual ground contact; only individual prop artwork moves.
+	var authored_props := [
+		{"id":"flower_bush","at":Vector2(278,500),"scale":0.50,"flip":false},
+		{"id":"flower_bush","at":Vector2(826,314),"scale":0.36,"flip":true},
+		{"id":"flower_bush","at":Vector2(1192,457),"scale":0.43,"flip":true},
+		{"id":"flower_bush","at":Vector2(1363,718),"scale":0.38,"flip":false},
+		{"id":"pink_crystals","at":Vector2(154,673),"scale":0.53,"flip":false},
+		{"id":"pink_crystals","at":Vector2(1127,466),"scale":0.42,"flip":true},
+		{"id":"pink_crystals","at":Vector2(736,167),"scale":0.34,"flip":false},
+		{"id":"moss_arch","at":Vector2(780,250),"scale":0.53,"flip":false},
+		{"id":"oracle_pedestal","at":ORACLE + Vector2(0,36),"scale":0.45,"flip":false}
+	]
+	for spec in authored_props:
+		var path := "res://assets/2d/eternia/props/%s.webp" % str(spec["id"])
+		if not ResourceLoader.exists(path):
+			push_warning("Missing painted Eternia prop: " + path)
+			continue
+		var item := Sprite2D.new()
+		item.texture = load(path)
+		var factor: float = float(spec["scale"])
+		item.scale = Vector2.ONE * factor
+		item.position = spec["at"] - Vector2(0,item.texture.get_height()*factor*0.5)
+		item.flip_h = bool(spec["flip"])
+		item.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		add_child(item)
 
 	# Illustrated layers overlay the temporary geometric lake/portal/waterfall.
 	for art in [
