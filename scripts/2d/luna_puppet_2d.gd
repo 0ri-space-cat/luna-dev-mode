@@ -56,6 +56,13 @@ func _arm(tint: Color, width: float) -> Line2D:
 	add_child(line)
 	return line
 
+func _rig_sprite(id: String, factor: float) -> Sprite2D:
+	var icon := Sprite2D.new()
+	icon.texture = load(ART + id + ".svg")
+	icon.scale = Vector2.ONE * factor
+	add_child(icon)
+	return icon
+
 func trigger_action(action: String, duration: float = 0.5) -> void:
 	if action in ["cast", "hurt", "interact", "surprise"]:
 		mode = action
