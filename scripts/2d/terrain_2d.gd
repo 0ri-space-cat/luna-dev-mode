@@ -11,15 +11,13 @@ const BASE := Color("#83c258")
 func _ready() -> void:
 	var tiles := TileSet.new()
 	tiles.tile_size = Vector2i(TILE, TILE)
-	var installed := true
-	for n in range(1, 4):
-		if not ResourceLoader.exists(ART_ROOT + "grass_%d.png" % n):
-			installed = false
 	for n in range(VARIANTS):
 		var texture: Texture2D
-		if installed and n < 3:
-			texture = load(ART_ROOT + "grass_%d.png" % (n + 1))
+		var filename := ART_ROOT + "grass_%d.png" % (n + 1)
+		if ResourceLoader.exists(filename):
+			texture = load(filename)
 		else:
+			push_warning("Missing painted grass tile: " + filename)
 			texture = _generate_tile(n)
 		_add_source(tiles, texture, n)
 	tile_set = tiles
