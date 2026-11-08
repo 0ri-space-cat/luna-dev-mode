@@ -43,7 +43,7 @@ func _ready() -> void:
 		overlay.add_child(bar)
 		var caption := Label.new()
 		caption.text = bars[i]
-		caption.position = Vector2(130, 40 + 29 * i)
+		caption.position = Vector2(5, -1)
 		caption.add_theme_color_override("font_color", Color("#271a45"))
 		bar.add_child(caption)
 	minmap = Minimap.new()
