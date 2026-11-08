@@ -208,3 +208,4 @@ func _load() -> void:
 func _show(text: String) -> void:
 	if is_instance_valid(hud):
 		hud.set_status(text)
+		hud.set_quest_state(session)
