@@ -151,6 +151,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_modular_meadow_2d.gd
       - name: Check 3-view mirrored pixel Luna and 2-frame animation states
         run: bash ci/run_godot_script.sh res://tests/test_pixel_luna_2d.gd
+      - name: Check pixel creature sprite override and reusable legs scope
+        run: bash ci/run_godot_script.sh res://tests/test_pixel_creature_skins_2d.gd
       - name: Check promoting flower decoration to a hackable persisted Entity
         run: bash ci/run_godot_script.sh res://tests/test_hackable_decor_2d.gd
 

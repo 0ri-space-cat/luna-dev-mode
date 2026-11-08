@@ -15,7 +15,7 @@ const STANCE := {
 }
 
 func configure(species: String) -> void:
-	kind = species if STANCE.has(species) else "fridge"
+	kind = species if STANCE.has(species) else ""
 	if is_instance_valid(left):
 		_apply_stance()
 
@@ -47,6 +47,9 @@ func _new_leg(tex: Texture2D, node_name: String) -> Sprite2D:
 func _apply_stance() -> void:
 	if not is_instance_valid(left) or not is_instance_valid(right):
 		return
+	if not STANCE.has(kind):
+		visible = false
+		return
 	var setting: Dictionary = STANCE[kind]
 	var size := float(setting["scale"])
 	left.scale = Vector2.ONE * size
@@ -54,7 +57,7 @@ func _apply_stance() -> void:
 	right.flip_h = true
 
 func set_motion(alive: bool, velocity: Vector2, seconds: float) -> void:
-	visible = alive and is_instance_valid(left) and is_instance_valid(right)
+	visible = alive and STANCE.has(kind) and is_instance_valid(left) and is_instance_valid(right)
 	if not visible:
 		return
 	var setting: Dictionary = STANCE[kind]

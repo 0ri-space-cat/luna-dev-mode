@@ -4,6 +4,7 @@ extends Node2D
 const ART := "res://assets/2d/creatures/"
 const UniversalLegs = preload("res://scripts/2d/universal_round_legs_2d.gd")
 const PIXEL_DECOR := "res://assets/2d/eternia/pixel/decor/"
+const PIXEL_CREATURES := "res://assets/2d/eternia/pixel/characters/"
 var kind := "slime"
 var sprite: Sprite2D
 var legs: Node2D
@@ -16,6 +17,7 @@ var state := "idle"
 var action_time := 0.0
 var blink_clock := 0.0
 var visual_tint := Color.WHITE
+var uses_pixel_skin := false
 var selected := false
 
 func configure(species: String) -> void:
@@ -37,11 +39,24 @@ func _assign_texture() -> void:
 		kind = "slime"
 	current_art = ""
 	_update_directional_texture()
+	if uses_pixel_skin:
+		return
 	var sizes := {"sheep": 0.62, "fridge": 0.56, "duck": 0.67, "slime": 0.63, "tree": 0.78, "flower": 0.20, "crystal": 0.23}
 	var k: float = float(sizes.get(kind, 0.60))
 	sprite.scale = Vector2.ONE * k
 	var y: Dictionary = {"sheep": -35.0, "fridge": -52.0, "duck": -40.0, "slime": -32.0, "tree": -74.0, "flower": -24.0, "crystal": -28.0}
 	sprite.position = Vector2(0, float(y.get(kind, -38.0)))
+
+func install_pixel_skin(source: Texture2D) -> bool:
+	if source == null or not is_instance_valid(sprite):
+		return false
+	uses_pixel_skin = true
+	current_art = "pixel:" + kind
+	sprite.texture = source
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.scale = Vector2.ONE
+	sprite.position = Vector2(0, -40)
+	return true
 
 func react(kind_of_reaction: String = "surprised") -> void:
 	state = kind_of_reaction
@@ -66,9 +81,12 @@ func _process(delta: float) -> void:
 	var phase := t * (11.0 if kind in ["duck","fridge"] else 9.0)
 	foot_phase = phase
 	var hop := absf(sin(phase)) * magnitude * (4.0 if kind in ["sheep", "duck", "slime"] else 2.0)
-	sprite.position.y = ({"sheep": -35.0,"fridge": -52.0,"duck": -40.0,"slime": -32.0,"tree": -74.0}.get(kind, -38.0)) - hop + sin(t * 2.0) * (1.4 if alive else 0.5)
+	var sprite_base_y: float = -40.0 if uses_pixel_skin else float({"sheep": -35.0,"fridge": -52.0,"duck": -40.0,"slime": -32.0,"tree": -74.0, "flower":-24.0,"crystal":-28.0}.get(kind, -38.0))
+	sprite.position.y = sprite_base_y - hop + sin(t * 2.0) * (1.4 if alive else 0.5)
 	sprite.rotation = (0.055 if kind == "tree" else 0.04) * sin(phase) * magnitude
-	if kind == "slime":
+	if uses_pixel_skin:
+		sprite.scale.y = 1.0 + 0.015 * sin(t * 3.0)
+	elif kind == "slime":
 		sprite.scale.y = 0.63 + (0.065 * sin(t * 4.5))
 	elif kind == "tree":
 		sprite.rotation += 0.025 * sin(t * 1.5)
@@ -99,6 +117,8 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
 	if selected:
 		draw_arc(Vector2(0,-34),54,0,TAU,48,Color("#72fcff",0.8),2)
+	if uses_pixel_skin:
+		return # No procedural arms or feet baked over the ImageGen picture.
 	var base_y: float = float({"sheep":-35.0,"fridge":-52.0,"duck":-40.0,"slime":-32.0,"tree":-74.0}.get(kind,-38.0))
 	draw_set_transform(Vector2(0,sprite.position.y-base_y),0.0,Vector2.ONE)
 	if kind == "slime":
@@ -136,6 +156,13 @@ func _update_directional_texture() -> void:
 	if not is_instance_valid(sprite):
 		return
 	var variant := kind
+	if uses_pixel_skin:
+		sprite.flip_h = direction.x < -0.05
+		return
+	var pixel_skin := PIXEL_CREATURES + kind + ".png"
+	if kind in ["fridge", "tree", "duck"] and ResourceLoader.exists(pixel_skin):
+		install_pixel_skin(load(pixel_skin) as Texture2D)
+		return
 	if kind in ["flower", "crystal"]:
 		var px := PIXEL_DECOR + kind + ".png"
 		var source := px if ResourceLoader.exists(px) else "res://assets/2d/eternia/props/%s.webp" % ("flower_bush" if kind == "flower" else "pink_crystals")
