@@ -9,7 +9,22 @@
     "variants": 12,
     "path_pattern": "terrain/grass_{index}.png",
     "border_contract": "All first/last rows and columns match across all variants; no tile borders",
-    "qa": "python3 ci/check_terrain_seams.py"
+    "qa": "python3 ci/check_terrain_seams.py",
+    "cliff_lip_pilot": {
+      "file": "terrain/cliff_lip_01.svg",
+      "atlas_size": [
+        192,
+        64
+      ],
+      "tile_size": [
+        64,
+        64
+      ],
+      "columns": 3,
+      "art_status": "illustrated pilot; not yet artistically approved",
+      "integration": "scenes/2d/world_2d.tscn -> CliffLipPilot",
+      "note": "Overlay along existing lower cliff. Painted-face and waterfall batches still pending."
+    }
   },
   "props": {
     "flower_bush": {
