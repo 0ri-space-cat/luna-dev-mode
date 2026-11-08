@@ -193,3 +193,7 @@ jobs:
         run: python3 -m unittest tools.test_asset_importer -v
       - name: Validate 12 illustrated terrain textures and 6 transparent props
         run: python3 ci/check_terrain_seams.py
+      - name: Test pixel-art seam validator with synthetic assets
+        run: python3 -m unittest tools.test_pixel_terrain_validator -v
+      - name: Check optional 32px grass atlas for exact tile seams
+        run: python3 ci/check_pixel_terrain.py
