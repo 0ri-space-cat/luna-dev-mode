@@ -14,7 +14,7 @@ func _draw() -> void:
 	draw_arc(center, 59, 0, TAU, 64, Color("#e7a4fb"), 5)
 	for item in markers:
 		if is_instance_valid(item):
-			var point := center + (item.global_position - Vector2(640, 400)) / 12.0
+			var point: Vector2 = center + ((item as Node2D).global_position - Vector2(640, 400)) / 12.0
 			if point.distance_to(center) < 54:
 				draw_circle(point, 4.5, Color("#8130b0"))
 	if is_instance_valid(player):
