@@ -12,14 +12,25 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate prepared art paths and canonical IDs
         run: python3 ci/validate_prepared_assets.py
-      - name: Install Godot 4.3
+      - name: Install Godot 4.3 with mirrors
         run: |
-          curl -fL --retry 3 \
-            -o /tmp/godot.zip \
-            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          set -euo pipefail
+          for source in \
+            "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip" \
+            "https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip" \
+            "https://downloads.godotengine.org/?version=4.3&flavor=stable&platform=linux.64&slug=linux.x86_64.zip"; do
+            echo "Trying a Godot 4.3 mirror"
+            if curl -fL --connect-timeout 15 --max-time 120 --retry 2 --retry-all-errors \
+              -o /tmp/godot.zip "$source" && unzip -tq /tmp/godot.zip >/dev/null; then
+              break
+            fi
+            rm -f /tmp/godot.zip
+          done
+          test -s /tmp/godot.zip || (echo "::error::Godot downloads unavailable" && exit 1)
           unzip -q /tmp/godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.3-stable_linux.x86_64
           sudo mv /tmp/Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          godot --headless --version
       - name: Import and parse project
         run: godot --headless --editor --path . --import --quit
       - name: Run asset registry and UI foundation tests
@@ -144,3 +155,12 @@ jobs:
             echo "Godot 2D scene did not boot cleanly."
             exit 1
           fi
+
+  asset-importer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pillow
+        run: python3 -m pip install Pillow
+      - name: Validate asset slicing and seam rejection
+        run: python3 -m unittest tools.test_asset_importer -v
