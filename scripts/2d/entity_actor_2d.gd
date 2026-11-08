@@ -50,7 +50,7 @@ func set_parameter(key: String, value: Variant) -> bool:
 		return false
 	_refresh_size()
 	if is_instance_valid(visual) and key in ["alive", "behavior_mode", "color", "size"]:
-		visual.react("surprised")
+		visual.call("react","surprised")
 	parameter_changed.emit(key, record.get_parameter(key))
 	return true
 
