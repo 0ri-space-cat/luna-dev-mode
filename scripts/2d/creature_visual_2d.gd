@@ -84,13 +84,15 @@ func _draw() -> void:
 		return
 	var alive := bool(actor.call("get_parameter", "alive"))
 	var moving := alive and actor.velocity.length_squared() > 80.0
-	var stride := sin(foot_phase) * (12.0 if kind == "fridge" else 7.5) if moving else 0.0
+	var stride := sin(foot_phase) * (6.0 if kind == "fridge" else 4.5) if moving else 0.0
 	var shadow := Color(0.10,0.04,0.19,0.22)
 	draw_set_transform(Vector2(0,11),0.0,Vector2(1.3,0.36))
 	draw_circle(Vector2.ZERO, 20.0 if kind == "tree" else 15.0, shadow)
 	draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
 	if selected:
 		draw_arc(Vector2(0,-34),54,0,TAU,48,Color("#72fcff",0.8),2)
+	var base_y: float = float({"sheep":-35.0,"fridge":-52.0,"duck":-40.0,"slime":-32.0,"tree":-74.0}.get(kind,-38.0))
+	draw_set_transform(Vector2(0,sprite.position.y-base_y),0.0,Vector2.ONE)
 	if kind == "slime":
 		if moving:
 			draw_arc(Vector2(0,0),27,0,PI,16,Color("#79f2ff",0.7),3)
