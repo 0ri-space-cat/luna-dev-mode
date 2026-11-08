@@ -99,13 +99,13 @@ func _build_vitals() -> void:
 		bar.add_theme_stylebox_override("background",_skin(Color("#4c326f"),Color("#6f5194"),7,1))
 		bar.add_theme_stylebox_override("fill",_skin(entries[i]["color"],Color("#fff3fa"),7,1))
 		frame.add_child(bar)
-		_label(frame, "✦ " + str(entries[i]["name"]) + "  " + str(entries[i]["value"]), Vector2(138,40+i*31), 13,Color("#291d45"))
+		_label(frame,str(entries[i]["name"]) + "  " + str(entries[i]["value"]), Vector2(138,40+i*31), 13,Color("#291d45"))
 
 func _build_quest_log() -> void:
 	var log := _frame(root_ui,Vector2(12,158),Vector2(256,142),Color("#af65eb"))
 	_label(log,"✦  ПЕРВЫЕ ОТКРЫТИЯ",Vector2(14,10),14,Color("#ffe8ac"))
 	for i in range(4):
-		var label := _label(log,"□",Vector2(14,37+i*23),12,Color("#efe0ff"))
+		var label := _label(log,"",Vector2(14,37+i*23),12,Color("#efe0ff"))
 		quest_labels.append(label)
 
 func _build_minimap() -> void:
@@ -142,7 +142,10 @@ func _build_hotbar() -> void:
 		var tile := _frame(root_ui, Vector2(480 + i * 66, 732),Vector2(58,58),color)
 		quick_slots.append(tile)
 		_label(tile,str(i+1),Vector2(21,-16),14,Color("#f5e2ff"))
-		_label(tile,["✦","⌛","◉","+","+"][i],Vector2(17,10),24,Color("#e8d5ff"))
+		var art := ItemIcon.new(ITEMS[i])
+		art.position = Vector2(7,7)
+		art.size = Vector2(44,44)
+		tile.add_child(art)
 
 func _build_action_hint() -> void:
 	var hints := _frame(root_ui,Vector2(897,700),Vector2(369,92),Color("#c279eb"))
@@ -196,6 +199,6 @@ func set_quest_state(session) -> void:
 	]
 	var titles := ["Найти странный разлом","Получить копию палочки","Повысить доступ палочки","Найти Глаз Оракула"]
 	for i in range(4):
-		quest_labels[i].text = ("✓  " if checked[i] else "□  ") + titles[i]
+		quest_labels[i].text = ("●  " if checked[i] else "○  ") + titles[i]
 		quest_labels[i].add_theme_color_override("font_color",Color("#a1f4cf") if checked[i] else Color("#f6e6ff"))
 	access_label.text = "ДОСТУП: " + ("АРХИТЕКТОР" if bool(session.wand["is_hacked"]) else ("ШАЛОСТИ" if checked[0] else "ОБЫЧНАЯ"))
