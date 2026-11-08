@@ -109,6 +109,21 @@ func _add_static_sprites() -> void:
 			decoration.scale = Vector2.ONE * float(spec["size"])
 			add_child(decoration)
 
+	# Illustrated layers overlay the temporary geometric lake/portal/waterfall.
+	for art in [
+		{"id":"portal","point":RIFT+Vector2(0,-15),"size":0.53},
+		{"id":"lake","point":LAKE,"size":0.86},
+		{"id":"waterfall","point":Vector2(565,136),"size":0.89}
+	]:
+		var filename := "res://assets/2d/props/%s.svg" % art["id"]
+		if ResourceLoader.exists(filename):
+			var sprite := Sprite2D.new()
+			sprite.texture = load(filename)
+			sprite.position = art["point"]
+			sprite.scale = Vector2.ONE * float(art["size"])
+			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			add_child(sprite)
+
 func _draw() -> void:
 	_draw_upper_terraces()
 	_draw_falls_cliffs()
