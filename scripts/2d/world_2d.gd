@@ -198,7 +198,7 @@ func _open_object(actor: Node) -> void:
 func _copy_actor(actor: Node) -> void:
 	var at: Vector2 = (actor as Node2D).position + Vector2(85, 35)
 	at = at.clamp(Vector2(45,100),Vector2(1410,710))
-	var blueprint: Dictionary = lifecycle.clone_blueprint(str(actor.record.id), at)
+	var blueprint: Dictionary = lifecycle.clone_blueprint(str(actor.get("record").id), at)
 	if blueprint.is_empty():
 		_show("Нельзя создать ещё одну копию этого объекта.")
 		return
@@ -210,10 +210,10 @@ func _copy_actor(actor: Node) -> void:
 	selected = created
 	hud.set_targets(player, actors)
 	puppet.call("trigger_action", "cast", 0.65)
-	_show("Копия создана: " + str(created.record.display_name) + ". Можно отменить Z.")
+	_show("Копия создана: " + str(blueprint["name"]) + ". Можно отменить Z.")
 
 func _delete_actor(actor: Node) -> void:
-	if processor.execute_entity_delete(lifecycle, str(actor.record.id)):
+	if processor.execute_entity_delete(lifecycle, str(actor.get("record").id)):
 		inspector.hide()
 		selected = null
 		hud.set_targets(player, actors)
