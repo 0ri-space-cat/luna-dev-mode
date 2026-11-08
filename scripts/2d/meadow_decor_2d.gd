@@ -50,7 +50,7 @@ func _seed_decorations() -> void:
 		var pos := Vector2(rng.randf_range(20, 1452),rng.randf_range(95, 725))
 		if pos.distance_to(RIFT) < 85 or pos.distance_to(LAKE) < 130 or (pos.x > 455 and pos.x < 660 and pos.y < 320):
 			continue
-		var color := ["#fca8e2","#fff5e9","#ffda89","#cba2f3","#91effa"][i % 5]
+		var color: String = ["#fca8e2","#fff5e9","#ffda89","#cba2f3","#91effa"][i % 5]
 		_flowers.append({"pos":pos,"size":rng.randf_range(2.1,5.1),"color":Color(color),"phase":rng.randf_range(0,TAU)})
 	for i in range(44):
 		var pos := Vector2(rng.randf_range(30, 1440),rng.randf_range(105, 725))
@@ -220,7 +220,7 @@ func _draw_rocks_and_flowers() -> void:
 		var p: Vector2 = entry["pos"]
 		var size: float = entry["size"]
 		var shade: int = entry["shade"]
-		var body_color := [Color("#826eac"),Color("#a18fc4"),Color("#9781af"),Color("#7a6c9e")][shade]
+		var body_color: Color = [Color("#826eac"),Color("#a18fc4"),Color("#9781af"),Color("#7a6c9e")][shade]
 		draw_colored_polygon(PackedVector2Array([
 			p+Vector2(-size,4),p+Vector2(-size*0.65,-size*0.8),
 			p+Vector2(size*0.35,-size),p+Vector2(size,size*0.3),
@@ -278,7 +278,7 @@ func _draw_pollen() -> void:
 		var c: Vector2 = item["center"]
 		var phase: float = item["phase"]
 		var speed: float = item["speed"]
-		var p := c+Vector2(sin(t*speed+phase)*12.0,cos(t*speed*0.75+phase)*9.0)
+		var p: Vector2 = c+Vector2(sin(t*speed+phase)*12.0,cos(t*speed*0.75+phase)*9.0)
 		var radius: float = item["radius"]
 		draw_circle(p,radius*2,Color("#e8b5fc",0.07))
 		draw_circle(p,radius,Color("#fff1c7",0.68))
