@@ -35,6 +35,9 @@ func collect_oracle_eye() -> bool:
 	oracle_eye_equipped = true
 	return true
 
+func can_action(action: String) -> bool:
+	return Access.can_perform(wand, action)
+
 func can_edit(key: String) -> bool:
 	return Access.can_read(wand, key)
 
