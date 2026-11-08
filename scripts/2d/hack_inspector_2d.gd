@@ -123,21 +123,23 @@ func _refresh() -> void:
 		rows.remove_child(child)
 		child.queue_free()
 	var count := 0
-	var previous := ""
-	for spec in registry.get_specs_for(target.record.category):
-		var key := str(spec["id"])
-		var group := _group_for(spec)
-		if (active_tab != "ALL" and group != active_tab) or not hack_session.can_edit(key):
+	for group in ["GENERAL", "APPEARANCE", "BEHAVIOR", "OTHER"]:
+		if active_tab != "ALL" and active_tab != group:
 			continue
-		if active_tab == "ALL" and group != previous:
-			var category := Label.new()
-			category.text = str(GROUPS.get(group, "Свойства")).to_upper()
-			category.add_theme_font_size_override("font_size", 12)
-			category.add_theme_color_override("font_color",Color("#85e0ef"))
-			rows.add_child(category)
-			previous = group
-		count += 1
-		_add_parameter(spec)
+		var heading_added := false
+		for spec in registry.get_specs_for(target.record.category):
+			var key := str(spec["id"])
+			if _group_for(spec) != group or not hack_session.can_edit(key):
+				continue
+			if active_tab == "ALL" and not heading_added:
+				var category := Label.new()
+				category.text = str(GROUPS.get(group, "Свойства")).to_upper()
+				category.add_theme_font_size_override("font_size", 12)
+				category.add_theme_color_override("font_color", Color("#85e0ef"))
+				rows.add_child(category)
+				heading_added = true
+			count += 1
+			_add_parameter(spec)
 	if count == 0:
 		var note := Label.new()
 		note.text = "Пока здесь пусто. Возможно, палочке нужно больше возможностей."
