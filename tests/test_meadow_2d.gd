@@ -15,8 +15,22 @@ func _run() -> void:
 	var hack: Variant = meadow.get("session")
 	var player: CharacterBody2D = meadow.get_node("Entities/Player")
 	var tree: Node = world.get_entity("tree_01")
-	assert(tree != null and world.count_live() == 4)
+	assert(tree != null and world.count_live() == 6)
 	assert(meadow.get_node("Terrain") is TileMapLayer)
+	assert(meadow.get_node("Entities/Player/Visual").has_method("set_motion"))
+	assert(world.get_entity("duck_01") != null)
+	assert(world.get_entity("slime_01") != null)
+	for filename in [
+		"res://assets/2d/characters/luna/luna_front.svg",
+		"res://assets/2d/characters/luna/luna_back.svg",
+		"res://assets/2d/characters/luna/luna_side.svg",
+		"res://assets/2d/creatures/sheep.svg",
+		"res://assets/2d/creatures/fridge.svg",
+		"res://assets/2d/creatures/duck.svg",
+		"res://assets/2d/creatures/tree.svg",
+		"res://assets/2d/creatures/slime.svg"
+	]:
+		assert(ResourceLoader.exists(filename), "Missing game-ready SVG: " + filename)
 	assert(not hack.can_edit("alive"))
 	hack.touch_rift()
 	assert(hack.edit(tree, "alive", true, processor))
