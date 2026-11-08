@@ -2,6 +2,8 @@ extends CanvasLayer
 ## Reference-inspired neon-purple HUD. UI graphics are independent of gameplay art.
 const Profiles = preload("res://scripts/2d/character_ui_profile.gd")
 const Minimap = preload("res://scripts/2d/meadow_minimap_2d.gd")
+const ItemIcon = preload("res://scripts/2d/ui_icon_2d.gd")
+const ITEMS := ["wand","hourglass","donut","apple","crystal","book"]
 var character_id := "luna"
 var portrait: TextureRect
 var backpack_texture: TextureRect
