@@ -12,6 +12,7 @@ const World = preload("res://scripts/core/world_registry.gd")
 const RIFT := Vector2(265, 245)
 const LAKE := Vector2(985, 600)
 const ORACLE := Vector2(1140, 275)
+const TERMINAL := Vector2(1260, 560)
 const WALK_SPEED := 225.0
 const RUN_SPEED := 335.0
 
@@ -96,6 +97,8 @@ func _physics_process(_delta: float) -> void:
 		hud.set_prompt("[E] Озеро отражений: создать копию палочки")
 	elif player.position.distance_to(ORACLE) < 100.0:
 		hud.set_prompt("[E] Оракул и механический глаз")
+	elif player.position.distance_to(TERMINAL) < 95.0:
+		hud.set_prompt("[E] Узел связей (требует высокого доступа)")
 	elif not session.duplicate.is_empty() and not session.wand["is_hacked"]:
 		hud.set_prompt("[U] Применить копию палочки к оригиналу")
 	else:
@@ -181,6 +184,11 @@ func _interact() -> void:
 				inspector._refresh()
 		else:
 			_show("Оракул: «Глаз откликнется только на палочку, коснувшуюся разлома».")
+	elif player.position.distance_to(TERMINAL) < 95.0:
+		if bool(session.wand.get("is_hacked",false)):
+			_show("Узел связей распознал АРХИТЕКТОРА. Кто-то уже оставил здесь чужие изменения...")
+		else:
+			_show("Узел связей: «Палочка с простыми чарами сюда не проходит».")
 	else:
 		_show("Рядом ничего не откликается. Посмотри на поляну внимательнее.")
 
