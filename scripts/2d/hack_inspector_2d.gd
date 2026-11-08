@@ -27,6 +27,8 @@ func _ready() -> void:
 	style.border_color = Color("#d46eff")
 	style.set_border_width_all(3)
 	style.set_corner_radius_all(15)
+	style.shadow_color = Color("#bd64ed",0.35)
+	style.shadow_size = 10
 	style.set_content_margin_all(14)
 	add_theme_stylebox_override("panel", style)
 	var outer := VBoxContainer.new()
@@ -63,14 +65,16 @@ func _ready() -> void:
 	var footer := HBoxContainer.new()
 	outer.add_child(footer)
 	copy_button = Button.new()
-	copy_button.text = "⧉ COPY"
+	copy_button.text = "COPY"
+	copy_button.icon = load("res://assets/2d/ui/icons/copy.svg")
 	copy_button.pressed.connect(func() -> void:
 		if is_instance_valid(target):
 			copy_requested.emit(target))
 	footer.add_child(copy_button)
 	_style_button(copy_button)
 	delete_button = Button.new()
-	delete_button.text = "✕ DELETE"
+	delete_button.text = "DELETE"
+	delete_button.icon = load("res://assets/2d/ui/icons/delete.svg")
 	delete_button.pressed.connect(func() -> void: confirmation.popup_centered())
 	footer.add_child(delete_button)
 	_style_button(delete_button)
@@ -82,7 +86,8 @@ func _ready() -> void:
 			delete_requested.emit(target))
 	add_child(confirmation)
 	var close_button := Button.new()
-	close_button.text = "✓ DONE"
+	close_button.text = "DONE"
+	close_button.icon = load("res://assets/2d/ui/icons/done.svg")
 	close_button.pressed.connect(hide)
 	footer.add_child(close_button)
 	_style_button(close_button)
