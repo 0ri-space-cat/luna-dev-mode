@@ -129,3 +129,18 @@ jobs:
 
       - name: Run social witness reactions and temporary memory tests
         run: bash ci/run_godot_script.sh res://tests/test_social_awareness.gd
+
+      - name: Verify two-tier magical access and Oracle Eye
+        run: bash ci/run_godot_script.sh res://tests/test_2d_access_policy.gd
+
+      - name: Verify playable 2D meadow and independent saves
+        run: bash ci/run_godot_script.sh res://tests/test_meadow_2d.gd
+
+      - name: Boot experimental 2D scene separately (main remains 3D)
+        run: |
+          set -o pipefail
+          godot --headless --path . res://scenes/2d/world_2d.tscn --quit-after 20 2>&1 | tee /tmp/luna-meadow-2d.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|Invalid call|^ERROR:' /tmp/luna-meadow-2d.log; then
+            echo "Godot 2D scene did not boot cleanly."
+            exit 1
+          fi
