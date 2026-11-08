@@ -101,9 +101,14 @@ func _add_static_sprites() -> void:
 		{"id":"flower_bush","at":Vector2(826,314),"scale":0.36,"flip":true},
 		{"id":"flower_bush","at":Vector2(1192,457),"scale":0.43,"flip":true},
 		{"id":"flower_bush","at":Vector2(1363,718),"scale":0.38,"flip":false},
+		{"id":"flower_bush","at":Vector2(523,552),"scale":0.30,"flip":true},
+		{"id":"flower_bush","at":Vector2(1031,699),"scale":0.33,"flip":false},
+		{"id":"flower_bush","at":Vector2(1242,623),"scale":0.31,"flip":true},
 		{"id":"pink_crystals","at":Vector2(154,673),"scale":0.53,"flip":false},
 		{"id":"pink_crystals","at":Vector2(1127,466),"scale":0.42,"flip":true},
 		{"id":"pink_crystals","at":Vector2(736,167),"scale":0.34,"flip":false},
+		{"id":"pink_crystals","at":Vector2(347,638),"scale":0.27,"flip":true},
+		{"id":"pink_crystals","at":Vector2(1340,542),"scale":0.31,"flip":false},
 		{"id":"moss_arch","at":Vector2(780,250),"scale":0.53,"flip":false},
 		{"id":"oracle_pedestal","at":ORACLE + Vector2(0,36),"scale":0.45,"flip":false}
 	]
