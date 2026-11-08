@@ -90,7 +90,7 @@ func _physics_process(_delta: float) -> void:
 	puppet.call("set_motion", player.velocity, running, _delta)
 	player.position = player.position.clamp(Vector2(45, 95), Vector2(1420, 714))
 	if inspector.visible:
-		hud.set_prompt("Редактор: Сохранить мир или Закрыть")
+		hud.set_prompt("Редактор: изменения сразу • F5 сохранить • Esc закрыть")
 	elif player.position.distance_to(RIFT) < 94.0:
 		hud.set_prompt("[E] Исследовать мерцающий разлом")
 	elif player.position.distance_to(LAKE) < 115.0:
