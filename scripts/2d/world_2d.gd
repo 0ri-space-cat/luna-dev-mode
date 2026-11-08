@@ -43,6 +43,7 @@ func _ready() -> void:
 	inspector.position = Vector2(826, 145)
 	inspector_layer.add_child(inspector)
 	inspector.save_requested.connect(_save)
+	inspector.set_character_theme("luna")
 	_show("Луна проснулась в Этернии. Разлом мерцает слева.")
 
 func _spawn(id: String, category: String, title: String, at: Vector2, overrides: Dictionary) -> void:
@@ -134,6 +135,7 @@ func _input(event: InputEvent) -> void:
 			# Temporary visual test: switches themes only, not physical characters.
 			debug_character = (debug_character + 1) % THEME_ORDER.size()
 			hud.set_character(THEME_ORDER[debug_character])
+			inspector.set_character_theme(THEME_ORDER[debug_character])
 			_show("Предпросмотр интерфейса: " + THEME_ORDER[debug_character] + ". Управление остаётся у Луны.")
 
 func _interact() -> void:
