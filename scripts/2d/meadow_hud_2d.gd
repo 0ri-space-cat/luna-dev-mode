@@ -12,8 +12,8 @@ var minmap: Control
 var access_label: Label
 var quest_labels: Array[Label] = []
 var accent := Color("#db78f3")
-var panels: Array[PanelContainer] = []
-var quick_slots: Array[PanelContainer] = []
+var panels: Array[Panel] = []
+var quick_slots: Array[Panel] = []
 var root_ui: Control
 
 func _ready() -> void:
@@ -42,8 +42,8 @@ func _skin(fill: Color, edge: Color, radius: int = 12, border_size: int = 2) -> 
 	style.set_content_margin_all(7)
 	return style
 
-func _frame(parent: Node, at: Vector2, size: Vector2, color: Color) -> PanelContainer:
-	var frame := PanelContainer.new()
+func _frame(parent: Node, at: Vector2, size: Vector2, color: Color) -> Panel:
+	var frame := Panel.new()
 	frame.position = at
 	frame.custom_minimum_size = size
 	frame.size = size
