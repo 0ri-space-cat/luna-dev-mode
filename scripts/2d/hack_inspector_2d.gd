@@ -1,6 +1,7 @@
 extends PanelContainer
 ## Fictional visual editor; actual keys and actions are validated by HackSession2D.
 signal save_requested
+const Profiles = preload("res://scripts/2d/character_ui_profile.gd")
 var target: Node
 var processor
 var registry
@@ -163,3 +164,11 @@ func _on_choice(index: int, key: String, options: Array) -> void:
 func _on_value(value: Variant, key: String) -> void:
 	if not is_instance_valid(target) or not hack_session.edit(target, key, value, processor):
 		status_caption.text = "Это свойство пока недоступно."
+
+func set_character_theme(character_id: String) -> void:
+	var profile: Dictionary = Profiles.get_profile(character_id)
+	var style: StyleBoxFlat = get_theme_stylebox("panel") as StyleBoxFlat
+	if style != null:
+		style.border_color = profile["accent"]
+		style.bg_color = Color("#26203c").lerp(profile["accent"], 0.10)
+		queue_redraw()
