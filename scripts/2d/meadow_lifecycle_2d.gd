@@ -17,12 +17,12 @@ func _init(environment, entities_parent: Node2D, registry, controlled_player: Ch
 
 func capture(entity_id: String) -> Dictionary:
 	var actor: Node = world.get_entity(entity_id)
-	if actor == null or actor.record == null:
+	if actor == null or actor.get("record") == null:
 		return {}
-	var item: Variant = actor.record
+	var item: Variant = actor.get("record")
 	return {
 		"id": str(item.id), "category": str(item.category),
-		"name": str(item.display_name), "position": actor.position,
+		"name": str(item.display_name), "position": (actor as Node2D).position,
 		"parameters": item.parameters.duplicate(true)
 	}
 
