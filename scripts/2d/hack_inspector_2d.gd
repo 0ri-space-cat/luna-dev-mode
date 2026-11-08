@@ -1,7 +1,12 @@
 extends PanelContainer
 ## Fictional visual editor; actual keys and actions are validated by HackSession2D.
 signal save_requested
+signal copy_requested(actor: Node)
+signal delete_requested(actor: Node)
 const Profiles = preload("res://scripts/2d/character_ui_profile.gd")
+var copy_button: Button
+var delete_button: Button
+var confirmation: ConfirmationDialog
 var target: Node
 var processor
 var registry
@@ -55,6 +60,23 @@ func _ready() -> void:
 	outer.add_child(status_caption)
 	var footer := HBoxContainer.new()
 	outer.add_child(footer)
+	copy_button = Button.new()
+	copy_button.text = "⧉ COPY"
+	copy_button.pressed.connect(func() -> void:
+		if is_instance_valid(target):
+			copy_requested.emit(target))
+	footer.add_child(copy_button)
+	delete_button = Button.new()
+	delete_button.text = "✕ DELETE"
+	delete_button.pressed.connect(func() -> void: confirmation.popup_centered())
+	footer.add_child(delete_button)
+	confirmation = ConfirmationDialog.new()
+	confirmation.title = "Удалить сущность?"
+	confirmation.dialog_text = "Удалить выбранный объект? Действие можно отменить клавишей Z."
+	confirmation.confirmed.connect(func() -> void:
+		if is_instance_valid(target):
+			delete_requested.emit(target))
+	add_child(confirmation)
 	var save_button := Button.new()
 	save_button.text = "Сохранить мир"
 	save_button.pressed.connect(func() -> void: save_requested.emit())
@@ -93,6 +115,8 @@ func _refresh() -> void:
 		return
 	heading.text = "%s  •  %s" % [target.record.display_name, target.record.id]
 	access_caption.text = "Доступ: " + ("АРХИТЕКТОР" if hack_session.wand["ACCESS_TIER"] == "ARCHITECT" else "ШАЛОСТИ")
+	copy_button.disabled = not hack_session.can_action("COPY")
+	delete_button.disabled = not hack_session.can_action("DELETE")
 	status_caption.text = "Технические символы читает Глаз Оракула." if not hack_session.oracle_eye_equipped else "Выбирай свойства. Изменения происходят сразу."
 	for child in rows.get_children():
 		rows.remove_child(child)
