@@ -91,8 +91,8 @@ func _build_vitals() -> void:
 	]
 	for i in range(entries.size()):
 		var bar := ProgressBar.new()
-		bar.position = Vector2(132, 38 + i * 31)
-		bar.size = Vector2(244,24)
+		bar.position = Vector2(159, 38 + i * 31)
+		bar.size = Vector2(217,24)
 		bar.value = 100
 		bar.show_percentage = false
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
