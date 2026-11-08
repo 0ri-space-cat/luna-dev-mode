@@ -18,6 +18,17 @@ func _run() -> void:
 	assert(tree != null and world.count_live() == 6)
 	assert(meadow.get_node("Terrain") is TileMapLayer)
 	assert(meadow.get_node("Entities/Player/Visual").has_method("set_motion"))
+	var luna = meadow.get_node("Entities/Player/Visual")
+	luna.call("set_motion", Vector2.RIGHT*200.0, false, 0.1)
+	assert(luna.facing == "right")
+	luna.call("set_motion", Vector2.LEFT*200.0, false, 0.1)
+	assert(luna.facing == "left")
+	luna.call("set_motion", Vector2.UP*200.0, true, 0.1)
+	assert(luna.facing == "up" and luna.mode == "run")
+	luna.call("set_motion", Vector2.DOWN*200.0, false, 0.1)
+	assert(luna.facing == "down")
+	luna.call("trigger_action", "cast", 0.2)
+	assert(luna.mode == "cast")
 	assert(world.get_entity("duck_01") != null)
 	assert(world.get_entity("slime_01") != null)
 	for filename in [
@@ -28,7 +39,13 @@ func _run() -> void:
 		"res://assets/2d/creatures/fridge.svg",
 		"res://assets/2d/creatures/duck.svg",
 		"res://assets/2d/creatures/tree.svg",
-		"res://assets/2d/creatures/slime.svg"
+		"res://assets/2d/creatures/slime.svg",
+		"res://assets/2d/creatures/sheep_front.svg",
+		"res://assets/2d/creatures/sheep_back.svg",
+		"res://assets/2d/creatures/duck_front.svg",
+		"res://assets/2d/creatures/duck_back.svg",
+		"res://assets/2d/creatures/fridge_side.svg",
+		"res://assets/2d/creatures/fridge_back.svg"
 	]:
 		assert(ResourceLoader.exists(filename), "Missing game-ready SVG: " + filename)
 	assert(not hack.can_edit("alive"))
