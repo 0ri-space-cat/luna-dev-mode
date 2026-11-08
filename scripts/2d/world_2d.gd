@@ -127,6 +127,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			if distance < closest:
 				closest = distance
 				picked = actor
+		var decor: Sprite2D = $GroundDecorScatter.decoration_at(at, 26.0)
+		if decor != null and (picked == null or decor.global_position.distance_to(at) < closest):
+			if bool(session.wand.get("rift_enabled", false)) and player.global_position.distance_to(decor.get_meta("ground_point")) <= 195.0:
+				var promoted: Node = _promote_decoration(decor)
+				if promoted != null:
+					picked = promoted
 		if picked != null:
 			for actor in actors:
 				if is_instance_valid(actor.visual):
@@ -207,6 +213,20 @@ func _interact() -> void:
 	else:
 		_show("Рядом ничего не откликается. Посмотри на поляну внимательнее.")
 
+func _promote_decoration(decor: Sprite2D) -> Node:
+	# A previously lightweight decoration acquires stable Entity identity on demand.
+	var entity_id := str(decor.get_meta("entity_id"))
+	if world.get_entity(entity_id) != null:
+		return world.get_entity(entity_id)
+	var category := "arcane_object"
+	var label := "Цветок" if str(decor.get_meta("decor_kind")) == "flower" else "Кристалл"
+	_spawn(entity_id, category, label, decor.get_meta("ground_point"), {"alive":false,"ai_enabled":true})
+	var created: Node = world.get_entity(entity_id)
+	if created != null:
+		$GroundDecorScatter.hide_promoted(decor)
+		hud.set_targets(player, actors)
+	return created
+
 func _open_object(actor: Node) -> void:
 	if player.global_position.distance_to(actor.global_position) > 195.0:
 		_show("Слишком далеко для взлома. Подойди к объекту поближе.")
@@ -258,6 +278,7 @@ func _load() -> void:
 		processor.clear_history()
 		inspector.hide()
 		selected = null
+		$GroundDecorScatter.reconcile_promoted(world)
 		hud.set_targets(player, actors)
 		_show("Поляна и состояние палочки загружены.")
 		if inspector.visible:

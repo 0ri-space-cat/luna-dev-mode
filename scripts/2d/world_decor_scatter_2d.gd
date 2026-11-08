@@ -36,6 +36,7 @@ func _ready() -> void:
 			item.position = spot - Vector2(0.0, tex.get_height() * item.scale.y * 0.5)
 			item.set_meta("ground_point", spot)
 			item.set_meta("decor_kind", entry["id"])
+			item.set_meta("entity_id", "%s_%s" % [str(entry["id"]),item.name])
 			add_child(item)
 			spawned.append(item)
 			made += 1
@@ -60,8 +61,22 @@ func decoration_at(point: Vector2, radius: float = 28.0) -> Sprite2D:
 	for item in spawned:
 		if not is_instance_valid(item):
 			continue
-		var distance := (item.get_meta("ground_point") as Vector2).distance_squared_to(point)
+		var distance := item.global_position.distance_squared_to(point)
+		if item.texture != null:
+			var local_point := item.to_local(point)
+			var area := Rect2(-item.texture.get_size()*0.5, item.texture.get_size())
+			if area.has_point(local_point):
+				distance = 0.0
 		if distance < best:
 			best = distance
 			closest = item
 	return closest
+
+func hide_promoted(item: Sprite2D) -> void:
+	spawned.erase(item)
+	item.queue_free()
+
+func reconcile_promoted(world) -> void:
+	for item in spawned.duplicate():
+		if world.get_entity(str(item.get_meta("entity_id"))) != null:
+			hide_promoted(item)

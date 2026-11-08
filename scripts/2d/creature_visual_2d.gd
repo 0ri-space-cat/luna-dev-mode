@@ -2,8 +2,11 @@ extends Node2D
 ## Animated 2D creature with the anatomy locked into authored SVG illustrations.
 ## Repeated motion only animates joints and transforms; no regenerated limbs.
 const ART := "res://assets/2d/creatures/"
+const UniversalLegs = preload("res://scripts/2d/universal_round_legs_2d.gd")
+const PIXEL_DECOR := "res://assets/2d/eternia/pixel/decor/"
 var kind := "slime"
 var sprite: Sprite2D
+var legs: Node2D
 var t := 0.0
 var foot_phase := 0.0
 var direction := Vector2.DOWN
@@ -21,20 +24,23 @@ func configure(species: String) -> void:
 		_assign_texture()
 
 func _ready() -> void:
+	legs = UniversalLegs.new()
+	add_child(legs)
+	legs.configure(kind)
 	sprite = Sprite2D.new()
 	add_child(sprite)
 	_assign_texture()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 func _assign_texture() -> void:
-	if kind not in ["sheep", "fridge", "duck", "slime", "tree"]:
+	if kind not in ["sheep", "fridge", "duck", "slime", "tree", "flower", "crystal"]:
 		kind = "slime"
 	current_art = ""
 	_update_directional_texture()
-	var sizes := {"sheep": 0.62, "fridge": 0.56, "duck": 0.67, "slime": 0.63, "tree": 0.78}
+	var sizes := {"sheep": 0.62, "fridge": 0.56, "duck": 0.67, "slime": 0.63, "tree": 0.78, "flower": 0.20, "crystal": 0.23}
 	var k: float = float(sizes.get(kind, 0.60))
 	sprite.scale = Vector2.ONE * k
-	var y: Dictionary = {"sheep": -35.0, "fridge": -52.0, "duck": -40.0, "slime": -32.0, "tree": -74.0}
+	var y: Dictionary = {"sheep": -35.0, "fridge": -52.0, "duck": -40.0, "slime": -32.0, "tree": -74.0, "flower": -24.0, "crystal": -28.0}
 	sprite.position = Vector2(0, float(y.get(kind, -38.0)))
 
 func react(kind_of_reaction: String = "surprised") -> void:
@@ -69,6 +75,8 @@ func _process(delta: float) -> void:
 	else:
 		sprite.scale.y = absf(sprite.scale.x) * (1.0 + 0.015 * sin(t*3.0))
 	_update_directional_texture()
+	if is_instance_valid(legs):
+		legs.call("set_motion", alive, actor.velocity, t)
 	var color: Color = actor.call("get_parameter", "color")
 	visual_tint = Color.WHITE.lerp(color, 0.28)
 	sprite.modulate = visual_tint
@@ -97,15 +105,9 @@ func _draw() -> void:
 		if moving:
 			draw_arc(Vector2(0,0),27,0,PI,16,Color("#79f2ff",0.7),3)
 		return
-	if kind == "tree":
-		if not alive:
-			return
-		_draw_boot(-14.0 + stride, 9.0, Color("#ac7381"), 11)
-		_draw_boot(14.0 - stride, 9.0, Color("#ac7381"), 11)
+	if kind == "tree" or kind in ["flower", "crystal"]:
 		return
 	if kind == "fridge" and alive:
-		_draw_boot(-18.0 + stride, 10.0, Color("#8657c5"), 13)
-		_draw_boot(18.0 - stride, 10.0, Color("#8657c5"), 13)
 		var arm_wiggle := sin(t*5) * (8.0 if moving else 3.0)
 		draw_line(Vector2(-33,-35),Vector2(-48,-19 + arm_wiggle),Color("#493068"),11,true)
 		draw_line(Vector2(-33,-35),Vector2(-48,-19 + arm_wiggle),Color("#c9a4df"),7,true)
@@ -134,6 +136,13 @@ func _update_directional_texture() -> void:
 	if not is_instance_valid(sprite):
 		return
 	var variant := kind
+	if kind in ["flower", "crystal"]:
+		var px := PIXEL_DECOR + kind + ".png"
+		var source := px if ResourceLoader.exists(px) else "res://assets/2d/eternia/props/%s.webp" % ("flower_bush" if kind == "flower" else "pink_crystals")
+		if variant != current_art and ResourceLoader.exists(source):
+			sprite.texture = load(source) as Texture2D
+			current_art = variant
+		return
 	var actor: CharacterBody2D = get_parent() as CharacterBody2D
 	var alive := true
 	if actor != null and actor.get("record") != null:

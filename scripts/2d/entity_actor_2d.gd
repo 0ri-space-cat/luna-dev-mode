@@ -30,6 +30,10 @@ func set_context(controlled_player: CharacterBody2D, environment) -> void:
 	world = environment
 
 func _species_for(id: String, category: String) -> String:
+	if id.begins_with("flower_"):
+		return "flower"
+	if id.begins_with("crystal_"):
+		return "crystal"
 	if id.begins_with("sheep"):
 		return "sheep"
 	if id.begins_with("duck"):
