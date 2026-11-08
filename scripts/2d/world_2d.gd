@@ -48,7 +48,11 @@ func _ready() -> void:
 	inspector_layer.layer = 3
 	add_child(inspector_layer)
 	inspector = Inspector.new()
-	inspector.position = Vector2(826, 145)
+	var viewport_size := get_viewport_rect().size
+	inspector.position = Vector2(
+		maxf(16.0, viewport_size.x - inspector.size.x - 32.0),
+		maxf(16.0, viewport_size.y - inspector.size.y - 24.0)
+	)
 	inspector_layer.add_child(inspector)
 	inspector.save_requested.connect(_save)
 	inspector.copy_requested.connect(_copy_actor)

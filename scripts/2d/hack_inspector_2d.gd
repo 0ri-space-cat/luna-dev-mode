@@ -4,6 +4,8 @@ signal save_requested
 signal copy_requested(actor: Node)
 signal delete_requested(actor: Node)
 const Profiles = preload("res://scripts/2d/character_ui_profile.gd")
+const PANEL_WIDTH := 390.0
+const PANEL_HEIGHT := 610.0
 var copy_button: Button
 var delete_button: Button
 var save_button: Button
@@ -21,13 +23,14 @@ var active_tab := "ALL"
 const GROUPS := {"ALL": "Всё", "GENERAL": "Общее", "APPEARANCE": "Облик", "BEHAVIOR": "Поведение", "OTHER": "Свойства"}
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(410, 430)
+	custom_minimum_size = Vector2(PANEL_WIDTH, PANEL_HEIGHT)
+	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#292044")
 	style.border_color = Color("#d46eff")
 	style.set_border_width_all(3)
-	style.set_corner_radius_all(15)
+	style.set_corner_radius_all(0) # Crisp inspector frame, not a rounded level-editor card.
 	style.shadow_color = Color("#bd64ed",0.35)
 	style.shadow_size = 10
 	style.set_content_margin_all(14)
@@ -52,11 +55,11 @@ func _ready() -> void:
 		button.pressed.connect(_switch_tab.bind(str(group)))
 		tab_buttons.add_child(button)
 	var scroller := ScrollContainer.new()
-	scroller.custom_minimum_size = Vector2(384, 278)
+	scroller.custom_minimum_size = Vector2(326, 350)
 	scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer.add_child(scroller)
 	rows = VBoxContainer.new()
-	rows.custom_minimum_size.x = 370
+	rows.custom_minimum_size.x = 312 # Parameter rows remain a single vertical list.
 	rows.add_theme_constant_override("separation", 8)
 	scroller.add_child(rows)
 	status_caption = Label.new()
@@ -68,6 +71,7 @@ func _ready() -> void:
 	copy_button = Button.new()
 	copy_button.text = ""
 	copy_button.tooltip_text = "Копировать объект"
+	copy_button.custom_minimum_size.x = 42
 	copy_button.icon = load("res://assets/2d/ui/icons/copy.svg")
 	copy_button.pressed.connect(func() -> void:
 		if is_instance_valid(target):
@@ -77,6 +81,7 @@ func _ready() -> void:
 	delete_button = Button.new()
 	delete_button.text = ""
 	delete_button.tooltip_text = "Удалить объект"
+	delete_button.custom_minimum_size.x = 42
 	delete_button.icon = load("res://assets/2d/ui/icons/delete.svg")
 	delete_button.pressed.connect(func() -> void: confirmation.popup_centered())
 	footer.add_child(delete_button)
@@ -173,7 +178,7 @@ func _add_parameter(spec: Dictionary) -> void:
 	var caption := Label.new()
 	caption.text = hack_session.machine_label(key, str(spec["label"]))
 	caption.tooltip_text = str(spec.get("hint", ""))
-	caption.custom_minimum_size.x = 148
+	caption.custom_minimum_size.x = 120
 	caption.clip_text = true
 	caption.add_theme_color_override("font_color", Color("#eee0ff"))
 	line.add_child(caption)
@@ -192,7 +197,7 @@ func _add_parameter(spec: Dictionary) -> void:
 		"enum":
 			var options: Array = spec["choices"]
 			var select := OptionButton.new()
-			select.custom_minimum_size.x = 148
+			select.custom_minimum_size.x = 136
 			for i in range(options.size()):
 				select.add_item(str(options[i]["name"]))
 				if str(options[i]["value"]) == str(target.get_parameter(key)):
@@ -201,7 +206,7 @@ func _add_parameter(spec: Dictionary) -> void:
 			line.add_child(select)
 		_:
 			var slider := HSlider.new()
-			slider.custom_minimum_size.x = 138
+			slider.custom_minimum_size.x = 108
 			slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			slider.min_value = float(spec["min"])
 			slider.max_value = float(spec["max"])
