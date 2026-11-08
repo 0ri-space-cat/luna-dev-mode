@@ -19,8 +19,10 @@ func _run() -> void:
 	assert(editor.size.x < editor.size.y)
 	assert(editor.custom_minimum_size == Vector2(390, 610))
 	assert(copy_button.text.is_empty() and delete_button.text.is_empty())
-	assert(editor.position.x + editor.size.x <= meadow.get_viewport_rect().size.x)
-	assert(editor.position.y + editor.size.y <= meadow.get_viewport_rect().size.y)
+	var displayed_size: Vector2 = editor.size * editor.scale
+	assert(displayed_size.x < displayed_size.y)
+	assert(editor.position.x + displayed_size.x <= meadow.get_viewport_rect().size.x + 0.5)
+	assert(editor.position.y + displayed_size.y <= meadow.get_viewport_rect().size.y + 0.5)
 	assert(copy_button != null and copy_button.tooltip_text == "Копировать объект")
 	assert(delete_button != null and delete_button.tooltip_text == "Удалить объект")
 	assert(save_button.pressed.is_connected(Callable(editor, "_request_save")))

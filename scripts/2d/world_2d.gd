@@ -48,17 +48,26 @@ func _ready() -> void:
 	inspector_layer.layer = 3
 	add_child(inspector_layer)
 	inspector = Inspector.new()
-	var viewport_size := get_viewport_rect().size
-	inspector.position = Vector2(
-		maxf(16.0, viewport_size.x - inspector.size.x - 32.0),
-		maxf(16.0, viewport_size.y - inspector.size.y - 24.0)
-	)
 	inspector_layer.add_child(inspector)
+	# Fit after the container completes its first layout; its final size can grow.
+	call_deferred("_position_inspector")
+	get_viewport().size_changed.connect(_position_inspector)
 	inspector.save_requested.connect(_save)
 	inspector.copy_requested.connect(_copy_actor)
 	inspector.delete_requested.connect(_delete_actor)
 	inspector.set_character_theme("luna")
 	_show("Луна проснулась в Этернии. Разлом мерцает слева.")
+
+func _position_inspector() -> void:
+	if not is_instance_valid(inspector):
+		return
+	var viewport_size := get_viewport_rect().size
+	var panel_size := inspector.size
+	var available := Vector2(maxf(1.0, viewport_size.x - 32.0), maxf(1.0, viewport_size.y - 32.0))
+	var fit := minf(1.0, minf(available.x / maxf(panel_size.x, 1.0), available.y / maxf(panel_size.y, 1.0)))
+	inspector.scale = Vector2.ONE * fit
+	var display_size := panel_size * fit
+	inspector.position = Vector2(maxf(0.0, viewport_size.x - display_size.x - 16.0), maxf(0.0, viewport_size.y - display_size.y - 16.0))
 
 func _spawn(id: String, category: String, title: String, at: Vector2, overrides: Dictionary) -> void:
 	var actor := Actor.new()
