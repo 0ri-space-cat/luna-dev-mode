@@ -33,7 +33,7 @@ func _assign_texture() -> void:
 	var sizes := {"sheep": 0.62, "fridge": 0.56, "duck": 0.67, "slime": 0.63, "tree": 0.78}
 	var k: float = float(sizes.get(kind, 0.60))
 	sprite.scale = Vector2.ONE * k
-	var y := {"sheep": -35.0, "fridge": -52.0, "duck": -40.0, "slime": -32.0, "tree": -74.0}
+	var y: Dictionary = {"sheep": -35.0, "fridge": -52.0, "duck": -40.0, "slime": -32.0, "tree": -74.0}
 	sprite.position = Vector2(0, float(y.get(kind, -38.0)))
 
 func react(kind_of_reaction: String = "surprised") -> void:
