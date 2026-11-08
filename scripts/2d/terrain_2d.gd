@@ -9,6 +9,8 @@ const ART_ROOT := "res://assets/2d/eternia/terrain/"
 const BASE := Color("#83c258")
 
 func _ready() -> void:
+	# Bring painted grass closer to the deeper forest palette without tinting characters.
+	modulate = Color(0.90, 0.94, 0.88)
 	var tiles := TileSet.new()
 	tiles.tile_size = Vector2i(TILE, TILE)
 	for n in range(VARIANTS):
