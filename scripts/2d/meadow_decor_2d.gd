@@ -1,7 +1,7 @@
 extends Node2D
 ## Layered Eternia set dressing. Surface tiling stays borderless; cliffs,
 ## stones, water, flowers and ruins are independently placed continuous art.
-const RIFT := Vector2(265, 245)
+const RIFT := Vector2(335, 245)
 const LAKE := Vector2(985, 600)
 const ORACLE := Vector2(1140, 275)
 const TERMINAL := Vector2(1260, 560)
@@ -66,32 +66,46 @@ func _seed_decorations() -> void:
 		})
 
 func _add_static_sprites() -> void:
-	# Small, intentionally sparse decorations: not a wall of repeated stickers.
-	var tree_file := "res://assets/2d/creatures/tree.svg"
-	if ResourceLoader.exists(tree_file):
-		var picture: Texture2D = load(tree_file)
-		for entry in [
-			{"at":Vector2(100,330),"s":0.65,"tint":"#d2ef9c"},
-			{"at":Vector2(1350,485),"s":0.72,"tint":"#d3f2aa"},
-			{"at":Vector2(1220,170),"s":0.47,"tint":"#b6d8ef"}
-		]:
-			var sprite := Sprite2D.new()
-			sprite.texture = picture
-			sprite.position = entry["at"] + Vector2(0,-62)
-			sprite.scale = Vector2.ONE * float(entry["s"])
-			sprite.modulate = Color(str(entry["tint"]))
-			add_child(sprite)
+	# Landmarks use original authored vegetation, varied by scale and tint.
+	var illustrations := [
+		{"file":"forest_tree","position":Vector2(20,560),"scale":0.81,"tint":"#c5eac7"},
+		{"file":"forest_tree","position":Vector2(1436,555),"scale":0.82,"tint":"#d1f2cb"},
+		{"file":"forest_tree","position":Vector2(1240,168),"scale":0.56,"tint":"#c9e6e5"},
+		{"file":"forest_tree","position":Vector2(370,145),"scale":0.43,"tint":"#cde6ad"},
+		{"file":"forest_tree","position":Vector2(1350,675),"scale":0.56,"tint":"#c7efb2"},
+		{"file":"forest_tree","position":Vector2(305,700),"scale":0.58,"tint":"#c8e6ad"},
+		{"file":"flower_bush","position":Vector2(332,493),"scale":0.52,"tint":"#ffebff"},
+		{"file":"flower_bush","position":Vector2(815,286),"scale":0.46,"tint":"#d8f9ee"},
+		{"file":"flower_bush","position":Vector2(1170,390),"scale":0.49,"tint":"#ffcfea"},
+		{"file":"flower_bush","position":Vector2(1410,710),"scale":0.43,"tint":"#fbe3ff"},
+		{"file":"crystal_cluster","position":Vector2(150,680),"scale":0.46,"tint":"#fff0ff"},
+		{"file":"crystal_cluster","position":Vector2(1114,467),"scale":0.41,"tint":"#e5fffe"},
+		{"file":"crystal_cluster","position":Vector2(708,143),"scale":0.35,"tint":"#f4eaff"},
+		{"file":"crystal_cluster","position":Vector2(1395,683),"scale":0.35,"tint":"#fff0ff"}
+	]
+	for entry in illustrations:
+		var filename := "res://assets/2d/props/%s.svg" % str(entry["file"])
+		if not ResourceLoader.exists(filename):
+			continue
+		var sprite := Sprite2D.new()
+		sprite.texture = load(filename)
+		var factor: float = float(entry["scale"])
+		sprite.scale = Vector2.ONE * factor
+		sprite.position = entry["position"] - Vector2(0,sprite.texture.get_height()*factor*0.48)
+		sprite.modulate = Color(str(entry["tint"]))
+		add_child(sprite)
+	# Optional approved raster replacements can be installed later without
+	# changing map geometry or anything in the gameplay simulation.
 	for spec in [
-		{"id":"flower_bush","at":Vector2(246,488),"size":0.27},
-		{"id":"pink_crystals","at":Vector2(1150,515),"size":0.25},
-		{"id":"moss_arch","at":Vector2(695,180),"size":0.30},
-		{"id":"oracle_pedestal","at":ORACLE,"size":0.20}
+		{"id":"flower_bush","at":Vector2(260,500),"size":0.23},
+		{"id":"pink_crystals","at":Vector2(1155,530),"size":0.20},
+		{"id":"moss_arch","at":Vector2(704,170),"size":0.27}
 	]:
-		var filename := "res://assets/2d/eternia/props/%s.png" % spec["id"]
+		var filename := "res://assets/2d/eternia/props/%s.png" % str(spec["id"])
 		if ResourceLoader.exists(filename):
 			var decoration := Sprite2D.new()
 			decoration.texture = load(filename)
-			decoration.position = spec["at"] + Vector2(0, -100.0 * float(spec["size"]))
+			decoration.position = spec["at"] + Vector2(0,-60.0 * float(spec["size"]))
 			decoration.scale = Vector2.ONE * float(spec["size"])
 			add_child(decoration)
 
@@ -157,11 +171,14 @@ func _draw_lower_cliffs() -> void:
 		draw_line(Vector2(x,847),Vector2(x+39,853),Color("#513b79",0.28),4.0)
 
 func _draw_paths() -> void:
-	_paving(PackedVector2Array([Vector2(663,450),Vector2(535,433),Vector2(409,366),Vector2(287,296)]),46)
+	_paving(PackedVector2Array([Vector2(663,450),Vector2(535,433),Vector2(409,366),Vector2(355,296)]),46)
 	_paving(PackedVector2Array([Vector2(680,456),Vector2(831,414),Vector2(995,357),Vector2(1144,319)]),42)
 	_paving(PackedVector2Array([Vector2(838,480),Vector2(886,517),Vector2(931,563)]),22)
 
 func _paving(points: PackedVector2Array, amount: int) -> void:
+	# A continuous earth ribbon avoids the "pink square staircase" look.
+	draw_polyline(points, Color("#6fa965",0.51),35.0,true)
+	draw_polyline(points, Color("#b4a977",0.35),24.0,true)
 	var cumulative := 0.0
 	var segments: Array[float] = [0.0]
 	for i in range(points.size()-1):
@@ -176,13 +193,14 @@ func _paving(points: PackedVector2Array, amount: int) -> void:
 				break
 		var step := (dist-segments[index])/maxf(segments[index+1]-segments[index],0.001)
 		var p := points[index].lerp(points[index+1],step)
-		p.y += sin(float(n)*1.78)*7.0
-		var w := 14.0 + 4.0*sin(float(n)*1.48)
+		p.y += sin(float(n)*1.78)*6.0
+		p.x += cos(float(n)*2.31)*4.0
+		var w := 6.0 + 3.0*sin(float(n)*1.48)
 		var c := Color("#d19bd5") if n%3 == 0 else (Color("#b78fc2") if n%3 == 1 else Color("#d8accd"))
 		draw_colored_polygon(PackedVector2Array([
-			p+Vector2(-w,-8),p+Vector2(w,-7),p+Vector2(w-3,7),p+Vector2(-w+3,8)
+			p+Vector2(-w,-5),p+Vector2(w,-4),p+Vector2(w-2,5),p+Vector2(-w+2,6)
 		]),c)
-		draw_line(p+Vector2(-w+1,-7),p+Vector2(w-1,-7),Color("#f0cae5",0.5),2.0)
+		draw_line(p+Vector2(-w+1,-4),p+Vector2(w-1,-4),Color("#f0cae5",0.5),1.8)
 
 func _draw_stream_and_waterfall() -> void:
 	var channel := Rect2(480,0,170,282)
