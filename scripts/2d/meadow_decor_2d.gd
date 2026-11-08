@@ -178,15 +178,16 @@ func _draw_paths() -> void:
 
 func _paving(points: PackedVector2Array, amount: int) -> void:
 	# A continuous earth ribbon avoids the "pink square staircase" look.
-	draw_polyline(points, Color("#6fa965",0.51),35.0,true)
-	draw_polyline(points, Color("#b4a977",0.35),24.0,true)
+	draw_polyline(points, Color("#558a64",0.36),42.0,true)
+	draw_polyline(points, Color("#b89e7c",0.62),31.0,true)
+	draw_polyline(points, Color("#c8b68c",0.31),18.0,true)
 	var cumulative := 0.0
 	var segments: Array[float] = [0.0]
 	for i in range(points.size()-1):
 		cumulative += points[i].distance_to(points[i+1])
 		segments.append(cumulative)
-	for n in range(amount):
-		var dist := float(n)/float(maxi(amount-1,1)) * cumulative
+	for n in range(maxi(7,amount/2)):
+		var dist := float(n)/float(maxi(amount/2-1,1)) * cumulative
 		var index := 0
 		for i in range(segments.size()-1):
 			if dist >= segments[i] and dist <= segments[i+1]:
@@ -196,8 +197,8 @@ func _paving(points: PackedVector2Array, amount: int) -> void:
 		var p := points[index].lerp(points[index+1],step)
 		p.y += sin(float(n)*1.78)*6.0
 		p.x += cos(float(n)*2.31)*4.0
-		var w := 6.0 + 3.0*sin(float(n)*1.48)
-		var c := Color("#d19bd5") if n%3 == 0 else (Color("#b78fc2") if n%3 == 1 else Color("#d8accd"))
+		var w := 4.6 + 2.1*sin(float(n)*1.48)
+		var c := Color("#c6abbb") if n%5 == 0 else (Color("#b9a2a0") if n%3 == 1 else Color("#d6bbab"))
 		draw_colored_polygon(PackedVector2Array([
 			p+Vector2(-w,-5),p+Vector2(w,-4),p+Vector2(w-2,5),p+Vector2(-w+2,6)
 		]),c)
