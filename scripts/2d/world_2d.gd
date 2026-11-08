@@ -24,3 +24,5 @@ func _draw() -> void:
 	# Marker for 2D player; replaced with an animated rig later.
 	draw_circle(player.position, 14.0, Color("#8b49c7"))
 	draw_arc(player.position, 14.0, 0.0, TAU, 24, Color("#3b205c"), 3.0)
+
+# Entity adapter: res://scripts/2d/entity_actor_2d.gd
