@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="142" height="145"><defs><linearGradient id="white" x2=".8" y2="1"><stop stop-color="#fffaff"/><stop offset=".6" stop-color="#eee0fa"/><stop offset="1" stop-color="#c9b7e3"/></linearGradient><linearGradient id="yellow" x2=".8" y2="1"><stop stop-color="#fffca5"/><stop offset=".7" stop-color="#ffe16a"/><stop offset="1" stop-color="#f0a842"/></linearGradient><linearGradient id="fridge" x2=".8" y2="1"><stop stop-color="#f5dcff"/><stop offset=".6" stop-color="#c9a8e9"/><stop offset="1" stop-color="#9276d1"/></linearGradient></defs><g stroke="#40235d" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+<ellipse cx="71" cy="79" rx="48" ry="44" fill="url(#yellow)"/>
+<path d="M47 51Q43 26 63 19Q90 7 100 38Q104 53 96 66" fill="url(#yellow)"/>
+<path d="M25 75Q8 72 23 95Q35 107 42 100M118 75Q137 72 121 95Q109 106 104 100" fill="#ffe371"/>
+<ellipse cx="56" cy="57" rx="9" ry="12" fill="#fff8f5" stroke-width="2"/><ellipse cx="86" cy="57" rx="9" ry="12" fill="#fff8f5" stroke-width="2"/>
+<circle cx="58" cy="59" r="4" fill="#45345b" stroke="none"/><circle cx="88" cy="59" r="4" fill="#45345b" stroke="none"/>
+<path d="M55 74Q71 65 87 74Q97 83 71 90Q45 83 55 74Z" fill="#ff9d46"/>
+<ellipse cx="44" cy="82" rx="9" ry="5" fill="#ffc982" stroke="none"/><ellipse cx="99" cy="82" rx="9" ry="5" fill="#ffc982" stroke="none"/>
+</g></svg>
