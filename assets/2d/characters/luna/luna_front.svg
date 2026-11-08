@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="196" viewBox="0 0 160 196"><defs><linearGradient id="hair" x2=".3" y2="1"><stop stop-color="#ffe0f6"/><stop offset=".45" stop-color="#f6a9e2"/><stop offset="1" stop-color="#c878d4"/></linearGradient><linearGradient id="robe" x2=".8" y2="1"><stop stop-color="#b779ef"/><stop offset="1" stop-color="#7545ae"/></linearGradient><linearGradient id="hat" x2=".1" y2="1"><stop stop-color="#ab66db"/><stop offset="1" stop-color="#562e99"/></linearGradient></defs>
+<g stroke="#3d225a" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+<!-- side hair and ribbons behind body -->
+<path d="M37 78C16 82 11 109 26 132C11 152 30 165 42 151C36 174 55 174 62 157L105 157C115 176 133 163 126 145C147 126 128 95 116 83Z" fill="url(#hair)"/>
+<path d="M43 125Q80 109 117 126L133 174Q80 187 28 173Z" fill="url(#robe)"/>
+<path d="M45 124L31 151L41 165L56 145M115 126L128 151L117 165L101 145" fill="#aa74dd"/>
+<path d="M51 106Q80 124 109 106V143Q81 160 51 143Z" fill="#efd0c7"/>
+<!-- head -->
+<path d="M35 77C36 49 125 42 126 89C128 123 106 142 80 142C45 142 31 121 35 77Z" fill="#ffe0d6"/>
+<path d="M34 98Q21 67 50 51Q83 32 111 52Q137 70 122 102L114 76Q92 92 80 74Q62 94 43 86Z" fill="url(#hair)"/>
+<path d="M35 86Q20 110 38 127L33 148Q17 137 22 108Z" fill="url(#hair)"/>
+<path d="M124 89Q139 111 120 127L126 149Q143 128 136 105Z" fill="url(#hair)"/>
+<!-- lenses -->
+<ellipse cx="59" cy="101" rx="20" ry="22" fill="#fff7fc" stroke="#67447c" stroke-width="4"/>
+<ellipse cx="102" cy="101" rx="20" ry="22" fill="#fff7fc" stroke="#67447c" stroke-width="4"/>
+<path d="M79 99Q83 95 86 99" fill="none" stroke="#67447c" stroke-width="3"/>
+<ellipse cx="62" cy="102" rx="7" ry="11" fill="#4c376f" stroke="none"/>
+<ellipse cx="105" cy="102" rx="7" ry="11" fill="#4c376f" stroke="none"/>
+<circle cx="64" cy="96" r="4" fill="#fff" stroke="none"/><circle cx="107" cy="96" r="4" fill="#fff" stroke="none"/>
+<ellipse cx="46" cy="120" rx="9" ry="5" fill="#ffb4d1" opacity=".75" stroke="none"/>
+<ellipse cx="116" cy="120" rx="9" ry="5" fill="#ffb4d1" opacity=".75" stroke="none"/>
+<path d="M76 119Q84 135 92 119Z" fill="#9e4b80" stroke-width="2"/>
+<!-- hat -->
+<path d="M32 70Q65 21 84 12Q103 41 111 62L127 74Q82 93 25 75Z" fill="url(#hat)"/>
+<path d="M19 73Q85 61 138 75Q108 92 26 84Z" fill="#8c50be"/>
+<path d="M53 62Q82 56 109 65" fill="none" stroke="#e59bf0" stroke-width="7"/>
+<path d="M86 31l5 9 10 2-8 6 2 10-9-6-9 6 2-10-8-6 10-2Z" stroke="none" fill="#fff4a9"/>
+<circle cx="61" cy="52" r="4" fill="#ffd67a" stroke="none"/>
+<!-- hoodie and cat -->
+<path d="M47 145Q80 156 113 145L119 179Q80 190 40 178Z" fill="url(#robe)"/>
+<path d="M62 149L71 165M100 149L91 165" fill="none" stroke="#f7d6f9" stroke-width="3"/>
+<path d="M70 165l-6 4-1 12 9 2 9-7 8 7 10-2-2-12-8-5-7 7Z" fill="#e8b2eb" stroke-width="2"/>
+<circle cx="73" cy="173" r="2.5" fill="#663d92" stroke="none"/><circle cx="90" cy="173" r="2.5" fill="#663d92" stroke="none"/>
+</g></svg>
