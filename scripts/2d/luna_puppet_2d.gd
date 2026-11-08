@@ -108,7 +108,12 @@ func set_motion(movement: Vector2, running: bool, delta: float) -> void:
 	wand.position = wrist - Vector2(0,16)
 	wand.rotation = -0.4 if mode == "cast" else (0.16 * sin(phase) * weight)
 	wand.visible = facing != "up"
-
+	var step := sin(phase)*7.0*weight
+	var foot_lift := absf(cos(phase))*4.0*weight
+	boot_left.position = Vector2(-9.0+step,13.0-foot_lift+body_shift)
+	boot_right.position = Vector2(15.0-step,11.0+foot_lift+body_shift)
+	boot_left.flip_h = facing == "left"
+	boot_right.flip_h = facing == "left"
 	queue_redraw()
 
 func _select_drawing() -> void:
@@ -135,6 +140,10 @@ func _update_hands(swing: float) -> void:
 	right_arm.points = PackedVector2Array([Vector2(24,-37+body_shift),Vector2(34,-22+swing+body_shift+(lift if facing != "left" else 0.0))])
 	left_arm.visible = facing != "up"
 	right_arm.visible = facing != "up"
+	left_hand.position = left_arm.points[1]
+	right_hand.position = right_arm.points[1]
+	left_hand.visible = left_arm.visible
+	right_hand.visible = right_arm.visible
 
 func _draw() -> void:
 	var weight := 1.0 if mode == "run" else (0.68 if mode == "walk" else 0.0)
@@ -161,4 +170,4 @@ func _draw_leg(x: float, up: float) -> void:
 	draw_line(Vector2(x * 0.68,-8),Vector2(x,y),Color("#efd0e9"),9.0,true)
 	draw_line(Vector2(x,y),Vector2(x + (3 if facing in ["right","down"] else -3), 15.0 + up),_outline,17.0,true)
 	draw_line(Vector2(x,y),Vector2(x + (3 if facing in ["right","down"] else -3), 15.0 + up),_foot_color,13.0,true)
-	draw_circle(Vector2(x + 4, 13.0 + up), 3.3, Color("#f4a6e6"))
+	
