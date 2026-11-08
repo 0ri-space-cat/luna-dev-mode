@@ -111,6 +111,7 @@ func _add_static_sprites() -> void:
 
 func _draw() -> void:
 	_draw_upper_terraces()
+	_draw_falls_cliffs()
 	_draw_lower_cliffs()
 	_draw_paths()
 	_draw_stream_and_waterfall()
@@ -319,3 +320,36 @@ func _draw_terminal() -> void:
 		draw_circle(p,2.7,Color("#ecb2fd"))
 	draw_arc(center,6.0,0,TAU,20,Color("#b9f8fd"),3.0)
 	draw_line(TERMINAL+Vector2(-15,20),TERMINAL+Vector2(15,20),Color("#d29ded"),3.0)
+
+func _draw_falls_cliffs() -> void:
+	# Multi-tier purple masonry framing the turquoise waterfall.
+	for column in [
+		{"x":420.0,"width":62.0,"top":24.0,"bottom":296.0},
+		{"x":648.0,"width":93.0,"top":35.0,"bottom":299.0}
+	]:
+		var x: float = column["x"]
+		var w: float = column["width"]
+		var top: float = column["top"]
+		var bottom: float = column["bottom"]
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(x,top),Vector2(x+w,top+7),Vector2(x+w-6,bottom),
+			Vector2(x-7,bottom-12)
+		]),Color("#8060a9"))
+		draw_line(Vector2(x+7,top+8),Vector2(x+w-12,top+12),Color("#b395c4",0.70),5)
+		for row in range(5):
+			var yy := top + 35.0 + row*47.0
+			draw_line(Vector2(x+6,yy),Vector2(x+w-9,yy+5),Color("#5c427d",0.63),4.0)
+			var seam_x := x+19.0+(18.0 if row%2==0 else 3.0)
+			draw_line(Vector2(seam_x,yy-36),Vector2(seam_x+2,yy),Color("#5c427d",0.55),3.0)
+		draw_line(Vector2(x,top),Vector2(x+w,top+7),Color("#b6e976"),11,true)
+		for j in range(4):
+			var blade_x := x+8+j*(w-15)/3
+			draw_line(Vector2(blade_x,top),Vector2(blade_x+4,top-10),Color("#9bd758"),3)
+	# Ruined masonry arch suggests depth without creating a tile-shaped island.
+	var center := Vector2(766,138)
+	draw_rect(Rect2(center+Vector2(-51,-5),Vector2(26,119)),Color("#8d6ab1"))
+	draw_rect(Rect2(center+Vector2(25,-5),Vector2(28,119)),Color("#8d6ab1"))
+	draw_arc(center+Vector2(0,-3),37,PI,TAU,32,Color("#6c4b91"),26)
+	draw_arc(center+Vector2(0,-3),39,PI,TAU,32,Color("#ba92cf",0.72),4)
+	draw_line(center+Vector2(-49,99),center+Vector2(-26,101),Color("#b692c8"),4)
+	draw_line(center+Vector2(28,99),center+Vector2(49,101),Color("#b692c8"),4)
