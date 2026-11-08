@@ -52,6 +52,9 @@ func _apply_stance() -> void:
 		return
 	var setting: Dictionary = STANCE[kind]
 	var size := float(setting["scale"])
+	# New ImageGen pixel legs are native ~22px, while SVG fallback boots are larger.
+	if current_source == PIXEL_LEG:
+		size *= 3.0
 	left.scale = Vector2.ONE * size
 	right.scale = Vector2.ONE * size
 	right.flip_h = true
