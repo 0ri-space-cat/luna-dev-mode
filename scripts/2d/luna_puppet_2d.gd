@@ -74,8 +74,8 @@ func set_motion(movement: Vector2, running: bool, delta: float) -> void:
 	var stride_speed := 14.5 if mode == "run" else 9.2
 	var weight := 1.0 if mode == "run" else (0.72 if mode == "walk" else 0.0)
 	var phase := elapsed * stride_speed
-	var leg_swing := sin(phase) * 13.0 * weight
-	var shoulder_swing := sin(phase) * 11.0 * weight
+	var leg_swing := sin(phase) * 7.0 * weight
+	var shoulder_swing := sin(phase) * 5.0 * weight
 	var breathing := sin(elapsed * 2.4) * 1.7
 	var bounce := absf(sin(phase)) * 2.9 * weight
 	var action_lift := (sin(animation_time * 12.0) * 3.0) if mode == "cast" else 0.0
@@ -124,12 +124,15 @@ func _update_hands(swing: float) -> void:
 func _draw() -> void:
 	var weight := 1.0 if mode == "run" else (0.68 if mode == "walk" else 0.0)
 	var phase := elapsed * (14.5 if mode == "run" else 9.2)
-	var left_x := -12.0 + sin(phase) * 14.0 * weight
-	var right_x := 12.0 - sin(phase) * 14.0 * weight
+	var left_x := -12.0 + sin(phase) * 7.0 * weight
+	var right_x := 12.0 - sin(phase) * 7.0 * weight
 	var leg_bob := absf(cos(phase)) * 4.0 * weight
 	draw_ellipse_shadow()
+	var body_shift := body.position.y + 59.0
+	draw_set_transform(Vector2(0,body_shift),0,Vector2.ONE)
 	_draw_leg(left_x, -leg_bob)
 	_draw_leg(right_x, -2.0 + leg_bob)
+	draw_set_transform(Vector2.ZERO,0,Vector2.ONE)
 
 func draw_ellipse_shadow() -> void:
 	var shadow := Color(0.08,0.04,0.17,0.22)
