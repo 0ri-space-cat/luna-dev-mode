@@ -1,3 +1,7 @@
+> **V3 · 09.11.2026. ТЕХНИЧЕСКИЙ РЕФЕРЕНС. Система Банка и переносимых модулей остаётся полезна; география и сценарные ворота из текста, если встречаются, уступают V3.** Актуальный сюжет: [01_GAME_BIBLE.md](01_GAME_BIBLE.md), секреты: [14_SECRET_KNOWLEDGE_GRAPH.md](14_SECRET_KNOWLEDGE_GRAPH.md), статусы: [15_CANON_DECISIONS_AND_OPEN_QUESTIONS.md](15_CANON_DECISIONS_AND_OPEN_QUESTIONS.md).
+
+---
+
 # 09 — Передача способностей и банк свойств
 
 > **КАНОН / 08.11.2026.** Центральная механика взлома LUNA: DEV MODE. Описание целевого игрового поведения, не утверждение о готовой реализации в Godot. В основе — общие WorldTruth и Entity ID, без XP/перков. Смотрите [мануал редактора](04_HACKING_MANUAL.md), [2D-артпайплайн](10_2D_ASSET_PIPELINE.md) и [план разработки](11_2D_IMPLEMENTATION_PLAN.md).
