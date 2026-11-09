@@ -14,6 +14,11 @@
 9. [Реестр подтверждённого/открытого](canon/15_CANON_DECISIONS_AND_OPEN_QUESTIONS.md) — когда нельзя додумывать сюжет.
 10. [Миграция и безопасность](canon/06_MIGRATION_AND_PRODUCTION.md), [аудит репозитория](canon/16_REPOSITORY_AUDIT.md).
 
+## Подробный план фактического создания игры
+[Бестиарий](canon/19_BESTIARY_AND_ECOLOGY.md) · [Параметры, способности и реакции](canon/20_SYSTEMS_PARAMETERS_AND_INTERACTIONS.md) · [Атлас комнат и уровней](canon/21_ETERNIA_LEVELS_AND_INTERIORS_ATLAS.md) · [Постановочное прохождение](canon/22_FULL_PLAYTHROUGH_AND_DIRECTED_SCENARIO.md) · [Атлас секретов](canon/23_SECRETS_PUZZLES_AND_META_LEVELS_ATLAS.md) · [Аудит всех артефактов](canon/24_ARTIFACT_AUDIT_AND_ACQUISITION_ROUTES.md).
+
+Эти главы расширяют концепцию до уровня постановочных спецификаций. Все конкретные цифры, названия залов и уникальные эффекты, которые не были прямо утверждены автором, остаются проектными до теста и согласования.
+
 ## Инженерные материалы, не заменять фантомными требованиями
 [Перенос способностей](canon/09_PROPERTY_TRANSFER_SYSTEM.md) · [2D-пайплайн](canon/10_2D_ASSET_PIPELINE.md) · [план Godot](canon/11_2D_IMPLEMENTATION_PLAN.md) · [Оракул](canon/12_TECH_LANGUAGE_ORACLE.md) · [очередь старых генераций](canon/13_GENERATION_BATCHES.md) · [старые docs/01–27](01_VISION_AND_WORLD.md).
 
