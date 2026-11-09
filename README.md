@@ -15,6 +15,8 @@
 ## Подробные главы для игрового дизайна
 [Существа и виды](docs/canon/19_BESTIARY_AND_ECOLOGY.md) · [Параметры и системы](docs/canon/20_SYSTEMS_PARAMETERS_AND_INTERACTIONS.md) · [Локации и интерьеры](docs/canon/21_ETERNIA_LEVELS_AND_INTERIORS_ATLAS.md) · [Полное пошаговое прохождение](docs/canon/22_FULL_PLAYTHROUGH_AND_DIRECTED_SCENARIO.md) · [Мета-загадки](docs/canon/23_SECRETS_PUZZLES_AND_META_LEVELS_ATLAS.md) · [Проверка 21 артефакта](docs/canon/24_ARTIFACT_AUDIT_AND_ACQUISITION_ROUTES.md).
 
+**[Техническое ТЗ для реализации и критерии приёмки](docs/canon/25_IMPLEMENTATION_HANDOFF_AND_ACCEPTANCE.md)** — вертикальные срезы S0–S8, тесты реальных механик, правила работы агентов.
+
 ## Статус разработки
 **Сценарий и граф механик описаны, но не объявлены реализованными.** `main` на момент ревизии содержит исторический Godot 4 graybox и набор подготовленных ассетов. Ветка `feat/2d-runtime-foundation` (PR #5) содержит экспериментальную 2D-основу; отдельный PR #6 проверяет пиксельную траву. Оба прототипа сохранены: ни один не следует удалять без тестов. Подробнее — [аудит репозитория](docs/canon/16_REPOSITORY_AUDIT.md).
 
