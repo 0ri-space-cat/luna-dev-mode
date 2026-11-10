@@ -71,6 +71,8 @@ jobs:
 
       - name: Run portable ability component tests
         run: bash ci/run_godot_script.sh res://tests/test_abilities.gd
+      - name: Run V3 food, door permissions and ability-bank system contracts
+        run: bash ci/run_godot_script.sh res://tests/test_v3_system_foundation.gd
 
       - name: Run stable ID history recreation tests
         run: bash ci/run_godot_script.sh res://tests/test_history_recreation.gd
