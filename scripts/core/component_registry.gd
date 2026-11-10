@@ -23,6 +23,19 @@ const DEFINITIONS := {
 		"enabled": {"type": "bool", "default": true},
 		"radius": {"type": "float", "default": 2.5, "min": 0.5, "max": 12.0},
 		"watch_group": {"type": "enum", "default": "LUNA", "choices": ["LUNA", "ANY", "TREE", "FRIDGE", "CREATURE"]}
+	},
+	"DOOR_LINK": {
+		"enabled": {"type": "bool", "default": true},
+		"destination": {"type": "location_id", "default": ""}
+	},
+	"CONSUMABLE": {
+		"delivery": {"type": "enum", "default": "CONSUMER", "choices": ["CONSUMER", "TARGET", "SPLASH"]},
+		"radius": {"type": "float", "default": 2.5, "min": 0.5, "max": 6.0},
+		"max_targets": {"type": "int", "default": 3, "min": 1, "max": 4},
+		"effects": {"type": "effect_recipe", "default": []}
+	},
+	"ABILITY_BANK": {
+		"stock": {"type": "ability_stock", "default": {}}
 	}
 }
 
@@ -48,6 +61,50 @@ static func validate(id: String, data: Variant) -> Dictionary:
 			"enum":
 				if typeof(value) != TYPE_STRING or not spec["choices"].has(value):
 					return {"ok": false}
+			"location_id":
+				if typeof(value) != TYPE_STRING or str(value).length() > 96:
+					return {"ok": false}
+				if not str(value).is_empty() and not str(value).is_valid_identifier():
+					return {"ok": false}
+			"effect_recipe":
+				if typeof(value) != TYPE_ARRAY or value.size() > 3:
+					return {"ok": false}
+				var checked_recipe: Array = []
+				for action in value:
+					if typeof(action) != TYPE_DICTIONARY:
+						return {"ok": false}
+					var op: String = str(action.get("operation", ""))
+					var parameter: String = str(action.get("parameter_id", ""))
+					if op not in ["SET", "ADD", "MULTIPLY", "TOGGLE"] or parameter.is_empty() or not parameter.is_valid_identifier():
+						return {"ok": false}
+					# Resource authority and servings are not an edible effect.
+					if parameter in ["access_level", "portions"] or parameter.length() > 64:
+						return {"ok": false}
+					if action.size() != (2 if op == "TOGGLE" else 3):
+						return {"ok": false}
+					if op != "TOGGLE":
+						var amount: Variant = action.get("value")
+						if typeof(amount) not in [TYPE_INT, TYPE_FLOAT, TYPE_STRING, TYPE_BOOL]:
+							return {"ok": false}
+						if typeof(amount) in [TYPE_INT, TYPE_FLOAT] and (not is_finite(float(amount)) or absf(float(amount)) > 10000.0):
+							return {"ok": false}
+						if typeof(amount) == TYPE_STRING and str(amount).length() > 64:
+							return {"ok": false}
+						if op in ["ADD", "MULTIPLY"] and typeof(amount) not in [TYPE_INT, TYPE_FLOAT]:
+							return {"ok": false}
+					checked_recipe.append(action.duplicate(true))
+				value = checked_recipe
+			"ability_stock":
+				if typeof(value) != TYPE_DICTIONARY or value.size() > 16:
+					return {"ok": false}
+				var checked_stock: Dictionary = {}
+				for ability_id in value.keys():
+					if typeof(ability_id) != TYPE_STRING or not str(ability_id).is_valid_identifier() or str(ability_id).length() > 64:
+						return {"ok": false}
+					if typeof(value[ability_id]) != TYPE_INT or int(value[ability_id]) < 1 or int(value[ability_id]) > 8:
+						return {"ok": false}
+					checked_stock[str(ability_id)] = int(value[ability_id])
+				value = checked_stock
 			"identifiers":
 				if typeof(value) != TYPE_ARRAY or value.size() > 16:
 					return {"ok": false}
