@@ -4,6 +4,19 @@ const Registry = preload("res://scripts/core/lesson_registry.gd")
 
 func _initialize() -> void:
 	var lessons = Registry.new()
+	var file := FileAccess.open("res://data/v3/lesson_blueprints.json", FileAccess.READ)
+	assert(file != null)
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	assert(typeof(parsed) == TYPE_DICTIONARY)
+	var catalog = Registry.new()
+	for definition in parsed["lessons"]:
+		assert(catalog.register_lesson(definition))
+	assert(catalog.list_ids().size() == 21)
+	assert(catalog.describe("U_17_CAMERA_BRIDGE")["character_hints"].has("TOFFI_GAZE"))
+	assert(catalog.can_resolve("U_17_CAMERA_BRIDGE", {
+		"CAMERA_FIXED": true, "PLAYER_OUTSIDE_CAMERA_VIEW": true,
+		"completed_quests": [], "current_character": "luna"
+	}))
 	assert(lessons.register_lesson({
 		"id": "U_04_BRIDGE", "zone_id": "ET_GORGE",
 		"law": "COLLISION_NOT_VISIBILITY",
