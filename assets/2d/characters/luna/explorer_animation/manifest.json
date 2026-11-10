@@ -1,0 +1,729 @@
+{
+  "version": 1,
+  "views": {
+    "front_right": {
+      "walk": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/walk_00.png",
+          "pivot": [
+            512,
+            1496
+          ],
+          "sha256": "eb2f1c0054a3d49c6861c7f1b918fb7b4d5f998248e56aa60e3dfe67ab0f7c4b",
+          "source_sha256": "b4714a95f1902372fd9cf7705950386fa6eda37dc30dfa4621be0432e036fe23",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/walk_01.png",
+          "pivot": [
+            512,
+            1496
+          ],
+          "sha256": "40f8984f35b75192b039441a4a5d3611cb589f1996e24f6943c5084aad1b86a6",
+          "source_sha256": "542894c3ddd555d46931c11d2a6bfdf3f25139cb269fccbcccc06ff823b0e7b3",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/walk_02.png",
+          "pivot": [
+            512,
+            1496
+          ],
+          "sha256": "693deb5e267a6722bdf9f999f64a30c296f59244c16370e738324d3e97f34b68",
+          "source_sha256": "69ded7f409649d8f0a50b6fad6479914a6595c401cdc96c4931cb11d4ce2c29c",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/walk_03.png",
+          "pivot": [
+            512,
+            1496
+          ],
+          "sha256": "d5bf0edf4cd4fcfd7db889448b6466381c187233fc1b571c54449ee25ce92323",
+          "source_sha256": "f61803c0eda04f2a7efab2d8c25a282f2b11340587aa0d1b44a311871a4478b3",
+          "alpha_cutoff": 240
+        }
+      ],
+      "cast": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/cast_00.png",
+          "pivot": [
+            512,
+            1509
+          ],
+          "sha256": "414d51e8ef21c934396709a6b624282d4c011c7a8fc0c22913fb92805a527623",
+          "source_sha256": "eac2b8b8e70fd9700a8486ca78cc9b32f3677bcd00a7173b9385ad6e96e1e9bb",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/cast_01.png",
+          "pivot": [
+            512,
+            1509
+          ],
+          "sha256": "8d0aac52b4865ebdf0d8a182e8385e5ce282daf3e42fb41f32f5fbcd25689099",
+          "source_sha256": "90966cd9fd9703084eee9621177a2ff20af47da0becaf0a540859f51843f15f9",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/cast_02.png",
+          "pivot": [
+            512,
+            1510
+          ],
+          "sha256": "925738b1209b4a0091429a57859b1f9b327adc961e625e1520cf86c44b887db1",
+          "source_sha256": "1df3fd8505a6723debf362ffd659a2ee381884ad1919fb221641396712c6cdc9",
+          "alpha_cutoff": 240
+        }
+      ],
+      "blink": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/blink_00.png",
+          "pivot": [
+            512,
+            1509
+          ],
+          "sha256": "6a8066528a85e91760e7fb14393f8f0d5936a36d2a91c645bedd40c45da1a11e",
+          "source_sha256": "9158b33676bd89a657ba5b666f0bc6d4cc856bd721f1f3ad5515fa8411a50fa8",
+          "alpha_cutoff": 240
+        }
+      ],
+      "hair": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/hair_00.png",
+          "pivot": [
+            512,
+            1508
+          ],
+          "sha256": "3bdd4e2b5fb5d7548f375c521411b8cd90897df99172b45458fd2dd2032cde60",
+          "source_sha256": "5b18775864bea37bd0f98c769b743e1e2029dcfabaf0960eac72f64da7ca2b26",
+          "alpha_cutoff": 240
+        }
+      ],
+      "run": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/run_00.png",
+          "pivot": [
+            512,
+            1510
+          ],
+          "sha256": "5fbae4534007033d976da4f87bf50266d63ecd360abef3b8cd14ef1ba899d6a4",
+          "source_sha256": "0e2a381ded050b0a7e86b7b2f095b5994a6178ec7aeb5859a7d52e344cf5883f",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 78,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/run_01.png",
+          "pivot": [
+            512,
+            1510
+          ],
+          "sha256": "327711844125f4a6543be5b40ace576f317d6aedeb2873d22c7046433207f2f0",
+          "source_sha256": "34ed2e0fe0d813595ec1522808583e0f2d235c5c5b5190fc512947fca5f1a8f1",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 30,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/run_02.png",
+          "pivot": [
+            512,
+            1510
+          ],
+          "sha256": "d74d086f69f243c92fdbc22a020f192e076fb4f9bd5382200254edb3ec9df1d1",
+          "source_sha256": "5525e770ed1057201964ed92b09f2c9e77410abdabb58e821ad6be7b46f08dc4",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 73,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front_right/run_03.png",
+          "pivot": [
+            512,
+            1510
+          ],
+          "sha256": "8dc2288a355bcf872a7c95cd5a38381afb6c4040e50517549425c588cb881ac5",
+          "source_sha256": "40c85dd2908e98dca72c5af38d01af2e5370b773383e908c9389234b27e904d6",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 58,
+          "empty_hand": true
+        }
+      ]
+    },
+    "front": {
+      "walk": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/walk_00.png",
+          "pivot": [
+            512,
+            1509
+          ],
+          "sha256": "ef65a13caa3e19f456f7c2647f546987bc89ba28481e2f6a29dd16665039f839",
+          "source_sha256": "12e307e45c71a21d7e7a94ab910026a265eb84043a2eb2859355892189a9cad8",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/walk_01.png",
+          "pivot": [
+            512,
+            1508
+          ],
+          "sha256": "362a4e01d7f9c50ab7f080247c9df989da2763819477ddf17e256557f06d2adb",
+          "source_sha256": "69b7c028794e2c7379e33243f4a0b0f03f4be58a738983caa7bf9ba58c65c3c8",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/walk_02.png",
+          "pivot": [
+            512,
+            1512
+          ],
+          "sha256": "ce881316db5916fce3379282d14fd7d5b1e19f03b615e8b6f779a9a8503fb5ee",
+          "source_sha256": "4e169d97095889bf7e92c61994c4e3ba4d34c6a31b53eae451684be0eb4b65dc",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/walk_03.png",
+          "pivot": [
+            512,
+            1512
+          ],
+          "sha256": "993802e75d4f06c19c611eb6d8d336df1423e88d2f14ad38f090101549a266e9",
+          "source_sha256": "50260ca8442ef9212873f30b387945c1f37fa7952e384f8c60eb6dd96eaa45cf",
+          "alpha_cutoff": 240
+        }
+      ],
+      "cast": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/cast_00.png",
+          "pivot": [
+            512,
+            1487
+          ],
+          "sha256": "bfdc500438075ce99c5435284b9660b0a918516455f7a045d4d6daab4cfc5347",
+          "source_sha256": "c7bebcf093c696128a3d0063e740df7a0c63dd2a715d8ebad85fabcfc20d5602",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/cast_01.png",
+          "pivot": [
+            512,
+            1487
+          ],
+          "sha256": "86208754f1c5d7f78311559a7ad22fe84af0b3da214f17f82869860747d66405",
+          "source_sha256": "a8a817d0a19e644a5bf09e431a40a9a64c0a7030af5c999e45c6575f54cbe4da",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/cast_02.png",
+          "pivot": [
+            512,
+            1486
+          ],
+          "sha256": "df586d6e372052160107a2d870167a68076f34edf9c20d1f5a216ae88ceb74c5",
+          "source_sha256": "d891bfb6474fe801caf5d3ca5e4384d813668ff820a246e7217a8a40e8a8a9fe",
+          "alpha_cutoff": 240
+        }
+      ],
+      "blink": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/blink_00.png",
+          "pivot": [
+            512,
+            1488
+          ],
+          "sha256": "98c7c04e913c593efaa64d087b40bd1c56eec34f44adcdfe4888ded2935cc7eb",
+          "source_sha256": "9d9eaf864e370d1bec2b4cf1aef209c39c1c371ff1773cbaf57e0b5ff4d879f3",
+          "alpha_cutoff": 240
+        }
+      ],
+      "hair": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/hair_00.png",
+          "pivot": [
+            512,
+            1488
+          ],
+          "sha256": "dc146451fb83b970baab9b416f1b9e04b3619c9913acdea8208082133447477e",
+          "source_sha256": "4c939982b48c0a97680a098899f3c4632e50a6bea18a7e894e8fb0c5aa6b6947",
+          "alpha_cutoff": 240
+        }
+      ],
+      "run": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/run_00.png",
+          "pivot": [
+            512,
+            1489
+          ],
+          "sha256": "1ecb58d3256d71f43461d65cb57c76d8c42d238b4f7b3ba9b582bd1ec4699498",
+          "source_sha256": "da329681a743cb87263841e6e98a31b10bf4d5f3e35f6f48a377fd865ea96772",
+          "alpha_cutoff": 240,
+          "registration_offset_y": -21,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/run_01.png",
+          "pivot": [
+            512,
+            1489
+          ],
+          "sha256": "8f3ed8cb7fad05d8bbe2a6bf057b6ce565d311ff16b6cff5e94e7fb81dc4ac50",
+          "source_sha256": "fbcec65393ecd7c2414077d23b0f40a873942f3a5c265699a8670305027b59a3",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 66,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/run_02.png",
+          "pivot": [
+            512,
+            1489
+          ],
+          "sha256": "6ab0946651d8a23609dc12e2e38dfbb60511d39a268d63dca19941fbdc2ea2a2",
+          "source_sha256": "86d3162bd42cbbc2f466b493dc5ab0fd46e366e46403dae080ccd606d7ae2407",
+          "alpha_cutoff": 240,
+          "registration_offset_y": -28,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/front/run_03.png",
+          "pivot": [
+            512,
+            1489
+          ],
+          "sha256": "e1b3b2815245ffd2fca66d41714adecb1f789c57a687d2da54fd9e357754e3c8",
+          "source_sha256": "dfcd04c0058a6be66b31ccb508ace3a1cae34cc0ed65839b8fae2b32539428e1",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 6,
+          "empty_hand": true
+        }
+      ]
+    },
+    "side_right": {
+      "walk": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/walk_00.png",
+          "pivot": [
+            512,
+            1473
+          ],
+          "sha256": "bdc2a82f9fbe2f374f534896d983267778ecaba864f8ae7763b44891ef9014ce",
+          "source_sha256": "b39f43d8754907249c5a8b5ba387d81d2de1eae756419e1837eacf1d0e08f36b",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/walk_01.png",
+          "pivot": [
+            512,
+            1480
+          ],
+          "sha256": "4209dda5abf9a04c5d3ed67341a0851d3d62e8b5a26d05733572c5c0618af908",
+          "source_sha256": "f5695884df1ffbb316449bc2fbf5ab5af04998774b068e447e5f9f01e4fdfbc7",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/walk_02.png",
+          "pivot": [
+            512,
+            1468
+          ],
+          "sha256": "4d5332fe1407dd2edb617267698683daa0cdaeb3316024f4290e7588b94fbd7e",
+          "source_sha256": "9525916f4a72c50d99d0838e0777faae5a5153fe198bcc85d56fc482e82b67f3",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/walk_03.png",
+          "pivot": [
+            512,
+            1489
+          ],
+          "sha256": "8c643f09392efb2023043af3d701b9f02337dd33470f421b158c4935eaa9b90d",
+          "source_sha256": "3b8764b75a6889e988d6c8408410d67f685534d4b532f21ef8e1f9138b46978b",
+          "alpha_cutoff": 240
+        }
+      ],
+      "cast": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/cast_00.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "c5dbdb3455c1227b34b7cf78aae6c9b7de4fb4744545021bf5aeaa1583bd311e",
+          "source_sha256": "3fa57f1f364dc7bf0ac1e1c442d502979748f835fe3cfcd61437f60ba5c369ef",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/cast_01.png",
+          "pivot": [
+            512,
+            1494
+          ],
+          "sha256": "3905a7ade60d83e5c42919f64913efed5e2b6dab35dbda2d072cd06777739ff3",
+          "source_sha256": "89050970e6f8aa8a9fd3e4b52afdbca4be3ea7564bdec8a4e111e046a173e766",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/cast_02.png",
+          "pivot": [
+            512,
+            1494
+          ],
+          "sha256": "e9ff339e4686b2b8a2a162722bc557fa59de345dcd9da0870834f69ca1b60327",
+          "source_sha256": "27aa89bf8c50cea9a6882787bb82ac69e2471187c3c04a889dff82d31a3d7319",
+          "alpha_cutoff": 240
+        }
+      ],
+      "blink": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/blink_00.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "24fabfe63ce105e254ad51af759da3c5e328565061245c014e18cb91ffba11f6",
+          "source_sha256": "275598b7ebbb2bea196420838a8bdffb3d693c559b0a8c165842cca2cd48c3c6",
+          "alpha_cutoff": 240
+        }
+      ],
+      "hair": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/hair_00.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "f1ad4cc9284cdc8adabd9efd60438fa2d8f33d8ef2cc35743c39101fe21f1d63",
+          "source_sha256": "c877c446ca5feef3221aae943df2ea037235be0b5db2009f80d3aba653b684f1",
+          "alpha_cutoff": 240
+        }
+      ],
+      "run": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/run_00.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "514bcfff133290328e9386f9b9a58d9092c924b4216b623e3fe980e513f2585e",
+          "source_sha256": "37b4c5b951858cc80fadf83a96e99d159e356284d29f7e6b25400b24c7205e22",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 186,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/run_01.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "fe25fdb69f2d49bf28b3e3dffe539fa74edf94cebcafe814e6221532ef367587",
+          "source_sha256": "f632a40dbefc14b5dd28ab8ab062a03d26ca11f5501b6253c01306521e399fae",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 86,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/run_02.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "770acfa7602513e7afa4c0068908fd38752c87f99d95b05e6e967305bcdc80f5",
+          "source_sha256": "e743500f6c78eac7b7547d1b406c581c25e47263db317b951e113bfed573453c",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 82,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/side_right/run_03.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "1ba1ccce5a25e992b22efed817130511cf7ff49e57c8554c0be7aa83daf1b019",
+          "source_sha256": "315e6be6fdb3f117b2b3d868f93b2625cd5e574219abd5451c424a8aeef079a7",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 83,
+          "empty_hand": true
+        }
+      ]
+    },
+    "back": {
+      "walk": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/walk_00.png",
+          "pivot": [
+            512,
+            1501
+          ],
+          "sha256": "a6ac26d701f736e722db2b6a8e65d09c049f2f18ac3ed241f81cede98b3e70f9",
+          "source_sha256": "64003b18dab35cc8fdca5cc1f2fbefce6555286e001b4b80d73c3e7664a8f404",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/walk_01.png",
+          "pivot": [
+            512,
+            1488
+          ],
+          "sha256": "0157300e7967174702277d76d79f333897359358faab54c63d5fffb1aa0e8f9c",
+          "source_sha256": "783a3427de33d95cd72ee1a1c47f1e99fbbd655154dd50f03c723c30d9122ef2",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/walk_02.png",
+          "pivot": [
+            512,
+            1501
+          ],
+          "sha256": "7678dc4e64698f4402c729d77732540c39fd5c71d936ff1e4f540fa25f3e9d3b",
+          "source_sha256": "56a07f0f360929769ef5619d9c001371256f210474c301086c2a40c1a1bb5374",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/walk_03.png",
+          "pivot": [
+            512,
+            1490
+          ],
+          "sha256": "3e6cd2544cb13e26115533a4bf301bf09ff85c757b1a2157ee8d1e0ab388c0e7",
+          "source_sha256": "2c79048b641a83f25d5e4382e8caa62cf7c8ae1d4268b55b7b6ebc6d44d8bdad",
+          "alpha_cutoff": 240
+        }
+      ],
+      "cast": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/cast_00.png",
+          "pivot": [
+            512,
+            1498
+          ],
+          "sha256": "d4d4c1f5a30e549327a1528e7e8d9a5353162b3759d6ddc6bc81fa29fb781d5b",
+          "source_sha256": "506f2c2658bf54f81ad766372399838b1abc1d5b649eef8031da7cf55e72e7d0",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/cast_01.png",
+          "pivot": [
+            512,
+            1498
+          ],
+          "sha256": "0db222a9ede39606269fce70519daaa6760a86113c2f9b99ecec3d559c7bd88c",
+          "source_sha256": "89c938996f2dd3eaa67a9e007b9c11f18ef119e1fd9d0b78ca49f004bb0aefb7",
+          "source_path": "art/generated/luna/explorer_animation/back/cast_01.png",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 0
+        }
+      ],
+      "hair": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/hair_00.png",
+          "pivot": [
+            512,
+            1497
+          ],
+          "sha256": "bc562b86db24c43a225edb4bca7cc60435be8f0f59e635203152206db1671649",
+          "source_sha256": "a45d78747f9eda3d72e6baf9c8ebbb753d8bbfa3895728bc1e1e1a5a1dc0a935",
+          "alpha_cutoff": 240
+        }
+      ],
+      "run": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/run_00.png",
+          "pivot": [
+            512,
+            1498
+          ],
+          "sha256": "536d3ae2412ce1fc56fcc095a06d3c4899a0d982be2985e9d0d51bb3f226033b",
+          "source_sha256": "1117f260a11899ec4c798ba5e47c10ad400ccd968f041b30c75f00477640530a",
+          "source_path": "art/generated/luna/explorer_animation/back/run_00.png",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 9,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/run_01.png",
+          "pivot": [
+            512,
+            1498
+          ],
+          "sha256": "d0bb794325c67edda468876ee80724d5aacbd27dbba25893a32a19cb84c3d2d9",
+          "source_sha256": "f0e2c9b10d890152096727fc27d10f503582af0599a04114917ebba8e96400b8",
+          "source_path": "art/generated/luna/explorer_animation/back/run_01.png",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 117,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/run_02.png",
+          "pivot": [
+            512,
+            1498
+          ],
+          "sha256": "c99bedf293138de5252a2d3db365696bbfc3bb90ff2dc5cc775d468e080fa1fc",
+          "source_sha256": "4852da72c9968b71630bb531a8118adf46d21806235b4758e18cfc086fe40862",
+          "source_path": "art/generated/luna/explorer_animation/back/run_02.png",
+          "alpha_cutoff": 240,
+          "registration_offset_y": -4,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back/run_03.png",
+          "pivot": [
+            512,
+            1498
+          ],
+          "sha256": "0c7d215bb917ff9c8ab7001c3c7152baef76bd38b6c44ee4336945c98986b02e",
+          "source_sha256": "05f9ffbbca529c88da83ac807dee6cb7541086a9ae222eb989697ee6b5099c67",
+          "source_path": "art/generated/luna/explorer_animation/back/run_03.png",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 62,
+          "empty_hand": true
+        }
+      ]
+    },
+    "back_right": {
+      "walk": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/walk_00.png",
+          "pivot": [
+            512,
+            1499
+          ],
+          "sha256": "746263f3fd5f835cf04f568a83f9a5c12bd03d5ca02a9b0c63b398b8043b8b6e",
+          "source_sha256": "044d98211b135776c4efa3a16db63a859eae06788f57185b5bd29d824238be31",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 0
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/walk_01.png",
+          "pivot": [
+            512,
+            1499
+          ],
+          "sha256": "4ee82ab4ef4816d8321ca9120ace06c2be354c1ecb4136fecd68511cdb8b12b8",
+          "source_sha256": "70dcf0c183e2e7c6a9f61ede01844a275e900d2279c672a2fb418bcb97fa9997",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 12
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/walk_02.png",
+          "pivot": [
+            512,
+            1499
+          ],
+          "sha256": "576f22f842c6e2304c70d646f6f25e566ecf80a48fec7dbdf3449e2b290eaf57",
+          "source_sha256": "e336abb74782fe2260a32e461df0cf242e727619665fcc75a45fbd721203c3bf",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 1
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/walk_03.png",
+          "pivot": [
+            512,
+            1499
+          ],
+          "sha256": "1de0126b9519a64846253e742586575e7816dd75f73ca0d70f3f5bc5329c2193",
+          "source_sha256": "8c416744398ac1dfe220d9d969ab698928d9bc4bc6cdf66736aadc6f48da37d1",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 15
+        }
+      ],
+      "cast": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/cast_00.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "a7d5cffa9ee85c50f0db12d9747a3d85fc3c8ff75891bd9d092a13e3f4e9d86e",
+          "source_sha256": "2fbac244c3e046e576ccb49264c9d7ad10233bd786f9edb0f52de02e1268c476",
+          "alpha_cutoff": 240
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/cast_01.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "266610c102f438f6353ec4378fb3a083e6beb3b3a2c0d021f1195e55c1a56ce4",
+          "source_sha256": "bc9f38314999849a44faab5d588fc37462ad2624ec979cd371e961665afdb800",
+          "alpha_cutoff": 240
+        }
+      ],
+      "hair": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/hair_00.png",
+          "pivot": [
+            512,
+            1495
+          ],
+          "sha256": "3be74f7411a5511c65f127f929ac75d34da898d3700ba77e1c63f6291d3995c7",
+          "source_sha256": "00c4b95fc1dcd36f216856cbdb9642a22bc6ee84952d57b3d18006d60f0df464",
+          "alpha_cutoff": 240
+        }
+      ],
+      "run": [
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/run_00.png",
+          "pivot": [
+            512,
+            1499
+          ],
+          "sha256": "5bb762884f8f986ec0fb31a36ef87b9da8180b6e4c4e9bbffdb98081ab6aec84",
+          "source_sha256": "c29fa009c1515b14717bb818f643611e1aac36918639efa1dfda70a98cf858ee",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 283,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/run_01.png",
+          "pivot": [
+            512,
+            1499
+          ],
+          "sha256": "1723c47ca609969f048b7a350cab196e6e7df873c47041c812176278d7d7e592",
+          "source_sha256": "d93729eb50037df795d5f2a849a81823dbd1c48192d23b7860ee10d6506d7bfe",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 26,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/run_02.png",
+          "pivot": [
+            512,
+            1499
+          ],
+          "sha256": "0a7e657f5ecfeea0d6a1457fa20c32392747a357e7cb5dd2f551f9534cda4010",
+          "source_sha256": "a928d5a3d2b2c09cad6a8c062df6902e017fe7a69f2d9663cbbf56bea5152ca9",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 0,
+          "empty_hand": true
+        },
+        {
+          "path": "res://assets/2d/characters/luna/explorer_animation/back_right/run_03.png",
+          "pivot": [
+            512,
+            1499
+          ],
+          "sha256": "cbd95037a7db0e42270198a940630f84931fd37dee0686e9d55194553c24cdff",
+          "source_sha256": "5ae8966cb2ed042609163aea63a982370825d4c4c2e622566f526f5c94746c93",
+          "source_path": "art/generated/luna/explorer_animation/back_right/run_03.png",
+          "alpha_cutoff": 240,
+          "registration_offset_y": 9,
+          "empty_hand": true
+        }
+      ]
+    }
+  },
+  "run_bounce_phases": {
+    "front": 0.0,
+    "front_right": 0.25,
+    "side_right": 0.25,
+    "back_right": 0.25,
+    "back": 0.0
+  }
+}
