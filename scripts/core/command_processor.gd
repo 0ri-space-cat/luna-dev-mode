@@ -14,6 +14,7 @@ const MAX_UNDO := 120
 const MAX_AUDIT := 300
 
 var world_registry = null
+var access_service = null
 var _sequence := 0
 var _undo_stack: Array[Dictionary] = []
 var _redo_stack: Array[Dictionary] = []
@@ -24,6 +25,10 @@ func configure_world(registry) -> void:
 	world_registry = registry
 
 
+func configure_access(access_policy) -> void:
+	access_service = access_policy
+
+
 func execute_set(target: Node, parameter_id: String, requested_value: Variant, initiator_id: String = "luna", source_id: String = "wand:luna", merge_key: String = "") -> bool:
 	if not is_instance_valid(target) or not target.has_method("get_parameter") or not target.has_method("set_parameter"):
 		return false
@@ -31,6 +36,9 @@ func execute_set(target: Node, parameter_id: String, requested_value: Variant, i
 	if record == null:
 		return false
 	var entity_id: String = str(record.id)
+	if parameter_id == "access_level" and (access_service == null or not access_service.authorize_tool_edit(
+			initiator_id, entity_id, requested_value, source_id)):
+		return false
 	var previous: Variant = target.call("get_parameter", parameter_id)
 	if not bool(target.call("set_parameter", parameter_id, requested_value)):
 		return false
@@ -336,6 +344,20 @@ func execute_component(target: Node, operation: String, component_id: String,
 	if record == null:
 		return false
 	var before: Dictionary = record.get_components()
+	if component_id == "DOOR_LINK":
+		if access_service == null:
+			return false
+		var proposed: Dictionary = before.duplicate(true)
+		if operation == "SET_COMPONENT":
+			var checked: Dictionary = ComponentRegistry.validate(component_id, data)
+			if not bool(checked["ok"]):
+				return false
+			proposed[component_id] = checked["value"]
+		else:
+			proposed.erase(component_id)
+		if not access_service.authorize_component_edit(initiator_id,
+				str(record.id), component_id, before, proposed, source_id):
+			return false
 	var accepted: bool = false
 	if operation == "SET_COMPONENT":
 		accepted = record.set_component(component_id, data)
@@ -535,6 +557,19 @@ func execute_batch(prepared_steps: Array[Dictionary], initiator_id: String, sour
 		return true
 	if prepared_steps.size() > 32 or not _validate_batch(prepared_steps):
 		return false
+	for step in prepared_steps:
+		if str(step.get("kind", "")) == "parameter" and str(step.get("parameter_id", "")) == "access_level":
+			if access_service == null or not access_service.authorize_tool_edit(
+					initiator_id, str(step.get("entity_id", "")), step.get("after"), source_id):
+				return false
+		if str(step.get("kind", "")) == "components" and access_service == null:
+			# Component transactions are allowed unless a protected DOOR_LINK is changed.
+			if (step.get("before", {}) as Dictionary).get("DOOR_LINK", {}) != (step.get("after", {}) as Dictionary).get("DOOR_LINK", {}):
+				return false
+		if str(step.get("kind", "")) == "components" and access_service != null:
+			if not access_service.authorize_component_edit(initiator_id,
+					str(step.get("entity_id", "")), "DOOR_LINK", step.get("before", {}), step.get("after", {}), source_id):
+				return false
 	if not _apply_steps(prepared_steps, true):
 		return false
 	var stored: Array[Dictionary] = []
