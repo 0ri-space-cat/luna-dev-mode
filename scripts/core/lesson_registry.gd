@@ -12,7 +12,8 @@ var last_error := ""
 func register_lesson(data: Dictionary) -> bool:
 	last_error = ""
 	var allowed := ["id", "zone_id", "law", "evidence", "physical_conditions",
-		"character_hints", "failure_feedback", "recovery_anchor"]
+		"character_hints", "alternate_methods", "valid_outcomes",
+		"failure_feedback", "recovery_anchor"]
 	for key in data.keys():
 		if str(key) not in allowed:
 			return _fail("Unknown lesson field; quest completion is never a physical prerequisite")
@@ -25,7 +26,8 @@ func register_lesson(data: Dictionary) -> bool:
 	var id: String = str(data["id"])
 	if _definitions.has(id) or _definitions.size() >= MAX_LESSONS:
 		return _fail("Duplicate lesson or registry full")
-	for field in ["evidence", "physical_conditions", "character_hints"]:
+	for field in ["evidence", "physical_conditions", "character_hints",
+			"alternate_methods", "valid_outcomes"]:
 		var entries: Variant = data.get(field, [])
 		if typeof(entries) != TYPE_ARRAY or entries.size() > (MAX_CONDITIONS if field == "physical_conditions" else MAX_CLUES):
 			return _fail("Invalid %s list" % field)
