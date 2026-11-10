@@ -237,6 +237,8 @@ func _exit_tree() -> void:
 	# not rely on ephemeral undo history.
 	if command_processor != null:
 		command_processor.clear_history()
+		# Break CommandProcessor <-> WorldAccessService RefCounted cycle.
+		command_processor.configure_access(null)
 	if entity_lifecycle != null:
 		entity_lifecycle.spawn_actor = Callable()
 	# Lifecycle -> elemental service -> effect engine forms a reference loop
