@@ -10,7 +10,7 @@ const MAX_SELECTOR_RADIUS := 12.0
 const VALID_ATTITUDES := ["FRIEND", "HOSTILE", "AFRAID", "NEUTRAL"]
 const SELECTOR_FIELDS := [
 	"radius", "max_targets", "category", "role", "tag", "alive",
-	"attitude", "relation_direction", "include_origin"
+	"attitude", "relation_direction", "include_origin", "include_player"
 ]
 
 
@@ -123,7 +123,7 @@ static func validate_selector(raw: Variant) -> bool:
 				return false
 			if key != "category" and str(selector[key]) != str(selector[key]).to_upper():
 				return false
-	for key in ["alive", "include_origin"]:
+	for key in ["alive", "include_origin", "include_player"]:
 		if selector.has(key) and typeof(selector[key]) != TYPE_BOOL:
 			return false
 	if selector.has("attitude") and (typeof(selector["attitude"]) != TYPE_STRING or str(selector["attitude"]) not in VALID_ATTITUDES):
@@ -148,6 +148,10 @@ static func select_by_properties(world, origin_id: String, selector: Dictionary,
 	var max_dist: float = float(selector["radius"]) * float(selector["radius"])
 	var matches: Array[Dictionary] = []
 	for entity_id in world.list_ids():
+		# Luna became an editable Entity in V3; keep pre-V3 selector
+		# semantics unless a spell explicitly includes the player.
+		if entity_id == "luna" and not bool(selector.get("include_player", false)):
+			continue
 		if entity_id == origin_id and not bool(selector.get("include_origin", false)):
 			continue
 		var target: Node = world.get_entity(entity_id)
