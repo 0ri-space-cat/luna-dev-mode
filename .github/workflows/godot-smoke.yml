@@ -73,6 +73,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_abilities.gd
       - name: Run V3 food, door permissions and ability-bank system contracts
         run: bash ci/run_godot_script.sh res://tests/test_v3_system_foundation.gd
+      - name: Run V3 area laws and optional character lesson checks
+        run: bash ci/run_godot_script.sh res://tests/test_v3_lesson_registry.gd
 
       - name: Run stable ID history recreation tests
         run: bash ci/run_godot_script.sh res://tests/test_history_recreation.gd
