@@ -9,6 +9,7 @@ signal component_changed(change: Dictionary)
 signal entity_changed(change: Dictionary)
 signal history_changed
 
+const ComponentRegistry = preload("res://scripts/core/component_registry.gd")
 const MAX_UNDO := 120
 const MAX_AUDIT := 300
 
@@ -539,7 +540,7 @@ func execute_batch(prepared_steps: Array[Dictionary], initiator_id: String, sour
 	var stored: Array[Dictionary] = []
 	for step in prepared_steps:
 		var archive: Dictionary = step.duplicate()
-		if str(step["kind"]) == "parameter":
+		if str(step["kind"]) in ["parameter", "components"]:
 			archive["target_ref"] = weakref(step["target"])
 			archive.erase("target")
 		stored.append(archive)
@@ -590,6 +591,17 @@ func _validate_batch(steps: Array[Dictionary], forward: bool = true) -> bool:
 				return false
 			key = "P:%s:%s" % [record.id, parameter_id]
 			current = target.call("get_parameter", parameter_id)
+		elif step["kind"] == "components":
+			var target: Object = _target_for_step(step)
+			if not is_instance_valid(target):
+				return false
+			var record: Variant = target.get("record")
+			if record == null or typeof(step["before"]) != TYPE_DICTIONARY or typeof(step["after"]) != TYPE_DICTIONARY:
+				return false
+			if not ComponentRegistry.validate_collection(step["before"]) or not ComponentRegistry.validate_collection(step["after"]):
+				return false
+			key = "C:%s" % str(record.id)
+			current = record.get_components()
 		elif step["kind"] == "relation":
 			var relations: Variant = step.get("relations")
 			var from_id: String = str(step.get("from_id", ""))
@@ -628,6 +640,12 @@ func _apply_step(step: Dictionary, forward: bool) -> bool:
 	if str(step["kind"]) == "parameter":
 		var target: Object = _target_for_step(step)
 		return is_instance_valid(target) and bool(target.call("set_parameter", step["parameter_id"], value))
+	if str(step["kind"]) == "components":
+		var target: Object = _target_for_step(step)
+		if not is_instance_valid(target):
+			return false
+		var record: Variant = target.get("record")
+		return record != null and bool(record.set_components(value))
 	var relations: Variant = step["relations"]
 	return relations.set_attitude_silent(str(step["from_id"]), str(step["to_id"]), str(value))
 
@@ -654,6 +672,16 @@ func _announce_steps(steps: Array[Dictionary], action: String,
 			var relations: Variant = step["relations"]
 			relations.announce_change(str(step["from_id"]), str(step["to_id"]),
 				str(before), str(after), initiator_id, source_id)
+			continue
+		if step["kind"] == "components":
+			_sequence += 1
+			var component_entry := {
+				"sequence": _sequence, "entity_id": str(step["entity_id"]),
+				"parameter_id": "COMPONENTS", "initiator_id": initiator_id,
+				"source_id": source_id
+			}
+			_append_audit(action, component_entry, before, after)
+			component_changed.emit(_latest_audit())
 			continue
 		_sequence += 1
 		var audit_step := {
