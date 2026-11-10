@@ -89,25 +89,25 @@
     {
       "id": "ART-GL-03",
       "owner": "Общий / новый",
-      "ru": "Зеркало",
-      "en": "Mirror",
-      "shape": "Небольшое овальное волшебное зеркало в тонкой серебряной резной оправе, внутри вместо отражения мерцает чужой вид на мир",
-      "palette": "#93E5F6/#A890FF",
-      "fx": "Зеркало плавно отделяет точку наблюдения от героя, затем показывает выбранную удалённую область",
-      "control": "Открепляет камеру от героя, позволяет наблюдать ближайшую зону и следовать за выбранной Entity, сохраняя тело игрока на месте",
-      "fields": "CAMERA_DETACH, CAMERA_TARGET, CAMERA_RADIUS",
-      "place": "Нью-Париж, студия наблюдений возле летающей башни",
-      "reveal": "Обычный объект, может быть спрятан за секретным пространственным переходом",
-      "limit": "Не управляет NPC, не становится FIRST/SECOND PERSON и не переносит героя через препятствия",
-      "priority": "P2",
-      "image_prompt_en": "Single collectible magical artifact for the game LUNA: DEV MODE. One clean cute enchanted prop with a clear simple recognizable silhouette, hand-drawn 2D fantasy game prop with clean cartoon outlines, three-quarter studio view, centered isolated neutral backdrop, readable details, light magical glow. Object: a small oval enchanted hand mirror with ornate but simple silver frame and a softly glowing lilac glass surface showing a tiny distant landscape silhouette; no telescope, eye, tripod or lens tubes. Color palette #93E5F6/#A890FF. No lettering, no hands, no other props, no character, no watermark.",
-      "image_prompt_ru": "Один отдельный коллекционный волшебный предмет для игры LUNA: DEV MODE. Простая узнаваемая форма, рисованный 2D-спрайт с выразительным чистым контуром, ракурс три четверти, нейтральный фон, аккуратное свечение. Предмет: Небольшое овальное волшебное зеркало в тонкой серебряной резной оправе, внутри вместо отражения мерцает чужой вид на мир. Палитра: #93E5F6/#A890FF. Без надписей, персонажей, рук, логотипов и водяных знаков.",
+      "ru": "Камера наблюдения",
+      "en": "Observer Camera",
+      "shape": "Небольшой нелепый стимпанковский латунный фотоаппарат с крупной круглой сиренево-голубой линзой и видимыми шестерёнками, карманный магический объектив",
+      "palette": "#BD8A55/#91DFF0/#9C78D8",
+      "fx": "Короткий щелчок линзы при переключении FOLLOW/LOCKED; изначально эффект незаметен, пока Луна не уйдёт за кадр",
+      "control": "Переключает физическую игровую камеру FOLLOW ↔ LOCKED в любом обычном месте Этернии, не останавливая Луну и мир вне кадра",
+      "fields": "CAMERA_MODE: FOLLOW|LOCKED",
+      "place": "Ранняя легко доступная локация Этернии — место находки уточнить по V4",
+      "reveal": "Виден и доступен в обычной игре рано; при первом использовании Луна считает прибор бесполезным",
+      "limit": "Не управляет NPC и не меняет физику. В специальной внешней космической сцене неактивен и выдаёт глитч-звук",
+      "priority": "P0",
+      "image_prompt_en": "One original collectible prop for LUNA: DEV MODE as carefully authored readable pixel art on a consistent pixel grid, isolated transparent background: a deliberately quirky small steampunk brass camera with a single oversized circular lilac-cyan glass lens, exposed tiny gears and mechanical knobs, warm brass and soft violet accent, clean distinct silhouette, no mirror, no people, no letters, no watermark.",
+      "image_prompt_ru": "Один коллекционный предмет для LUNA: DEV MODE, детальный но читаемый пиксель-арт на единой сетке, прозрачный фон: маленькая забавная стимпанковская камера из латуни с одной крупной круглой сиренево-голубой линзой, маленькими видимыми шестерёнками и механическими ручками. Чёткий силуэт, никакого зеркала, персонажей, надписей, логотипов и водяных знаков.",
       "asset_files": {
         "concept": "assets/artifacts/ART-GL-03/ART-GL-03_concept.png",
         "icon": "assets/artifacts/ART-GL-03/ART-GL-03_icon.png",
         "model": null
       },
-      "render_status": "2d_master_generated",
+      "render_status": "v4_redraw_required",
       "planned_asset_files": {
         "model": null
       },
@@ -121,7 +121,8 @@
         "palette_as_drawn": "#93E5F6/#4769BA/#DFE9F4",
         "author_locked": false
       },
-      "production_standard": "Existing generated 2D master; future animation: Sprite2D, layers and procedural VFX only. No planned GLB."
+      "production_standard": "Previous 2D mirror PNG remains only as historical reference. Redraw camera as pixel-art icon and prop with a shared master, no 3D model. Does not imply gameplay implemented.",
+      "v4_note": "Former mirror files at asset_files are obsolete and must not be used as camera assets. Keep old paths only for provenance until new art replaces them."
     },
     {
       "id": "ART-GL-04",
@@ -804,5 +805,6 @@
     "Abilities are transferable using a real property bank, with only OPEN/LOCKED transfer states, scan-depth visibility and 2D anchor-based visual recipes; no perk system.",
     "The entire game is native 2D; perception underside uses one shared light-cyan neon outline style, character-specific views are overlays, not recolored tile atlases.",
     "Oracle Eye is a separate physical story tool (STORY_ORACLE_EYE) outside the 21 generated collectible masters, located near spawn, granted only after Luna's wand has been hacked at the rift. It makes machine identifiers legible only while equipped. Same-slot restarts remember tutorial/locations but require a quick rift interaction and physical eye pickup each new loop; ordinary load retains actual saved physical state."
-  ]
+  ],
+  "v4_override": "11.11.2026: use docs/canon/14_V4_ETERNIA_META_AND_SECRETS.md for pixel art and lore. Existing non-pixel artifact masters are historical reference. ART-GL-03 is now Camera, its former mirror PNG is obsolete; Prism capability unresolved."
 }
