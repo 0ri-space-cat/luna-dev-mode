@@ -135,5 +135,14 @@ func _run() -> void:
 	assert(access.register_intrinsic_authority("yuki", 3))
 	assert(access.redirect("door", "VOID_DEEP", "yuki"))
 
+	# A bare SceneTree test owns all mock actors directly; unlike Main, no
+	# scene _exit_tree hook will release the bidirectional access-policy link.
+	commands.clear_history()
+	commands.configure_access(null)
+	for entity_id in world.list_ids():
+		var actor: Node = world.get_entity(entity_id)
+		world.unregister_entity(entity_id)
+		if is_instance_valid(actor):
+			actor.free()
 	print("LUNA V3: edible effects, atomic ability bank, physical access and doors passed")
 	quit(0)
