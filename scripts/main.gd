@@ -12,6 +12,9 @@ const EventBus = preload("res://scripts/core/event_bus.gd")
 const InteractionService = preload("res://scripts/core/interaction_service.gd")
 const ZoneService = preload("res://scripts/core/zone_service.gd")
 const AbilityService = preload("res://scripts/core/ability_service.gd")
+const AbilityBankService = preload("res://scripts/core/ability_bank_service.gd")
+const ConsumableService = preload("res://scripts/core/consumable_service.gd")
+const WorldAccessService = preload("res://scripts/core/world_access_service.gd")
 const InventoryService = preload("res://scripts/core/inventory_service.gd")
 const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
@@ -49,6 +52,9 @@ var event_bus
 var interaction_service
 var zone_service
 var ability_service
+var ability_bank_service
+var consumable_service
+var world_access_service
 var inventory_service
 var effect_engine
 var rule_engine
@@ -85,6 +91,8 @@ func _ready() -> void:
 	command_processor = CommandProcessor.new()
 	world_registry = WorldRegistry.new()
 	command_processor.configure_world(world_registry)
+	world_access_service = WorldAccessService.new(world_registry, command_processor)
+	command_processor.configure_access(world_access_service)
 	relationship_service = RelationshipService.new()
 	social_awareness = SocialAwarenessService.new(world_registry, relationship_service)
 	social_awareness.alert_changed.connect(_on_social_alert_changed)
@@ -93,6 +101,8 @@ func _ready() -> void:
 	zone_service = ZoneService.new(world_registry, event_bus)
 	effect_engine = EffectEngine.new(world_registry, command_processor, relationship_service)
 	ability_service = AbilityService.new(world_registry, effect_engine, command_processor)
+	ability_bank_service = AbilityBankService.new(world_registry, command_processor)
+	consumable_service = ConsumableService.new(world_registry, command_processor, effect_engine)
 	inventory_service = InventoryService.new(world_registry, command_processor, ability_service, event_bus)
 	surface_field_service = SurfaceFieldService.new()
 	surface_field_service.fields_changed.connect(_on_surface_fields_changed)
@@ -227,6 +237,8 @@ func _exit_tree() -> void:
 	# not rely on ephemeral undo history.
 	if command_processor != null:
 		command_processor.clear_history()
+		# Break CommandProcessor <-> WorldAccessService RefCounted cycle.
+		command_processor.configure_access(null)
 	if entity_lifecycle != null:
 		entity_lifecycle.spawn_actor = Callable()
 	# Lifecycle -> elemental service -> effect engine forms a reference loop
@@ -319,6 +331,7 @@ func _build_ground() -> void:
 
 func _spawn_player() -> void:
 	luna = PlayerController.new()
+	luna.configure_record(parameter_registry)
 	luna.surface_service = surface_field_service
 	luna.position = Vector3(0, 0.1, 3.3)
 	add_child(luna)

@@ -126,14 +126,18 @@ func query_ids(selector: Dictionary, limit: int = 16) -> Array[String]:
 	if limit < 1 or limit > 24:
 		return result
 	for key in selector.keys():
-		if str(key) not in ["category", "role", "tag", "alive"]:
+		if str(key) not in ["category", "role", "tag", "alive", "include_player"]:
 			return result
-		if str(key) == "alive":
+		if str(key) in ["alive", "include_player"]:
 			if typeof(selector[key]) != TYPE_BOOL:
 				return result
 		elif typeof(selector[key]) != TYPE_STRING or str(selector[key]).is_empty():
 			return result
 	for entity_id in list_ids():
+		# Preserve legacy selectors that searched only world actors; Luna has
+		# an editable record in V3, but should not suddenly match old AI queries.
+		if entity_id == "luna" and not bool(selector.get("include_player", false)):
+			continue
 		var actor: Node = get_entity(entity_id)
 		if actor == null or not actor.has_method("get_parameter"):
 			continue

@@ -91,6 +91,18 @@ func _init() -> void:
 		"hint": "Перекрасить? Запросто."
 	})
 
+	# Scene-independent system fields: they do not appear on fridges/trees.
+	register_parameter({
+		"id": "access_level", "label": "ACCESS_LEVEL", "display_name": "Уровень доступа",
+		"kind": "int", "min": 0.0, "max": 3.0, "step": 1.0, "default": 0,
+		"categories": ["wand"], "hint": "USER (0), OPERATOR (1), ADMIN (2), DEVELOPER (3)."
+	})
+	register_parameter({
+		"id": "portions", "label": "PORTIONS", "display_name": "Порции",
+		"kind": "int", "min": 0.0, "max": 16.0, "step": 1.0, "default": 1,
+		"categories": ["food", "drink"], "hint": "Сколько порций осталось в предмете."
+	})
+
 
 func register_parameter(spec: Dictionary) -> bool:
 	for required in ["id", "label", "kind", "default", "hint"]:

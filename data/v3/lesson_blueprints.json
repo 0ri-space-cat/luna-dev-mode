@@ -1,0 +1,564 @@
+{
+  "revision": "2026-11-10",
+  "status": "DRAFT_NO_SCENES",
+  "notes": "World facts must be supplied by physics. These lesson entries teach without requiring quest flags, current playable character, XP or game level.",
+  "lessons": [
+    {
+      "id": "U_00_FESTIVAL",
+      "zone_id": "ET_FOREST",
+      "law": "PERSISTENT_WORLD",
+      "evidence": [
+        "UNSEEN_FOOTPRINT",
+        "ANIMALS_LOOK_UP",
+        "IMPROPER_SHADOW"
+      ],
+      "physical_conditions": [
+        "PLAYER_REACHES_FESTIVAL"
+      ],
+      "character_hints": [
+        "TOFFI_HIDDEN_FAUNA"
+      ],
+      "alternate_methods": [
+        "WALK_TO_FESTIVAL",
+        "FOLLOW_KIKI"
+      ],
+      "valid_outcomes": [
+        "FESTIVAL_ARRIVAL"
+      ],
+      "recovery_anchor": "ET_FOREST",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_01_RIFT",
+      "zone_id": "ET_RIFT",
+      "law": "ENTITY_EDITING",
+      "evidence": [
+        "CURIOSITY_BUSH",
+        "SHARED_FIELD_TYPES",
+        "OLD_WAND_GLITCH"
+      ],
+      "physical_conditions": [
+        "WAND_TOUCHED_RIFT"
+      ],
+      "character_hints": [
+        "LUNA_HACKING",
+        "ORACLE_EYE"
+      ],
+      "alternate_methods": [
+        "USE_BUSH",
+        "ALTER_BOX"
+      ],
+      "valid_outcomes": [
+        "WAND_HACK_READY"
+      ],
+      "recovery_anchor": "ET_RIFT",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_02_FRIDGE",
+      "zone_id": "ET_MARKET",
+      "law": "IDENTITY_NOT_FUNCTION",
+      "evidence": [
+        "WALKING_FRIDGE",
+        "FRIDGE_SPEAKS",
+        "OWNERSHIP_CONFLICT"
+      ],
+      "physical_conditions": [
+        "FRIDGE_SITUATION_RESOLVED"
+      ],
+      "character_hints": [
+        "LUNA_ABILITIES",
+        "ORI_MODEL"
+      ],
+      "alternate_methods": [
+        "TALK",
+        "MODIFY_FOLLOW",
+        "CREATE_PHYSICAL_COPY"
+      ],
+      "valid_outcomes": [
+        "FRIDGE_STAYS",
+        "FRIDGE_RETURNS"
+      ],
+      "recovery_anchor": "ET_MARKET",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_03_TEA",
+      "zone_id": "ET_CAFE",
+      "law": "CONSUMER_NOT_CONTAINER",
+      "evidence": [
+        "FAST_GUEST",
+        "BROKEN_LABEL",
+        "EDIBLE_FIELD"
+      ],
+      "physical_conditions": [
+        "DRINK_EFFECT_APPLIED"
+      ],
+      "character_hints": [
+        "MIYA_LIQUIDS",
+        "LEA_MOOD"
+      ],
+      "alternate_methods": [
+        "DRINK",
+        "GIVE_TO_OTHER",
+        "SPLASH"
+      ],
+      "valid_outcomes": [
+        "SELF_EFFECT",
+        "OTHER_EFFECT"
+      ],
+      "recovery_anchor": "ET_CAFE",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_04_BRIDGE",
+      "zone_id": "ET_GORGE",
+      "law": "COLLISION_NOT_VISIBILITY",
+      "evidence": [
+        "BIRD_LANDS",
+        "APPLE_BOUNCES",
+        "RAIN_HITS"
+      ],
+      "physical_conditions": [
+        "PLAYER_ON_BRIDGE"
+      ],
+      "character_hints": [
+        "YUKI_ROUTE_MAP",
+        "ORI_COLLIDER"
+      ],
+      "alternate_methods": [
+        "WALK_BY_PROBING",
+        "USE_VISIBILITY_TOOL"
+      ],
+      "valid_outcomes": [
+        "CROSS_GORGE"
+      ],
+      "recovery_anchor": "ET_GORGE",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_05_YUKI",
+      "zone_id": "ET_ACADEMY",
+      "law": "ADDRESS_NOT_GEOMETRY",
+      "evidence": [
+        "SIGN_CONFLICT",
+        "NPC_WRONG_DESTINATION",
+        "FOURTH_ROUTE"
+      ],
+      "physical_conditions": [
+        "PUBLIC_DOOR_REDIRECTED"
+      ],
+      "character_hints": [
+        "YUKI_CONSOLE"
+      ],
+      "alternate_methods": [
+        "WAND_EDIT",
+        "REUSE_CONFIGURED_DOOR"
+      ],
+      "valid_outcomes": [
+        "ROUTE_RESTORED"
+      ],
+      "recovery_anchor": "ET_ACADEMY",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_06_DUPLICATES",
+      "zone_id": "ET_LAKE",
+      "law": "TOOL_EDITED_BY_COPY",
+      "evidence": [
+        "DOUBLE_STONES",
+        "DOUBLE_BOOTS",
+        "DOUBLE_TOY"
+      ],
+      "physical_conditions": [
+        "WAND_COPY_HAS_ORIGIN",
+        "ORIGINAL_WAND_EDITED"
+      ],
+      "character_hints": [
+        "LUNA_ACCESS",
+        "YUKI_TOOLS"
+      ],
+      "alternate_methods": [
+        "DUPLICATE_WAND",
+        "USE_ADMIN_TOOL"
+      ],
+      "valid_outcomes": [
+        "ACCESS_LEVEL_CHANGED"
+      ],
+      "recovery_anchor": "ET_LAKE",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_07_ORI",
+      "zone_id": "ET_WORKSHOP",
+      "law": "ENTITY_NOT_APPEARANCE",
+      "evidence": [
+        "FRIDGE_DOOR_ON_TREE",
+        "RIN_MEMORIES",
+        "COLLIDER_MISMATCH"
+      ],
+      "physical_conditions": [
+        "RIN_IDENTITY_PRESERVED"
+      ],
+      "character_hints": [
+        "ORI_MODULES"
+      ],
+      "alternate_methods": [
+        "SWAP_MODULE",
+        "REPAIR_WITH_WAND",
+        "REPLACE_MODEL"
+      ],
+      "valid_outcomes": [
+        "RIN_REPAIRED"
+      ],
+      "recovery_anchor": "ET_WORKSHOP",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_08_MIYA",
+      "zone_id": "ET_LAB",
+      "law": "EFFECT_NOT_SOURCE",
+      "evidence": [
+        "SMALL_MIYA",
+        "LIQUID_TRAIL",
+        "DRY_RESIDUE"
+      ],
+      "physical_conditions": [
+        "EFFECT_DELIVERED_THROUGH_MEDIUM"
+      ],
+      "character_hints": [
+        "MIYA_CHEMISTRY"
+      ],
+      "alternate_methods": [
+        "POUR_POTION",
+        "USE_WAND",
+        "ADDRESS_BYPASS"
+      ],
+      "valid_outcomes": [
+        "TARGET_CHANGED"
+      ],
+      "recovery_anchor": "ET_LAB",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_09_LEA",
+      "zone_id": "ET_GARDEN",
+      "law": "BEHAVIOR_NOT_RELATIONSHIP",
+      "evidence": [
+        "FOLLOWING_CROWD",
+        "UPSET_BUSH",
+        "FREE_WISH"
+      ],
+      "physical_conditions": [
+        "SOCIAL_CONFLICT_RESOLVED"
+      ],
+      "character_hints": [
+        "LEA_EMOTIONS"
+      ],
+      "alternate_methods": [
+        "RELEASE_FOLLOW",
+        "CHANGE_ROUTE",
+        "TALK"
+      ],
+      "valid_outcomes": [
+        "CREATURES_FREE"
+      ],
+      "recovery_anchor": "ET_GARDEN",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_10_TOFFI",
+      "zone_id": "ET_HIDDEN_TRAIL",
+      "law": "INVISIBLE_HAS_CAUSE",
+      "evidence": [
+        "GIANT_FOOTPRINT",
+        "MISSING_BUSH",
+        "PANICKED_ANIMALS"
+      ],
+      "physical_conditions": [
+        "INVISIBLE_CREATURE_TRACED"
+      ],
+      "character_hints": [
+        "TOFFI_ECOLOGY",
+        "MIYA_REAGENTS",
+        "LEA_FEARS"
+      ],
+      "alternate_methods": [
+        "FOLLOW_FOOTPRINTS",
+        "REVEAL_WITH_LANTERN"
+      ],
+      "valid_outcomes": [
+        "GIANT_IDENTIFIED"
+      ],
+      "recovery_anchor": "ET_HIDDEN_TRAIL",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_11_GAZE",
+      "zone_id": "ET_BURROW",
+      "law": "DIRECT_GAZE_REACTIVE",
+      "evidence": [
+        "HIDING_CREATURE",
+        "SOUND_WHEN_AWAY",
+        "BLINK_RECOVERY"
+      ],
+      "physical_conditions": [
+        "CHARACTER_NOT_LOOKING",
+        "CREATURE_APPROACHED"
+      ],
+      "character_hints": [
+        "TOFFI_GAZE"
+      ],
+      "alternate_methods": [
+        "CLOSE_EYES",
+        "TURN_AWAY",
+        "DISTRACT"
+      ],
+      "valid_outcomes": [
+        "NEST_ENTERED"
+      ],
+      "recovery_anchor": "ET_BURROW",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_12_SHY_BRIDGE",
+      "zone_id": "ET_SHY_GORGE",
+      "law": "DIRECT_GAZE_COLLISION",
+      "evidence": [
+        "WHISPER_WHEN_UNSEEN",
+        "BIRD_WAITING",
+        "EDGE_DISAPPEARS"
+      ],
+      "physical_conditions": [
+        "CHARACTER_NOT_LOOKING",
+        "BRIDGE_SOLID"
+      ],
+      "character_hints": [
+        "TOFFI_GAZE",
+        "YUKI_BRIDGE"
+      ],
+      "alternate_methods": [
+        "CLOSE_EYES",
+        "TURN_BACK",
+        "REMOTE_TRAVERSE"
+      ],
+      "valid_outcomes": [
+        "BRIDGE_CROSSED"
+      ],
+      "recovery_anchor": "ET_SHY_GORGE",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_13_CLOCK",
+      "zone_id": "ET_CLOCK_TOWER",
+      "law": "TIME_NOT_STATE",
+      "evidence": [
+        "DUST_STOPS",
+        "WHEELS_SYNC",
+        "OLD_SKETCH"
+      ],
+      "physical_conditions": [
+        "CLOCK_MECHANISM_RESOLVED"
+      ],
+      "character_hints": [
+        "MIYA_RESIDUE",
+        "ORI_OLD_MODEL"
+      ],
+      "alternate_methods": [
+        "USE_HOURGLASS",
+        "USE_VALID_DOOR"
+      ],
+      "valid_outcomes": [
+        "CLOCK_TOWER_OPEN"
+      ],
+      "recovery_anchor": "ET_CLOCK_TOWER",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_14_MIRROR",
+      "zone_id": "ET_OBSERVATORY",
+      "law": "CAMERA_NOT_BODY",
+      "evidence": [
+        "REMOTE_REFLECTION",
+        "PLAYER_BODY_REMAINS",
+        "CAMERA_TARGET_CHANGED"
+      ],
+      "physical_conditions": [
+        "CAMERA_DETACHED"
+      ],
+      "character_hints": [
+        "ORI_VIEW_MODEL",
+        "YUKI_ROUTE_MAP"
+      ],
+      "alternate_methods": [
+        "USE_MIRROR",
+        "SYSTEM_CAMERA_DETACH"
+      ],
+      "valid_outcomes": [
+        "OBSERVATION_SPLIT"
+      ],
+      "recovery_anchor": "ET_OBSERVATORY",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_15_ELF_HOUSE_04",
+      "zone_id": "ET_ELF_VILLAGE",
+      "law": "REMOVED_IMAGE_LIVE_ADDRESS",
+      "evidence": [
+        "NUMBER_GAP",
+        "LETTER_TO_FOUR",
+        "FOUNDATION_OUTLINE"
+      ],
+      "physical_conditions": [
+        "DOOR_POINTS_TO_ELF_HOUSE_04"
+      ],
+      "character_hints": [
+        "YUKI_ADDRESSES",
+        "LEA_ABSENT_LINK"
+      ],
+      "alternate_methods": [
+        "EDIT_DOOR",
+        "FIND_ALREADY_CONFIGURED_ENTRANCE"
+      ],
+      "valid_outcomes": [
+        "MISSING_HOUSE_ENTERED"
+      ],
+      "recovery_anchor": "ET_ELF_VILLAGE",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_16_FORBIDDEN_DOOR",
+      "zone_id": "ET_TECH_DOOR",
+      "law": "KNOWN_NOT_AUTHORIZED",
+      "evidence": [
+        "KNOWN_ADDRESS",
+        "FORBIDDEN_MESSAGE",
+        "DUPLICATE_WAND_HINT"
+      ],
+      "physical_conditions": [
+        "AUTHORIZED_WAND_OR_EXISTING_EXIT"
+      ],
+      "character_hints": [
+        "LUNA_ACCESS",
+        "YUKI_ADMIN"
+      ],
+      "alternate_methods": [
+        "COPY_WAND_UPGRADE",
+        "USE_ADMIN_TOOL",
+        "USE_PRECONFIGURED_DOOR"
+      ],
+      "valid_outcomes": [
+        "TECH_ZONE_REACHED"
+      ],
+      "recovery_anchor": "ET_TECH_DOOR",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_17_CAMERA_BRIDGE",
+      "zone_id": "ET_EDGE_SHORE",
+      "law": "CAMERA_OBSERVATION",
+      "evidence": [
+        "FOOTSTEPS_BEYOND_VIEW",
+        "EYES_DONT_HELP",
+        "MIRROR_CAMERA_DETACH"
+      ],
+      "physical_conditions": [
+        "CAMERA_FIXED",
+        "PLAYER_OUTSIDE_CAMERA_VIEW"
+      ],
+      "character_hints": [
+        "TOFFI_GAZE",
+        "YUKI_ROUTE_MAP",
+        "ORI_UI_ENTITY"
+      ],
+      "alternate_methods": [
+        "SYSTEM_CAMERA_LOCK",
+        "PRECONFIGURED_CAMERA_ANCHOR"
+      ],
+      "valid_outcomes": [
+        "CROSS_TO_GAME_FRAME"
+      ],
+      "recovery_anchor": "ET_EDGE_SHORE",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_18_GAME_FRAME",
+      "zone_id": "SYS_GAME_FRAME",
+      "law": "FRAME_IS_ENTITY",
+      "evidence": [
+        "LINKED_PORTRAIT",
+        "MINIMAP_TARGET",
+        "SYSTEM_EDGE_LABEL"
+      ],
+      "physical_conditions": [
+        "GAME_FRAME_SELECTED",
+        "DEVELOPER_ACCESS"
+      ],
+      "character_hints": [
+        "LUNA_SYSTEM_HACK",
+        "ORI_MODEL"
+      ],
+      "alternate_methods": [
+        "HACK_FRAME",
+        "KNOWN_SYSTEM_INTERACTION"
+      ],
+      "valid_outcomes": [
+        "STEP_OUT"
+      ],
+      "recovery_anchor": "SYS_GAME_FRAME",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_19_VOID",
+      "zone_id": "VOID_DEEP",
+      "law": "ABSENCE_LEAVES_TRACES",
+      "evidence": [
+        "EMPTY_PHOTO_SPACE",
+        "OLD_SPAWN_COORDS",
+        "DELETED_ENTITY_LINK"
+      ],
+      "physical_conditions": [
+        "DEEP_VOID_PATH_REACHED"
+      ],
+      "character_hints": [
+        "MIYA_RESIDUES",
+        "LEA_RELATIONS",
+        "YUKI_ADDRESS_MEMORY"
+      ],
+      "alternate_methods": [
+        "FOLLOW_OLD_ADDRESSES",
+        "REASSEMBLE_LINKS"
+      ],
+      "valid_outcomes": [
+        "ONI_FOUND"
+      ],
+      "recovery_anchor": "VOID_DEEP",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    },
+    {
+      "id": "U_20_ONI",
+      "zone_id": "VOID_SILENCE",
+      "law": "SHARED_WORLD_TRUTH",
+      "evidence": [
+        "FADING_BLUE_SILHOUETTE",
+        "RIFT_MEMORY",
+        "PARTIAL_PROTOTYPE"
+      ],
+      "physical_conditions": [
+        "PLAYER_TOUCHES_ONI"
+      ],
+      "character_hints": [
+        "ONI_MEMORY"
+      ],
+      "alternate_methods": [
+        "WALK_TO_ONI",
+        "USE_VALID_SHORTCUT"
+      ],
+      "valid_outcomes": [
+        "ONI_RESTORED"
+      ],
+      "recovery_anchor": "VOID_SILENCE",
+      "failure_feedback": "TRY_PHYSICAL_EXPERIMENT"
+    }
+  ]
+}

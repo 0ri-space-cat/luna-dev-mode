@@ -1,12 +1,30 @@
 extends CharacterBody3D
 ## Placeholder for Luna: no external models required.
 
+const EntityRecord = preload("res://scripts/core/entity_record.gd")
 const WALK_SPEED := 7.5
 const ACCELERATION := 42.0
 const GRAVITY := 18.0
 
 var visual_root: Node3D
 var surface_service
+var record = null
+
+
+func configure_record(parameter_registry) -> void:
+	# Player and NPCs participate in the same typed Entity transactions.
+	# Final 2D actor will implement these identical record methods.
+	record = EntityRecord.new("luna", "character", "Луна", parameter_registry, {
+		"alive": true, "health": 100, "speed": 2.0
+	})
+
+
+func get_parameter(key: String) -> Variant:
+	return null if record == null else record.get_parameter(key)
+
+
+func set_parameter(key: String, value: Variant) -> bool:
+	return record != null and record.set_parameter(key, value)
 
 
 func _ready() -> void:
@@ -37,8 +55,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	var direction := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var traction: float = float(surface_service.traction(global_position)) if surface_service != null else 1.0
-	velocity.x = move_toward(velocity.x, direction.x * WALK_SPEED, ACCELERATION * traction * delta)
-	velocity.z = move_toward(velocity.z, direction.y * WALK_SPEED, ACCELERATION * traction * delta)
+	var speed_factor: float = float(get_parameter("speed")) / 2.0 if record != null else 1.0
+	velocity.x = move_toward(velocity.x, direction.x * WALK_SPEED * speed_factor, ACCELERATION * traction * delta)
+	velocity.z = move_toward(velocity.z, direction.y * WALK_SPEED * speed_factor, ACCELERATION * traction * delta)
 	velocity.y -= GRAVITY * delta
 	move_and_slide()
 	if direction.length_squared() > 0.01:
