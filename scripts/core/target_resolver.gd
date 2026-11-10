@@ -37,6 +37,10 @@ static func around(world, primary_id: String, radius: float) -> Array[String]:
 	)
 	for candidate in possibilities:
 		var entity_id: String = str(candidate["id"])
+		# Old area spells did not target Luna through generic editable-entity
+		# scanning. V3 player effects opt in explicitly through their own path.
+		if entity_id == "luna" and primary_id != "luna":
+			continue
 		var entity: Node = world.get_entity(entity_id)
 		if entity == null or not entity.has_method("get_parameter"):
 			continue
@@ -76,6 +80,8 @@ static func chain(world, primary_id: String, radius: float, max_jumps: int) -> A
 		var closest_distance := INF
 		for option in candidates:
 			var target_id: String = str(option["id"])
+			if target_id == "luna" and primary_id != "luna":
+				continue
 			if visited.has(target_id):
 				continue
 			var target: Node = world.get_entity(target_id)
