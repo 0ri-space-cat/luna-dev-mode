@@ -82,6 +82,9 @@ jobs:
       - name: Restore checkpoint state in the playable scene
         run: bash ci/run_godot_script.sh res://tests/test_world_timeline.gd
 
+      - name: Test observation laws and graybox collision
+        run: bash ci/run_godot_script.sh res://tests/test_observation_rules.gd
+
       - name: Run stable ID history recreation tests
         run: bash ci/run_godot_script.sh res://tests/test_history_recreation.gd
 
