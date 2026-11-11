@@ -14,7 +14,7 @@ Audit basis: `origin/main` at `0f23f12` (11 November 2026), PR #17 and #18 merge
 | World time and rewind | No dedicated clock/history service | Portable dual clock and bounded history; the graybox records/restores save-backed simulation state | Full world time scaling, and exact restoration of transient simulation state |
 | Clone limits | Bounded creation in magic and saves; copy identity/origin persistence | None | Standalone clone policy/service, recursive ancestry limits and visual inheritance |
 | Observation, perception and camera | Some awareness/visibility behavior exists; current camera/player are scene-bound | The graybox camera supports FOLLOW/LOCKED; portable observation rules and optional 3D collision adapter | Compute Luna sight and player screen coverage in the level adapter; integrate perception, rendering and NPC reactions |
-| HUD/meta interactions and palette grading | Existing UI and saved properties; V6 visual direction is documented | None | Physical HUD/inventory rooms/minimap contracts and render adapter for zonal grading |
+| HUD/meta interactions and palette grading | Existing UI and saved properties; V6 visual direction is documented | Optional grading adapter for a composited world viewport | Physical HUD/inventory rooms/minimap, 2D scene and zone wiring, visual QA |
 | Safety/glitch recovery | Multiple local caps and transactional save rollback | Timeline adds bounded history and ERROR/recovery signals | One shared operation/memory/tick budget and player-facing controlled-glitch flow |
 
 ## Time service contract
@@ -34,3 +34,7 @@ This adapter runs at normal physics speed. World scale on the portable clock doe
 ### Observation
 
 `ObservationRules` separates visibility and solidity. It resolves distinct rules for permanent solidity, solidity when Luna is not looking, solidity when the player is not observing through the camera, and solidity only while Luna's eyes are open. Camera observation can independently block a transition. `observation_surface_3d.gd` applies the result to a static body. The headless test verifies actual collisions including an invisible solid surface. The scene supplies gaze and screen coverage; the adapter does not assume how future levels compute them.
+
+### World grading
+
+Attach `world_grade_rect.gd` to the TextureRect that displays the world SubViewport. Keep the HUD in the outer viewport. The grade reads only the world texture, uses nearest sampling and preserves source alpha. `set_grade()` accepts saturation, contrast, brightness and RGB tint, with an optional transition in seconds. Use a transparent world viewport where compositing needs transparency. Set nearest filtering for sprites inside it separately. The headless test covers binding, filtering, invalid profiles and transitions. Final pixel appearance and performance need a rendered 2D scene.

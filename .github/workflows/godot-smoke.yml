@@ -85,6 +85,9 @@ jobs:
       - name: Test observation laws and graybox collision
         run: bash ci/run_godot_script.sh res://tests/test_observation_rules.gd
 
+      - name: Test world viewport grading controls
+        run: bash ci/run_godot_script.sh res://tests/test_world_grade.gd
+
       - name: Run stable ID history recreation tests
         run: bash ci/run_godot_script.sh res://tests/test_history_recreation.gd
 
