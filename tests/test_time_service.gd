@@ -51,5 +51,10 @@ func _run() -> void:
 		assert(time.capture_checkpoint())
 	assert(time.checkpoint_count() == 4)
 	assert(not time.set_world_time_scale(5.0))
+	assert(time.configure(Callable(self, "_capture"), Callable(self, "_validate"), Callable(self, "_restore")))
+	assert(time.checkpoint_count() == 0 and time.world_seconds == 0.0)
+	live_state["node"] = root
+	assert(not time.capture_checkpoint())
+	live_state.erase("node")
 	print("Portable time service: dual clocks, bounded snapshots, rewind and recovery passed")
 	quit(0)

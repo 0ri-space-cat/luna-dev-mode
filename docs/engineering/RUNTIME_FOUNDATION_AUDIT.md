@@ -19,6 +19,6 @@ Audit basis: `origin/main` at `0f23f12` (11 November 2026), PR #17 and #18 merge
 
 ## Time service contract
 
-`TimeService` has separate world and control clocks. World time scale is finite and capped at 4; zero pauses world advancement while control time continues. Callers provide `capture`, `validate`, and atomic `restore` callbacks over plain data. The service keeps a bounded ring of up to 240 snapshots, caps each JSON-encoded snapshot at 1 MiB, and enters `ERROR` when capture or restore fails. A caller must provide a restore callback with transaction semantics; the service cannot make arbitrary engine mutations atomic itself.
+`TimeService` has separate world and control clocks. World time scale is finite and capped at 4; zero pauses world advancement while control time continues. Callers provide `capture`, `validate`, and atomic `restore` callbacks over plain data. The service keeps a bounded ring of up to 240 snapshots, caps each JSON-encoded snapshot at 1 MiB and total history at 8 MiB, rejects non-JSON values, and enters `ERROR` when capture or restore fails. A caller must provide a restore callback with transaction semantics; the service cannot make arbitrary engine mutations atomic itself.
 
 The current `SaveService` is not yet wired as the time provider: its snapshot contract is `Node3D`-specific and does not include all transient actors such as live projectiles. Therefore this is a tested foundation API, not a claim that full-world rewind is already available in the playable scene.

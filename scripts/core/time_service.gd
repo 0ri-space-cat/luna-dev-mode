@@ -9,6 +9,8 @@ signal recovery_required(reason: String)
 
 const MAX_SNAPSHOTS := 240
 const MAX_SNAPSHOT_BYTES := 1_048_576
+const MAX_HISTORY_BYTES := 8_388_608
+const MAX_DATA_DEPTH := 32
 const MAX_DELTA := 0.25
 const MAX_WORLD_SCALE := 4.0
 
@@ -26,6 +28,7 @@ var _validate: Callable
 var _restore: Callable
 var _record_elapsed := 0.0
 var _snapshot_interval := 0.5
+var _history_bytes := 0
 
 
 func configure(capture: Callable, validate: Callable, restore: Callable,
@@ -36,6 +39,13 @@ func configure(capture: Callable, validate: Callable, restore: Callable,
 		return false
 	if history_limit < 2 or history_limit > MAX_SNAPSHOTS:
 		return false
+	_snapshots.clear()
+	_history_bytes = 0
+	_record_elapsed = 0.0
+	world_seconds = 0.0
+	control_seconds = 0.0
+	runtime_state = RuntimeState.READY
+	last_error = ""
 	_capture = capture
 	_validate = validate
 	_restore = restore
@@ -74,18 +84,21 @@ func capture_checkpoint() -> bool:
 	if not _capture.is_valid() or not _validate.is_valid():
 		return _fail("Timeline is not configured")
 	var captured: Variant = _capture.call()
-	if typeof(captured) != TYPE_DICTIONARY or not bool(_validate.call(captured)):
+	if typeof(captured) != TYPE_DICTIONARY or not _plain_data(captured, 0) or not bool(_validate.call(captured.duplicate(true))):
 		return _fail("World snapshot failed validation")
 	var data: Dictionary = captured.duplicate(true)
-	if JSON.stringify(data).to_utf8_buffer().size() > MAX_SNAPSHOT_BYTES:
+	var bytes := JSON.stringify(data).to_utf8_buffer().size()
+	if bytes > MAX_SNAPSHOT_BYTES:
 		return _fail("World snapshot exceeds memory limit")
-	var entry := {"world_seconds": world_seconds, "state": data}
+	var entry := {"world_seconds": world_seconds, "state": data, "bytes": bytes}
 	if not _snapshots.is_empty() and is_equal_approx(float(_snapshots.back()["world_seconds"]), world_seconds):
+		_history_bytes -= int(_snapshots.back()["bytes"])
 		_snapshots[_snapshots.size() - 1] = entry
 	else:
 		_snapshots.append(entry)
-	while _snapshots.size() > snapshot_limit:
-		_snapshots.pop_front()
+	_history_bytes += bytes
+	while _snapshots.size() > snapshot_limit or _history_bytes > MAX_HISTORY_BYTES:
+		_history_bytes -= int(_snapshots.pop_front()["bytes"])
 	snapshot_recorded.emit(_snapshots.size() - 1)
 	return true
 
@@ -106,7 +119,8 @@ func rewind_to(index: int) -> bool:
 	if not bool(_restore.call(state)):
 		return _fail("Checkpoint restore failed; recovery is required")
 	world_seconds = float(target["world_seconds"])
-	_snapshots.resize(index + 1)
+	while _snapshots.size() > index + 1:
+		_history_bytes -= int(_snapshots.pop_back()["bytes"])
 	_record_elapsed = 0.0
 	runtime_state = RuntimeState.READY
 	last_error = ""
@@ -141,4 +155,25 @@ func _fail(reason: String) -> bool:
 	last_error = reason
 	runtime_state = RuntimeState.ERROR
 	recovery_required.emit(reason)
+	return false
+
+
+func _plain_data(value: Variant, depth: int) -> bool:
+	if depth > MAX_DATA_DEPTH:
+		return false
+	match typeof(value):
+		TYPE_NIL, TYPE_BOOL, TYPE_INT, TYPE_STRING:
+			return true
+		TYPE_FLOAT:
+			return is_finite(value)
+		TYPE_ARRAY:
+			for item in value:
+				if not _plain_data(item, depth + 1):
+					return false
+			return true
+		TYPE_DICTIONARY:
+			for key in value:
+				if typeof(key) != TYPE_STRING or not _plain_data(value[key], depth + 1):
+					return false
+			return true
 	return false
