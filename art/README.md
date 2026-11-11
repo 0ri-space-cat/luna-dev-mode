@@ -4,6 +4,8 @@ Current asset paths and status: [docs/art/ASSET_INDEX.md](../docs/art/ASSET_INDE
 
 - `previews/index.html`: local gallery; download the repository and open it in a browser.
 - `previews/*.png`: contact sheets, suitable for viewing directly on GitHub.
+- [Current pixel-art environment prompt guide](../docs/art/ENVIRONMENT_ART_DIRECTION_AND_PROMPTS_V1.md), [annotated image atlas](../docs/art/ENVIRONMENT_REFERENCE_ATLAS_V1.md), and [per-room author scene brief](../docs/art/SCENE_BRIEF_TEMPLATE.md).
+- [Environment refs intake manifest](references/environment-v1/README.md) describes the author's latest eight images from chat and **clearly marks binary originals as not yet committed**; do not pretend the referenced files already exist in the repository.
 - `references/`: author-provided visual references.
 - `source/`: generation prompts, checks and metadata from each named iteration. Statements like "local only" describe that earlier iteration; the current publication status is the commit containing this index.
 - `archive/`: earlier UI versions retained without making them active designs.
