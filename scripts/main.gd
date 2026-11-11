@@ -19,6 +19,7 @@ const InventoryService = preload("res://scripts/core/inventory_service.gd")
 const EffectEngine = preload("res://scripts/core/effect_engine.gd")
 const RuleEngine = preload("res://scripts/core/rule_engine.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
+const TimeService = preload("res://scripts/core/time_service.gd")
 const RelationshipService = preload("res://scripts/core/relationship_service.gd")
 const SocialAwarenessService = preload("res://scripts/core/social_awareness_service.gd")
 const ProfileService = preload("res://scripts/core/profile_service.gd")
@@ -59,6 +60,9 @@ var inventory_service
 var effect_engine
 var rule_engine
 var save_service
+var timeline := TimeService.new()
+var _camera_mode := "FOLLOW"
+var _projectiles: Array[Node] = []
 var relationship_service
 var social_awareness
 var profile_service
@@ -67,6 +71,7 @@ var elemental_status_service
 var surface_field_service
 var environment_visuals: Array[Node3D] = []
 var spell_workshop_service
+var spell_library_path := SpellWorkshopService.DEFAULT_PATH
 var spell_workshop_panel
 var selected_spell_id := "FIREBALL"
 var pending_spell_cast := false
@@ -115,13 +120,15 @@ func _ready() -> void:
 	spell_service.projectile_requested.connect(_spawn_arcane_projectile)
 	spell_service.chain_resolved.connect(_on_chain_resolved)
 	spell_service.manifestation_requested.connect(_on_arcane_place)
-	spell_workshop_service = SpellWorkshopService.new(parameter_registry, spell_service)
+	spell_workshop_service = SpellWorkshopService.new(parameter_registry, spell_service, spell_library_path)
 	if spell_workshop_service.has_library():
 		if not spell_workshop_service.load_library():
 			push_warning("Spell recipes could not be loaded: %s" % spell_workshop_service.last_error)
 	rule_engine = RuleEngine.new(effect_engine)
-	save_service = SaveService.new()
-	profile_service = ProfileService.new()
+	if save_service == null:
+		save_service = SaveService.new()
+	if profile_service == null:
+		profile_service = ProfileService.new()
 	if profile_service.has_profile():
 		if not profile_service.load_profile():
 			push_warning("Profile could not be read: %s" % profile_service.last_error)
@@ -145,13 +152,14 @@ func _ready() -> void:
 	_build_interface()
 	if save_service.has_save():
 		_load_checkpoint(true)
+	else:
+		_start_timeline()
 
 
 func _process(delta: float) -> void:
 	# Keep an orthographic game view that reads like a 2D cartoon.
-	if is_instance_valid(luna):
-		camera.global_position = luna.global_position + Vector3(0, 14, 13)
-		camera.look_at(luna.global_position + Vector3(0, 0.65, 0))
+	if _camera_mode == "FOLLOW":
+		_follow_luna()
 	_autosave_elapsed += delta
 	if _autosave_elapsed >= AUTO_SAVE_INTERVAL:
 		_autosave_elapsed = 0.0
@@ -160,6 +168,20 @@ func _process(delta: float) -> void:
 		_save_message_seconds -= delta
 		if _save_message_seconds <= 0.0 and is_instance_valid(save_status_label):
 			save_status_label.text = ""
+
+func set_camera_mode(mode: String) -> bool:
+	if mode not in ["FOLLOW", "LOCKED"]:
+		return false
+	_camera_mode = mode
+	if mode == "FOLLOW":
+		_follow_luna()
+	return true
+
+
+func _follow_luna() -> void:
+	if is_instance_valid(luna) and is_instance_valid(camera):
+		camera.global_position = luna.global_position + Vector3(0, 14, 13)
+		camera.look_at(luna.global_position + Vector3(0, 0.65, 0))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -197,6 +219,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			_save_checkpoint(true)
 			get_viewport().set_input_as_handled()
 			return
+		if OS.is_debug_build() and event.keycode == KEY_F10:
+			set_camera_mode("LOCKED" if _camera_mode == "FOLLOW" else "FOLLOW")
+			get_viewport().set_input_as_handled()
+			return
+		if OS.is_debug_build() and event.keycode in [KEY_F7, KEY_F8]:
+			if event.keycode == KEY_F7:
+				if timeline.runtime_state == TimeService.RuntimeState.READY and timeline.capture_checkpoint():
+					_show_checkpoint_message("КОНТРОЛЬНАЯ ТОЧКА ЗАПИСАНА")
+			else:
+				rewind_world_checkpoint(event.shift_pressed)
+			get_viewport().set_input_as_handled()
+			return
 		if event.keycode == KEY_F9:
 			_load_checkpoint(false)
 			get_viewport().set_input_as_handled()
@@ -224,11 +258,12 @@ func _physics_process(delta: float) -> void:
 		pending_selection = Vector2(-1, -1)
 		pending_spell_cast = false
 		_try_select(mouse_position, casting)
+	timeline.advance(delta)
 
 
 func _exit_tree() -> void:
 	# Save on normal exit as well as on the periodic checkpoint.
-	if save_service != null and world_registry != null and is_instance_valid(luna):
+	if save_service != null and world_registry != null and is_instance_valid(luna) and timeline.runtime_state == TimeService.RuntimeState.READY:
 		save_service.save_world(world_registry, luna, relationship_service, elemental_status_service, surface_field_service, social_awareness, rule_engine)
 	if profile_service != null:
 		profile_service.save_profile()
@@ -800,7 +835,7 @@ func _close_editor() -> void:
 
 
 func _save_checkpoint(notify_player: bool) -> void:
-	if save_service == null or not is_instance_valid(luna):
+	if save_service == null or not is_instance_valid(luna) or timeline.runtime_state == TimeService.RuntimeState.ERROR:
 		return
 	var success: bool = save_service.save_world(
 		world_registry, luna, relationship_service,
@@ -822,33 +857,89 @@ func _load_checkpoint(automatic: bool) -> void:
 		Callable(self, "_restore_saved_duplicate"), rule_engine,
 		Callable(self, "_remove_saved_entity"), Callable(self, "_restore_base_actor")
 	)
-	# SaveService is data-only; reconcile carried world Entities whether a
-	# checkpoint committed or rolled back.
-	if inventory_service != null:
-		inventory_service.sync_all()
+	_reconcile_restore(success)
+	# A disk load starts a new timeline, including after a failed startup load.
+	if success or automatic:
+		_start_timeline()
+	if not automatic or not success:
+		_show_checkpoint_message(ui_language.text("WORLD LOADED", "МИР ЗАГРУЖЕН") if success else ui_language.text("LOAD ERROR: %s", "ОШИБКА ЗАГРУЗКИ: %s") % save_service.last_error)
+
+
+func _start_timeline() -> void:
+	timeline.configure(_capture_world_checkpoint, _is_world_checkpoint, _restore_world_checkpoint)
+	timeline.capture_checkpoint()
+
+
+func _capture_world_checkpoint() -> Dictionary:
+	var snapshot: Dictionary = save_service.snapshot(world_registry, luna, relationship_service,
+		elemental_status_service, surface_field_service, social_awareness, rule_engine)
+	var velocities := {}
+	for entity_id in snapshot["entities"]:
+		var body := world_registry.get_entity(entity_id) as CharacterBody3D
+		if body != null:
+			velocities[entity_id] = [body.velocity.x, body.velocity.y, body.velocity.z]
+	snapshot["runtime_velocities"] = velocities
+	return snapshot
+
+
+func _is_world_checkpoint(snapshot: Dictionary) -> bool:
+	# SaveService preflights the complete payload before applying it.
+	return snapshot.get("version") == SaveService.FORMAT_VERSION and snapshot.get("scene") == SaveService.SCENE_ID
+
+
+func _restore_world_checkpoint(snapshot: Dictionary) -> bool:
+	var success: bool = save_service.apply_snapshot(snapshot, world_registry, luna,
+		relationship_service, _restore_arcane_actor, parameter_registry,
+		elemental_status_service, surface_field_service, social_awareness,
+		_restore_saved_duplicate, rule_engine, _remove_saved_entity, _restore_base_actor)
+	_reconcile_restore(success)
+	if success:
+		for entity_id in snapshot["runtime_velocities"]:
+			var body := world_registry.get_entity(entity_id) as CharacterBody3D
+			if body != null:
+				var xyz: Array = snapshot["runtime_velocities"][entity_id]
+				body.velocity = Vector3(xyz[0], xyz[1], xyz[2])
+	return success
+
+
+func rewind_world_checkpoint(older: bool = false) -> bool:
+	var success: bool
+	if timeline.runtime_state == TimeService.RuntimeState.ERROR:
+		success = timeline.recover_to_latest_checkpoint()
+	elif older:
+		success = timeline.checkpoint_count() > 1 and timeline.rewind_steps()
+	else:
+		success = timeline.rewind_to_latest()
+	_show_checkpoint_message("КОНТРОЛЬНАЯ ТОЧКА ВОССТАНОВЛЕНА" if success else "ОШИБКА ВОССТАНОВЛЕНИЯ")
+	return success
+
+
+func _reconcile_restore(success: bool) -> void:
 	if success:
 		for entity_id in world_registry.list_ids():
-			var saved_actor: Node = world_registry.get_entity(entity_id)
-			var is_created: bool = entity_id.begins_with("arcane_") or (saved_actor != null and saved_actor.has_meta("copy_origin"))
+			var actor: Node = world_registry.get_entity(entity_id)
+			var is_created: bool = entity_id.begins_with("arcane_") or (actor != null and actor.has_meta("copy_origin"))
 			if is_created and not save_service.last_restored_ids.has(entity_id):
-				var removed: Node = world_registry.get_entity(entity_id)
-				if removed != null:
-					entity_lifecycle.unload_entity(entity_id)
+				entity_lifecycle.unload_entity(entity_id)
+		for projectile in _projectiles:
+			if is_instance_valid(projectile):
+				projectile.process_mode = Node.PROCESS_MODE_DISABLED
+				projectile.queue_free()
+		_projectiles.clear()
 		_sync_luna_relationships()
-		# Restores do not count as player hacks, nor do pre-load queued events.
 		command_processor.clear_history()
 		event_bus.clear_pending()
-		if zone_service != null:
-			zone_service.reset()
-		if ability_service != null:
-			ability_service.reset_cooldowns()
+		zone_service.reset()
+		ability_service.reset_cooldowns()
+		pending_selection = Vector2(-1, -1)
+		pending_spell_cast = false
 		for entity_id in world_registry.list_ids():
 			var node: Node = world_registry.get_entity(entity_id)
 			if node != null and node.has_method("reset_after_load"):
 				node.call("reset_after_load")
 		_autosave_elapsed = 0.0
-	if not automatic or not success:
-		_show_checkpoint_message(ui_language.text("WORLD LOADED", "МИР ЗАГРУЖЕН") if success else ui_language.text("LOAD ERROR: %s", "ОШИБКА ЗАГРУЗКИ: %s") % save_service.last_error)
+	if inventory_service != null:
+		inventory_service.sync_all()
 
 
 func _show_checkpoint_message(message: String) -> void:
@@ -935,6 +1026,8 @@ func _spawn_arcane_projectile(details: Dictionary) -> void:
 	if not (caster is Node3D) or not (target is Node3D):
 		return
 	var projectile := ArcaneProjectile.new()
+	_projectiles.append(projectile)
+	projectile.tree_exited.connect(func(): _projectiles.erase(projectile))
 	add_child(projectile)
 	projectile.configure(
 		details["manifestation"], caster as Node3D, target as Node3D,

@@ -3,7 +3,6 @@ extends SceneTree
 
 const SaveService = preload("res://scripts/core/save_service.gd")
 const ProfileService = preload("res://scripts/core/profile_service.gd")
-const WorkshopService = preload("res://scripts/core/spell_workshop_service.gd")
 
 const RUN_TEST_PATH := "user://luna_main_integration_run.json"
 const PROFILE_TEST_PATH := "user://luna_main_integration_profile.json"
@@ -19,9 +18,10 @@ func _run() -> void:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var stage = load("res://scenes/main.tscn").instantiate()
-	root.add_child(stage)
 	stage.save_service = SaveService.new(RUN_TEST_PATH)
 	stage.profile_service = ProfileService.new(PROFILE_TEST_PATH)
+	stage.spell_library_path = SPELL_TEST_PATH
+	root.add_child(stage)
 	var fridge: Node = stage.world_registry.get_entity("fridge_001")
 	assert(fridge != null)
 	assert(stage.spell_service.list_spell_ids() == ["FIREBALL", "FROST_SHARD", "ARC_BOLT"])
@@ -60,10 +60,6 @@ func _run() -> void:
 
 
 	# Live workshop: use registry choices to assemble, persist and select a spell.
-	stage.spell_workshop_service = WorkshopService.new(
-		stage.parameter_registry, stage.spell_service, SPELL_TEST_PATH
-	)
-	stage.spell_workshop_panel.configure(stage.parameter_registry, stage.spell_workshop_service)
 	stage._open_workshop()
 	assert(stage.spell_workshop_panel.visible)
 	assert(paused)

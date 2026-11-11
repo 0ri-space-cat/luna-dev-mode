@@ -6,6 +6,7 @@ const Grammar = preload("res://scripts/core/arcane_grammar.gd")
 const SaveService = preload("res://scripts/core/save_service.gd")
 
 const TEST_PATH := "user://luna_create_grammar_test.json"
+const SPELL_PATH := "user://luna_create_grammar_spells_test.json"
 
 
 func _initialize() -> void:
@@ -13,8 +14,9 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	if FileAccess.file_exists(TEST_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_PATH))
+	for path in [TEST_PATH, SPELL_PATH]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var old_recipe: Dictionary = {
 		"form": "ORB", "essence": "FIRE", "delivery": "PROJECTILE",
 		"speed": 14.0, "size": 0.4
@@ -31,8 +33,9 @@ func _run() -> void:
 	assert(Grammar.readable(Grammar.make_recipe("OBJECT", "SHARD", "FROST", "IDLE", "PLACE")).contains("Предмет"))
 
 	var stage = load("res://scenes/main.tscn").instantiate()
-	root.add_child(stage)
 	stage.save_service = SaveService.new(TEST_PATH)
+	stage.spell_library_path = SPELL_PATH
+	root.add_child(stage)
 	var count: int = stage.world_registry.count_live()
 	var target_id := "fridge_001"
 	var actor_id := "luna"
@@ -106,9 +109,9 @@ func _run() -> void:
 	assert(checkpoint["entities"]["arcane_0002"]["construct"]["create"] == "CREATURE")
 	stage.free()
 	var reloaded = load("res://scenes/main.tscn").instantiate()
-	root.add_child(reloaded)
 	reloaded.save_service = SaveService.new(TEST_PATH)
-	reloaded._load_checkpoint(false)
+	reloaded.spell_library_path = SPELL_PATH
+	root.add_child(reloaded)
 	var restored_object: Node = reloaded.world_registry.get_entity("arcane_0001")
 	var restored_creature: Node = reloaded.world_registry.get_entity("arcane_0002")
 	assert(restored_object != null and restored_creature != null)
@@ -125,6 +128,7 @@ func _run() -> void:
 	))
 	assert(reloaded.world_registry.get_entity("arcane_0002") != null)
 	reloaded.free()
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_PATH))
+	for path in [TEST_PATH, SPELL_PATH]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("LUNA grammar: created entities, editing and restored world passed")
 	quit(0)

@@ -103,6 +103,10 @@ func capture_checkpoint() -> bool:
 	return true
 
 
+func rewind_to_latest() -> bool:
+	return rewind_to(_snapshots.size() - 1) if not _snapshots.is_empty() else false
+
+
 func rewind_steps(steps: int = 1) -> bool:
 	if steps < 1 or _snapshots.size() < 2 or steps >= _snapshots.size():
 		return _fail("No earlier checkpoint is available")
@@ -133,9 +137,10 @@ func recover_to_latest_checkpoint() -> bool:
 	if _snapshots.is_empty():
 		return _fail("No recovery checkpoint is available")
 	var latest: Dictionary = _snapshots.back()
-	if not bool(_validate.call(latest["state"])) or not bool(_restore.call(latest["state"].duplicate(true))):
+	if not bool(_validate.call(latest["state"].duplicate(true))) or not bool(_restore.call(latest["state"].duplicate(true))):
 		return _fail("Recovery checkpoint could not be restored")
 	world_seconds = float(latest["world_seconds"])
+	_record_elapsed = 0.0
 	runtime_state = RuntimeState.READY
 	last_error = ""
 	clock_changed.emit(clock_state())

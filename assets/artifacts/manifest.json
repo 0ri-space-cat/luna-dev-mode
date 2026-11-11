@@ -53,8 +53,8 @@
       "sha256": "00922e060b5c7f0c3cf98f39b7fced749e81430f85271beecf93465e5b87e045",
       "author_locked": false,
       "palette": "#93E5F6/#4769BA/#DFE9F4",
-      "control": "Открепляет камеру от героя, позволяет наблюдать ближайшую зону и следовать за выбранной Entity, сохраняя тело игрока на месте",
-      "fields": "CAMERA_DETACH, CAMERA_TARGET, CAMERA_RADIUS",
+      "control": "Переключает физическую игровую камеру FOLLOW ↔ LOCKED в любом обычном месте Этернии, не останавливая Луну и мир вне кадра",
+      "fields": "CAMERA_MODE: FOLLOW|LOCKED",
       "limit": "Не управляет NPC, не становится FIRST/SECOND PERSON и не переносит героя через препятствия"
     },
     {

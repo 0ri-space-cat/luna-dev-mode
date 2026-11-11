@@ -79,6 +79,9 @@ jobs:
       - name: Run portable time, checkpoint and recovery contracts
         run: bash ci/run_godot_script.sh res://tests/test_time_service.gd
 
+      - name: Restore checkpoint state in the playable scene
+        run: bash ci/run_godot_script.sh res://tests/test_world_timeline.gd
+
       - name: Run stable ID history recreation tests
         run: bash ci/run_godot_script.sh res://tests/test_history_recreation.gd
 
