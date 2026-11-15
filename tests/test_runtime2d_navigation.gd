@@ -22,7 +22,11 @@ func _run() -> void:
 		if absf(point.y) > 80.0:
 			went_around = true
 	assert(went_around)
-	assert(nav.get_path(Vector2(-120, 0), Vector2.ZERO).is_empty())
+	var approaching_blocked_goal: PackedVector2Array = nav.get_path(Vector2(-120, 0), Vector2.ZERO)
+	assert(not approaching_blocked_goal.is_empty())
+	assert(approaching_blocked_goal[approaching_blocked_goal.size() - 1] != Vector2.ZERO)
+	# A physically valid spawn can overlap the planner's conservative margin.
+	assert(not nav.get_path(Vector2(-28, 0), Vector2(-120, 0)).is_empty())
 	assert(nav.get_path(Vector2(-9999, 0), Vector2.ZERO).is_empty())
 	var old_revision: int = nav.revision
 	assert(not nav.configure(Vector2(100000, 100000), []))
