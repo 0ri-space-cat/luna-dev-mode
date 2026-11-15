@@ -35,7 +35,6 @@ var _level_slot: Node2D
 var _actor_slot: Node2D
 var _live_level
 var _door
-var _debug_label: Label
 var _serial := 0
 var _was_underside := false
 var _checkpoints: Array[Dictionary] = []
@@ -68,7 +67,6 @@ func _ready() -> void:
 	camera.target = player
 	camera.make_current()
 	_enter_location("DEV_SANDBOX_A")
-	_create_dev_diagnostics()
 
 
 func spawn_actor(entity_id: String, category: String, label: String,
@@ -164,13 +162,6 @@ func redirect_nearby_door(address: String) -> bool:
 
 func _process(_delta: float) -> void:
 	_update_perception()
-	if is_instance_valid(_debug_label):
-		_debug_label.text = "ID: %s | %s | CAMERA: %s | WAND: %s | EYES: %s\nDEV: F3 дверь, F4 палочка, F5 клон, F6 сейв, F8 точка, F9 загрузка, F10 камера" % [
-			current_location_id, "ИЗНАНКА" if _was_underside else "ОБЫЧНЫЙ МИР",
-			camera.mode, "В КАРМАНЕ" if projection.carried else "НА ЗЕМЛЕ",
-			"ОТКРЫТЫ" if luna_eyes_open else "ЗАКРЫТЫ"
-		]
-
 
 func _update_perception(force: bool = false) -> void:
 	if not is_instance_valid(player):
@@ -190,14 +181,6 @@ func observation_at(point: Vector2, invisible_to_luna: bool = false) -> Dictiona
 		"player_camera": camera.contains_world_point(point),
 		"luna_eyes": luna_eyes_open and not invisible_to_luna
 	}
-
-
-func _create_dev_diagnostics() -> void:
-	_debug_label = Label.new()
-	_debug_label.name = "DevelopmentDiagnosticsOnly"
-	_debug_label.position = Vector2(16, 742)
-	_debug_label.add_theme_color_override("font_color", Color("f1ecff"))
-	get_node("Interface").add_child(_debug_label)
 
 
 func make_snapshot() -> Dictionary:
