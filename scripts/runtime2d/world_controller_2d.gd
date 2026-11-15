@@ -147,6 +147,15 @@ func set_entity_ability(entity_id: String, ability_id: String, enabled: bool) ->
 	return command_processor.execute_component(actor, "SET_COMPONENT", "ABILITY_SET", {"ids": ids}, "luna", "wand:luna")
 
 
+func find_nearby_entities(origin_id: String, radius: float,
+		target_group: String = "ANY") -> Array[Dictionary]:
+	var origin = world_registry.get_entity(origin_id)
+	if origin == null or (origin is not Node2D):
+		return []
+	return world_registry.candidates_2d(origin_id, origin.global_position,
+		target_group, radius, current_location_id)
+
+
 func register_visual(category: String, scene: PackedScene) -> bool:
 	# Art integration API; no screen-space UI or sprite is included.
 	if category.is_empty() or not category.is_valid_identifier() or scene == null:
