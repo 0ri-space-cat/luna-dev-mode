@@ -78,9 +78,14 @@ func _run() -> void:
 	var clone_id: String = clone.record.id
 	var nearby_a: Array[Dictionary] = game.find_nearby_entities("luna", 10000.0)
 	assert(nearby_a.size() == 2)
+	# The same coordinates in a different room must not receive this wand's image.
+	assert(game.projection.drop_at(Vector2(260, 0), "DEV_SANDBOX_A"))
 	game.player.global_position = Vector2(260, 0)
 	assert(game.enter_nearby_door())
 	assert(game.current_location_id == "DEV_SANDBOX_B")
+	game._update_perception()
+	assert(game._live_level.plate.underside)
+	assert(not game.projection.pick_up_from(game.player.global_position, 36.0, "DEV_SANDBOX_B"))
 	assert(not actor.visible and actor.collision_layer == 0)
 	assert(not clone.visible and clone.collision_layer == 0)
 	assert(actor.process_mode == Node.PROCESS_MODE_DISABLED)
@@ -91,13 +96,23 @@ func _run() -> void:
 	game.player.global_position = Vector2(260, 0)
 	assert(game.enter_nearby_door())
 	assert(game.current_location_id == "DEV_SANDBOX_A")
+	game.player.global_position = Vector2(260, 0)
+	game._update_perception()
+	assert(not game._live_level.plate.underside)
 	assert(actor.visible and clone.visible)
 	assert(not b_actor.visible)
 	assert(game.world_registry.get_entity(clone_id) == clone)
 
 	# A checkpoint preserves all rooms' inhabitants and rejects broken data.
 	var before: Dictionary = game.make_snapshot()
+	var rejected := 0
+	for index in range(150):
+		if not game.queue_world_event({"type": "DEV_PULSE", "index": index}):
+			rejected += 1
+	assert(rejected > 0)
+	assert(game.event_bus.pending_count() <= 128)
 	assert(game.apply_snapshot(before))
+	assert(game.event_bus.pending_count() == 0)
 	assert(game.world_registry.get_entity(clone_id) != null)
 	assert(game.world_registry.get_entity("DEV_B_ENTITY") != null)
 	var damaged: Dictionary = game.make_snapshot().duplicate(true)
