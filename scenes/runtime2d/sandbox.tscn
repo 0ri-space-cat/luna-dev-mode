@@ -15,5 +15,3 @@ y_sort_enabled = true
 
 [node name="Camera" type="Camera2D" parent="World"]
 script = ExtResource("2_camera")
-
-[node name="Interface" type="CanvasLayer" parent="."]
