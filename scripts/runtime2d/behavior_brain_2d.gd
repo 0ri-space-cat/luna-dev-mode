@@ -18,6 +18,7 @@ var _route_target := Vector2.ZERO
 var _route_mode := ""
 var _route_revision := -1
 var _route_flying := false
+var _route_swimming := false
 var _route_navigation
 
 var last_target_id := ""
@@ -94,10 +95,19 @@ func _navigated_direction(actor: CharacterBody2D, goal: Vector2, mode: String,
 		return (goal - actor.global_position).normalized()
 
 	var can_fly: bool = actor.has_ability("FLY")
+	var can_swim: bool = actor.has_ability("SWIM")
 	_route_timer -= maxf(delta, 0.0)
-	var should_replan: bool = _route_timer <= 0.0 		or navigation != _route_navigation or navigation.revision != _route_revision 		or mode != _route_mode or can_fly != _route_flying 		or goal.distance_squared_to(_route_target) > GOAL_REPLAN_DISTANCE * GOAL_REPLAN_DISTANCE
+	var should_replan: bool = (
+		_route_timer <= 0.0
+		or navigation != _route_navigation
+		or navigation.revision != _route_revision
+		or mode != _route_mode
+		or can_fly != _route_flying
+		or can_swim != _route_swimming
+		or goal.distance_squared_to(_route_target) > GOAL_REPLAN_DISTANCE * GOAL_REPLAN_DISTANCE
+	)
 	if should_replan:
-		_route = navigation.get_path(actor.global_position, goal, can_fly)
+		_route = navigation.get_path(actor.global_position, goal, can_fly, can_swim)
 		_route_cursor = 0
 		_route_timer = REPLAN_INTERVAL
 		_route_target = goal
@@ -105,6 +115,7 @@ func _navigated_direction(actor: CharacterBody2D, goal: Vector2, mode: String,
 		_route_navigation = navigation
 		_route_revision = navigation.revision
 		_route_flying = can_fly
+		_route_swimming = can_swim
 	if _route.is_empty():
 		# Never try walking straight through an authored solid if no path exists.
 		return Vector2.ZERO
@@ -125,9 +136,9 @@ func _flee_goal(actor: CharacterBody2D, away: Vector2) -> Vector2:
 	for angle in [0.0, PI / 4.0, -PI / 4.0, PI / 2.0, -PI / 2.0]:
 		for travel in [FLEE_DISTANCE, FLEE_DISTANCE * 0.5]:
 			var destination: Vector2 = actor.global_position + away.rotated(angle) * travel
-			if navigation.is_walkable(destination, actor.has_ability("FLY")):
+			if navigation.is_walkable(destination, actor.has_ability("FLY"), actor.has_ability("SWIM")):
 				if not navigation.get_path(actor.global_position, destination,
-						actor.has_ability("FLY")).is_empty():
+						actor.has_ability("FLY"), actor.has_ability("SWIM")).is_empty():
 					return destination
 	return actor.global_position
 
