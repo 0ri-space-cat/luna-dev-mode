@@ -52,15 +52,20 @@ func _ready() -> void:
 func attach_visual(scene: PackedScene) -> bool:
 	if not is_node_ready():
 		return false
+	# Validate the replacement BEFORE removing a currently displayed sprite.
+	# A malformed asset delivered by another branch must not erase live art.
+	var replacement: Node2D = null
+	if scene != null:
+		var instantiated: Node = scene.instantiate()
+		if not (instantiated is Node2D):
+			instantiated.free()
+			return false
+		replacement = instantiated as Node2D
 	for item in art_anchor.get_children():
 		art_anchor.remove_child(item)
 		item.queue_free()
-	if scene != null:
-		var visual: Node = scene.instantiate()
-		if not (visual is Node2D):
-			visual.free()
-			return false
-		art_anchor.add_child(visual)
+	if replacement != null:
+		art_anchor.add_child(replacement)
 	_visual_scene = scene
 	_debug_marker = scene == null
 	_sync_visual()
