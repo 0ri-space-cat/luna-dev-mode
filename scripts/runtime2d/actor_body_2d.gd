@@ -108,8 +108,10 @@ func _physics_process(delta: float) -> void:
 		return
 	refresh_capabilities()
 	var movement := Vector2.ZERO
-	if player_controlled:
-		movement = _requested_direction if _external_motion else _read_input()
+	if _external_motion:
+		movement = _requested_direction
+	elif player_controlled:
+		movement = _read_input()
 	elif bool(get_parameter("alive")) and bool(get_parameter("ai_enabled")):
 		if str(get_parameter("behavior_mode")) != "IDLE":
 			_wander_timer -= delta
