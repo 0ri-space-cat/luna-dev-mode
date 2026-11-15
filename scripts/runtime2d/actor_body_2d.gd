@@ -35,7 +35,7 @@ func configure(entity_id: String, category: String, label: String, registry, pla
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	collision_layer = 2 # ACTOR
-	collision_mask = 1 | 2 | 4 # WALL | ACTOR | GROUND_ONLY
+	collision_mask = 1 | 2 | 4 | 8 # WALL | ACTOR | LOW | SWIM_REQUIRED
 	_collision = CollisionShape2D.new()
 	_collision.name = "PhysicalFootprint"
 	var shape := CircleShape2D.new()
@@ -92,6 +92,8 @@ func refresh_capabilities() -> void:
 	var desired_mask := 1 | 2
 	if not has_ability("FLY"):
 		desired_mask |= 4
+	if not has_ability("FLY") and not has_ability("SWIM"):
+		desired_mask |= 8
 	collision_mask = desired_mask
 	if is_node_ready():
 		_glow_light = PassiveAbilities.setup_light(self, _glow_light, has_ability("GLOW"))
