@@ -7,6 +7,7 @@ signal location_entered(address: String)
 signal perception_changed(is_underside: bool)
 signal gameplay_event(event_data: Dictionary)
 signal entity_state_changed(change: Dictionary)
+signal integrity_notice(reason: String)
 
 const ParameterRegistry = preload("res://scripts/core/parameter_registry.gd")
 const WorldRegistry = preload("res://scripts/core/world_registry.gd")
@@ -18,6 +19,7 @@ const AccessState = preload("res://scripts/runtime2d/access_state_2d.gd")
 const SaveStore = preload("res://scripts/runtime2d/save_store_2d.gd")
 const DevDoor = preload("res://scripts/runtime2d/dev_door_2d.gd")
 const ObserverQuery = preload("res://scripts/runtime2d/observer_query_2d.gd")
+const EventBus = preload("res://scripts/core/event_bus.gd")
 
 const DEV_SCENE := "res://scenes/runtime2d/level_shell.tscn"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -36,6 +38,7 @@ var camera
 var current_location_id := ""
 var luna_eyes_open := true
 var observer
+var event_bus
 var _trusted_visuals: Dictionary = {}
 
 var _level_slot: Node2D
@@ -66,6 +69,8 @@ func _ready() -> void:
 	projection = WandProjectionField.new()
 	store = SaveStore.new()
 	observer = ObserverQuery.new()
+	event_bus = EventBus.new()
+	event_bus.event_dropped.connect(_on_event_overflow)
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
 	assert(router.register_location("DEV_SANDBOX_A", DEV_SCENE, {"entry": Vector2(-160, 0)}))
@@ -85,7 +90,10 @@ func _ready() -> void:
 
 func spawn_actor(entity_id: String, category: String, label: String,
 		at: Vector2, is_player: bool = false):
-	if world_registry.count_live() >= MAX_ACTORS or world_registry.get_entity(entity_id) != null:
+	if world_registry.count_live() >= MAX_ACTORS:
+		integrity_notice.emit("ENTITY_BUDGET_REACHED")
+		return null
+	if world_registry.get_entity(entity_id) != null:
 		return null
 	var actor = Actor.new()
 	if not actor.configure(entity_id, category, label, parameter_registry, is_player):
@@ -103,6 +111,7 @@ func spawn_actor(entity_id: String, category: String, label: String,
 
 func clone_actor(entity_id: String):
 	if world_registry.count_live() >= MAX_ACTORS:
+		integrity_notice.emit("CLONE_BUDGET_REACHED")
 		return null
 	var original = world_registry.get_entity(entity_id)
 	if original == null or not original.has_method("clone_as"):
@@ -197,19 +206,35 @@ func _on_entity_component_changed(change: Dictionary) -> void:
 	if actor != null:
 		actor.refresh_capabilities()
 	entity_state_changed.emit(change)
+	queue_world_event({"type": "COMPONENT_CHANGED", "change": change.duplicate(true)})
 
 
 func _on_entity_parameter_changed(change: Dictionary) -> void:
 	entity_state_changed.emit(change)
+	queue_world_event({"type": "PARAMETER_CHANGED", "change": change.duplicate(true)})
+
+
+func queue_world_event(event_data: Dictionary) -> bool:
+	# Reuses the original bounded EventBus: no recursive rule execution,
+	# no unbounded event flood from user-authored spell/console programs.
+	return event_bus.enqueue(event_data)
+
+
+func process_event(event_data: Dictionary) -> void:
+	gameplay_event.emit(event_data)
+
+
+func _on_event_overflow(reason: String) -> void:
+	integrity_notice.emit(reason)
 
 
 func _on_zone_entered(zone_id: String, entity_id: String) -> void:
-	gameplay_event.emit({"type": "ZONE_ENTERED", "zone_id": zone_id,
+	queue_world_event({"type": "ZONE_ENTERED", "zone_id": zone_id,
 		"entity_id": entity_id, "location_id": current_location_id})
 
 
 func _on_zone_exited(zone_id: String, entity_id: String) -> void:
-	gameplay_event.emit({"type": "ZONE_EXITED", "zone_id": zone_id,
+	queue_world_event({"type": "ZONE_EXITED", "zone_id": zone_id,
 		"entity_id": entity_id, "location_id": current_location_id})
 
 
@@ -284,6 +309,7 @@ func _physics_process(_delta: float) -> void:
 	for law in get_tree().get_nodes_in_group("runtime2d_observation_law"):
 		if law.has_method("apply_observation"):
 			law.apply_observation(observation_at(law.global_position, bool(law.get("invisible_to_luna"))))
+	event_bus.drain(self)
 
 func _update_perception(force: bool = false) -> void:
 	if not is_instance_valid(player):
