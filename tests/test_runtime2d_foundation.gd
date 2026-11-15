@@ -78,7 +78,18 @@ func _run() -> void:
 	assert(game.store.write_snapshot(saved, SAVE_TEST_PATH))
 	var from_disk: Dictionary = game.store.read_snapshot(SAVE_TEST_PATH)
 	assert(not from_disk.is_empty())
-	assert(game.apply_snapshot(from_disk))
+	var restored: bool = game.apply_snapshot(from_disk)
+	if not restored:
+		print("DIAG restore: loc=", from_disk.get("location"), " player_loc=", game.player.location_id,
+			" routes=", game.router.validate_routes(from_disk.get("routes")),
+			" camera=", from_disk.get("camera_position"), " access=", from_disk.get("access"))
+		var ActorScript = preload("res://scripts/runtime2d/actor_body_2d.gd")
+		for item in from_disk.get("entities", []):
+			var probe = ActorScript.new()
+			print("DIAG actor ", item.get("id"), " location=", item.get("location_id"),
+				" valid=", probe.load_snapshot(item, game.parameter_registry))
+			probe.free()
+	assert(restored)
 	assert(game.world_registry.count_live() == 3)
 	assert(game.player is CharacterBody2D)
 	game.player.global_position = Vector2(120, -90)
