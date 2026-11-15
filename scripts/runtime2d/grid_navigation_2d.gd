@@ -152,7 +152,7 @@ func _new_grid(cells: Vector2i) -> AStarGrid2D:
 	var grid := AStarGrid2D.new()
 	grid.region = Rect2i(Vector2i.ZERO, cells)
 	grid.cell_size = Vector2.ONE * CELL_SIZE
-	grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	grid.update()
 	return grid
 
