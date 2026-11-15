@@ -35,6 +35,7 @@ func _ready() -> void:
 	collision_root.name = "AuthoredCollision"
 	add_child(collision_root)
 	geometry = LevelGeometry.new()
+	geometry.level_size = level_size
 	geometry.name = "GameplayGeometry"
 	collision_root.add_child(geometry)
 	geometry.zone_entered.connect(func(zone_id: String, entity_id: String):
