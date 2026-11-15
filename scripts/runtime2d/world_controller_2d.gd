@@ -260,6 +260,7 @@ func _update_actor_activation() -> void:
 		child.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
 		child.collision_layer = 2 if active else 0
 		child.collision_mask = (1 | 2 | 4) if active else 0
+		child.navigation = _live_level.geometry.navigation if active else null
 		if active:
 			child.refresh_capabilities()
 
