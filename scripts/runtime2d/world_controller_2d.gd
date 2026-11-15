@@ -404,7 +404,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	# Validate the entire portable state before replacing live scene objects.
-	if typeof(data.get("format", null)) != TYPE_INT or int(data["format"]) != 2:
+	if typeof(data.get("format", null)) not in [TYPE_INT, TYPE_FLOAT] or float(data["format"]) != 2.0:
 		return false
 	if typeof(data.get("eyes_open", null)) != TYPE_BOOL:
 		return false
