@@ -22,6 +22,7 @@ const ObserverQuery = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const AbilityBankService = preload("res://scripts/core/ability_bank_service.gd")
 const WorldTimeline2D = preload("res://scripts/runtime2d/world_timeline_2d.gd")
+const WandEditPolicy2D = preload("res://scripts/runtime2d/wand_edit_policy_2d.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -43,6 +44,7 @@ var observer
 var event_bus
 var ability_bank
 var timeline
+var wand_edit_policy
 var _timeline_rollback := false
 var _trusted_visuals: Dictionary = {}
 
@@ -78,6 +80,7 @@ func _ready() -> void:
 	event_bus.event_dropped.connect(_on_event_overflow)
 	ability_bank = AbilityBankService.new(world_registry, command_processor)
 	timeline = WorldTimeline2D.new()
+	wand_edit_policy = WandEditPolicy2D.new()
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
 	assert(router.load_catalog_json(DEV_CATALOG))
@@ -151,6 +154,17 @@ func clone_actor(entity_id: String):
 func set_entity_parameter(entity_id: String, key: String, value: Variant) -> bool:
 	var actor: Node = world_registry.get_entity(entity_id)
 	return actor != null and command_processor.execute_set(actor, key, value, "luna", "wand:luna")
+
+
+func request_wand_parameter_edit(target_id: String, parameter_id: String,
+		requested_value: Variant) -> bool:
+	# Public integration entry for the future TAB editor. The trusted
+	# set_entity_parameter() remains available for level authoring/tests.
+	var actor: Node2D = world_registry.get_entity(target_id) as Node2D
+	if actor == null or not wand_edit_policy.authorize(player, actor, current_location_id,
+			projection, access, parameter_registry, parameter_id):
+		return false
+	return command_processor.execute_set(actor, parameter_id, requested_value, "luna", "wand:luna")
 
 
 func set_entity_ability(entity_id: String, ability_id: String, enabled: bool) -> bool:
