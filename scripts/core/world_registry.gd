@@ -101,6 +101,41 @@ func candidates(origin_id: String, position: Vector3, target_group: String, sens
 	return found
 
 
+## Separate native 2D spatial selector; existing 3D callers remain untouched.
+## Used by future spells, local AI, hack targeting and authored physical rules.
+## Does not return entities inactive in another location or held in inventory.
+func candidates_2d(origin_id: String, position: Vector2, target_group: String,
+		sensing_distance: float, location_id: String = "", limit: int = 24) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if sensing_distance < 0.0 or sensing_distance > 100000.0 or limit < 1 or limit > 24:
+		return result
+	var range_sq: float = sensing_distance * sensing_distance
+	for entity_id in list_ids():
+		if entity_id == origin_id:
+			continue
+		var target: Node = get_entity(entity_id)
+		if not (target is Node2D):
+			continue
+		if not location_id.is_empty():
+			if not target.has_method("get_world_location_id") or str(target.call("get_world_location_id")) != location_id:
+				continue
+		var record: Variant = target.get("record")
+		if record != null and record.has_component("PICKUP"):
+			if not str(record.get_component("PICKUP").get("holder_id", "")).is_empty():
+				continue
+		var entry: Dictionary = _entries.get(entity_id, {})
+		var group: String = str(entry.get("group", ""))
+		if target_group != "ANY" and group != target_group:
+			continue
+		var where: Vector2 = (target as Node2D).global_position
+		if position.distance_squared_to(where) > range_sq:
+			continue
+		result.append({"id": entity_id, "position": where, "group": group})
+		if result.size() >= limit:
+			break
+	return result
+
+
 func count_live() -> int:
 	var count := 0
 	for entity_id in _entries.keys():
