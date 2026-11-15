@@ -60,6 +60,10 @@ func attach_visual(scene: PackedScene) -> bool:
 	return true
 
 
+func get_world_location_id() -> String:
+	return location_id
+
+
 func get_visual_scene() -> PackedScene:
 	return _visual_scene
 
