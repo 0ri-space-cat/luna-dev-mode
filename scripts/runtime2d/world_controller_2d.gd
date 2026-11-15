@@ -1,6 +1,7 @@
 extends Node2D
-## Minimal, authored-content-free 2D runtime. UI/assets integrate through
-## isolated CanvasLayer and VisualAnchor mounts; existing 3D tests stay intact.
+## Minimal, authored-content-free 2D runtime. Gameplay visuals use their
+## own VisualAnchor; screen-space UI is supplied separately after asset delivery.
+## Existing 3D tests stay intact for now.
 
 signal location_entered(address: String)
 signal perception_changed(is_underside: bool)
