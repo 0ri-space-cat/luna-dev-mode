@@ -302,30 +302,55 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 
 
 func _mount_dev_door() -> void:
-	# Door targets are data, not scene names or text labels.
-	if is_instance_valid(_door):
-		_door.queue_free()
+	# Only the diagnostic rooms get temporary drawn doors. Real scenes place
+	# their own Doorway2D nodes using author-approved geometry.
+	_door = null
+	if current_location_id not in ["DEV_SANDBOX_A", "DEV_SANDBOX_B"]:
+		return
 	_door = DevDoor.new()
 	_door.entity_id = "DEV_DOOR_A" if current_location_id == "DEV_SANDBOX_A" else "DEV_DOOR_B"
 	_door.position = Vector2(260, 0)
 	_live_level.add_child(_door)
 
 
+func _nearest_door(max_reach: float = 100.0) -> Node:
+	if not is_instance_valid(_live_level) or not is_instance_valid(player):
+		return null
+	var nearest: Node = null
+	var distance_sq: float = max_reach * max_reach
+	for candidate in get_tree().get_nodes_in_group("runtime2d_address_doors"):
+		if not _live_level.is_ancestor_of(candidate):
+			continue
+		if not candidate.has_method("can_interact_from"):
+			continue
+		var identity: String = str(candidate.get("entity_id"))
+		if identity.is_empty() or not router.door_destinations.has(identity):
+			continue
+		var d: float = player.global_position.distance_squared_to(candidate.global_position)
+		if d > distance_sq or not candidate.can_interact_from(player.global_position):
+			continue
+		distance_sq = d
+		nearest = candidate
+	return nearest
+
+
 func enter_nearby_door() -> bool:
-	if not is_instance_valid(_door) or not is_instance_valid(player):
+	var nearby: Node = _nearest_door(100.0)
+	if nearby == null:
 		return false
-	if player.global_position.distance_to(_door.global_position) > 64.0:
-		return false
-	var plan: Dictionary = router.resolve_door(_door.entity_id, access.avatar_access_level)
-	return bool(plan.get("ok", false)) and _enter_location(str(plan["address"]))
+	var plan: Dictionary = router.resolve_door(str(nearby.get("entity_id")),
+		access.avatar_access_level, str(nearby.get("destination_entry_id")))
+	return bool(plan.get("ok", false)) and _enter_location(str(plan["address"]),
+		str(nearby.get("destination_entry_id")))
 
 
 func redirect_nearby_door(address: String) -> bool:
-	if not is_instance_valid(_door) or not is_instance_valid(player):
+	var nearby: Node = _nearest_door(100.0)
+	if nearby == null:
 		return false
-	if player.global_position.distance_to(_door.global_position) > 100.0:
+	if not projection.carried:
 		return false
-	return router.redirect_door(_door.entity_id, address, access.wand_mode)
+	return router.redirect_door(str(nearby.get("entity_id")), address, access.wand_mode)
 
 
 func _process(_delta: float) -> void:
