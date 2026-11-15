@@ -186,6 +186,9 @@ func load_snapshot(data: Dictionary, registry) -> bool:
 	var params: Variant = data.get("parameters", {})
 	if not (coord is Array) or coord.size() != 2 or not (params is Dictionary):
 		return false
+	for value in coord:
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
+			return false
 	if absf(float(coord[0])) > 100000.0 or absf(float(coord[1])) > 100000.0:
 		return false
 	if not configure(identifier, str(data.get("category", "")), str(data.get("label", "")),
