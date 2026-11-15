@@ -9,6 +9,15 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 
+func _travel_length(origin: Vector2, path: PackedVector2Array) -> float:
+	var total := 0.0
+	var previous := origin
+	for waypoint in path:
+		total += previous.distance_to(waypoint)
+		previous = waypoint
+	return total
+
+
 func _run() -> void:
 	var nav = GridNavigation.new()
 	var solid := {"id":"TEST_BARRIER","kind":"WALL","rect":[-12,-60,24,120]}
@@ -44,8 +53,10 @@ func _run() -> void:
 	]))
 	assert(flight_nav.is_walkable(Vector2.ZERO, true))
 	assert(not flight_nav.is_walkable(Vector2.ZERO, false))
-	assert(flight_nav.get_path(Vector2(-120, 0), Vector2(120, 0), true).size()
-		< flight_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false).size())
+	assert(_travel_length(Vector2(-120, 0),
+		flight_nav.get_path(Vector2(-120, 0), Vector2(120, 0), true))
+		< _travel_length(Vector2(-120, 0),
+		flight_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false)))
 	# Even with FLY, a true WALL remains a blocking obstacle.
 	assert(nav.get_path(Vector2(-120, 0), Vector2(120, 0), true).size() > 2)
 	var water_nav = GridNavigation.new()
@@ -55,8 +66,10 @@ func _run() -> void:
 	assert(not water_nav.is_walkable(Vector2.ZERO, false, false))
 	assert(water_nav.is_walkable(Vector2.ZERO, false, true))
 	assert(water_nav.is_walkable(Vector2.ZERO, true, false))
-	assert(water_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false, true).size()
-		< water_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false, false).size())
+	assert(_travel_length(Vector2(-120, 0),
+		water_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false, true))
+		< _travel_length(Vector2(-120, 0),
+		water_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false, false)))
 
 	var game = GAME.instantiate()
 	root.add_child(game)
