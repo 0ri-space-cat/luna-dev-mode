@@ -148,6 +148,23 @@ func clone_actor(entity_id: String):
 	return clone
 
 
+## Trusted lifecycle command. Gameplay/UI delete actions will add permission
+## checks later; it never removes the player or silently resets entity identity.
+func retire_actor(entity_id: String) -> bool:
+	if entity_id == "luna":
+		return false
+	var actor: Node = world_registry.get_entity(entity_id)
+	if actor == null or not (actor is CharacterBody2D):
+		return false
+	if not world_registry.retire_entity(entity_id):
+		return false
+	_actor_slot.remove_child(actor)
+	actor.queue_free()
+	command_processor.clear_history()
+	queue_world_event({"type": "ENTITY_RETIRED", "entity_id": entity_id})
+	return true
+
+
 func set_entity_parameter(entity_id: String, key: String, value: Variant) -> bool:
 	var actor: Node = world_registry.get_entity(entity_id)
 	return actor != null and command_processor.execute_set(actor, key, value, "luna", "wand:luna")
@@ -450,6 +467,7 @@ func make_snapshot() -> Dictionary:
 	return {
 		"format": 2, "location": current_location_id,
 		"entities": entries, "routes": router.snapshot_routes(),
+		"deleted_ids": world_registry.deleted_ids(),
 		"access": access.snapshot(), "projection": projection.snapshot(),
 		"camera_mode": camera.mode,
 		"camera_position": [camera.global_position.x, camera.global_position.y],
@@ -464,12 +482,15 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if typeof(data.get("eyes_open", null)) != TYPE_BOOL:
 		return false
 	var incoming: Variant = data.get("entities", [])
+	var deleted: Variant = data.get("deleted_ids", [])
 	var routes: Variant = data.get("routes", {})
 	var a: Variant = data.get("access", {})
 	var p: Variant = data.get("projection", {})
 	var camera_xy: Variant = data.get("camera_position", [])
 	var mode := str(data.get("camera_mode", ""))
 	if not (incoming is Array) or incoming.is_empty() or incoming.size() > MAX_ACTORS:
+		return false
+	if not world_registry.validate_deleted_ids(deleted) or deleted.has("luna"):
 		return false
 	if not router.validate_routes(routes) or not (a is Dictionary) or not (p is Dictionary):
 		return false
@@ -501,6 +522,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 			actor.free()
 			_free_unparented(built)
 			return false
+		if deleted.has(actor.record.id):
+			actor.free()
+			_free_unparented(built)
+			return false
 		used[actor.record.id] = true
 		if actor.player_controlled:
 			if new_player != null:
@@ -526,6 +551,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 		_apply_trusted_visual(actor)
 		world_registry.register_entity(actor.record.id, actor, str(actor.record.category).to_upper())
 	player = new_player
+	world_registry.restore_deleted_ids(deleted)
 	camera.target = player
 	command_processor.clear_history()
 	event_bus.clear_pending()
