@@ -6,6 +6,8 @@ const EntityRecord = preload("res://scripts/core/entity_record.gd")
 
 var record
 var player_controlled := false
+var location_id := ""
+var _visual_scene: PackedScene
 var art_anchor: Node2D
 var _collision: CollisionShape2D
 var _debug_marker := true
@@ -24,6 +26,8 @@ func configure(entity_id: String, category: String, label: String, registry, pla
 
 
 func _ready() -> void:
+	collision_layer = 2 # ACTOR
+	collision_mask = 1 | 2 | 4 # WALL | ACTOR | GROUND_ONLY
 	_collision = CollisionShape2D.new()
 	_collision.name = "PhysicalFootprint"
 	var shape := CircleShape2D.new()
@@ -34,6 +38,7 @@ func _ready() -> void:
 	art_anchor.name = "VisualAnchor"
 	add_child(art_anchor)
 	_sync_visual()
+	refresh_capabilities()
 
 
 func attach_visual(scene: PackedScene) -> bool:
@@ -48,9 +53,29 @@ func attach_visual(scene: PackedScene) -> bool:
 			visual.free()
 			return false
 		art_anchor.add_child(visual)
+	_visual_scene = scene
 	_debug_marker = scene == null
+	_sync_visual()
 	queue_redraw()
 	return true
+
+
+func get_visual_scene() -> PackedScene:
+	return _visual_scene
+
+
+func has_ability(id: String) -> bool:
+	if record == null or not record.has_component("ABILITY_SET"):
+		return false
+	return (record.get_component("ABILITY_SET").get("ids", []) as Array).has(id)
+
+
+func refresh_capabilities() -> void:
+	# FLY bypasses low/ground-only barriers, never true walls or other actors.
+	var desired_mask := 1 | 2
+	if not has_ability("FLY"):
+		desired_mask |= 4
+	collision_mask = desired_mask
 
 
 func get_parameter(key: String) -> Variant:
@@ -62,7 +87,7 @@ func get_parameter(key: String) -> Variant:
 func set_parameter(key: String, value: Variant) -> bool:
 	if record == null or not record.set_parameter(key, value):
 		return false
-	if key == "size" or key == "color":
+	if key in ["size", "color", "is_visible"]:
 		_sync_visual()
 	if key == "alive" or key == "ai_enabled":
 		velocity = Vector2.ZERO
@@ -81,6 +106,7 @@ func clear_external_drive() -> void:
 func _physics_process(delta: float) -> void:
 	if record == null:
 		return
+	refresh_capabilities()
 	var movement := Vector2.ZERO
 	if player_controlled:
 		movement = _requested_direction if _external_motion else _read_input()
@@ -121,11 +147,12 @@ func _sync_visual() -> void:
 	if is_instance_valid(art_anchor):
 		art_anchor.scale = Vector2.ONE * size
 		art_anchor.modulate = get_parameter("color") as Color
+		art_anchor.visible = bool(record.parameters.get("is_visible", true))
 	queue_redraw()
 
 
 func _draw() -> void:
-	if not _debug_marker or record == null:
+	if not _debug_marker or record == null or not bool(record.parameters.get("is_visible", true)):
 		return
 	# Neutral collision marker, not a temporary stick-limbed character.
 	var color: Color = get_parameter("color") as Color
@@ -144,6 +171,7 @@ func snapshot() -> Dictionary:
 		encoded[key] = (value as Color).to_html() if value is Color else value
 	return {
 		"id": record.id, "category": record.category, "label": record.display_name,
+		"location_id": location_id,
 		"player": player_controlled, "position": [position.x, position.y],
 		"parameters": encoded, "roles": record.get_stored_roles(),
 		"tags": record.get_tags(), "components": record.get_components()
@@ -173,9 +201,13 @@ func load_snapshot(data: Dictionary, registry) -> bool:
 		return false
 	if not record.set_components(data.get("components", {})):
 		return false
+	location_id = str(data.get("location_id", ""))
+	if not location_id.is_empty() and not location_id.is_valid_identifier():
+		return false
 	position = Vector2(float(coord[0]), float(coord[1]))
 	if is_node_ready():
 		_sync_visual()
+		refresh_capabilities()
 	return true
 
 
