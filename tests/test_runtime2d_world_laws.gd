@@ -61,6 +61,7 @@ func _run() -> void:
 	await process_frame
 	assert(not law.is_solid)
 	assert(law.collision_layer == 0)
+	law.global_position = Vector2(5000, 5000)
 	law.apply_observation({"player_camera": false, "luna_eyes": false})
 	await process_frame
 	assert(law.is_solid)
