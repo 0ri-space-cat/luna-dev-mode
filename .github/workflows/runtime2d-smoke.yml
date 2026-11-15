@@ -33,6 +33,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_authoring_contract.gd
       - name: Test guarded world timeline and rewind
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_timeline.gd
+      - name: Test wand editing authorization without HUD
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_wand_policy.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
