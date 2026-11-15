@@ -23,6 +23,7 @@ var last_error := ""
 
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	plate = PlatePair.new()
 	plate.name = "RegisteredBackgroundPlates"
 	plate.level_size = level_size
