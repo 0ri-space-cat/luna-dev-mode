@@ -278,7 +278,7 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 	if level_scene == null:
 		return false
 	var next_level: Node = level_scene.instantiate()
-	if not (next_level is Node2D):
+	if not (next_level is Node2D) or not next_level.has_method("set_underside"):
 		next_level.free()
 		return false
 	if address.begins_with("DEV_SANDBOX_"):
@@ -292,8 +292,10 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 		_live_level.zone_entered.connect(_on_zone_entered)
 		_live_level.zone_exited.connect(_on_zone_exited)
 	current_location_id = address
-	if place_player and is_instance_valid(player):
-		player.global_position = plan["position"]
+	if is_instance_valid(player):
+		player.location_id = address
+		if place_player:
+			player.global_position = plan["position"]
 	_mount_dev_door()
 	_update_actor_activation()
 	_update_perception(true)
@@ -402,7 +404,9 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	# Validate the entire portable state before replacing live scene objects.
-	if int(data.get("format", -1)) != 2:
+	if typeof(data.get("format", null)) != TYPE_INT or int(data["format"]) != 2:
+		return false
+	if typeof(data.get("eyes_open", null)) != TYPE_BOOL:
 		return false
 	var incoming: Variant = data.get("entities", [])
 	var routes: Variant = data.get("routes", {})
@@ -416,6 +420,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	if not (camera_xy is Array) or camera_xy.size() != 2 or (mode != "FOLLOW" and mode != "LOCKED"):
 		return false
+	for coordinate in camera_xy:
+		if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)) or absf(float(coordinate)) > 100000.0:
+			return false
 	var new_access = AccessState.new()
 	var new_projection = WandProjectionField.new()
 	if not new_access.restore(a) or not new_projection.restore(p):
@@ -435,6 +442,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 			actor.free()
 			_free_unparented(built)
 			return false
+		if not router.locations.has(actor.location_id):
+			actor.free()
+			_free_unparented(built)
+			return false
 		used[actor.record.id] = true
 		if actor.player_controlled:
 			if new_player != null:
@@ -443,7 +454,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 				return false
 			new_player = actor
 		built.append(actor)
-	if new_player == null or new_player.record.id != "luna":
+	if new_player == null or new_player.record.id != "luna" or new_player.location_id != destination:
 		_free_unparented(built)
 		return false
 	if not _enter_location(destination, "entry", false, new_access.avatar_access_level):
