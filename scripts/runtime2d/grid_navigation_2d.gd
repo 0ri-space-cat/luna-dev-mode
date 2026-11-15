@@ -97,16 +97,26 @@ func get_path(start: Vector2, destination: Vector2, can_fly: bool = false,
 	var grid: AStarGrid2D = _flight if can_fly else (_swimming if can_swim else _ground)
 	if not grid.is_in_boundsv(source) or not grid.is_in_boundsv(target):
 		return path
-	if grid.is_point_solid(source) or grid.is_point_solid(target):
+	var original_source: Vector2i = source
+	var original_target: Vector2i = target
+	if grid.is_point_solid(source):
+		source = _nearest_clear(grid, source)
+	if grid.is_point_solid(target):
+		target = _nearest_clear(grid, target)
+	if not grid.is_in_boundsv(source) or not grid.is_in_boundsv(target):
 		return path
 	var cells: Array[Vector2i] = grid.get_id_path(source, target)
 	if cells.is_empty() or cells.size() > MAX_PATH_POINTS:
 		return path
-	# The first grid point is the cell already occupied by the actor.
-	# Every returned waypoint is inside the same authored world rectangle.
+	# Small clearance overlap at the actor's current position is recoverable
+	# without teleportation: first walk toward the nearest navigable center.
+	if source != original_source:
+		path.append(_to_world(source))
 	for i in range(1, cells.size()):
 		path.append(_to_world(cells[i]))
-	path.append(destination)
+	# Don't append the precise target if it is on a forbidden surface.
+	if target == original_target:
+		path.append(destination)
 	return path
 
 
@@ -116,6 +126,26 @@ func is_walkable(point: Vector2, can_fly: bool = false, can_swim: bool = false) 
 	var cell: Vector2i = _to_cell(point)
 	var grid: AStarGrid2D = _flight if can_fly else (_swimming if can_swim else _ground)
 	return grid.is_in_boundsv(cell) and not grid.is_point_solid(cell)
+
+
+func _nearest_clear(grid: AStarGrid2D, cell: Vector2i) -> Vector2i:
+	# Rescue real-world placements that overlap only the conservative A* cell
+	# padding. A genuinely sealed room remains unreachable; no teleportation.
+	for radius in range(1, 4):
+		var closest := Vector2i(-1, -1)
+		var best_distance := 999999
+		for y in range(-radius, radius + 1):
+			for x in range(-radius, radius + 1):
+				var candidate: Vector2i = cell + Vector2i(x, y)
+				if not grid.is_in_boundsv(candidate) or grid.is_point_solid(candidate):
+					continue
+				var distance_sq: int = x * x + y * y
+				if distance_sq < best_distance:
+					closest = candidate
+					best_distance = distance_sq
+		if best_distance < 999999:
+			return closest
+	return Vector2i(-1, -1)
 
 
 func _new_grid(cells: Vector2i) -> AStarGrid2D:
