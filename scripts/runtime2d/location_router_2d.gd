@@ -10,6 +10,58 @@ var door_destinations: Dictionary = {}
 var last_error := ""
 
 
+## One author-produced catalog can be loaded after the map is drawn.
+## Validation is transactional: a broken entry never partly changes live routes.
+func load_catalog_json(path: String) -> bool:
+	if not path.begins_with("res://"):
+		return _fail("Only bundled level manifests may be loaded")
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return _fail("Location catalog file not found")
+	var value: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not (value is Dictionary):
+		return _fail("Invalid location catalog JSON")
+	return import_catalog(value)
+
+
+func import_catalog(document: Dictionary) -> bool:
+	var entries: Variant = document.get("locations", [])
+	var links: Variant = document.get("doors", [])
+	if not (entries is Array) or not (links is Array):
+		return _fail("Locations and doors must be arrays")
+	if entries.is_empty() or entries.size() > MAX_LOCATIONS or links.size() > MAX_DOORS:
+		return _fail("Catalog exceeds bounds or has no locations")
+	var candidate = get_script().new()
+	for row in entries:
+		if not (row is Dictionary) or not (row.get("entries", null) is Dictionary):
+			return _fail("Invalid location row")
+		var prepared: Dictionary = {}
+		for key in row["entries"].keys():
+			var pair: Variant = row["entries"][key]
+			if not (pair is Array) or pair.size() != 2:
+				return _fail("Location entry must have two coordinates")
+			if typeof(pair[0]) not in [TYPE_INT, TYPE_FLOAT] or typeof(pair[1]) not in [TYPE_INT, TYPE_FLOAT]:
+				return _fail("Location entry must be numeric")
+			if not is_finite(float(pair[0])) or not is_finite(float(pair[1])):
+				return _fail("Non-finite entry coordinate")
+			if absf(float(pair[0])) > 100000.0 or absf(float(pair[1])) > 100000.0:
+				return _fail("Entry is outside safe world range")
+			prepared[str(key)] = Vector2(float(pair[0]), float(pair[1]))
+		if not candidate.register_location(str(row.get("id", "")),
+				str(row.get("scene", "")), prepared, int(row.get("required_access", 0))):
+			return _fail(candidate.last_error)
+	for row in links:
+		if not (row is Dictionary):
+			return _fail("Invalid door row")
+		if not candidate.register_door(str(row.get("id", "")), str(row.get("destination", ""))):
+			return _fail(candidate.last_error)
+	locations = candidate.locations
+	door_destinations = candidate.door_destinations
+	last_error = ""
+	return true
+
+
 func register_location(address: String, scene_path: String, entry_points: Dictionary, required_access: int = 0) -> bool:
 	if not _valid_id(address) or locations.has(address) or locations.size() >= MAX_LOCATIONS:
 		return _fail("Duplicate or invalid location ID")
