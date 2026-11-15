@@ -39,6 +39,15 @@ func _run() -> void:
 		< flight_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false).size())
 	# Even with FLY, a true WALL remains a blocking obstacle.
 	assert(nav.get_path(Vector2(-120, 0), Vector2(120, 0), true).size() > 2)
+	var water_nav = GridNavigation.new()
+	assert(water_nav.configure(Vector2(512, 384), [
+		{"kind": "SWIM_REQUIRED", "rect": [-12, -60, 24, 120]}
+	]))
+	assert(not water_nav.is_walkable(Vector2.ZERO, false, false))
+	assert(water_nav.is_walkable(Vector2.ZERO, false, true))
+	assert(water_nav.is_walkable(Vector2.ZERO, true, false))
+	assert(water_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false, true).size()
+		< water_nav.get_path(Vector2(-120, 0), Vector2(120, 0), false, false).size())
 
 	var game = GAME.instantiate()
 	root.add_child(game)
@@ -65,6 +74,27 @@ func _run() -> void:
 	assert(actor.behavior.last_target_id == "luna")
 	assert(actor.global_position.x > 20.0)
 	assert(actor.global_position.distance_to(game.player.global_position) < 100.0)
+
+	# Physical crossing of an explicitly authored water-only barrier:
+	# ordinary movement collides, SWIM traverses, and the AI grid agrees.
+	assert(game.set_entity_parameter(actor.record.id, "ai_enabled", false))
+	assert(game._live_level.geometry.build_from_description({
+		"solids": [{"kind": "SWIM_REQUIRED", "rect": [-12, -60, 24, 120]}],
+		"zones": []
+	}))
+	actor.global_position = Vector2(-95, 0)
+	actor.set_external_drive(Vector2.RIGHT)
+	for i in range(35):
+		await physics_frame
+	assert(actor.global_position.x < -16.0)
+	assert(game.set_entity_ability(actor.record.id, "SWIM", true))
+	assert(actor.has_ability("SWIM") and actor.collision_mask & 8 == 0)
+	for i in range(45):
+		await physics_frame
+	assert(actor.global_position.x > 20.0)
+	assert(game.set_entity_ability(actor.record.id, "SWIM", false))
+	assert(actor.collision_mask & 8 != 0)
+	actor.clear_external_drive()
 
 	game.queue_free()
 	print("LUNA runtime2d: bounded A*, wall detours, FLY routing and physical chase passed")
