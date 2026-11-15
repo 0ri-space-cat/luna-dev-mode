@@ -21,7 +21,7 @@ const DevDoor = preload("res://scripts/runtime2d/dev_door_2d.gd")
 const ObserverQuery = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 
-const DEV_SCENE := "res://scenes/runtime2d/level_shell.tscn"
+const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
 const MAX_ACTORS := 48
 const MAX_CHECKPOINTS := 8
@@ -73,10 +73,7 @@ func _ready() -> void:
 	event_bus.event_dropped.connect(_on_event_overflow)
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
-	assert(router.register_location("DEV_SANDBOX_A", DEV_SCENE, {"entry": Vector2(-160, 0)}))
-	assert(router.register_location("DEV_SANDBOX_B", DEV_SCENE, {"entry": Vector2(160, 0)}))
-	assert(router.register_door("DEV_DOOR_A", "DEV_SANDBOX_B"))
-	assert(router.register_door("DEV_DOOR_B", "DEV_SANDBOX_A"))
+	assert(router.load_catalog_json(DEV_CATALOG))
 
 	player = spawn_actor("luna", "luna", "Луна", Vector2(-160, 0), true)
 	var fixture = spawn_actor("DEV_ENTITY_01", "object", "Тестовая Entity", Vector2(60, 50))
