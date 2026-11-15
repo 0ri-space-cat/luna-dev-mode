@@ -1,0 +1,10 @@
+{
+  "comment": "Test geometry only. NOT author-approved Ethernia geography.",
+  "solids": [
+    {"id":"DEV_WALL","kind":"WALL","rect":[-30,-200,32,78]},
+    {"id":"DEV_LOW_OBSTACLE","kind":"GROUND_ONLY","rect":[100,-110,40,100]}
+  ],
+  "zones": [
+    {"id":"DEV_OBSERVATION_AREA","rect":[-200,-120,80,80]}
+  ]
+}
