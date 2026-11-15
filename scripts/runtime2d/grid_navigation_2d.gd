@@ -34,7 +34,7 @@ func configure(level_size: Vector2, solids: Array) -> bool:
 	for entry in solids:
 		if not (entry is Dictionary):
 			return _fail("Invalid solid entry")
-		if not str(entry.get("kind", "")) in ["WALL", "GROUND_ONLY"]:
+		if str(entry.get("kind", "")) not in ["WALL", "GROUND_ONLY"]:
 			return _fail("Unknown physical layer")
 		var coords: Variant = entry.get("rect", null)
 		if not (coords is Array) or coords.size() != 4:
