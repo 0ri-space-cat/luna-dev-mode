@@ -6,6 +6,8 @@ extends Node2D
 signal zone_entered(zone_id: String, entity_id: String)
 signal zone_exited(zone_id: String, entity_id: String)
 
+const GridNavigation = preload("res://scripts/runtime2d/grid_navigation_2d.gd")
+
 const WALL_LAYER := 1
 const ACTOR_LAYER := 2
 const GROUND_ONLY_LAYER := 4
@@ -13,6 +15,8 @@ const MAX_SOLIDS := 256
 const MAX_ZONES := 96
 
 var last_error := ""
+var level_size := Vector2(1536, 1024)
+var navigation = GridNavigation.new()
 var _solids: Array[StaticBody2D] = []
 var _zones: Array[Area2D] = []
 
@@ -21,6 +25,8 @@ func build_from_description(description: Dictionary) -> bool:
 	last_error = ""
 	if not validate_description(description):
 		return false
+	if not navigation.configure(level_size, description.get("solids", [])):
+		return _fail(navigation.last_error)
 	clear_geometry()
 	for entry in description.get("solids", []):
 		var data: Dictionary = entry
