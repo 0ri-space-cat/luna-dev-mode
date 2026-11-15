@@ -77,7 +77,14 @@ func direction_for(actor: CharacterBody2D, registry, delta: float) -> Vector2:
 		# interval, navigation revision or movement ability requires an update.
 		var nav: Variant = actor.get("navigation")
 		var destination: Vector2 = _route_target
-		var recalculate: bool = _route_timer <= 0.0 			or _route_mode != "FLEE" or nav != _route_navigation 			or (nav != null and nav.revision != _route_revision) 			or destination.distance_squared_to(actor.global_position) < 20.0 * 20.0
+		var recalculate: bool = (
+			_route_timer <= 0.0
+			or _route_mode != "FLEE"
+			or nav != _route_navigation
+			or (nav != null and nav.revision != _route_revision)
+			or (destination != actor.global_position
+				and destination.distance_squared_to(actor.global_position) < 20.0 * 20.0)
+		)
 		if recalculate:
 			destination = _flee_goal(actor, -difference.normalized())
 		return _navigated_direction(actor, destination, mode, delta)
