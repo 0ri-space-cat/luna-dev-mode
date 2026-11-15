@@ -30,6 +30,21 @@ func _run() -> void:
 	assert(game.make_snapshot() == current_state)
 	assert(game.current_location_id == "DEV_SANDBOX_A")
 
+	# Deleting a pre-authored actor is persistent gameplay state. Revisiting its
+	# scene does not silently recreate it; restoring an older snapshot can.
+	var before_delete: Dictionary = game.make_snapshot()
+	assert(game.retire_actor("DEV_ENTITY_01"))
+	assert(game.world_registry.was_deleted("DEV_ENTITY_01"))
+	assert(game._enter_location("DEV_SANDBOX_A"))
+	assert(game.world_registry.get_entity("DEV_ENTITY_01") == null)
+	var removed_snapshot: Dictionary = game.make_snapshot()
+	assert(removed_snapshot["deleted_ids"].has("DEV_ENTITY_01"))
+	assert(game.apply_snapshot(removed_snapshot))
+	assert(game.world_registry.was_deleted("DEV_ENTITY_01"))
+	assert(game.apply_snapshot(before_delete))
+	assert(game.world_registry.get_entity("DEV_ENTITY_01") != null)
+	assert(not game.world_registry.was_deleted("DEV_ENTITY_01"))
+
 	# Any future authored level can place a plain Doorway2D at its mapped
 	# coordinates and connect it to an approved route in the address catalog.
 	assert(game.router.register_door("DEV_TEST_AUTHORED_DOOR", "DEV_SANDBOX_B"))
