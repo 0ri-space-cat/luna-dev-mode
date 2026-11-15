@@ -18,6 +18,7 @@ var _debug_marker := true
 var _external_motion := false
 var _requested_direction := Vector2.ZERO
 var world_registry
+var navigation
 var behavior = BehaviorBrain.new()
 var passive_abilities = PassiveAbilities.new()
 var _glow_light: PointLight2D
