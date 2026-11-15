@@ -314,7 +314,7 @@ func _physics_process(_delta: float) -> void:
 func _update_perception(force: bool = false) -> void:
 	if not is_instance_valid(player):
 		return
-	var underside: bool = projection.is_underside_at(player.global_position)
+	var underside: bool = projection.is_underside_at(player.global_position, current_location_id)
 	if underside != _was_underside or force:
 		_was_underside = underside
 		if is_instance_valid(_live_level):
@@ -405,6 +405,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 		world_registry.register_entity(actor.record.id, actor, str(actor.record.category).to_upper())
 	player = new_player
 	camera.target = player
+	command_processor.clear_history()
+	event_bus.clear_pending()
 	_update_actor_activation()
 	router.restore_routes(routes)
 	access = new_access
@@ -455,9 +457,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			enter_nearby_door()
 		KEY_F4:
 			if projection.carried:
-				projection.drop_at(player.global_position)
+				projection.drop_at(player.global_position, current_location_id)
 			else:
-				projection.pick_up_from(player.global_position)
+				projection.pick_up_from(player.global_position, 36.0, current_location_id)
 		KEY_F5:
 			clone_actor("DEV_ENTITY_01")
 		KEY_F6:
