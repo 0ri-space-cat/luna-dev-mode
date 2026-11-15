@@ -23,6 +23,7 @@ const EventBus = preload("res://scripts/core/event_bus.gd")
 const AbilityBankService = preload("res://scripts/core/ability_bank_service.gd")
 const WorldTimeline2D = preload("res://scripts/runtime2d/world_timeline_2d.gd")
 const WandEditPolicy2D = preload("res://scripts/runtime2d/wand_edit_policy_2d.gd")
+const EntityBlueprint2D = preload("res://scripts/runtime2d/entity_blueprint_2d.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -86,10 +87,6 @@ func _ready() -> void:
 	assert(router.load_catalog_json(DEV_CATALOG))
 
 	player = spawn_actor("luna", "luna", "Луна", Vector2(-160, 0), true)
-	var fixture = spawn_actor("DEV_ENTITY_01", "object", "Тестовая Entity", Vector2(60, 50))
-	if fixture != null:
-		fixture.set_parameter("alive", true)
-		fixture.set_parameter("ai_enabled", true)
 	camera.target = player
 	camera.make_current()
 	_enter_location("DEV_SANDBOX_A")
@@ -287,6 +284,34 @@ func _on_zone_exited(zone_id: String, entity_id: String) -> void:
 		"entity_id": entity_id, "location_id": current_location_id})
 
 
+func _prepare_authored_entities(address: String) -> Variant:
+	# Assemble and validate every new author-provided Entity before replacing
+	# the current level. Revisited worlds retain their modified live records.
+	var planned: Array = []
+	var definitions: Array = router.locations.get(address, {}).get("entities", [])
+	for definition in definitions:
+		var identity: String = str(definition.get("id", ""))
+		var existing = world_registry.get_entity(identity)
+		if existing != null:
+			if str(existing.location_id) != address:
+				_free_unparented(planned)
+				return null
+			continue
+		if world_registry.was_deleted(identity):
+			continue
+		if world_registry.count_live() + planned.size() >= MAX_ACTORS:
+			_free_unparented(planned)
+			integrity_notice.emit("ENTITY_BUDGET_REACHED")
+			return null
+		var actor = EntityBlueprint2D.create_actor(definition, address, parameter_registry)
+		if actor == null:
+			_free_unparented(planned)
+			integrity_notice.emit("AUTHORED_ENTITY_REJECTED")
+			return null
+		planned.append(actor)
+	return planned
+
+
 func _enter_location(address: String, entry_id: String = "entry", place_player: bool = true,
 		authority_override: int = -1) -> bool:
 	var authority: int = access.avatar_access_level if authority_override < 0 else authority_override
@@ -300,6 +325,10 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 	if not (next_level is Node2D) or not next_level.has_method("set_underside"):
 		next_level.free()
 		return false
+	var staged: Variant = _prepare_authored_entities(address)
+	if staged == null:
+		next_level.free()
+		return false
 	if address.begins_with("DEV_SANDBOX_"):
 		next_level.set("geometry_json_path", DEV_GEOMETRY)
 	if is_instance_valid(_live_level):
@@ -311,6 +340,11 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 		_live_level.zone_entered.connect(_on_zone_entered)
 		_live_level.zone_exited.connect(_on_zone_exited)
 	current_location_id = address
+	for actor in staged:
+		_attach_actor_services(actor)
+		_actor_slot.add_child(actor)
+		_apply_trusted_visual(actor)
+		world_registry.register_entity(str(actor.record.id), actor, str(actor.record.category).to_upper())
 	if is_instance_valid(player):
 		player.location_id = address
 		if place_player:
