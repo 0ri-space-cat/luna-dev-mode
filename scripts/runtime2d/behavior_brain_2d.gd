@@ -1,12 +1,25 @@
 extends RefCounted
-## Shared, scene-independent motion brain for approved editable behavior fields.
-## No hand-authored NPC character, route, quest, or species is encoded here.
-## WorldRegistry is the source of truth for nearby targets and active rooms.
+## Bounded, data-driven 2D motion brain. Authored static collision is planned
+## by GridNavigation2D; actual actor collisions stay in CharacterBody2D.
+## No species, geography, scripted NPC routes or secret placements live here.
 
 const PIXELS_PER_UNIT := 80.0
+const REPLAN_INTERVAL := 0.35
+const GOAL_REPLAN_DISTANCE := 24.0
+const WAYPOINT_REACHED := 10.0
+const FLEE_DISTANCE := 160.0
 
 var _wander_timer := 0.0
 var _wander_direction := Vector2.RIGHT
+var _route := PackedVector2Array()
+var _route_cursor := 0
+var _route_timer := 0.0
+var _route_target := Vector2.ZERO
+var _route_mode := ""
+var _route_revision := -1
+var _route_flying := false
+var _route_navigation
+
 var last_target_id := ""
 var last_resolved_mode := "IDLE"
 
@@ -51,17 +64,72 @@ func direction_for(actor: CharacterBody2D, registry, delta: float) -> Vector2:
 	var difference: Vector2 = target_position - actor.global_position
 	if difference.length_squared() < 0.01:
 		return Vector2.ZERO
+
 	var following_gap: float = float(actor.get_parameter("follow_distance")) * PIXELS_PER_UNIT
 	if mode == "FOLLOW" and difference.length() <= following_gap:
 		return Vector2.ZERO
-	if mode == "FLEE" and difference.length() >= distance_px * 0.9:
-		return Vector2.ZERO
-	return -difference.normalized() if mode == "FLEE" else difference.normalized()
+	if mode == "FLEE":
+		if difference.length() >= distance_px * 0.9:
+			return Vector2.ZERO
+		var destination: Vector2 = _flee_goal(actor, -difference.normalized())
+		if destination == actor.global_position:
+			return Vector2.ZERO
+		return _navigated_direction(actor, destination, mode, delta)
+	return _navigated_direction(actor, target_position, mode, delta)
 
 
 func avoid_obstacle() -> void:
+	# Collision with actors may require a new plan even when the target did not
+	# move. Static barriers are handled by the grid on the next recalculation.
+	_route_timer = 0.0
 	_wander_direction = _wander_direction.rotated(2.27)
 	_wander_timer = 1.7
+
+
+func _navigated_direction(actor: CharacterBody2D, goal: Vector2, mode: String,
+		delta: float) -> Vector2:
+	var navigation: Variant = actor.get("navigation")
+	if navigation == null:
+		_route = PackedVector2Array()
+		return (goal - actor.global_position).normalized()
+
+	var can_fly: bool = actor.has_ability("FLY")
+	_route_timer -= maxf(delta, 0.0)
+	var should_replan: bool = _route_timer <= 0.0 		or navigation != _route_navigation or navigation.revision != _route_revision 		or mode != _route_mode or can_fly != _route_flying 		or goal.distance_squared_to(_route_target) > GOAL_REPLAN_DISTANCE * GOAL_REPLAN_DISTANCE
+	if should_replan:
+		_route = navigation.get_path(actor.global_position, goal, can_fly)
+		_route_cursor = 0
+		_route_timer = REPLAN_INTERVAL
+		_route_target = goal
+		_route_mode = mode
+		_route_navigation = navigation
+		_route_revision = navigation.revision
+		_route_flying = can_fly
+	if _route.is_empty():
+		# Never try walking straight through an authored solid if no path exists.
+		return Vector2.ZERO
+	while _route_cursor < _route.size() and actor.global_position.distance_to(
+			_route[_route_cursor]) <= WAYPOINT_REACHED:
+		_route_cursor += 1
+	if _route_cursor >= _route.size():
+		return Vector2.ZERO
+	return (_route[_route_cursor] - actor.global_position).normalized()
+
+
+func _flee_goal(actor: CharacterBody2D, away: Vector2) -> Vector2:
+	var navigation: Variant = actor.get("navigation")
+	if navigation == null:
+		return actor.global_position + away * FLEE_DISTANCE
+	# Search a handful of alternative headings around blocking geometry.
+	# Queries are bounded and only use the actor's real FLY/ground mobility.
+	for angle in [0.0, PI / 4.0, -PI / 4.0, PI / 2.0, -PI / 2.0]:
+		for travel in [FLEE_DISTANCE, FLEE_DISTANCE * 0.5]:
+			var destination: Vector2 = actor.global_position + away.rotated(angle) * travel
+			if navigation.is_walkable(destination, actor.has_ability("FLY")):
+				if not navigation.get_path(actor.global_position, destination,
+						actor.has_ability("FLY")).is_empty():
+					return destination
+	return actor.global_position
 
 
 func _wander(delta: float) -> Vector2:
