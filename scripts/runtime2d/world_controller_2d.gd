@@ -85,6 +85,15 @@ func _ready() -> void:
 	_enter_location("DEV_SANDBOX_A")
 
 
+func _attach_actor_services(actor: Node) -> void:
+	actor.world_registry = world_registry
+	actor.passive_ability_applied.connect(_on_passive_ability_applied)
+
+
+func _on_passive_ability_applied(event_data: Dictionary) -> void:
+	queue_world_event(event_data)
+
+
 func spawn_actor(entity_id: String, category: String, label: String,
 		at: Vector2, is_player: bool = false):
 	if world_registry.count_live() >= MAX_ACTORS:
@@ -97,6 +106,7 @@ func spawn_actor(entity_id: String, category: String, label: String,
 		actor.free()
 		return null
 	actor.position = at
+	_attach_actor_services(actor)
 	actor.location_id = current_location_id if not current_location_id.is_empty() else "DEV_SANDBOX_A"
 	_actor_slot.add_child(actor)
 	_apply_trusted_visual(actor)
@@ -120,6 +130,7 @@ func clone_actor(entity_id: String):
 	var clone = original.clone_as(copied_id)
 	if clone == null:
 		return null
+	_attach_actor_services(clone)
 	_actor_slot.add_child(clone)
 	clone.attach_visual(original.get_visual_scene())
 	if not world_registry.register_entity(copied_id, clone, str(clone.record.category).to_upper()):
@@ -136,7 +147,7 @@ func set_entity_parameter(entity_id: String, key: String, value: Variant) -> boo
 
 func set_entity_ability(entity_id: String, ability_id: String, enabled: bool) -> bool:
 	# Other approved abilities await their real behavior adapters; no fake grant.
-	if ability_id != "FLY":
+	if ability_id not in ["FLY", "GLOW", "REGENERATION"]:
 		return false
 	var actor: Node = world_registry.get_entity(entity_id)
 	if actor == null:
@@ -397,6 +408,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 		_actor_slot.remove_child(old)
 		old.queue_free()
 	for actor in built:
+		_attach_actor_services(actor)
 		_actor_slot.add_child(actor)
 		_apply_trusted_visual(actor)
 		world_registry.register_entity(actor.record.id, actor, str(actor.record.category).to_upper())
