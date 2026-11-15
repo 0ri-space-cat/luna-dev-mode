@@ -21,6 +21,7 @@ const DevDoor = preload("res://scripts/runtime2d/dev_door_2d.gd")
 const ObserverQuery = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const AbilityBankService = preload("res://scripts/core/ability_bank_service.gd")
+const WorldTimeline2D = preload("res://scripts/runtime2d/world_timeline_2d.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -41,6 +42,8 @@ var luna_eyes_open := true
 var observer
 var event_bus
 var ability_bank
+var timeline
+var _timeline_rollback := false
 var _trusted_visuals: Dictionary = {}
 
 var _level_slot: Node2D
@@ -74,6 +77,7 @@ func _ready() -> void:
 	event_bus = EventBus.new()
 	event_bus.event_dropped.connect(_on_event_overflow)
 	ability_bank = AbilityBankService.new(world_registry, command_processor)
+	timeline = WorldTimeline2D.new()
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
 	assert(router.load_catalog_json(DEV_CATALOG))
@@ -86,6 +90,7 @@ func _ready() -> void:
 	camera.target = player
 	camera.make_current()
 	_enter_location("DEV_SANDBOX_A")
+	timeline.reset(make_snapshot())
 
 
 func _attach_actor_services(actor: Node) -> void:
@@ -359,7 +364,7 @@ func _process(_delta: float) -> void:
 	_update_perception()
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if is_instance_valid(player) and player.velocity.length_squared() > 0.01:
 		observer.facing = player.velocity.normalized()
 	observer.luna_eyes_open = luna_eyes_open
@@ -367,6 +372,8 @@ func _physics_process(_delta: float) -> void:
 		if law.has_method("apply_observation"):
 			law.apply_observation(observation_at(law.global_position, bool(law.get("invisible_to_luna"))))
 	event_bus.drain(self)
+	if timeline.tick(delta):
+		timeline.record(make_snapshot())
 
 func _update_perception(force: bool = false) -> void:
 	if not is_instance_valid(player):
@@ -482,6 +489,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 	camera.set_mode(mode)
 	luna_eyes_open = bool(data.get("eyes_open", true))
 	_update_perception(true)
+	if not _timeline_rollback:
+		timeline.reset(make_snapshot())
 	return true
 
 
@@ -489,6 +498,20 @@ func _free_unparented(values: Array) -> void:
 	for actor in values:
 		if is_instance_valid(actor):
 			actor.free()
+
+
+func rewind_world(seconds_back: float) -> bool:
+	# Integration point for the approved Time Button, recovery scripting or
+	# other safe in-world temporal mechanics. No artifact/UI is spawned here.
+	var candidate: Dictionary = timeline.preview(seconds_back)
+	if candidate.is_empty():
+		return false
+	_timeline_rollback = true
+	var succeeded: bool = apply_snapshot(candidate["world"])
+	_timeline_rollback = false
+	if succeeded:
+		timeline.commit_rewind(float(candidate["time"]))
+	return succeeded
 
 
 func save_to_disk() -> bool:
