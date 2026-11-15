@@ -11,7 +11,7 @@ var facing := Vector2.DOWN
 
 
 func evaluate(player: Node2D, camera: Camera2D, point: Vector2, invisible_to_luna: bool = false) -> Dictionary:
-	var camera_seen := camera != null and camera.contains_world_point(point)
+	var camera_seen: bool = camera != null and bool(camera.call("contains_world_point", point))
 	var luna_seen := false
 	if luna_eyes_open and not invisible_to_luna and is_instance_valid(player):
 		var delta: Vector2 = point - player.global_position
