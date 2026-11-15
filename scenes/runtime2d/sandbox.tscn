@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/runtime2d/world_controller_2d.gd" id="1_world"]
+[ext_resource type="Script" path="res://scripts/runtime2d/camera_follow_lock_2d.gd" id="2_camera"]
+
+[node name="LunaRuntime2D" type="Node2D"]
+script = ExtResource("1_world")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Level" type="Node2D" parent="World"]
+
+[node name="Actors" type="Node2D" parent="World"]
+y_sort_enabled = true
+
+[node name="Camera" type="Camera2D" parent="World"]
+script = ExtResource("2_camera")
+
+[node name="Interface" type="CanvasLayer" parent="."]
