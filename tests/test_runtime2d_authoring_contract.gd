@@ -15,6 +15,21 @@ func _run() -> void:
 	root.add_child(game)
 	await physics_frame
 
+	# The initial technical actor now comes from a scene manifest rather
+	# than hardcoded creation in the world controller.
+	var prepared = game.world_registry.get_entity("DEV_ENTITY_01")
+	assert(prepared != null and bool(prepared.get_parameter("alive")))
+	assert(prepared.location_id == "DEV_SANDBOX_A")
+	var current_state: Dictionary = game.make_snapshot()
+	assert(game.router.register_location("DEV_BAD_ROOM",
+		"res://scenes/runtime2d/level_shell.tscn", {"entry": Vector2.ZERO}, 0, [
+			{"id": "BAD_ENTITY", "category": "object", "label": "bad",
+				"position": [5, 10], "parameters": {"NOT_A_REAL_PARAMETER": true}}
+		]))
+	assert(not game._enter_location("DEV_BAD_ROOM"))
+	assert(game.make_snapshot() == current_state)
+	assert(game.current_location_id == "DEV_SANDBOX_A")
+
 	# Any future authored level can place a plain Doorway2D at its mapped
 	# coordinates and connect it to an approved route in the address catalog.
 	assert(game.router.register_door("DEV_TEST_AUTHORED_DOOR", "DEV_SANDBOX_B"))
