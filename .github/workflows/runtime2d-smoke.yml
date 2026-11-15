@@ -17,7 +17,12 @@ jobs:
           chmod +x /tmp/Godot_v4.3-stable_linux.x86_64
           sudo mv /tmp/Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
       - name: Parse project and new 2D scripts
-        run: godot --headless --editor --path . --import --quit
+        run: |
+          set -o pipefail
+          godot --headless --editor --path . --import --quit 2>&1 | tee /tmp/luna-2d-parse.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|^ERROR:' /tmp/luna-2d-parse.log; then
+            exit 1
+          fi
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Boot 2D main scene
