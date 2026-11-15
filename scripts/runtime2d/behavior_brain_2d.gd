@@ -72,9 +72,14 @@ func direction_for(actor: CharacterBody2D, registry, delta: float) -> Vector2:
 	if mode == "FLEE":
 		if difference.length() >= distance_px * 0.9:
 			return Vector2.ZERO
-		var destination: Vector2 = _flee_goal(actor, -difference.normalized())
-		if destination == actor.global_position:
-			return Vector2.ZERO
+		# A fleeing actor must NOT run 10 A* searches every physics frame.
+		# Keep the chosen escape destination until it is reached or a replanning
+		# interval, navigation revision or movement ability requires an update.
+		var nav: Variant = actor.get("navigation")
+		var destination: Vector2 = _route_target
+		var recalculate: bool = _route_timer <= 0.0 			or _route_mode != "FLEE" or nav != _route_navigation 			or (nav != null and nav.revision != _route_revision) 			or destination.distance_squared_to(actor.global_position) < 20.0 * 20.0
+		if recalculate:
+			destination = _flee_goal(actor, -difference.normalized())
 		return _navigated_direction(actor, destination, mode, delta)
 	return _navigated_direction(actor, target_position, mode, delta)
 
