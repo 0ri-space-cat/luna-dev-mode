@@ -20,6 +20,7 @@ const SaveStore = preload("res://scripts/runtime2d/save_store_2d.gd")
 const DevDoor = preload("res://scripts/runtime2d/dev_door_2d.gd")
 const ObserverQuery = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
+const AbilityBankService = preload("res://scripts/core/ability_bank_service.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -39,6 +40,7 @@ var current_location_id := ""
 var luna_eyes_open := true
 var observer
 var event_bus
+var ability_bank
 var _trusted_visuals: Dictionary = {}
 
 var _level_slot: Node2D
@@ -71,6 +73,7 @@ func _ready() -> void:
 	observer = ObserverQuery.new()
 	event_bus = EventBus.new()
 	event_bus.event_dropped.connect(_on_event_overflow)
+	ability_bank = AbilityBankService.new(world_registry, command_processor)
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
 	assert(router.load_catalog_json(DEV_CATALOG))
@@ -162,6 +165,25 @@ func set_entity_ability(entity_id: String, ability_id: String, enabled: bool) ->
 			return true
 		return command_processor.execute_component(actor, "REMOVE_COMPONENT", "ABILITY_SET", {}, "luna", "wand:luna")
 	return command_processor.execute_component(actor, "SET_COMPONENT", "ABILITY_SET", {"ids": ids}, "luna", "wand:luna")
+
+
+## Bank operations reuse the original atomic component transfer engine.
+## Physical proximity and current-room checks are enforced here, not by UI.
+func transfer_ability(holder_id: String, other_id: String, ability_id: String,
+		extract: bool = true) -> bool:
+	if ability_id not in ["FLY", "GLOW", "REGENERATION"]:
+		return false
+	var holder: Node2D = world_registry.get_entity(holder_id) as Node2D
+	var other: Node2D = world_registry.get_entity(other_id) as Node2D
+	if holder == null or other == null or holder == other:
+		return false
+	if not holder.has_method("get_world_location_id") or not other.has_method("get_world_location_id"):
+		return false
+	if holder.get_world_location_id() != current_location_id or other.get_world_location_id() != current_location_id:
+		return false
+	if holder.global_position.distance_squared_to(other.global_position) > 96.0 * 96.0:
+		return false
+	return ability_bank.extract(holder_id, other_id, ability_id) if extract else ability_bank.inject(holder_id, other_id, ability_id)
 
 
 func find_nearby_entities(origin_id: String, radius: float,
