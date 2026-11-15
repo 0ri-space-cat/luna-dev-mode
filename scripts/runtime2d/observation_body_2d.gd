@@ -12,12 +12,14 @@ const CAMERA := "CAMERA"
 @export_enum("ALWAYS", "WHEN_UNOBSERVED", "WHEN_OBSERVED") var solidity_rule := ALWAYS
 @export_enum("LUNA", "CAMERA") var observer_source := LUNA
 @export var starts_invisible := true
+@export var invisible_to_luna := false
 @export var physical_size := Vector2(80, 20)
 
 var is_solid := true
 
 
 func _ready() -> void:
+	add_to_group("runtime2d_observation_law")
 	collision_mask = 0
 	var footprint := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
