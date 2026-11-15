@@ -3,6 +3,10 @@ extends CharacterBody2D
 ## VisualAnchor, not a bake of the entity or its collision footprint.
 
 const EntityRecord = preload("res://scripts/core/entity_record.gd")
+const BehaviorBrain = preload("res://scripts/runtime2d/behavior_brain_2d.gd")
+const PassiveAbilities = preload("res://scripts/runtime2d/passive_ability_runtime_2d.gd")
+
+signal passive_ability_applied(event_data: Dictionary)
 
 var record
 var player_controlled := false
@@ -13,8 +17,10 @@ var _collision: CollisionShape2D
 var _debug_marker := true
 var _external_motion := false
 var _requested_direction := Vector2.ZERO
-var _wander_timer := 0.0
-var _wander_heading := Vector2.RIGHT
+var world_registry
+var behavior = BehaviorBrain.new()
+var passive_abilities = PassiveAbilities.new()
+var _glow_light: PointLight2D
 
 
 func configure(entity_id: String, category: String, label: String, registry, player: bool = false) -> bool:
@@ -81,6 +87,8 @@ func refresh_capabilities() -> void:
 	if not has_ability("FLY"):
 		desired_mask |= 4
 	collision_mask = desired_mask
+	if is_node_ready():
+		_glow_light = PassiveAbilities.setup_light(self, _glow_light, has_ability("GLOW"))
 
 
 func get_parameter(key: String) -> Variant:
@@ -112,24 +120,21 @@ func _physics_process(delta: float) -> void:
 	if record == null:
 		return
 	refresh_capabilities()
+	var restored: Dictionary = passive_abilities.advance(self, delta)
+	if not restored.is_empty():
+		passive_ability_applied.emit(restored)
 	var movement := Vector2.ZERO
 	if _external_motion:
 		movement = _requested_direction
 	elif player_controlled:
 		movement = _read_input()
 	elif bool(get_parameter("alive")) and bool(get_parameter("ai_enabled")):
-		if str(get_parameter("behavior_mode")) != "IDLE":
-			_wander_timer -= delta
-			if _wander_timer <= 0.0:
-				_wander_timer = 1.7
-				_wander_heading = _wander_heading.rotated(1.27)
-			movement = _wander_heading
+		movement = behavior.direction_for(self, world_registry, delta)
 	var speed_px: float = float(get_parameter("speed")) * 80.0
 	velocity = movement.normalized() * speed_px if movement.length_squared() > 0.0 else Vector2.ZERO
 	move_and_slide()
 	if get_slide_collision_count() > 0 and not player_controlled:
-		_wander_heading = -_wander_heading
-		_wander_timer = 1.7
+		behavior.avoid_obstacle()
 
 
 func _read_input() -> Vector2:
