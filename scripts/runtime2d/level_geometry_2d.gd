@@ -11,6 +11,7 @@ const GridNavigation = preload("res://scripts/runtime2d/grid_navigation_2d.gd")
 const WALL_LAYER := 1
 const ACTOR_LAYER := 2
 const GROUND_ONLY_LAYER := 4
+const SWIM_REQUIRED_LAYER := 8
 const MAX_SOLIDS := 256
 const MAX_ZONES := 96
 
@@ -31,7 +32,7 @@ func build_from_description(description: Dictionary) -> bool:
 	for entry in description.get("solids", []):
 		var data: Dictionary = entry
 		var rect := _parse_rect(data["rect"])
-		_add_solid(rect, str(data["kind"]) == "GROUND_ONLY", str(data.get("id", "")))
+		_add_solid(rect, str(data["kind"]), str(data.get("id", "")))
 	for entry in description.get("zones", []):
 		var data: Dictionary = entry
 		_add_zone(_parse_rect(data["rect"]), str(data["id"]))
@@ -49,7 +50,7 @@ func validate_description(description: Dictionary) -> bool:
 	for entry in solids:
 		if not (entry is Dictionary) or not _valid_rect(entry.get("rect", null)):
 			return _fail("Invalid solid rectangle")
-		if str(entry.get("kind", "")) not in ["WALL", "GROUND_ONLY"]:
+		if str(entry.get("kind", "")) not in ["WALL", "GROUND_ONLY", "SWIM_REQUIRED"]:
 			return _fail("Unknown collision kind")
 		var solid_id := str(entry.get("id", ""))
 		if not solid_id.is_empty():
@@ -85,11 +86,15 @@ func zone_count() -> int:
 	return _zones.size()
 
 
-func _add_solid(rect: Rect2, ground_only: bool, id: String) -> void:
+func _add_solid(rect: Rect2, kind: String, id: String) -> void:
 	var wall := StaticBody2D.new()
 	wall.name = id if not id.is_empty() else "AuthoredSolid"
 	wall.position = rect.position + rect.size * 0.5
-	wall.collision_layer = GROUND_ONLY_LAYER if ground_only else WALL_LAYER
+	wall.collision_layer = WALL_LAYER
+	if kind == "GROUND_ONLY":
+		wall.collision_layer = GROUND_ONLY_LAYER
+	elif kind == "SWIM_REQUIRED":
+		wall.collision_layer = SWIM_REQUIRED_LAYER
 	wall.collision_mask = 0
 	var hitbox := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
