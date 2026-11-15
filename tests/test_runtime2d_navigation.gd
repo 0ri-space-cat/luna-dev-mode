@@ -18,9 +18,14 @@ func _run() -> void:
 	var path: PackedVector2Array = nav.get_path(Vector2(-120, 0), Vector2(120, 0))
 	assert(path.size() > 2)
 	var went_around := false
+	var previous := Vector2(-120, 0)
+	var padded_wall := Rect2(-12, -60, 24, 120).grow(23.0)
 	for point in path:
 		if absf(point.y) > 80.0:
 			went_around = true
+		assert(not padded_wall.has_point(point))
+		assert(not padded_wall.has_point((previous + point) * 0.5))
+		previous = point
 	assert(went_around)
 	var approaching_blocked_goal: PackedVector2Array = nav.get_path(Vector2(-120, 0), Vector2.ZERO)
 	assert(not approaching_blocked_goal.is_empty())
