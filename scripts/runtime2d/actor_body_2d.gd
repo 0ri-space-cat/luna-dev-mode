@@ -20,12 +20,13 @@ var _wander_heading := Vector2.RIGHT
 func configure(entity_id: String, category: String, label: String, registry, player: bool = false) -> bool:
 	if entity_id.is_empty() or not entity_id.is_valid_identifier():
 		return false
-	record = EntityRecord.new(entity_id, category, label, registry)
+	record = EntityRecord.new(entity_id, category, label, registry, {"color": Color.WHITE})
 	player_controlled = player
 	return true
 
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	collision_layer = 2 # ACTOR
 	collision_mask = 1 | 2 | 4 # WALL | ACTOR | GROUND_ONLY
 	_collision = CollisionShape2D.new()
