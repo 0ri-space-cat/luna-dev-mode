@@ -71,6 +71,24 @@ func _run() -> void:
 		await physics_frame
 	assert(int(actor.get_parameter("health")) == 91)
 
+	# Ability Bank transfers the actual component in one undoable transaction.
+	# The holder and donor must be physically near and in the active room.
+	actor.global_position = Vector2(-140, 30)
+	assert(game.set_entity_ability(actor.record.id, "FLY", true))
+	assert(game.transfer_ability("luna", actor.record.id, "FLY", true))
+	assert(not actor.has_ability("FLY"))
+	assert(actor.collision_mask & 4 != 0)
+	assert(game.ability_bank.amount("luna", "FLY") == 1)
+	assert(game.transfer_ability("luna", actor.record.id, "FLY", false))
+	assert(actor.has_ability("FLY"))
+	assert(actor.collision_mask & 4 == 0)
+	assert(game.ability_bank.amount("luna", "FLY") == 0)
+	assert(game.command_processor.undo())
+	assert(not actor.has_ability("FLY"))
+	assert(game.ability_bank.amount("luna", "FLY") == 1)
+	assert(game.command_processor.redo())
+	assert(actor.has_ability("FLY"))
+
 	# AI and ability components remain independent after a full 2D save/restore.
 	var copy = game.clone_actor(actor.record.id)
 	assert(copy != null and copy.behavior != actor.behavior)
