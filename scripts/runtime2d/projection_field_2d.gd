@@ -33,8 +33,11 @@ func snapshot() -> Dictionary:
 func restore(data: Dictionary) -> bool:
 	var point: Variant = data.get("position", [])
 	var next_radius: float = float(data.get("radius", -1.0))
-	if not (point is Array) or point.size() != 2 or next_radius <= 0.0 or next_radius > 4096.0:
+	if not (point is Array) or point.size() != 2 or next_radius <= 0.0 or next_radius > 4096.0 or not is_finite(next_radius):
 		return false
+	for value in point:
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
+			return false
 	if absf(float(point[0])) > 100000.0 or absf(float(point[1])) > 100000.0:
 		return false
 	carried = bool(data.get("carried", true))
