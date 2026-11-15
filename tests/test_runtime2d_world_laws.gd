@@ -36,6 +36,11 @@ func _run() -> void:
 	for i in range(25):
 		await physics_frame
 	assert(actor.global_position.x > 145.0)
+	# Flying must still respect a full-height wall.
+	actor.global_position = Vector2(-62, -165)
+	for i in range(20):
+		await physics_frame
+	assert(actor.global_position.x < -39.0)
 	assert(game.command_processor.undo())
 	assert(not actor.has_ability("FLY"))
 	await physics_frame
@@ -71,6 +76,8 @@ func _run() -> void:
 	var clone = game.clone_actor(actor.record.id)
 	assert(clone != null)
 	var clone_id: String = clone.record.id
+	var nearby_a: Array[Dictionary] = game.find_nearby_entities("luna", 10000.0)
+	assert(nearby_a.size() == 2)
 	game.player.global_position = Vector2(260, 0)
 	assert(game.enter_nearby_door())
 	assert(game.current_location_id == "DEV_SANDBOX_B")
@@ -79,6 +86,8 @@ func _run() -> void:
 	assert(actor.process_mode == Node.PROCESS_MODE_DISABLED)
 	var b_actor = game.spawn_actor("DEV_B_ENTITY", "object", "Second test room", Vector2(40, 45))
 	assert(b_actor != null and b_actor.visible)
+	var nearby_b: Array[Dictionary] = game.find_nearby_entities("luna", 10000.0)
+	assert(nearby_b.size() == 1 and nearby_b[0]["id"] == "DEV_B_ENTITY")
 	game.player.global_position = Vector2(260, 0)
 	assert(game.enter_nearby_door())
 	assert(game.current_location_id == "DEV_SANDBOX_A")
