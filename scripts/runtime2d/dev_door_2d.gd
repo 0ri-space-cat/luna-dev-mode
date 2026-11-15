@@ -1,14 +1,9 @@
-extends Area2D
-## Debug address doorway. A full door later supplies its own art and collider.
-var entity_id := ""
+extends "res://scripts/runtime2d/doorway_2d.gd"
+## Development-only doorway marker. Authored levels use Doorway2D and their own art.
 
 
 func _ready() -> void:
-	var shape := CollisionShape2D.new()
-	var disk := CircleShape2D.new()
-	disk.radius = 28.0
-	shape.shape = disk
-	add_child(shape)
+	super._ready()
 	queue_redraw()
 
 
