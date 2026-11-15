@@ -18,6 +18,13 @@ func _run() -> void:
 	assert(level.geometry.solid_count() == 2)
 	assert(level.geometry.zone_count() == 1)
 	assert(level.foreground_mount != null)
+	# Catalog import validates every entry before replacing live route data.
+	var initial_routes: Dictionary = game.router.snapshot_routes()
+	assert(not game.router.import_catalog({"locations": [
+		{"id": "MISSING_MAP", "scene": "res://scenes/does_not_exist.tscn",
+			"entries": {"entry": [0, 0]}}
+	], "doors": []}))
+	assert(game.router.snapshot_routes() == initial_routes)
 	var actor = game.world_registry.get_entity("DEV_ENTITY_01")
 	assert(actor is CharacterBody2D)
 	assert(actor.location_id == "DEV_SANDBOX_A")
