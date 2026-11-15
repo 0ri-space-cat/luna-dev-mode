@@ -10,7 +10,7 @@ const ParameterRegistry = preload("res://scripts/core/parameter_registry.gd")
 const WorldRegistry = preload("res://scripts/core/world_registry.gd")
 const CommandProcessor = preload("res://scripts/core/command_processor.gd")
 const Actor = preload("res://scripts/runtime2d/actor_body_2d.gd")
-const Projection = preload("res://scripts/runtime2d/projection_field_2d.gd")
+const WandProjectionField = preload("res://scripts/runtime2d/projection_field_2d.gd")
 const LocationRouter = preload("res://scripts/runtime2d/location_router_2d.gd")
 const AccessState = preload("res://scripts/runtime2d/access_state_2d.gd")
 const SaveStore = preload("res://scripts/runtime2d/save_store_2d.gd")
@@ -51,7 +51,7 @@ func _ready() -> void:
 	command_processor.configure_world(world_registry)
 	router = LocationRouter.new()
 	access = AccessState.new()
-	projection = Projection.new()
+	projection = WandProjectionField.new()
 	store = SaveStore.new()
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
@@ -217,7 +217,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not (camera_xy is Array) or camera_xy.size() != 2 or (mode != "FOLLOW" and mode != "LOCKED"):
 		return false
 	var new_access = AccessState.new()
-	var new_projection = Projection.new()
+	var new_projection = WandProjectionField.new()
 	if not new_access.restore(a) or not new_projection.restore(p):
 		return false
 	var destination := str(data.get("location", ""))
