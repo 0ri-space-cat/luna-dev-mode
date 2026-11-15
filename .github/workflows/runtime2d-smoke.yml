@@ -29,6 +29,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_world_laws.gd
       - name: Test AI behavior and approved ability adapters
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_behavior_abilities.gd
+      - name: Test authored doors and atomic checkpoint validation
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_authoring_contract.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
