@@ -45,6 +45,23 @@ func _run() -> void:
 	assert(game.world_registry.get_entity("DEV_ENTITY_01") != null)
 	assert(not game.world_registry.was_deleted("DEV_ENTITY_01"))
 
+	# The parallel art branch may supply arbitrary PackedScenes. A malformed
+	# replacement must leave already-mounted art untouched.
+	var valid_visual := PackedScene.new()
+	var sprite_root := Node2D.new()
+	assert(valid_visual.pack(sprite_root) == OK)
+	sprite_root.free()
+	assert(game.player.attach_visual(valid_visual))
+	assert(game.player.art_anchor.get_child_count() == 1)
+	var broken_visual := PackedScene.new()
+	var invalid_root := Node.new()
+	assert(broken_visual.pack(invalid_root) == OK)
+	invalid_root.free()
+	assert(not game.player.attach_visual(broken_visual))
+	assert(game.player.art_anchor.get_child_count() == 1)
+	assert(game.player.get_visual_scene() == valid_visual)
+	assert(game.player.attach_visual(null))
+
 	# Any future authored level can place a plain Doorway2D at its mapped
 	# coordinates and connect it to an approved route in the address catalog.
 	assert(game.router.register_door("DEV_TEST_AUTHORED_DOOR", "DEV_SANDBOX_B"))
