@@ -33,6 +33,7 @@ func import_catalog(document: Dictionary) -> bool:
 	if entries.is_empty() or entries.size() > MAX_LOCATIONS or links.size() > MAX_DOORS:
 		return _fail("Catalog exceeds bounds or has no locations")
 	var candidate = get_script().new()
+	var authored_ids := {}
 	for row in entries:
 		if not (row is Dictionary) or not (row.get("entries", null) is Dictionary):
 			return _fail("Invalid location row")
@@ -48,8 +49,18 @@ func import_catalog(document: Dictionary) -> bool:
 			if absf(float(pair[0])) > 100000.0 or absf(float(pair[1])) > 100000.0:
 				return _fail("Entry is outside safe world range")
 			prepared[str(key)] = Vector2(float(pair[0]), float(pair[1]))
+		var authored: Variant = row.get("entities", [])
+		if not (authored is Array) or authored.size() > 48:
+			return _fail("Invalid authored entities")
+		for item in authored:
+			if not (item is Dictionary):
+				return _fail("Invalid authored entity row")
+			var actor_id := str(item.get("id", ""))
+			if actor_id == "luna" or not _valid_id(actor_id) or authored_ids.has(actor_id):
+				return _fail("Duplicate or invalid authored entity ID")
+			authored_ids[actor_id] = true
 		if not candidate.register_location(str(row.get("id", "")),
-				str(row.get("scene", "")), prepared, int(row.get("required_access", 0))):
+				str(row.get("scene", "")), prepared, int(row.get("required_access", 0)), authored):
 			return _fail(candidate.last_error)
 	for row in links:
 		if not (row is Dictionary):
@@ -62,17 +73,19 @@ func import_catalog(document: Dictionary) -> bool:
 	return true
 
 
-func register_location(address: String, scene_path: String, entry_points: Dictionary, required_access: int = 0) -> bool:
+func register_location(address: String, scene_path: String, entry_points: Dictionary,
+		required_access: int = 0, authored_entities: Array = []) -> bool:
 	if not _valid_id(address) or locations.has(address) or locations.size() >= MAX_LOCATIONS:
 		return _fail("Duplicate or invalid location ID")
 	if not scene_path.begins_with("res://") or not ResourceLoader.exists(scene_path):
 		return _fail("Scene path does not exist")
-	if entry_points.is_empty() or required_access < 0 or required_access > 3:
+	if entry_points.is_empty() or required_access < 0 or required_access > 3 or authored_entities.size() > 48:
 		return _fail("Invalid entries or access")
 	for key in entry_points:
 		if not _valid_id(str(key)) or not (entry_points[key] is Vector2):
 			return _fail("Invalid entry point")
-	locations[address] = {"scene": scene_path, "entries": entry_points.duplicate(true), "access": required_access}
+	locations[address] = {"scene": scene_path, "entries": entry_points.duplicate(true),
+		"access": required_access, "entities": authored_entities.duplicate(true)}
 	last_error = ""
 	return true
 
