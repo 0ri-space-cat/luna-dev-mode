@@ -149,8 +149,8 @@ func set_entity_ability(entity_id: String, ability_id: String, enabled: bool) ->
 
 func find_nearby_entities(origin_id: String, radius: float,
 		target_group: String = "ANY") -> Array[Dictionary]:
-	var origin = world_registry.get_entity(origin_id)
-	if origin == null or (origin is not Node2D):
+	var origin: Node2D = world_registry.get_entity(origin_id) as Node2D
+	if origin == null:
 		return []
 	return world_registry.candidates_2d(origin_id, origin.global_position,
 		target_group, radius, current_location_id)
