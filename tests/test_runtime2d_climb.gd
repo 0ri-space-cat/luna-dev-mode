@@ -9,6 +9,15 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 
+func _path_length(start: Vector2, waypoints: PackedVector2Array) -> float:
+	var length := 0.0
+	var previous := start
+	for waypoint in waypoints:
+		length += previous.distance_to(waypoint)
+		previous = waypoint
+	return length
+
+
 func _run() -> void:
 	var nav = GridNavigation.new()
 	var climb_only := {"id":"DEV_CLIMB","kind":"CLIMB_REQUIRED","rect":[-12,-60,24,120]}
@@ -21,7 +30,8 @@ func _run() -> void:
 	var climb_route: PackedVector2Array = nav.get_path(Vector2(-120,0), Vector2(120,0),
 		false, false, true)
 	assert(not ground_route.is_empty() and not climb_route.is_empty())
-	assert(climb_route.size() < ground_route.size())
+	assert(_path_length(Vector2(-120,0), climb_route)
+		< _path_length(Vector2(-120,0), ground_route))
 
 	# Swimming and climbing are independent. Both together bypass their
 	# author-tagged constraints, while walls remain inaccessible to either.
