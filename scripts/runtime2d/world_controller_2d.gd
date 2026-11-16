@@ -62,6 +62,7 @@ var _live_level
 var _door
 var _serial := 0
 var _was_underside := false
+var _nav_dynamic_rejected := false
 var _checkpoints: Array[Dictionary] = []
 
 
@@ -473,9 +474,31 @@ func _physics_process(delta: float) -> void:
 	if is_instance_valid(player) and player.velocity.length_squared() > 0.01:
 		observer.facing = player.velocity.normalized()
 	observer.luna_eyes_open = luna_eyes_open
-	for law in get_tree().get_nodes_in_group("runtime2d_observation_law"):
-		if law.has_method("apply_observation"):
+	var physical_observation_walls := {}
+	if is_instance_valid(_live_level):
+		for law in get_tree().get_nodes_in_group("runtime2d_observation_law"):
+			if not _live_level.is_ancestor_of(law) or not law.has_method("apply_observation"):
+				continue
 			law.apply_observation(observation_at(law.global_position, bool(law.get("invisible_to_luna"))))
+			# An invisible, gaze-dependent body must still obstruct NPC paths
+			# whenever its real collision shape is currently solid.
+			var raw_size: Variant = law.get("physical_size")
+			if not bool(law.get("is_solid")) or not (raw_size is Vector2):
+				continue
+			var half_size: Vector2 = raw_size * 0.5
+			var p1: Vector2 = law.to_global(Vector2(-half_size.x, -half_size.y))
+			var p2: Vector2 = law.to_global(Vector2(half_size.x, -half_size.y))
+			var p3: Vector2 = law.to_global(Vector2(half_size.x, half_size.y))
+			var p4: Vector2 = law.to_global(Vector2(-half_size.x, half_size.y))
+			var lower := Vector2(minf(p1.x, p2.x, p3.x, p4.x), minf(p1.y, p2.y, p3.y, p4.y))
+			var upper := Vector2(maxf(p1.x, p2.x, p3.x, p4.x), maxf(p1.y, p2.y, p3.y, p4.y))
+			physical_observation_walls[str(law.get_instance_id())] = Rect2(lower, upper - lower)
+		if not _live_level.geometry.navigation.set_dynamic_walls(physical_observation_walls):
+			if not _nav_dynamic_rejected:
+				_nav_dynamic_rejected = true
+				integrity_notice.emit("DYNAMIC_NAVIGATION_LIMIT")
+		else:
+			_nav_dynamic_rejected = false
 	event_bus.drain(self)
 	if timeline.tick(delta):
 		timeline.record(make_snapshot())
