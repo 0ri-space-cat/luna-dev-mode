@@ -47,6 +47,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_time_modes.gd
       - name: Test real event-overflow recovery and safe checkpoints
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_recovery.gd
+      - name: Test dynamic gaze-dependent physical navigation
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_dynamic_observation_nav.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
