@@ -195,8 +195,8 @@ func mount_actor(rider_id: String, carrier_id: String,
 		offset: Vector2 = Vector2(0, -18)) -> bool:
 	if rider_id == carrier_id or not is_finite(offset.x) or not is_finite(offset.y) or offset.length() > 70.0:
 		return false
-	var rider = world_registry.get_entity(rider_id)
-	var carrier = world_registry.get_entity(carrier_id)
+	var rider: CharacterBody2D = world_registry.get_entity(rider_id) as CharacterBody2D
+	var carrier: CharacterBody2D = world_registry.get_entity(carrier_id) as CharacterBody2D
 	if rider == null or carrier == null:
 		return false
 	if str(rider.location_id) != current_location_id or str(carrier.location_id) != current_location_id:
@@ -225,10 +225,10 @@ func mount_actor(rider_id: String, carrier_id: String,
 
 
 func dismount_actor(rider_id: String) -> bool:
-	var rider = world_registry.get_entity(rider_id)
+	var rider: CharacterBody2D = world_registry.get_entity(rider_id) as CharacterBody2D
 	if rider == null or str(rider.riding_id).is_empty():
 		return false
-	var carrier = world_registry.get_entity(str(rider.riding_id))
+	var carrier: CharacterBody2D = world_registry.get_entity(str(rider.riding_id)) as CharacterBody2D
 	if carrier == null or str(rider.location_id) != current_location_id:
 		return false
 	# Prefer actual free physical ground near the carrier. Never warp a
