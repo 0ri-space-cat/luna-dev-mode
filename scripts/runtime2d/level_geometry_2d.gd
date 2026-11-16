@@ -12,6 +12,7 @@ const WALL_LAYER := 1
 const ACTOR_LAYER := 2
 const GROUND_ONLY_LAYER := 4
 const SWIM_REQUIRED_LAYER := 8
+const CLIMB_REQUIRED_LAYER := 16
 const MAX_SOLIDS := 256
 const MAX_ZONES := 96
 
@@ -50,7 +51,7 @@ func validate_description(description: Dictionary) -> bool:
 	for entry in solids:
 		if not (entry is Dictionary) or not _valid_rect(entry.get("rect", null)):
 			return _fail("Invalid solid rectangle")
-		if str(entry.get("kind", "")) not in ["WALL", "GROUND_ONLY", "SWIM_REQUIRED"]:
+		if str(entry.get("kind", "")) not in ["WALL", "GROUND_ONLY", "SWIM_REQUIRED", "CLIMB_REQUIRED"]:
 			return _fail("Unknown collision kind")
 		var solid_id := str(entry.get("id", ""))
 		if not solid_id.is_empty():
@@ -95,6 +96,8 @@ func _add_solid(rect: Rect2, kind: String, id: String) -> void:
 		wall.collision_layer = GROUND_ONLY_LAYER
 	elif kind == "SWIM_REQUIRED":
 		wall.collision_layer = SWIM_REQUIRED_LAYER
+	elif kind == "CLIMB_REQUIRED":
+		wall.collision_layer = CLIMB_REQUIRED_LAYER
 	wall.collision_mask = 0
 	var hitbox := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
