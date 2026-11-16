@@ -141,7 +141,9 @@ func _physics_process(delta: float) -> void:
 		return
 	refresh_capabilities()
 	if not riding_id.is_empty():
-		var mount: Node2D = world_registry.get_entity(riding_id) as Node2D if world_registry != null else null
+		var mount: Node2D = null
+		if world_registry != null:
+			mount = world_registry.get_entity(riding_id) as Node2D
 		if mount != null and mount != self and str(mount.get("location_id")) == location_id:
 			velocity = Vector2.ZERO
 			global_position = mount.global_position + seat_offset
