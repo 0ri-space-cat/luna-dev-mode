@@ -8,6 +8,7 @@ signal perception_changed(is_underside: bool)
 signal gameplay_event(event_data: Dictionary)
 signal entity_state_changed(change: Dictionary)
 signal integrity_notice(reason: String)
+signal recovery_available(reason: String)
 
 const ParameterRegistry = preload("res://scripts/core/parameter_registry.gd")
 const WorldRegistry = preload("res://scripts/core/world_registry.gd")
@@ -26,6 +27,7 @@ const WandEditPolicy2D = preload("res://scripts/runtime2d/wand_edit_policy_2d.gd
 const EntityBlueprint2D = preload("res://scripts/runtime2d/entity_blueprint_2d.gd")
 const WorldRuleEngine2D = preload("res://scripts/runtime2d/world_rule_engine_2d.gd")
 const WorldClock2D = preload("res://scripts/runtime2d/world_clock_2d.gd")
+const GameRecovery2D = preload("res://scripts/runtime2d/game_recovery_2d.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -50,6 +52,7 @@ var timeline
 var wand_edit_policy
 var world_rules
 var world_clock
+var recovery_guard
 var _timeline_rollback := false
 var _trusted_visuals: Dictionary = {}
 
@@ -89,6 +92,9 @@ func _ready() -> void:
 	world_rules = WorldRuleEngine2D.new()
 	world_rules.rule_rejected.connect(_on_rule_rejected)
 	world_clock = WorldClock2D.new()
+	recovery_guard = GameRecovery2D.new()
+	integrity_notice.connect(_on_gameplay_integrity)
+	recovery_guard.recovery_requested.connect(_on_recovery_requested)
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
 	assert(router.load_catalog_json(DEV_CATALOG))
@@ -98,6 +104,7 @@ func _ready() -> void:
 	camera.make_current()
 	_enter_location("DEV_SANDBOX_A")
 	timeline.reset(make_snapshot())
+	mark_safe_state()
 
 
 func _attach_actor_services(actor: Node) -> void:
@@ -310,6 +317,14 @@ func _on_event_overflow(reason: String) -> void:
 
 func _on_rule_rejected(rule_id: String, reason: String) -> void:
 	integrity_notice.emit("WORLD_RULE:%s:%s" % [rule_id, reason])
+
+
+func _on_gameplay_integrity(reason: String) -> void:
+	recovery_guard.report(reason)
+
+
+func _on_recovery_requested(reason: String) -> void:
+	recovery_available.emit(reason)
 
 
 func _on_zone_entered(zone_id: String, entity_id: String) -> void:
@@ -621,8 +636,25 @@ func rewind_world(seconds_back: float) -> bool:
 	return succeeded
 
 
+func mark_safe_state() -> bool:
+	return recovery_guard.capture(make_snapshot())
+
+
+func recover_last_safe_state() -> bool:
+	var saved: Dictionary = recovery_guard.snapshot_for_recovery()
+	if saved.is_empty():
+		return false
+	if not apply_snapshot(saved):
+		return false
+	recovery_guard.acknowledge()
+	return true
+
+
 func save_to_disk() -> bool:
-	return store.write_snapshot(make_snapshot())
+	var result: bool = store.write_snapshot(make_snapshot())
+	if result:
+		mark_safe_state()
+	return result
 
 
 func load_from_disk() -> bool:
@@ -632,6 +664,7 @@ func load_from_disk() -> bool:
 
 func record_checkpoint() -> void:
 	_checkpoints.append(make_snapshot().duplicate(true))
+	mark_safe_state()
 	if _checkpoints.size() > MAX_CHECKPOINTS:
 		_checkpoints.pop_front()
 
