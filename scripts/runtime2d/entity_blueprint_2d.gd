@@ -40,7 +40,7 @@ static func create_actor(definition: Dictionary, location_id: String, parameter_
 		if not (abilities is Dictionary) or not (abilities.get("ids", []) is Array):
 			return null
 		for ability_id in abilities.get("ids", []):
-			if str(ability_id) not in ["FLY", "SWIM", "GLOW", "REGENERATION"]:
+			if str(ability_id) not in ["FLY", "SWIM", "CLIMB", "GLOW", "REGENERATION"]:
 				return null
 	var state := {
 		"id": identity, "category": category, "label": label,
