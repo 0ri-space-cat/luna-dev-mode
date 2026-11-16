@@ -14,6 +14,7 @@ func _run() -> void:
 	root.add_child(game)
 	await physics_frame
 	assert(game.recovery_guard.has_checkpoint())
+	assert(game.mark_safe_state())
 	var actor = game.world_registry.get_entity("DEV_ENTITY_01")
 	assert(actor != null)
 	var safe: Dictionary = game.make_snapshot().duplicate(true)
