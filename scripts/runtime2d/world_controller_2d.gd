@@ -705,6 +705,25 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if new_player == null or new_player.record.id != "luna" or new_player.location_id != destination:
 		_free_unparented(built)
 		return false
+	# Validate every transport link before replacing the live world. A corrupt
+	# save cannot create cross-room riders, nested cycles or infinite stacks.
+	var staged_by_id := {}
+	for candidate in built:
+		staged_by_id[str(candidate.record.id)] = candidate
+	var passengers := {}
+	for candidate in built:
+		if str(candidate.riding_id).is_empty():
+			continue
+		var carrier = staged_by_id.get(str(candidate.riding_id), null)
+		if carrier == null or carrier == candidate or not str(carrier.riding_id).is_empty() \
+				or str(carrier.location_id) != str(candidate.location_id) \
+				or not bool(carrier.get_parameter("rideable")):
+			_free_unparented(built)
+			return false
+		passengers[carrier.record.id] = int(passengers.get(carrier.record.id, 0)) + 1
+		if int(passengers[carrier.record.id]) > 4:
+			_free_unparented(built)
+			return false
 	if not _enter_location(destination, "entry", false, new_access.avatar_access_level):
 		_free_unparented(built)
 		return false
