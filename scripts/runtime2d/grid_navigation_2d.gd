@@ -1,6 +1,6 @@
 extends RefCounted
 ## A bounded 2D A* grid derived solely from authored physical geometry.
-## The same room has separate paths for ground and FLY; painted backgrounds
+## The same room has separate paths per movement capability; painted backgrounds
 ## and game HUD never define navigation or passability.
 ##
 ## A* plans around static map solids. Dynamic actor collisions stay authoritative
@@ -16,6 +16,8 @@ var bounds := Rect2()
 var revision := 0
 var _ground: AStarGrid2D
 var _swimming: AStarGrid2D
+var _climbing: AStarGrid2D
+var _swim_climb: AStarGrid2D
 var _flight: AStarGrid2D
 var _dimension := Vector2i.ZERO
 
@@ -35,7 +37,7 @@ func configure(level_size: Vector2, solids: Array) -> bool:
 	for entry in solids:
 		if not (entry is Dictionary):
 			return _fail("Invalid solid entry")
-		if str(entry.get("kind", "")) not in ["WALL", "GROUND_ONLY", "SWIM_REQUIRED"]:
+		if str(entry.get("kind", "")) not in ["WALL", "GROUND_ONLY", "SWIM_REQUIRED", "CLIMB_REQUIRED"]:
 			return _fail("Unknown physical layer")
 		var coords: Variant = entry.get("rect", null)
 		if not (coords is Array) or coords.size() != 4:
@@ -52,6 +54,8 @@ func configure(level_size: Vector2, solids: Array) -> bool:
 		})
 	var ground := _new_grid(cells)
 	var swimming := _new_grid(cells)
+	var climbing := _new_grid(cells)
+	var swim_climb := _new_grid(cells)
 	var flight := _new_grid(cells)
 	var next_bounds := Rect2(-level_size * 0.5, level_size)
 	# A conservative radius covers the actor body and cell discretization:
@@ -63,23 +67,36 @@ func configure(level_size: Vector2, solids: Array) -> bool:
 				(float(x) + 0.5) * CELL_SIZE, (float(y) + 0.5) * CELL_SIZE)
 			var blocked_ground := false
 			var blocked_swimming := false
+			var blocked_climbing := false
+			var blocked_swim_climb := false
 			var blocked_flight := false
 			for obstacle in candidate_solids:
 				if (obstacle["rect"] as Rect2).grow(margin).has_point(center):
+					var kind: String = str(obstacle["kind"])
 					blocked_ground = true
-					if str(obstacle["kind"]) != "SWIM_REQUIRED":
+					if kind != "SWIM_REQUIRED":
 						blocked_swimming = true
-					if str(obstacle["kind"]) == "WALL":
+					if kind != "CLIMB_REQUIRED":
+						blocked_climbing = true
+					if kind in ["WALL", "GROUND_ONLY"]:
+						blocked_swim_climb = true
+					if kind == "WALL":
 						blocked_flight = true
 			var key := Vector2i(x, y)
 			if blocked_ground:
 				ground.set_point_solid(key)
 			if blocked_swimming:
 				swimming.set_point_solid(key)
+			if blocked_climbing:
+				climbing.set_point_solid(key)
+			if blocked_swim_climb:
+				swim_climb.set_point_solid(key)
 			if blocked_flight:
 				flight.set_point_solid(key)
 	_ground = ground
 	_swimming = swimming
+	_climbing = climbing
+	_swim_climb = swim_climb
 	_flight = flight
 	bounds = next_bounds
 	_dimension = cells
@@ -88,13 +105,13 @@ func configure(level_size: Vector2, solids: Array) -> bool:
 
 
 func get_path(start: Vector2, destination: Vector2, can_fly: bool = false,
-		can_swim: bool = false) -> PackedVector2Array:
+		can_swim: bool = false, can_climb: bool = false) -> PackedVector2Array:
 	var path := PackedVector2Array()
 	if _ground == null or not _finite_point(start) or not _finite_point(destination):
 		return path
 	var source: Vector2i = _to_cell(start)
 	var target: Vector2i = _to_cell(destination)
-	var grid: AStarGrid2D = _flight if can_fly else (_swimming if can_swim else _ground)
+	var grid: AStarGrid2D = _grid_for(can_fly, can_swim, can_climb)
 	if not grid.is_in_boundsv(source) or not grid.is_in_boundsv(target):
 		return path
 	var original_source: Vector2i = source
@@ -120,12 +137,25 @@ func get_path(start: Vector2, destination: Vector2, can_fly: bool = false,
 	return path
 
 
-func is_walkable(point: Vector2, can_fly: bool = false, can_swim: bool = false) -> bool:
+func is_walkable(point: Vector2, can_fly: bool = false, can_swim: bool = false,
+		can_climb: bool = false) -> bool:
 	if _ground == null or not _finite_point(point):
 		return false
 	var cell: Vector2i = _to_cell(point)
-	var grid: AStarGrid2D = _flight if can_fly else (_swimming if can_swim else _ground)
+	var grid: AStarGrid2D = _grid_for(can_fly, can_swim, can_climb)
 	return grid.is_in_boundsv(cell) and not grid.is_point_solid(cell)
+
+
+func _grid_for(can_fly: bool, can_swim: bool, can_climb: bool) -> AStarGrid2D:
+	if can_fly:
+		return _flight
+	if can_swim and can_climb:
+		return _swim_climb
+	if can_swim:
+		return _swimming
+	if can_climb:
+		return _climbing
+	return _ground
 
 
 func _nearest_clear(grid: AStarGrid2D, cell: Vector2i) -> Vector2i:
