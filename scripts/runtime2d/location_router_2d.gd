@@ -2,6 +2,8 @@ extends RefCounted
 ## Data-driven scene addresses. No locations or secrets are encoded in the router.
 ## Authoring tools register real scene paths, entry IDs and door IDs later.
 
+const WorldRuleEngine = preload("res://scripts/runtime2d/world_rule_engine_2d.gd")
+
 const MAX_LOCATIONS := 128
 const MAX_DOORS := 512
 
@@ -34,6 +36,7 @@ func import_catalog(document: Dictionary) -> bool:
 		return _fail("Catalog exceeds bounds or has no locations")
 	var candidate = get_script().new()
 	var authored_ids := {}
+	var authored_rule_ids := {}
 	for row in entries:
 		if not (row is Dictionary) or not (row.get("entries", null) is Dictionary):
 			return _fail("Invalid location row")
@@ -59,8 +62,18 @@ func import_catalog(document: Dictionary) -> bool:
 			if actor_id == "luna" or not _valid_id(actor_id) or authored_ids.has(actor_id):
 				return _fail("Duplicate or invalid authored entity ID")
 			authored_ids[actor_id] = true
+		var rules: Variant = row.get("rules", [])
+		var rule_checker = WorldRuleEngine.new()
+		if not rule_checker.validate_rules(rules):
+			return _fail(rule_checker.last_error)
+		for rule in rules:
+			var rule_id := str(rule["id"])
+			if authored_rule_ids.has(rule_id):
+				return _fail("Rule IDs must be unique across the catalog")
+			authored_rule_ids[rule_id] = true
 		if not candidate.register_location(str(row.get("id", "")),
-				str(row.get("scene", "")), prepared, int(row.get("required_access", 0)), authored):
+				str(row.get("scene", "")), prepared, int(row.get("required_access", 0)),
+				authored, rules):
 			return _fail(candidate.last_error)
 	for row in links:
 		if not (row is Dictionary):
@@ -74,18 +87,23 @@ func import_catalog(document: Dictionary) -> bool:
 
 
 func register_location(address: String, scene_path: String, entry_points: Dictionary,
-		required_access: int = 0, authored_entities: Array = []) -> bool:
+		required_access: int = 0, authored_entities: Array = [],
+		rules: Array = []) -> bool:
 	if not _valid_id(address) or locations.has(address) or locations.size() >= MAX_LOCATIONS:
 		return _fail("Duplicate or invalid location ID")
 	if not scene_path.begins_with("res://") or not ResourceLoader.exists(scene_path):
 		return _fail("Scene path does not exist")
 	if entry_points.is_empty() or required_access < 0 or required_access > 3 or authored_entities.size() > 48:
 		return _fail("Invalid entries or access")
+	var rule_checker = WorldRuleEngine.new()
+	if not rule_checker.validate_rules(rules):
+		return _fail(rule_checker.last_error)
 	for key in entry_points:
 		if not _valid_id(str(key)) or not (entry_points[key] is Vector2):
 			return _fail("Invalid entry point")
 	locations[address] = {"scene": scene_path, "entries": entry_points.duplicate(true),
-		"access": required_access, "entities": authored_entities.duplicate(true)}
+		"access": required_access, "entities": authored_entities.duplicate(true),
+		"rules": rules.duplicate(true)}
 	last_error = ""
 	return true
 
