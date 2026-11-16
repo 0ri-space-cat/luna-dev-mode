@@ -28,6 +28,7 @@ func _run() -> void:
 	var copy = game.clone_actor("luna")
 	assert(copy != null and copy.riding_id.is_empty())
 	assert(copy.record.id != game.player.record.id)
+	copy.global_position = Vector2(140,160) # Independent clone should not block the test route.
 
 	carrier.set_external_drive(Vector2.RIGHT)
 	var start_x: float = carrier.global_position.x
