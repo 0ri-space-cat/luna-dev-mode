@@ -10,6 +10,7 @@ const CELL_SIZE := 24.0
 const MAX_CELLS := 12000
 const CLEARANCE := 12.0
 const MAX_PATH_POINTS := 400
+const MAX_DYNAMIC_WALLS := 32
 
 var last_error := ""
 var bounds := Rect2()
@@ -20,6 +21,9 @@ var _climbing: AStarGrid2D
 var _swim_climb: AStarGrid2D
 var _flight: AStarGrid2D
 var _dimension := Vector2i.ZERO
+var _source_size := Vector2.ZERO
+var _authored_solids: Array = []
+var _dynamic_walls: Dictionary = {}
 
 
 func configure(level_size: Vector2, solids: Array) -> bool:
@@ -52,6 +56,8 @@ func configure(level_size: Vector2, solids: Array) -> bool:
 			"rect": Rect2(float(coords[0]), float(coords[1]),
 				float(coords[2]), float(coords[3]))
 		})
+	for wall_rect in _dynamic_walls.values():
+		candidate_solids.append({"kind": "WALL", "rect": wall_rect})
 	var ground := _new_grid(cells)
 	var swimming := _new_grid(cells)
 	var climbing := _new_grid(cells)
@@ -100,8 +106,45 @@ func configure(level_size: Vector2, solids: Array) -> bool:
 	_flight = flight
 	bounds = next_bounds
 	_dimension = cells
+	_source_size = level_size
+	_authored_solids = solids.duplicate(true)
 	revision += 1
 	return true
+
+
+## Rebuild all mobility grids only when a physical law changes solidity.
+## Passing the entire current set removes stale obstacles when a room unloads.
+## This remains a static A* planner plus a bounded dynamic overlay, not a
+## global crowd pathfinder. Every dynamic obstacle behaves as a true WALL.
+func set_dynamic_walls(walls: Dictionary) -> bool:
+	if walls.size() > MAX_DYNAMIC_WALLS:
+		return _fail("Too many observation-dependent physical walls")
+	for id in walls:
+		if str(id).is_empty() or str(id).length() > 128:
+			return _fail("Invalid dynamic obstacle identity")
+		if not (walls[id] is Rect2):
+			return _fail("Dynamic obstacle must be a Rect2")
+		var footprint: Rect2 = walls[id]
+		if not is_finite(footprint.position.x) or not is_finite(footprint.position.y) \
+				or not is_finite(footprint.size.x) or not is_finite(footprint.size.y):
+			return _fail("Non-finite dynamic obstacle")
+		if footprint.size.x < 1.0 or footprint.size.y < 1.0 \
+				or footprint.size.x > 20000.0 or footprint.size.y > 20000.0:
+			return _fail("Invalid dynamic obstacle size")
+	if walls == _dynamic_walls:
+		return true
+	if _ground == null:
+		return walls.is_empty()
+	var previous: Dictionary = _dynamic_walls.duplicate(true)
+	_dynamic_walls = walls.duplicate(true)
+	if not configure(_source_size, _authored_solids):
+		_dynamic_walls = previous
+		return false
+	return true
+
+
+func dynamic_wall_count() -> int:
+	return _dynamic_walls.size()
 
 
 func get_path(start: Vector2, destination: Vector2, can_fly: bool = false,
