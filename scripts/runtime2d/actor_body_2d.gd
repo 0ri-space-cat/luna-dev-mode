@@ -11,6 +11,7 @@ signal passive_ability_applied(event_data: Dictionary)
 
 var record
 var player_controlled := false
+var world_active := true
 var location_id := ""
 var riding_id := ""
 var seat_offset := Vector2(0, -18)
@@ -102,7 +103,10 @@ func refresh_capabilities() -> void:
 	if not has_ability("FLY") and not has_ability("CLIMB"):
 		desired_mask |= 16
 	collision_mask = desired_mask
-	if not riding_id.is_empty():
+	if not world_active:
+		collision_layer = 0
+		collision_mask = 0
+	elif not riding_id.is_empty():
 		collision_layer = 0
 		collision_mask = 0
 	else:
