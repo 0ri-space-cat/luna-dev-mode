@@ -96,6 +96,12 @@ func _run() -> void:
 	assert(not actor.visible and actor.collision_layer == 0)
 	assert(not clone.visible and clone.collision_layer == 0)
 	assert(actor.process_mode == Node.PROCESS_MODE_DISABLED)
+	# Editing an off-room actor's component must not reactivate collision in
+	# the current room (the rooms can share identical 2D coordinates).
+	assert(game.set_entity_ability(actor.record.id, "CLIMB", true))
+	assert(actor.collision_layer == 0 and actor.collision_mask == 0)
+	assert(game.command_processor.undo())
+	assert(actor.collision_layer == 0 and actor.collision_mask == 0)
 	var b_actor = game.spawn_actor("DEV_B_ENTITY", "object", "Second test room", Vector2(40, 45))
 	assert(b_actor != null and b_actor.visible)
 	var nearby_b: Array[Dictionary] = game.find_nearby_entities("luna", 10000.0)
