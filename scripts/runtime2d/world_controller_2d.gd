@@ -183,7 +183,7 @@ func request_wand_parameter_edit(target_id: String, parameter_id: String,
 
 func set_entity_ability(entity_id: String, ability_id: String, enabled: bool) -> bool:
 	# Other approved abilities await their real behavior adapters; no fake grant.
-	if ability_id not in ["FLY", "SWIM", "GLOW", "REGENERATION"]:
+	if ability_id not in ["FLY", "SWIM", "CLIMB", "GLOW", "REGENERATION"]:
 		return false
 	var actor: Node = world_registry.get_entity(entity_id)
 	if actor == null:
@@ -259,7 +259,7 @@ func _update_actor_activation() -> void:
 		child.visible = active
 		child.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
 		child.collision_layer = 2 if active else 0
-		child.collision_mask = (1 | 2 | 4 | 8) if active else 0
+		child.collision_mask = (1 | 2 | 4 | 8 | 16) if active else 0
 		child.navigation = _live_level.geometry.navigation if active else null
 		if active:
 			child.refresh_capabilities()
