@@ -140,6 +140,11 @@ func _physics_process(delta: float) -> void:
 	if record == null:
 		return
 	refresh_capabilities()
+	var factor: float = time_clock.scale() if time_clock != null else 1.0
+	var simulated_delta := delta * factor
+	var restored: Dictionary = passive_abilities.advance(self, simulated_delta)
+	if not restored.is_empty():
+		passive_ability_applied.emit(restored)
 	if not riding_id.is_empty():
 		var mount: Node2D = null
 		if world_registry != null:
@@ -151,11 +156,6 @@ func _physics_process(delta: float) -> void:
 		# Never retain a dangling attachment after deleting/unloading a mount.
 		riding_id = ""
 		refresh_capabilities()
-	var factor: float = time_clock.scale() if time_clock != null else 1.0
-	var simulated_delta := delta * factor
-	var restored: Dictionary = passive_abilities.advance(self, simulated_delta)
-	if not restored.is_empty():
-		passive_ability_applied.emit(restored)
 	var movement := Vector2.ZERO
 	if _external_motion:
 		movement = _requested_direction
