@@ -24,6 +24,7 @@ const AbilityBankService = preload("res://scripts/core/ability_bank_service.gd")
 const WorldTimeline2D = preload("res://scripts/runtime2d/world_timeline_2d.gd")
 const WandEditPolicy2D = preload("res://scripts/runtime2d/wand_edit_policy_2d.gd")
 const EntityBlueprint2D = preload("res://scripts/runtime2d/entity_blueprint_2d.gd")
+const WorldRuleEngine2D = preload("res://scripts/runtime2d/world_rule_engine_2d.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -46,6 +47,7 @@ var event_bus
 var ability_bank
 var timeline
 var wand_edit_policy
+var world_rules
 var _timeline_rollback := false
 var _trusted_visuals: Dictionary = {}
 
@@ -82,6 +84,8 @@ func _ready() -> void:
 	ability_bank = AbilityBankService.new(world_registry, command_processor)
 	timeline = WorldTimeline2D.new()
 	wand_edit_policy = WandEditPolicy2D.new()
+	world_rules = WorldRuleEngine2D.new()
+	world_rules.rule_rejected.connect(_on_rule_rejected)
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
 	assert(router.load_catalog_json(DEV_CATALOG))
@@ -285,11 +289,16 @@ func queue_world_event(event_data: Dictionary) -> bool:
 
 
 func process_event(event_data: Dictionary) -> void:
+	world_rules.process_event(event_data, self)
 	gameplay_event.emit(event_data)
 
 
 func _on_event_overflow(reason: String) -> void:
 	integrity_notice.emit(reason)
+
+
+func _on_rule_rejected(rule_id: String, reason: String) -> void:
+	integrity_notice.emit("WORLD_RULE:%s:%s" % [rule_id, reason])
 
 
 func _on_zone_entered(zone_id: String, entity_id: String) -> void:
@@ -345,6 +354,10 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 		return false
 	var staged: Variant = _prepare_authored_entities(address)
 	if staged == null:
+		next_level.free()
+		return false
+	if not world_rules.configure_location(address, router.locations[address].get("rules", [])):
+		_free_unparented(staged)
 		next_level.free()
 		return false
 	if address.begins_with("DEV_SANDBOX_"):
@@ -469,6 +482,7 @@ func make_snapshot() -> Dictionary:
 		"format": 2, "location": current_location_id,
 		"entities": entries, "routes": router.snapshot_routes(),
 		"deleted_ids": world_registry.deleted_ids(),
+		"rule_flags": world_rules.snapshot_flags(),
 		"access": access.snapshot(), "projection": projection.snapshot(),
 		"camera_mode": camera.mode,
 		"camera_position": [camera.global_position.x, camera.global_position.y],
@@ -484,6 +498,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	var incoming: Variant = data.get("entities", [])
 	var deleted: Variant = data.get("deleted_ids", [])
+	var flags: Variant = data.get("rule_flags", [])
 	var routes: Variant = data.get("routes", {})
 	var a: Variant = data.get("access", {})
 	var p: Variant = data.get("projection", {})
@@ -492,6 +507,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not (incoming is Array) or incoming.is_empty() or incoming.size() > MAX_ACTORS:
 		return false
 	if not world_registry.validate_deleted_ids(deleted) or deleted.has("luna"):
+		return false
+	if not world_rules.validate_flags(flags):
 		return false
 	if not router.validate_routes(routes) or not (a is Dictionary) or not (p is Dictionary):
 		return false
@@ -553,6 +570,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 		world_registry.register_entity(actor.record.id, actor, str(actor.record.category).to_upper())
 	player = new_player
 	world_registry.restore_deleted_ids(deleted)
+	world_rules.restore_flags(flags)
 	camera.target = player
 	command_processor.clear_history()
 	event_bus.clear_pending()
