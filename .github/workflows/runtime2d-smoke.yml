@@ -37,6 +37,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_wand_policy.gd
       - name: Test authored A-star navigation and physical detours
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_navigation.gd
+      - name: Test physical CLIMB passages and mixed traversal routes
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_climb.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
