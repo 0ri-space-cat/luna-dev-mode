@@ -370,13 +370,11 @@ func _update_actor_activation() -> void:
 		if not (child is CharacterBody2D):
 			continue
 		var active: bool = child.player_controlled or child.location_id == current_location_id
+		child.world_active = active
 		child.visible = active
 		child.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
-		child.collision_layer = 2 if active else 0
-		child.collision_mask = (1 | 2 | 4 | 8 | 16) if active else 0
 		child.navigation = _live_level.geometry.navigation if active else null
-		if active:
-			child.refresh_capabilities()
+		child.refresh_capabilities()
 
 
 func _on_entity_component_changed(change: Dictionary) -> void:
