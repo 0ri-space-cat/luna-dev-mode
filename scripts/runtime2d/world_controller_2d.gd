@@ -75,6 +75,10 @@ func _ready() -> void:
 		"id": "is_visible", "label": "IS_VISIBLE", "kind": "bool",
 		"default": true, "hint": "Видна ли сущность в обычном изображении мира."
 	})
+	parameter_registry.register_parameter({
+		"id": "rideable", "label": "RIDEABLE", "kind": "bool",
+		"default": false, "hint": "Можно ли физически сесть на эту сущность."
+	})
 	world_registry = WorldRegistry.new()
 	command_processor = CommandProcessor.new()
 	command_processor.configure_world(world_registry)
@@ -172,6 +176,10 @@ func retire_actor(entity_id: String) -> bool:
 	var actor: Node = world_registry.get_entity(entity_id)
 	if actor == null or not (actor is CharacterBody2D):
 		return false
+	for other_id in world_registry.list_ids():
+		var other = world_registry.get_entity(other_id)
+		if other != null and str(other.riding_id) == entity_id:
+			return false # Do not leave a passenger attached to a deleted carrier.
 	if not world_registry.retire_entity(entity_id):
 		return false
 	_actor_slot.remove_child(actor)
@@ -179,6 +187,89 @@ func retire_actor(entity_id: String) -> bool:
 	command_processor.clear_history()
 	queue_world_event({"type": "ENTITY_RETIRED", "entity_id": entity_id})
 	return true
+
+
+## A future transport/creature's RIDEABLE parameter controls physical
+## boarding. No special case for airships, animals or puzzle-specific mounts.
+func mount_actor(rider_id: String, carrier_id: String,
+		offset: Vector2 = Vector2(0, -18)) -> bool:
+	if rider_id == carrier_id or not is_finite(offset.x) or not is_finite(offset.y) or offset.length() > 70.0:
+		return false
+	var rider = world_registry.get_entity(rider_id)
+	var carrier = world_registry.get_entity(carrier_id)
+	if rider == null or carrier == null:
+		return false
+	if str(rider.location_id) != current_location_id or str(carrier.location_id) != current_location_id:
+		return false
+	if not str(rider.riding_id).is_empty() or not str(carrier.riding_id).is_empty():
+		return false # No unverified nested passenger/carrier chains.
+	if not bool(carrier.get_parameter("rideable")):
+		return false
+	if rider.global_position.distance_squared_to(carrier.global_position) > 52.0 * 52.0:
+		return false
+	var aboard := 0
+	for other_id in world_registry.list_ids():
+		var other = world_registry.get_entity(other_id)
+		if other != null and str(other.riding_id) == carrier_id:
+			aboard += 1
+	if aboard >= 4:
+		return false
+	rider.riding_id = carrier_id
+	rider.seat_offset = offset
+	rider.global_position = carrier.global_position + offset
+	rider.velocity = Vector2.ZERO
+	rider.refresh_capabilities()
+	queue_world_event({"type": "ENTITY_MOUNTED", "entity_id": rider_id,
+		"carrier_id": carrier_id, "location_id": current_location_id})
+	return true
+
+
+func dismount_actor(rider_id: String) -> bool:
+	var rider = world_registry.get_entity(rider_id)
+	if rider == null or str(rider.riding_id).is_empty():
+		return false
+	var carrier = world_registry.get_entity(str(rider.riding_id))
+	if carrier == null or str(rider.location_id) != current_location_id:
+		return false
+	# Prefer actual free physical ground near the carrier. Never warp a
+	# passenger through a wall or abandon it within a swim/climb-only region.
+	for radius in [36.0, 48.0, 60.0]:
+		for direction in [Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT,
+				Vector2.UP, Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(),
+				Vector2(-1, -1).normalized(), Vector2(1, -1).normalized()]:
+			var landing: Vector2 = carrier.global_position + direction * radius
+			if not _valid_dismount_space(rider, carrier, landing):
+				continue
+			var old_carrier: String = str(rider.riding_id)
+			rider.riding_id = ""
+			rider.global_position = landing
+			rider.refresh_capabilities()
+			queue_world_event({"type": "ENTITY_DISMOUNTED", "entity_id": rider_id,
+				"carrier_id": old_carrier, "location_id": current_location_id})
+			return true
+	return false
+
+
+func _valid_dismount_space(rider: CharacterBody2D, carrier: CharacterBody2D,
+		landing: Vector2) -> bool:
+	if not _live_level.geometry.navigation.is_walkable(landing,
+			rider.has_ability("FLY"), rider.has_ability("SWIM"), rider.has_ability("CLIMB")):
+		return false
+	var state := rider.get_world_2d().direct_space_state
+	var shape := CircleShape2D.new()
+	shape.radius = 11.0 * float(rider.get_parameter("size"))
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = shape
+	query.transform = Transform2D(0.0, landing)
+	query.collision_mask = 1 | 2 | 4 | 8 | 16
+	query.exclude = [rider.get_rid(), carrier.get_rid()]
+	if not state.intersect_shape(query, 8).is_empty():
+		return false
+	# A free endpoint across a wall is not a safe dismount path.
+	var ray := PhysicsRayQueryParameters2D.create(carrier.global_position, landing,
+		1 | 4 | 8 | 16)
+	ray.exclude = [rider.get_rid(), carrier.get_rid()]
+	return state.intersect_ray(ray).is_empty()
 
 
 func set_entity_parameter(entity_id: String, key: String, value: Variant) -> bool:
@@ -368,6 +459,8 @@ func _prepare_authored_entities(address: String) -> Variant:
 
 func _enter_location(address: String, entry_id: String = "entry", place_player: bool = true,
 		authority_override: int = -1) -> bool:
+	if place_player and is_instance_valid(player) and not str(player.riding_id).is_empty():
+		return false
 	var authority: int = access.avatar_access_level if authority_override < 0 else authority_override
 	var plan: Dictionary = router.resolve_address(address, authority, entry_id)
 	if not bool(plan.get("ok", false)):
@@ -448,6 +541,8 @@ func _nearest_door(max_reach: float = 100.0) -> Node:
 
 
 func enter_nearby_door() -> bool:
+	if not is_instance_valid(player) or not str(player.riding_id).is_empty():
+		return false
 	var nearby: Node = _nearest_door(100.0)
 	if nearby == null:
 		return false
