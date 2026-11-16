@@ -64,8 +64,11 @@ func _run() -> void:
 	assert(game.world_rules.has_fired("DEV_WAKE_ONCE"))
 	assert(game.world_rules.has_fired("DEV_ROUTE"))
 	assert(game.router.door_destinations["DEV_DOOR_A"] == "DEV_SANDBOX_A")
-	assert(events.any(func(e): return str(e.get("type", "")) == "AUTHOR_RULE_EVENT"
-		and str(e.get("event_id", "")) == "DEV_ZONE_ACTIVATED"))
+	var announced := false
+	for item in events:
+		if str(item.get("type", "")) == "AUTHOR_RULE_EVENT" and str(item.get("event_id", "")) == "DEV_ZONE_ACTIVATED":
+			announced = true
+	assert(announced)
 
 	var saved: Dictionary = game.make_snapshot().duplicate(true)
 	assert((saved["rule_flags"] as Array).has("DEV_WAKE_ONCE"))
