@@ -89,12 +89,12 @@ func process_event(event: Dictionary, controller: Node) -> int:
 		if count >= MAX_ACTIONS_PER_EVENT:
 			rule_rejected.emit(id, "RULE_EVENT_BUDGET")
 			break
+		if bool(rule.get("once", false)) and _fired.size() >= MAX_FIRED_FLAGS:
+			rule_rejected.emit(id, "RULE_FLAG_BUDGET")
+			continue
+		count += 1
 		if _apply_action(rule["action"], id, room_id, controller):
-			count += 1
 			if bool(rule.get("once", false)):
-				if _fired.size() >= MAX_FIRED_FLAGS and not _fired.has(id):
-					rule_rejected.emit(id, "RULE_FLAG_BUDGET")
-					continue
 				_fired[id] = true
 			rule_fired.emit(id, room_id)
 		else:
