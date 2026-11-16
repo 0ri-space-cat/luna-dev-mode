@@ -490,8 +490,12 @@ func _physics_process(delta: float) -> void:
 			var p2: Vector2 = law.to_global(Vector2(half_size.x, -half_size.y))
 			var p3: Vector2 = law.to_global(Vector2(half_size.x, half_size.y))
 			var p4: Vector2 = law.to_global(Vector2(-half_size.x, half_size.y))
-			var lower := Vector2(minf(p1.x, p2.x, p3.x, p4.x), minf(p1.y, p2.y, p3.y, p4.y))
-			var upper := Vector2(maxf(p1.x, p2.x, p3.x, p4.x), maxf(p1.y, p2.y, p3.y, p4.y))
+			var lower := Vector2(
+				minf(minf(p1.x, p2.x), minf(p3.x, p4.x)),
+				minf(minf(p1.y, p2.y), minf(p3.y, p4.y)))
+			var upper := Vector2(
+				maxf(maxf(p1.x, p2.x), maxf(p3.x, p4.x)),
+				maxf(maxf(p1.y, p2.y), maxf(p3.y, p4.y)))
 			physical_observation_walls[str(law.get_instance_id())] = Rect2(lower, upper - lower)
 		if not _live_level.geometry.navigation.set_dynamic_walls(physical_observation_walls):
 			if not _nav_dynamic_rejected:
