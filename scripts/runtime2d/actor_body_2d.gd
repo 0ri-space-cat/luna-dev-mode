@@ -5,6 +5,7 @@ extends CharacterBody2D
 const EntityRecord = preload("res://scripts/core/entity_record.gd")
 const BehaviorBrain = preload("res://scripts/runtime2d/behavior_brain_2d.gd")
 const PassiveAbilities = preload("res://scripts/runtime2d/passive_ability_runtime_2d.gd")
+const LocalAvoidance = preload("res://scripts/runtime2d/local_avoidance_2d.gd")
 
 signal passive_ability_applied(event_data: Dictionary)
 
@@ -20,6 +21,7 @@ var _requested_direction := Vector2.ZERO
 var world_registry
 var navigation
 var behavior = BehaviorBrain.new()
+var avoidance = LocalAvoidance.new()
 var passive_abilities = PassiveAbilities.new()
 var _glow_light: PointLight2D
 
@@ -140,6 +142,7 @@ func _physics_process(delta: float) -> void:
 		movement = _read_input()
 	elif bool(get_parameter("alive")) and bool(get_parameter("ai_enabled")):
 		movement = behavior.direction_for(self, world_registry, delta)
+		movement = avoidance.adjust(self, world_registry, movement, behavior.last_target_id, delta)
 	var speed_px: float = float(get_parameter("speed")) * 80.0
 	velocity = movement.normalized() * speed_px if movement.length_squared() > 0.0 else Vector2.ZERO
 	move_and_slide()
@@ -214,6 +217,7 @@ func load_snapshot(data: Dictionary, registry) -> bool:
 	if not configure(identifier, str(data.get("category", "")), str(data.get("label", "")),
 			registry, bool(data.get("player", false))):
 		return false
+	avoidance.reset()
 	for key in params:
 		var value: Variant = params[key]
 		if str(key) == "color":
