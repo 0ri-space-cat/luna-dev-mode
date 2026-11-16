@@ -19,6 +19,7 @@ var _debug_marker := true
 var _external_motion := false
 var _requested_direction := Vector2.ZERO
 var world_registry
+var time_clock
 var navigation
 var behavior = BehaviorBrain.new()
 var avoidance = LocalAvoidance.new()
@@ -132,7 +133,9 @@ func _physics_process(delta: float) -> void:
 	if record == null:
 		return
 	refresh_capabilities()
-	var restored: Dictionary = passive_abilities.advance(self, delta)
+	var factor: float = time_clock.scale() if time_clock != null else 1.0
+	var simulated_delta := delta * factor
+	var restored: Dictionary = passive_abilities.advance(self, simulated_delta)
 	if not restored.is_empty():
 		passive_ability_applied.emit(restored)
 	var movement := Vector2.ZERO
@@ -141,9 +144,9 @@ func _physics_process(delta: float) -> void:
 	elif player_controlled:
 		movement = _read_input()
 	elif bool(get_parameter("alive")) and bool(get_parameter("ai_enabled")):
-		movement = behavior.direction_for(self, world_registry, delta)
-		movement = avoidance.adjust(self, world_registry, movement, behavior.last_target_id, delta)
-	var speed_px: float = float(get_parameter("speed")) * 80.0
+		movement = behavior.direction_for(self, world_registry, simulated_delta)
+		movement = avoidance.adjust(self, world_registry, movement, behavior.last_target_id, simulated_delta)
+	var speed_px: float = float(get_parameter("speed")) * 80.0 * factor
 	velocity = movement.normalized() * speed_px if movement.length_squared() > 0.0 else Vector2.ZERO
 	move_and_slide()
 	if get_slide_collision_count() > 0 and not player_controlled:
