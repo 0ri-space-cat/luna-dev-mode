@@ -41,6 +41,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_climb.gd
       - name: Test symmetric local actor avoidance and room isolation
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_avoidance.gd
+      - name: Test author-defined world rules and one-shot persistence
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_world_rules.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
