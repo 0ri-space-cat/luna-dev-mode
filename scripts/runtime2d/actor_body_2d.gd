@@ -12,6 +12,8 @@ signal passive_ability_applied(event_data: Dictionary)
 var record
 var player_controlled := false
 var location_id := ""
+var riding_id := ""
+var seat_offset := Vector2(0, -18)
 var _visual_scene: PackedScene
 var art_anchor: Node2D
 var _collision: CollisionShape2D
@@ -100,6 +102,11 @@ func refresh_capabilities() -> void:
 	if not has_ability("FLY") and not has_ability("CLIMB"):
 		desired_mask |= 16
 	collision_mask = desired_mask
+	if not riding_id.is_empty():
+		collision_layer = 0
+		collision_mask = 0
+	else:
+		collision_layer = 2
 	if is_node_ready():
 		_glow_light = PassiveAbilities.setup_light(self, _glow_light, has_ability("GLOW"))
 
@@ -133,6 +140,15 @@ func _physics_process(delta: float) -> void:
 	if record == null:
 		return
 	refresh_capabilities()
+	if not riding_id.is_empty():
+		var mount: Node2D = world_registry.get_entity(riding_id) as Node2D if world_registry != null else null
+		if mount != null and mount != self and str(mount.get("location_id")) == location_id:
+			velocity = Vector2.ZERO
+			global_position = mount.global_position + seat_offset
+			return
+		# Never retain a dangling attachment after deleting/unloading a mount.
+		riding_id = ""
+		refresh_capabilities()
 	var factor: float = time_clock.scale() if time_clock != null else 1.0
 	var simulated_delta := delta * factor
 	var restored: Dictionary = passive_abilities.advance(self, simulated_delta)
@@ -200,6 +216,7 @@ func snapshot() -> Dictionary:
 	return {
 		"id": record.id, "category": record.category, "label": record.display_name,
 		"location_id": location_id,
+		"ride_id": riding_id, "seat_offset": [seat_offset.x, seat_offset.y],
 		"player": player_controlled, "position": [position.x, position.y],
 		"parameters": encoded, "roles": record.get_stored_roles(),
 		"tags": record.get_tags(), "components": record.get_components()
@@ -236,6 +253,17 @@ func load_snapshot(data: Dictionary, registry) -> bool:
 	location_id = str(data.get("location_id", ""))
 	if not location_id.is_empty() and not location_id.is_valid_identifier():
 		return false
+	var ride: Variant = data.get("ride_id", "")
+	var seat: Variant = data.get("seat_offset", [0, -18])
+	if typeof(ride) != TYPE_STRING or (not str(ride).is_empty() and not str(ride).is_valid_identifier()):
+		return false
+	if not (seat is Array) or seat.size() != 2:
+		return false
+	for value in seat:
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or absf(float(value)) > 80.0:
+			return false
+	riding_id = str(ride)
+	seat_offset = Vector2(float(seat[0]), float(seat[1]))
 	position = Vector2(float(coord[0]), float(coord[1]))
 	if is_node_ready():
 		_sync_visual()
@@ -248,6 +276,7 @@ func clone_as(new_id: String, offset: Vector2 = Vector2(28, 0)) -> CharacterBody
 	var info: Dictionary = snapshot()
 	info["id"] = new_id
 	info["player"] = false
+	info["ride_id"] = ""
 	info["position"] = [position.x + offset.x, position.y + offset.y]
 	if not copy.load_snapshot(info, record.registry):
 		copy.free()
