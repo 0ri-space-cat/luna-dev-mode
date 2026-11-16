@@ -25,6 +25,7 @@ const WorldTimeline2D = preload("res://scripts/runtime2d/world_timeline_2d.gd")
 const WandEditPolicy2D = preload("res://scripts/runtime2d/wand_edit_policy_2d.gd")
 const EntityBlueprint2D = preload("res://scripts/runtime2d/entity_blueprint_2d.gd")
 const WorldRuleEngine2D = preload("res://scripts/runtime2d/world_rule_engine_2d.gd")
+const WorldClock2D = preload("res://scripts/runtime2d/world_clock_2d.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -48,6 +49,7 @@ var ability_bank
 var timeline
 var wand_edit_policy
 var world_rules
+var world_clock
 var _timeline_rollback := false
 var _trusted_visuals: Dictionary = {}
 
@@ -86,6 +88,7 @@ func _ready() -> void:
 	wand_edit_policy = WandEditPolicy2D.new()
 	world_rules = WorldRuleEngine2D.new()
 	world_rules.rule_rejected.connect(_on_rule_rejected)
+	world_clock = WorldClock2D.new()
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
 	assert(router.load_catalog_json(DEV_CATALOG))
@@ -99,6 +102,7 @@ func _ready() -> void:
 
 func _attach_actor_services(actor: Node) -> void:
 	actor.world_registry = world_registry
+	actor.time_clock = world_clock
 	actor.passive_ability_applied.connect(_on_passive_ability_applied)
 
 
@@ -172,6 +176,13 @@ func retire_actor(entity_id: String) -> bool:
 func set_entity_parameter(entity_id: String, key: String, value: Variant) -> bool:
 	var actor: Node = world_registry.get_entity(entity_id)
 	return actor != null and command_processor.execute_set(actor, key, value, "luna", "wand:luna")
+
+
+func set_world_time_mode(mode: String) -> bool:
+	if not world_clock.set_mode(mode):
+		return false
+	queue_world_event({"type": "WORLD_TIME_MODE_CHANGED", "mode": world_clock.mode})
+	return true
 
 
 func request_wand_parameter_edit(target_id: String, parameter_id: String,
@@ -486,7 +497,8 @@ func make_snapshot() -> Dictionary:
 		"access": access.snapshot(), "projection": projection.snapshot(),
 		"camera_mode": camera.mode,
 		"camera_position": [camera.global_position.x, camera.global_position.y],
-		"eyes_open": luna_eyes_open
+		"eyes_open": luna_eyes_open,
+		"time_clock": world_clock.snapshot()
 	}
 
 
@@ -519,7 +531,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 			return false
 	var new_access = AccessState.new()
 	var new_projection = WandProjectionField.new()
-	if not new_access.restore(a) or not new_projection.restore(p):
+	var new_clock = WorldClock2D.new()
+	if not new_access.restore(a) or not new_projection.restore(p) or not new_clock.restore(data.get("time_clock", {"mode":"NORMAL"})):
 		return false
 	var destination := str(data.get("location", ""))
 	if not bool(router.resolve_address(destination, new_access.avatar_access_level).get("ok", false)):
@@ -578,6 +591,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	router.restore_routes(routes)
 	access = new_access
 	projection = new_projection
+	world_clock.set_mode(new_clock.mode)
 	camera.global_position = Vector2(float(camera_xy[0]), float(camera_xy[1]))
 	camera.set_mode(mode)
 	luna_eyes_open = bool(data.get("eyes_open", true))
