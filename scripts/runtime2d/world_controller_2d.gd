@@ -177,10 +177,15 @@ func retire_actor(entity_id: String) -> bool:
 	var actor: Node = world_registry.get_entity(entity_id)
 	if actor == null or not (actor is CharacterBody2D):
 		return false
+	if not str(actor.carried_by_id()).is_empty():
+		return false # First drop an object before permanently retiring it.
 	for other_id in world_registry.list_ids():
 		var other = world_registry.get_entity(other_id)
 		if other != null and str(other.riding_id) == entity_id:
 			return false # Do not leave a passenger attached to a deleted carrier.
+		if other != null and other.has_method("carried_by_id") \
+				and str(other.carried_by_id()) == entity_id:
+			return false # Same guard for physically held items.
 	if not world_registry.retire_entity(entity_id):
 		return false
 	_actor_slot.remove_child(actor)
@@ -188,6 +193,77 @@ func retire_actor(entity_id: String) -> bool:
 	command_processor.clear_history()
 	queue_world_event({"type": "ENTITY_RETIRED", "entity_id": entity_id})
 	return true
+
+
+## Physical carry uses the existing validated PICKUP component.
+## No UI slots, inventories or species-specific object exceptions live here.
+func _has_carried_entity(holder_id: String) -> bool:
+	for id in world_registry.list_ids():
+		var entity = world_registry.get_entity(id)
+		if entity != null and entity.has_method("carried_by_id") \
+				and str(entity.carried_by_id()) == holder_id:
+			return true
+	return false
+
+
+func pick_up_entity(holder_id: String, target_id: String) -> bool:
+	if holder_id == target_id or target_id == "luna":
+		return false
+	var holder: CharacterBody2D = world_registry.get_entity(holder_id) as CharacterBody2D
+	var target: CharacterBody2D = world_registry.get_entity(target_id) as CharacterBody2D
+	if holder == null or target == null:
+		return false
+	if holder.location_id != current_location_id or target.location_id != current_location_id:
+		return false
+	if not holder.riding_id.is_empty() or not target.riding_id.is_empty() \
+			or not holder.carried_by_id().is_empty() or _has_carried_entity(holder_id):
+		return false
+	if not target.record.has_component("PICKUP"):
+		return false
+	var state: Dictionary = target.record.get_component("PICKUP")
+	if not bool(state.get("enabled", false)) or not str(state.get("holder_id", "")).is_empty():
+		return false
+	if holder.global_position.distance_squared_to(target.global_position) > 64.0 * 64.0:
+		return false
+	for other_id in world_registry.list_ids():
+		var other = world_registry.get_entity(other_id)
+		if other != null and str(other.riding_id) == target_id:
+			return false # A living carrier cannot be pocketed with passengers.
+	state["holder_id"] = holder_id
+	# The original ground position is recoverable by Undo.
+	state["world_position"] = [target.global_position.x, target.global_position.y, 0.0]
+	var changed: bool = command_processor.execute_component(
+		target, "SET_COMPONENT", "PICKUP", state, holder_id, "world:pickup")
+	if changed:
+		queue_world_event({"type": "ENTITY_PICKED_UP", "entity_id": target_id,
+			"holder_id": holder_id, "location_id": current_location_id})
+	return changed
+
+
+func drop_held_entity(holder_id: String, target_id: String) -> bool:
+	var holder: CharacterBody2D = world_registry.get_entity(holder_id) as CharacterBody2D
+	var target: CharacterBody2D = world_registry.get_entity(target_id) as CharacterBody2D
+	if holder == null or target == null or str(target.carried_by_id()) != holder_id:
+		return false
+	if holder.location_id != current_location_id or target.location_id != current_location_id:
+		return false
+	for radius in [36.0, 48.0, 60.0]:
+		for direction in [Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT,
+				Vector2.UP, Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(),
+				Vector2(-1, -1).normalized(), Vector2(1, -1).normalized()]:
+			var landing: Vector2 = holder.global_position + direction * radius
+			if not _valid_dismount_space(target, holder, landing):
+				continue
+			var state: Dictionary = target.record.get_component("PICKUP")
+			state["holder_id"] = ""
+			state["world_position"] = [landing.x, landing.y, 0.0]
+			var changed: bool = command_processor.execute_component(
+				target, "SET_COMPONENT", "PICKUP", state, holder_id, "world:drop")
+			if changed:
+				queue_world_event({"type": "ENTITY_DROPPED", "entity_id": target_id,
+					"holder_id": holder_id, "location_id": current_location_id})
+			return changed
+	return false
 
 
 ## A future transport/creature's RIDEABLE parameter controls physical
@@ -202,8 +278,11 @@ func mount_actor(rider_id: String, carrier_id: String,
 		return false
 	if str(rider.location_id) != current_location_id or str(carrier.location_id) != current_location_id:
 		return false
-	if not str(rider.riding_id).is_empty() or not str(carrier.riding_id).is_empty():
-		return false # No unverified nested passenger/carrier chains.
+	if not str(rider.riding_id).is_empty() or not str(carrier.riding_id).is_empty() \
+			or not str(rider.carried_by_id()).is_empty() \
+			or not str(carrier.carried_by_id()).is_empty() \
+			or _has_carried_entity(rider_id) or _has_carried_entity(carrier_id):
+		return false # No nested carried/riding chains.
 	if not bool(carrier.get_parameter("rideable")):
 		return false
 	if rider.global_position.distance_squared_to(carrier.global_position) > 52.0 * 52.0:
@@ -458,7 +537,8 @@ func _prepare_authored_entities(address: String) -> Variant:
 
 func _enter_location(address: String, entry_id: String = "entry", place_player: bool = true,
 		authority_override: int = -1) -> bool:
-	if place_player and is_instance_valid(player) and not str(player.riding_id).is_empty():
+	if place_player and is_instance_valid(player) \
+			and (not str(player.riding_id).is_empty() or _has_carried_entity("luna")):
 		return false
 	var authority: int = access.avatar_access_level if authority_override < 0 else authority_override
 	var plan: Dictionary = router.resolve_address(address, authority, entry_id)
@@ -546,7 +626,8 @@ func _nearest_door(max_reach: float = 100.0) -> Node:
 
 
 func enter_nearby_door() -> bool:
-	if not is_instance_valid(player) or not str(player.riding_id).is_empty():
+	if not is_instance_valid(player) or not str(player.riding_id).is_empty() \
+			or _has_carried_entity("luna"):
 		return false
 	var nearby: Node = _nearest_door(100.0)
 	if nearby == null:
