@@ -57,6 +57,10 @@ func _run() -> void:
 		{"operation":"MULTIPLY", "parameter_id":"health", "value":INF}
 	]))
 	assert(game.spell_program.last_error == "INVALID_NUMERIC_OPERATION")
+	assert(not game.request_wand_spell_program(actor.record.id, [
+		{"operation":"SET", "parameter_id":"speed", "value":INF}
+	]))
+	assert(game.spell_program.last_error == "UNSAFE_VALUE")
 	var excessive: Array = []
 	for index in range(9):
 		excessive.append({"operation":"ADD", "parameter_id":"speed", "value":0.1})
