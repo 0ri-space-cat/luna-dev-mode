@@ -227,8 +227,8 @@ func pick_up_entity(holder_id: String, target_id: String) -> bool:
 		return false
 	for other_id in world_registry.list_ids():
 		var other = world_registry.get_entity(other_id)
-		if other != null and str(other.riding_id) == target_id:
-			return false # A living carrier cannot be pocketed with passengers.
+		if other != null and str(other.riding_id) in [target_id, holder_id]:
+			return false # Do not pocket or pick up a moving passenger carrier.
 	state["holder_id"] = holder_id
 	# The original ground position is recoverable by Undo.
 	state["world_position"] = [target.global_position.x, target.global_position.y, 0.0]
@@ -457,9 +457,31 @@ func _update_actor_activation() -> void:
 		child.refresh_capabilities()
 
 
+func _sync_pickup_transition(actor: Node2D, change: Dictionary) -> void:
+	var before: Variant = change.get("before", {})
+	var after: Variant = change.get("after", {})
+	if not (before is Dictionary) or not (after is Dictionary):
+		return
+	var prior: Variant = before.get("PICKUP", {})
+	var current: Variant = after.get("PICKUP", {})
+	if not (prior is Dictionary) or not (current is Dictionary):
+		return
+	if str(prior.get("holder_id", "")).is_empty() \
+			or not str(current.get("holder_id", "")).is_empty():
+		return
+	# Releasing an item uses the recorded ground position; Undo of pickup
+	# restores the original pre-pickup coordinates from the held component.
+	var record: Dictionary = prior if str(change.get("action", "")) == "UNDO_COMPONENT" else current
+	var position_value: Variant = record.get("world_position", null)
+	if not (position_value is Array) or position_value.size() != 3:
+		return
+	actor.global_position = Vector2(float(position_value[0]), float(position_value[1]))
+
+
 func _on_entity_component_changed(change: Dictionary) -> void:
 	var actor = world_registry.get_entity(str(change.get("entity_id", "")))
 	if actor != null:
+		_sync_pickup_transition(actor, change)
 		actor.refresh_capabilities()
 	entity_state_changed.emit(change)
 	queue_world_event({"type": "COMPONENT_CHANGED", "change": change.duplicate(true)})
