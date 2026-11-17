@@ -40,8 +40,11 @@ func _run() -> void:
 	assert(first.global_position == origin_a and second.global_position == origin_b)
 
 	# Caller order is deliberately shuffled. Engine must move front to rear.
-	assert(game.push_chain("luna",
-		["DEV_TRAIN_A", "DEV_TRAIN_C", "DEV_TRAIN_B"], Vector2.RIGHT, 28.0))
+	var pushed: bool = game.push_chain("luna",
+		["DEV_TRAIN_A", "DEV_TRAIN_C", "DEV_TRAIN_B"], Vector2.RIGHT, 28.0)
+	if not pushed:
+		print("PUSH_HISTORY_DIAGNOSTIC: " + str(game.last_push_error))
+	assert(pushed)
 	var moved_a: Vector2 = first.global_position
 	var moved_b: Vector2 = second.global_position
 	var moved_c: Vector2 = third.global_position
