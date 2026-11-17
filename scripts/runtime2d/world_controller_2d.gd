@@ -63,6 +63,7 @@ var _door
 var _serial := 0
 var _was_underside := false
 var _nav_dynamic_rejected := false
+var last_push_error := ""
 var _checkpoints: Array[Dictionary] = []
 
 
@@ -224,16 +225,19 @@ func push_entity(source_id: String, target_id: String, direction: Vector2,
 ## objects advance. The solver stops every body at real walls/actors.
 func push_chain(source_id: String, target_ids: Array, direction: Vector2,
 		distance_px: float = 28.0) -> bool:
+	last_push_error = ""
 	if target_ids.is_empty() or target_ids.size() > 4 \
 			or not is_finite(distance_px) or distance_px < 1.0 or distance_px > 64.0 \
 			or not is_finite(direction.x) or not is_finite(direction.y) \
 			or direction.length_squared() < 0.01:
+		last_push_error = "INVALID_REQUEST"
 		return false
 	var source: CharacterBody2D = world_registry.get_entity(source_id) as CharacterBody2D
 	if source == null or str(source.location_id) != current_location_id \
 			or source.collision_layer & 2 == 0 \
 			or not str(source.riding_id).is_empty() \
 			or not str(source.carried_by_id()).is_empty():
+		last_push_error = "INVALID_SOURCE"
 		return false
 	var heading: Vector2 = direction.normalized()
 	var sorted_targets: Array[Dictionary] = []
@@ -241,6 +245,7 @@ func push_chain(source_id: String, target_ids: Array, direction: Vector2,
 	for identity in target_ids:
 		if typeof(identity) != TYPE_STRING or identity == "luna" \
 				or str(identity) == source_id or found.has(str(identity)):
+			last_push_error = "INVALID_TARGET_ID"
 			return false
 		var target: CharacterBody2D = world_registry.get_entity(str(identity)) as CharacterBody2D
 		if target == null or str(target.location_id) != current_location_id \
@@ -249,15 +254,18 @@ func push_chain(source_id: String, target_ids: Array, direction: Vector2,
 				or not str(target.riding_id).is_empty() \
 				or not str(target.carried_by_id()).is_empty() \
 				or _has_carried_entity(str(identity)):
+			last_push_error = "INVALID_TARGET_STATE"
 			return false
 		for peer_id in world_registry.list_ids():
 			var peer = world_registry.get_entity(peer_id)
 			if peer != null and str(peer.riding_id) == str(identity):
+				last_push_error = "TARGET_HAS_PASSENGER"
 				return false
 		var difference: Vector2 = target.global_position - source.global_position
 		var ahead: float = difference.dot(heading)
 		var lateral: float = absf(difference.cross(heading))
 		if ahead <= 20.0 or lateral > 24.0:
+			last_push_error = "OUTSIDE_PUSH_LANE"
 			return false
 		found[str(identity)] = true
 		sorted_targets.append({
@@ -270,10 +278,12 @@ func push_chain(source_id: String, target_ids: Array, direction: Vector2,
 	)
 	var nearest: float = float(sorted_targets.back()["ahead"])
 	if nearest > 70.0:
+		last_push_error = "BEYOND_REACH"
 		return false
 	for i in range(sorted_targets.size() - 1):
 		var gap: float = float(sorted_targets[i]["ahead"]) - float(sorted_targets[i + 1]["ahead"])
 		if gap < 22.0 or gap > 54.0:
+			last_push_error = "CHAIN_GAP_INVALID"
 			return false
 	var motions: Array[Dictionary] = []
 	var available: float = distance_px
@@ -289,6 +299,8 @@ func push_chain(source_id: String, target_ids: Array, direction: Vector2,
 			# partial move; no Undo record or gameplay event is published.
 			target.global_position = before
 			_rollback_unrecorded_push(motions)
+			last_push_error = "PHYSICAL_COLLISION_BLOCKED:%s:%.2f/%.2f" % [
+				str(item["entity_id"]), displacement, available]
 			return false
 		available = minf(available, displacement)
 		motions.append({
@@ -297,6 +309,7 @@ func push_chain(source_id: String, target_ids: Array, direction: Vector2,
 		})
 	if not command_processor.record_physical_moves(motions, source_id, "world:push"):
 		_rollback_unrecorded_push(motions)
+		last_push_error = "HISTORY_REJECTED"
 		return false
 	for item in motions:
 		queue_world_event({
