@@ -28,6 +28,7 @@ const EntityBlueprint2D = preload("res://scripts/runtime2d/entity_blueprint_2d.g
 const WorldRuleEngine2D = preload("res://scripts/runtime2d/world_rule_engine_2d.gd")
 const WorldClock2D = preload("res://scripts/runtime2d/world_clock_2d.gd")
 const GameRecovery2D = preload("res://scripts/runtime2d/game_recovery_2d.gd")
+const PhysicalMotionBatch2D = preload("res://scripts/runtime2d/physical_motion_batch_2d.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -281,28 +282,31 @@ func push_chain(source_id: String, target_ids: Array, direction: Vector2,
 		last_push_error = "BEYOND_REACH"
 		return false
 	for i in range(sorted_targets.size() - 1):
+		var front: CharacterBody2D = sorted_targets[i]["target"]
+		var rear: CharacterBody2D = sorted_targets[i + 1]["target"]
 		var gap: float = float(sorted_targets[i]["ahead"]) - float(sorted_targets[i + 1]["ahead"])
-		if gap < 22.0 or gap > 54.0:
+		var minimum: float = 11.0 * (float(front.get_parameter("size")) \
+			+ float(rear.get_parameter("size"))) + 0.5
+		if gap < minimum or gap > 54.0:
 			last_push_error = "CHAIN_GAP_INVALID"
 			return false
+	var bodies: Array[CharacterBody2D] = []
+	for item in sorted_targets:
+		bodies.append(item["target"])
+	# Sweep the whole set against actual Godot physics BEFORE moving any
+	# member. This avoids false collisions against a front body whose
+	# transform is not yet synchronized into the physics server.
+	var common_travel: Vector2 = PhysicalMotionBatch2D.safe_common_motion(
+		bodies, heading * distance_px)
+	if common_travel.length() < 0.5:
+		last_push_error = "PHYSICAL_COLLISION_BLOCKED"
+		return false
 	var motions: Array[Dictionary] = []
-	var available: float = distance_px
 	for item in sorted_targets:
 		var target: CharacterBody2D = item["target"]
 		var before: Vector2 = target.global_position
-		target.move_and_collide(heading * available)
-		var after: Vector2 = target.global_position
-		var displacement: float = (after - before).dot(heading)
-		if displacement < 0.5 or (not motions.is_empty() and displacement + 0.75 < available):
-			# A changed obstacle or another actor blocked the chain midway.
-			# Revert every body synchronously before anyone can observe the
-			# partial move; no Undo record or gameplay event is published.
-			target.global_position = before
-			_rollback_unrecorded_push(motions)
-			last_push_error = "PHYSICAL_COLLISION_BLOCKED:%s:%.2f/%.2f" % [
-				str(item["entity_id"]), displacement, available]
-			return false
-		available = minf(available, displacement)
+		var after: Vector2 = before + common_travel
+		target.global_position = after
 		motions.append({
 			"target": target, "entity_id": str(item["entity_id"]),
 			"before": before, "after": after
