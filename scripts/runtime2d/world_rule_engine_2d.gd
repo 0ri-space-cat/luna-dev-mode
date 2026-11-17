@@ -49,7 +49,9 @@ func validate_rules(rules: Variant) -> bool:
 		if not (conditions is Array) or conditions.size() > MAX_CONDITIONS_PER_RULE:
 			return _fail("World rule condition budget exceeded")
 		for condition in conditions:
-			if not (condition is Dictionary) or not _validate_condition(condition):
+			if not (condition is Dictionary):
+				return _fail("World rule condition must be an object")
+			if not _validate_condition(condition):
 				return false
 		var action: Variant = entry.get("action", null)
 		if not (action is Dictionary):
