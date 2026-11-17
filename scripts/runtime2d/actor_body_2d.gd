@@ -15,6 +15,7 @@ var world_active := true
 var location_id := ""
 var riding_id := ""
 var seat_offset := Vector2(0, -18)
+const HELD_OFFSET := Vector2(0, -26) # Engine tuning, not canonical art
 var _visual_scene: PackedScene
 var art_anchor: Node2D
 var _collision: CollisionShape2D
@@ -93,6 +94,12 @@ func has_ability(id: String) -> bool:
 	return (record.get_component("ABILITY_SET").get("ids", []) as Array).has(id)
 
 
+func carried_by_id() -> String:
+	if record == null or not record.has_component("PICKUP"):
+		return ""
+	return str(record.get_component("PICKUP").get("holder_id", ""))
+
+
 func refresh_capabilities() -> void:
 	# FLY bypasses low/ground-only barriers, never true walls or other actors.
 	var desired_mask := 1 | 2
@@ -106,7 +113,7 @@ func refresh_capabilities() -> void:
 	if not world_active:
 		collision_layer = 0
 		collision_mask = 0
-	elif not riding_id.is_empty():
+	elif not riding_id.is_empty() or not carried_by_id().is_empty():
 		collision_layer = 0
 		collision_mask = 0
 	else:
@@ -149,6 +156,17 @@ func _physics_process(delta: float) -> void:
 	var restored: Dictionary = passive_abilities.advance(self, simulated_delta)
 	if not restored.is_empty():
 		passive_ability_applied.emit(restored)
+	var carrying_holder: String = carried_by_id()
+	if not carrying_holder.is_empty():
+		var holder: Node2D = null
+		if world_registry != null:
+			holder = world_registry.get_entity(carrying_holder) as Node2D
+		velocity = Vector2.ZERO
+		if holder != null and holder != self and str(holder.get("location_id")) == location_id:
+			global_position = holder.global_position + HELD_OFFSET
+		# Orphan links never spontaneously acquire physics or duplicate a prop:
+		# the controller rejects invalid carriers at restore/deletion.
+		return
 	if not riding_id.is_empty():
 		var mount: Node2D = null
 		if world_registry != null:
