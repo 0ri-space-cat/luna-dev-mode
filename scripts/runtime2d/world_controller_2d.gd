@@ -818,6 +818,25 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var staged_by_id := {}
 	for candidate in built:
 		staged_by_id[str(candidate.record.id)] = candidate
+	# A corrupt V2 save must not attach items to nonexistent holders, create
+	# carried cycles, or transport items between overlapping room coordinates.
+	var held_counts := {}
+	for candidate in built:
+		var picked_id: String = str(candidate.carried_by_id())
+		if picked_id.is_empty():
+			continue
+		var holder = staged_by_id.get(picked_id, null)
+		if holder == null or holder == candidate or not candidate.riding_id.is_empty() \
+				or not holder.riding_id.is_empty() \
+				or not holder.carried_by_id().is_empty() \
+				or str(holder.location_id) != str(candidate.location_id) \
+				or not bool(candidate.record.get_component("PICKUP").get("enabled", false)):
+			_free_unparented(built)
+			return false
+		held_counts[picked_id] = int(held_counts.get(picked_id, 0)) + 1
+		if int(held_counts[picked_id]) > 1:
+			_free_unparented(built)
+			return false
 	var passengers := {}
 	for candidate in built:
 		if str(candidate.riding_id).is_empty():
@@ -825,7 +844,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 		var carrier = staged_by_id.get(str(candidate.riding_id), null)
 		if carrier == null or carrier == candidate or not str(carrier.riding_id).is_empty() \
 				or str(carrier.location_id) != str(candidate.location_id) \
-				or not bool(carrier.get_parameter("rideable")):
+				or not bool(carrier.get_parameter("rideable")) \
+				or held_counts.has(str(carrier.record.id)) \
+				or held_counts.has(str(candidate.record.id)):
 			_free_unparented(built)
 			return false
 		passengers[carrier.record.id] = int(passengers.get(carrier.record.id, 0)) + 1
