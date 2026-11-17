@@ -215,34 +215,105 @@ func _has_carried_entity(holder_id: String) -> bool:
 ## the object actually travels. Any displacement is part of world snapshots.
 func push_entity(source_id: String, target_id: String, direction: Vector2,
 		distance_px: float = 28.0) -> bool:
-	if source_id == target_id or target_id == "luna" or not is_finite(distance_px) \
-			or distance_px < 1.0 or distance_px > 64.0 \
+	return push_chain(source_id, [target_id], direction, distance_px)
+
+
+## All targets share one physical movement and ONE Undo record. The caller
+## supplies explicit identities, never an unrestricted nearby wildcard.
+## The farthest object moves first, preserving the physical gap as nearer
+## objects advance. The solver stops every body at real walls/actors.
+func push_chain(source_id: String, target_ids: Array, direction: Vector2,
+		distance_px: float = 28.0) -> bool:
+	if target_ids.is_empty() or target_ids.size() > 4 \
+			or not is_finite(distance_px) or distance_px < 1.0 or distance_px > 64.0 \
 			or not is_finite(direction.x) or not is_finite(direction.y) \
 			or direction.length_squared() < 0.01:
 		return false
 	var source: CharacterBody2D = world_registry.get_entity(source_id) as CharacterBody2D
-	var target: CharacterBody2D = world_registry.get_entity(target_id) as CharacterBody2D
-	if source == null or target == null or source.location_id != current_location_id \
-			or target.location_id != current_location_id \
-			or not bool(target.get_parameter("pushable")) \
-			or not target.riding_id.is_empty() or not target.carried_by_id().is_empty():
-		return false
-	var difference: Vector2 = target.global_position - source.global_position
-	if difference.length_squared() > 70.0 * 70.0 or difference.length_squared() < 0.01:
+	if source == null or str(source.location_id) != current_location_id \
+			or source.collision_layer & 2 == 0 \
+			or not str(source.riding_id).is_empty() \
+			or not str(source.carried_by_id()).is_empty():
 		return false
 	var heading: Vector2 = direction.normalized()
-	if difference.normalized().dot(heading) < 0.5:
+	var sorted_targets: Array[Dictionary] = []
+	var found := {}
+	for identity in target_ids:
+		if typeof(identity) != TYPE_STRING or identity == "luna" \
+				or str(identity) == source_id or found.has(str(identity)):
+			return false
+		var target: CharacterBody2D = world_registry.get_entity(str(identity)) as CharacterBody2D
+		if target == null or str(target.location_id) != current_location_id \
+				or target.collision_layer & 2 == 0 \
+				or not bool(target.get_parameter("pushable")) \
+				or not str(target.riding_id).is_empty() \
+				or not str(target.carried_by_id()).is_empty() \
+				or _has_carried_entity(str(identity)):
+			return false
+		for peer_id in world_registry.list_ids():
+			var peer = world_registry.get_entity(peer_id)
+			if peer != null and str(peer.riding_id) == str(identity):
+				return false
+		var difference: Vector2 = target.global_position - source.global_position
+		var ahead: float = difference.dot(heading)
+		var lateral: float = absf(difference.cross(heading))
+		if ahead <= 20.0 or lateral > 24.0:
+			return false
+		found[str(identity)] = true
+		sorted_targets.append({
+			"target": target, "entity_id": str(identity), "ahead": ahead
+		})
+	# Deterministic ordering prevents caller-supplied IDs from changing the
+	# result and ensures stable reproducibility for saves and tests.
+	sorted_targets.sort_custom(func(a: Dictionary, b: Dictionary):
+		return float(a["ahead"]) > float(b["ahead"])
+	)
+	var nearest: float = float(sorted_targets.back()["ahead"])
+	if nearest > 70.0:
 		return false
-	var old_position: Vector2 = target.global_position
-	# Godot collision motion stops at the wall instead of teleporting across.
-	target.move_and_collide(heading * distance_px)
-	var displaced: float = old_position.distance_to(target.global_position)
-	if displaced < 0.5:
+	for i in range(sorted_targets.size() - 1):
+		var gap: float = float(sorted_targets[i]["ahead"]) - float(sorted_targets[i + 1]["ahead"])
+		if gap < 22.0 or gap > 54.0:
+			return false
+	var motions: Array[Dictionary] = []
+	var available: float = distance_px
+	for item in sorted_targets:
+		var target: CharacterBody2D = item["target"]
+		var before: Vector2 = target.global_position
+		target.move_and_collide(heading * available)
+		var after: Vector2 = target.global_position
+		var displacement: float = (after - before).dot(heading)
+		if displacement < 0.5 or displacement + 0.75 < available:
+			# A changed obstacle or another actor blocked the chain midway.
+			# Revert every body synchronously before anyone can observe the
+			# partial move; no Undo record or gameplay event is published.
+			target.global_position = before
+			_rollback_unrecorded_push(motions)
+			return false
+		available = minf(available, displacement)
+		motions.append({
+			"target": target, "entity_id": str(item["entity_id"]),
+			"before": before, "after": after
+		})
+	if not command_processor.record_physical_moves(motions, source_id, "world:push"):
+		_rollback_unrecorded_push(motions)
 		return false
-	queue_world_event({"type": "ENTITY_PUSHED", "entity_id": target_id,
-		"source_id": source_id, "distance": displaced,
-		"location_id": current_location_id})
+	for item in motions:
+		queue_world_event({
+			"type": "ENTITY_PUSHED", "entity_id": str(item["entity_id"]),
+			"source_id": source_id,
+			"distance": (item["after"] as Vector2).distance_to(item["before"]),
+			"location_id": current_location_id
+		})
 	return true
+
+
+func _rollback_unrecorded_push(motions: Array[Dictionary]) -> void:
+	for i in range(motions.size() - 1, -1, -1):
+		var motion: Dictionary = motions[i]
+		var target: CharacterBody2D = motion["target"]
+		if is_instance_valid(target):
+			target.global_position = motion["before"]
 
 
 func pick_up_entity(holder_id: String, target_id: String) -> bool:
