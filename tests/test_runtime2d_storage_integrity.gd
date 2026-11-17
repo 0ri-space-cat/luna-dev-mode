@@ -31,6 +31,19 @@ func _run() -> void:
 	assert(game.make_snapshot() == original_state)
 	assert(entered.is_empty())
 
+	# Invalid catalogs and non-finite direct entry coordinates cannot modify
+	# existing route tables, even with otherwise valid room identifiers.
+	var routes_before: Dictionary = game.router.snapshot_routes()
+	assert(not game.router.import_catalog({"locations": [
+		{"id": "DEV_BAD_ACCESS", "scene": "res://scenes/runtime2d/level_shell.tscn",
+			"entries": {"entry": [0, 0]}, "required_access": "DEVELOPER"}
+	], "doors": []}))
+	assert(game.router.snapshot_routes() == routes_before)
+	assert(not game.router.register_location("DEV_BAD_COORDINATE",
+		"res://scenes/runtime2d/level_shell.tscn",
+		{"entry": Vector2(INF, 0)}))
+	assert(game.router.snapshot_routes() == routes_before)
+
 	# A save pointing to an existing but unplayable room must also be
 	# rejected *before* tearing down the running scene.
 	var damaged: Dictionary = original_state.duplicate(true)
