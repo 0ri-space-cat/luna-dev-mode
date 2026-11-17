@@ -64,12 +64,21 @@ func _run() -> void:
 	wall.add_child(hitbox)
 	game._live_level.add_child(wall)
 	await physics_frame
+	# Physics may slightly depenetrate bodies on the registration frame.
+	# Restore the exact committed history positions before testing the new
+	# obstacle, so a rejected Undo must be caused by the swept wall itself.
+	first.global_position = moved_a
+	second.global_position = moved_b
+	third.global_position = moved_c
 	assert(not game.command_processor.undo())
 	assert(first.global_position.distance_to(moved_a) < 0.1)
 	assert(second.global_position.distance_to(moved_b) < 0.1)
 	assert(third.global_position.distance_to(moved_c) < 0.1)
 	wall.queue_free()
 	await physics_frame
+	first.global_position = moved_a
+	second.global_position = moved_b
+	third.global_position = moved_c
 	assert(game.command_processor.undo())
 	assert(first.global_position.distance_to(origin_a) < 0.1)
 	assert(second.global_position.distance_to(origin_b) < 0.1)
