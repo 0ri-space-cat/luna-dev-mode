@@ -66,6 +66,8 @@ func apply_to(controller: Node, target_id: String, program: Variant) -> bool:
 					else float(old) * float(operand)
 				if not is_finite(float(requested)):
 					return _fail("NONFINITE_RESULT")
+		if not _safe_operand(requested):
+			return _fail("UNSAFE_VALUE")
 		var checked: Dictionary = controller.parameter_registry.normalize(
 			str(record.category), field, requested)
 		if not bool(checked.get("ok", false)):
@@ -88,6 +90,23 @@ func apply_to(controller: Node, target_id: String, program: Variant) -> bool:
 			prepared, "luna", "wand:spell_program"):
 		return _fail("ATOMIC_TRANSACTION_REJECTED")
 	return true
+
+
+func _safe_operand(value: Variant) -> bool:
+	match typeof(value):
+		TYPE_BOOL:
+			return true
+		TYPE_INT, TYPE_FLOAT:
+			return is_finite(float(value)) and absf(float(value)) <= MAX_ABS_OPERAND
+		TYPE_STRING:
+			return str(value).length() <= 96
+		TYPE_COLOR:
+			var tint: Color = value
+			for channel in [tint.r, tint.g, tint.b, tint.a]:
+				if not is_finite(float(channel)) or absf(float(channel)) > 16.0:
+					return false
+			return true
+	return false
 
 
 func _fail(reason: String) -> bool:
