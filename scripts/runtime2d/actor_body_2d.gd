@@ -302,6 +302,16 @@ func clone_as(new_id: String, offset: Vector2 = Vector2(28, 0)) -> CharacterBody
 	info["player"] = false
 	info["ride_id"] = ""
 	info["position"] = [position.x + offset.x, position.y + offset.y]
+	# Cloning a held object makes an independent physical copy. It must
+	# never duplicate the original's link into the same holder.
+	var components: Dictionary = (info["components"] as Dictionary).duplicate(true)
+	if components.has("PICKUP"):
+		var pickup: Dictionary = (components["PICKUP"] as Dictionary).duplicate(true)
+		pickup["holder_id"] = ""
+		pickup["world_position"] = [float(info["position"][0]),
+			float(info["position"][1]), 0.0]
+		components["PICKUP"] = pickup
+	info["components"] = components
 	if not copy.load_snapshot(info, record.registry):
 		copy.free()
 		return null
