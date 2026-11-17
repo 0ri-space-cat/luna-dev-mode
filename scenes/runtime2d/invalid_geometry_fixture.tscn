@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/runtime2d/level_shell_2d.gd" id="1_shell"]
+
+[node name="DEV_BROKEN_ROOM" type="Node2D"]
+script = ExtResource("1_shell")
+geometry_json_path = "res://data/runtime2d/DEV_BROKEN_GEOMETRY.json"
