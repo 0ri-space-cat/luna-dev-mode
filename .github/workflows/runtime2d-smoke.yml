@@ -57,6 +57,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_physical_pickup.gd
       - name: Test P1 bounded physical pushing and wall collision
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_push.gd
+      - name: Test P1 multi-zone and parameter rule predicates
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_rule_conditions.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
