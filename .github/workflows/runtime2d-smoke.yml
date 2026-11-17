@@ -51,6 +51,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_dynamic_observation_nav.gd
       - name: Test physical RIDEABLE carrier and passenger persistence
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_riding.gd
+      - name: Test P0 map preflight and verified save backups
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_storage_integrity.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
