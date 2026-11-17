@@ -87,6 +87,14 @@ func zone_count() -> int:
 	return _zones.size()
 
 
+func find_zone(zone_id: String) -> Area2D:
+	# Only genuine physics Areas count toward author rule conditions.
+	for zone in _zones:
+		if is_instance_valid(zone) and zone.name == zone_id:
+			return zone
+	return null
+
+
 func _add_solid(rect: Rect2, kind: String, id: String) -> void:
 	var wall := StaticBody2D.new()
 	wall.name = id if not id.is_empty() else "AuthoredSolid"
