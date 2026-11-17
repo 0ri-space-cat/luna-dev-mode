@@ -10,6 +10,7 @@ signal entity_changed(change: Dictionary)
 signal history_changed
 
 const ComponentRegistry = preload("res://scripts/core/component_registry.gd")
+const PhysicalMotionBatch2D = preload("res://scripts/runtime2d/physical_motion_batch_2d.gd")
 const MAX_UNDO := 120
 const MAX_AUDIT := 300
 
@@ -466,7 +467,7 @@ func _replay_physical_motion(entry: Dictionary, forward: bool) -> bool:
 	if not forward:
 		moves.reverse()
 	var bodies: Array[CharacterBody2D] = []
-	var before_positions: Array[Vector2] = []
+	var destinations: Array[Vector2] = []
 	for move in moves:
 		var ref: WeakRef = move["target_ref"]
 		var body: CharacterBody2D = ref.get_ref() as CharacterBody2D
@@ -477,18 +478,13 @@ func _replay_physical_motion(entry: Dictionary, forward: bool) -> bool:
 		if body.global_position.distance_to(expected) > 0.25:
 			return false
 		bodies.append(body)
-		before_positions.append(body.global_position)
-	for i in range(moves.size()):
-		var move: Dictionary = moves[i]
-		var body: CharacterBody2D = bodies[i]
-		var destination: Vector2 = move["after"] if forward else move["before"]
-		# The real physical route may have changed since the original push.
-		# Failed Undo/Redo must leave every body where it was.
-		if body.test_move(body.global_transform, destination - body.global_position):
-			for j in range(i - 1, -1, -1):
-				bodies[j].global_position = before_positions[j]
-			return false
-		body.global_position = destination
+		destinations.append(move["after"] if forward else move["before"])
+	# Query the entire group against external physics at its current state,
+	# excluding only co-moving members. No bodies move on a failed replay.
+	if not PhysicalMotionBatch2D.paths_are_clear(bodies, destinations):
+		return false
+	for i in range(bodies.size()):
+		bodies[i].global_position = destinations[i]
 	_announce_physical_motion(entry, "REDO_PHYSICAL_MOVE" if forward else "UNDO_PHYSICAL_MOVE")
 	return true
 
