@@ -51,6 +51,25 @@ func _run() -> void:
 	assert(moved_a.x > origin_a.x + 26.0)
 	assert(moved_b.x > origin_b.x + 26.0)
 	assert(moved_c.x > origin_c.x + 26.0)
+	# A new unrelated physical obstacle must block Undo of the entire train.
+	# Every member stays where it was, and the history entry remains usable.
+	var wall := StaticBody2D.new()
+	wall.collision_layer = 1
+	wall.collision_mask = 0
+	wall.position = Vector2(-80, 100)
+	var hitbox := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(5, 24)
+	hitbox.shape = shape
+	wall.add_child(hitbox)
+	game._live_level.add_child(wall)
+	await physics_frame
+	assert(not game.command_processor.undo())
+	assert(first.global_position.distance_to(moved_a) < 0.1)
+	assert(second.global_position.distance_to(moved_b) < 0.1)
+	assert(third.global_position.distance_to(moved_c) < 0.1)
+	wall.queue_free()
+	await physics_frame
 	assert(game.command_processor.undo())
 	assert(first.global_position.distance_to(origin_a) < 0.1)
 	assert(second.global_position.distance_to(origin_b) < 0.1)
@@ -71,6 +90,14 @@ func _run() -> void:
 	assert(first.global_position.distance_to(origin_a) < 0.1)
 	assert(second.global_position.distance_to(origin_b) < 0.1)
 	assert(third.global_position.distance_to(origin_c) < 0.1)
+
+	# The physical chain cannot be extended with an entity from another
+	# room, even when the different rooms share the same 2D coordinates.
+	third.location_id = "DEV_SANDBOX_B"
+	assert(not game.push_chain("luna",
+		["DEV_TRAIN_A", "DEV_TRAIN_B", "DEV_TRAIN_C"], Vector2.RIGHT, 28.0))
+	assert(first.global_position.distance_to(origin_a) < 0.1)
+	third.location_id = "DEV_SANDBOX_A"
 
 	# The real 2D physical wall prevents front object from moving too far.
 	# The motion is capped by collision and the whole train follows it.
