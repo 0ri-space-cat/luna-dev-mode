@@ -61,6 +61,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_rule_conditions.gd
       - name: Test atomic multi-object physical push and Undo history
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_push_history.gd
+      - name: Test protected atomic spell program command bundles
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_spell_program.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
