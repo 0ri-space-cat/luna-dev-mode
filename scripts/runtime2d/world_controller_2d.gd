@@ -127,7 +127,7 @@ func spawn_actor(entity_id: String, category: String, label: String,
 	if world_registry.count_live() >= MAX_ACTORS:
 		integrity_notice.emit("ENTITY_BUDGET_REACHED")
 		return null
-	if world_registry.get_entity(entity_id) != null:
+	if world_registry.get_entity(entity_id) != null or world_registry.was_deleted(entity_id):
 		return null
 	var actor = Actor.new()
 	if not actor.configure(entity_id, category, label, parameter_registry, is_player):
@@ -152,7 +152,8 @@ func clone_actor(entity_id: String):
 	if original == null or not original.has_method("clone_as"):
 		return null
 	_serial += 1
-	while world_registry.get_entity("COPY_%d" % _serial) != null:
+	while world_registry.get_entity("COPY_%d" % _serial) != null \
+			or world_registry.was_deleted("COPY_%d" % _serial):
 		_serial += 1
 	var copied_id := "COPY_%d" % _serial
 	var clone = original.clone_as(copied_id)
