@@ -118,8 +118,15 @@ func _run() -> void:
 	var wall_a: Vector2 = first.global_position
 	var wall_b: Vector2 = second.global_position
 	var wall_c: Vector2 = third.global_position
-	assert(game.push_chain("luna",
-		["DEV_TRAIN_C", "DEV_TRAIN_B", "DEV_TRAIN_A"], Vector2.RIGHT, 64.0))
+	var wall_push: bool = game.push_chain("luna",
+		["DEV_TRAIN_C", "DEV_TRAIN_B", "DEV_TRAIN_A"], Vector2.RIGHT, 64.0)
+	if not wall_push:
+		print("WALL_PUSH_DIAGNOSTIC: " + str(game.last_push_error)
+			+ " | A " + str(first.global_position)
+			+ " | B " + str(second.global_position)
+			+ " | C " + str(third.global_position)
+			+ " | player " + str(game.player.global_position))
+	assert(wall_push)
 	assert(third.global_position.x > wall_c.x)
 	assert(third.global_position.x < -39.0)
 	assert(first.global_position.x > wall_a.x)
