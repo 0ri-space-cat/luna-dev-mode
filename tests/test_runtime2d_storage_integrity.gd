@@ -83,6 +83,25 @@ func _run() -> void:
 			SAVE_TEST_PATH + ".tmp"]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(file_name))
 
+	# Clones deleted in a previous session retain their identities as
+	# tombstones. A newly booted world cannot allocate that ID again.
+	var first_clone = game.clone_actor("DEV_ENTITY_01")
+	assert(first_clone != null)
+	var deleted_clone_id: String = str(first_clone.record.id)
+	assert(game.retire_actor(deleted_clone_id))
+	var tombstone_save: Dictionary = game.make_snapshot().duplicate(true)
+	var fresh = GAME.instantiate()
+	root.add_child(fresh)
+	await physics_frame
+	assert(fresh.apply_snapshot(tombstone_save))
+	assert(fresh.world_registry.was_deleted(deleted_clone_id))
+	assert(fresh.spawn_actor(deleted_clone_id, "object", "Must not respawn",
+		Vector2.ZERO) == null)
+	var second_clone = fresh.clone_actor("DEV_ENTITY_01")
+	assert(second_clone != null and second_clone.record.id != deleted_clone_id)
+	assert(fresh.world_registry.was_deleted(deleted_clone_id))
+	fresh.queue_free()
+
 	game.queue_free()
-	print("LUNA runtime2d P0: map preflight, atomic restore and backup recovery passed")
+	print("LUNA runtime2d P0: map preflight, backup recovery and clone IDs passed")
 	quit(0)
