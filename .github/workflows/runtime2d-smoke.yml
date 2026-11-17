@@ -55,6 +55,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_storage_integrity.gd
       - name: Test P1 physical PICKUP carry and drop contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_physical_pickup.gd
+      - name: Test P1 bounded physical pushing and wall collision
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_push.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
