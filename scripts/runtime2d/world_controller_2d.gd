@@ -283,7 +283,7 @@ func push_chain(source_id: String, target_ids: Array, direction: Vector2,
 		target.move_and_collide(heading * available)
 		var after: Vector2 = target.global_position
 		var displacement: float = (after - before).dot(heading)
-		if displacement < 0.5 or displacement + 0.75 < available:
+		if displacement < 0.5 or (not motions.is_empty() and displacement + 0.75 < available):
 			# A changed obstacle or another actor blocked the chain midway.
 			# Revert every body synchronously before anyone can observe the
 			# partial move; no Undo record or gameplay event is published.
