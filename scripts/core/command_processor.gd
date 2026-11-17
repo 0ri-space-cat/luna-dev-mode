@@ -404,10 +404,118 @@ func _replay_component_change(entry: Dictionary, forward: bool) -> bool:
 	return true
 
 
+## Physical world mutations are recorded AFTER the physics solver has moved
+## bodies. A grouped push is one atomic Undo/Redo transaction, not a sequence
+## of independent teleports. This is a trusted engine call, not a wand action.
+func record_physical_moves(moves: Array[Dictionary],
+		initiator_id: String = "world", source_id: String = "world:push") -> bool:
+	if moves.is_empty() or moves.size() > 4:
+		return false
+	var stored: Array[Dictionary] = []
+	var seen := {}
+	var room_id := ""
+	for move in moves:
+		var body: CharacterBody2D = move.get("target", null) as CharacterBody2D
+		var before: Variant = move.get("before", null)
+		var after: Variant = move.get("after", null)
+		if not is_instance_valid(body) or not (before is Vector2) or not (after is Vector2):
+			return false
+		var record: Variant = body.get("record")
+		if record == null or seen.has(str(record.id)) or body.collision_layer & 2 == 0:
+			return false
+		var location: String = str(body.get("location_id"))
+		if location.is_empty() or (not room_id.is_empty() and location != room_id):
+			return false
+		room_id = location
+		if not _valid_motion_point(before) or not _valid_motion_point(after) \
+				or before.distance_to(after) < 0.5 \
+				or before.distance_to(after) > 64.5 \
+				or body.global_position.distance_to(after) > 0.25:
+			return false
+		seen[str(record.id)] = true
+		stored.append({
+			"target_ref": weakref(body), "entity_id": str(record.id),
+			"before": before, "after": after, "location_id": location
+		})
+	_sequence += 1
+	var entry := {
+		"kind": "physical_motion", "sequence": _sequence,
+		"moves": stored, "entity_id": str(stored[0]["entity_id"]),
+		"parameter_id": "WORLD_POSITION",
+		"before": stored[0]["before"], "after": stored[0]["after"],
+		"initiator_id": initiator_id, "source_id": source_id
+	}
+	_undo_stack.append(entry)
+	if _undo_stack.size() > MAX_UNDO:
+		_undo_stack.pop_front()
+	_redo_stack.clear()
+	_announce_physical_motion(entry, "PHYSICAL_MOVE")
+	history_changed.emit()
+	return true
+
+
+func _valid_motion_point(position: Vector2) -> bool:
+	return is_finite(position.x) and is_finite(position.y) \
+		and absf(position.x) <= 100000.0 and absf(position.y) <= 100000.0
+
+
+func _replay_physical_motion(entry: Dictionary, forward: bool) -> bool:
+	var moves: Array = entry["moves"].duplicate()
+	# Moves are recorded front-to-back. Undo starts with the rearmost body
+	# so neither order forces one object back through the other.
+	if not forward:
+		moves.reverse()
+	var bodies: Array[CharacterBody2D] = []
+	var before_positions: Array[Vector2] = []
+	for move in moves:
+		var ref: WeakRef = move["target_ref"]
+		var body: CharacterBody2D = ref.get_ref() as CharacterBody2D
+		if not is_instance_valid(body) or body.collision_layer & 2 == 0 \
+				or str(body.get("location_id")) != str(move["location_id"]):
+			return false
+		var expected: Vector2 = move["before"] if forward else move["after"]
+		if body.global_position.distance_to(expected) > 0.25:
+			return false
+		bodies.append(body)
+		before_positions.append(body.global_position)
+	for i in range(moves.size()):
+		var move: Dictionary = moves[i]
+		var body: CharacterBody2D = bodies[i]
+		var destination: Vector2 = move["after"] if forward else move["before"]
+		# The real physical route may have changed since the original push.
+		# Failed Undo/Redo must leave every body where it was.
+		if body.test_move(body.global_transform, destination - body.global_position):
+			for j in range(i - 1, -1, -1):
+				bodies[j].global_position = before_positions[j]
+			return false
+		body.global_position = destination
+	_announce_physical_motion(entry, "REDO_PHYSICAL_MOVE" if forward else "UNDO_PHYSICAL_MOVE")
+	return true
+
+
+func _announce_physical_motion(entry: Dictionary, action: String) -> void:
+	_append_audit(action, entry, entry["before"], entry["after"])
+	for move in entry["moves"]:
+		entity_changed.emit({
+			"action": action, "entity_id": str(move["entity_id"]),
+			"location_id": str(move["location_id"]),
+			"position": move["after"] if action in ["PHYSICAL_MOVE", "REDO_PHYSICAL_MOVE"] else move["before"],
+			"initiator_id": str(entry["initiator_id"]),
+			"source_id": str(entry["source_id"])
+		})
+
+
 func undo() -> bool:
 	if _undo_stack.is_empty():
 		return false
 	var entry: Dictionary = _undo_stack.back()
+	if str(entry.get("kind", "")) == "physical_motion":
+		if not _replay_physical_motion(entry, false):
+			return false
+		_undo_stack.pop_back()
+		_redo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if str(entry.get("kind", "")) == "components":
 		if not _replay_component_change(entry, false):
 			return false
@@ -458,6 +566,13 @@ func redo() -> bool:
 	if _redo_stack.is_empty():
 		return false
 	var entry: Dictionary = _redo_stack.back()
+	if str(entry.get("kind", "")) == "physical_motion":
+		if not _replay_physical_motion(entry, true):
+			return false
+		_redo_stack.pop_back()
+		_undo_stack.append(entry)
+		history_changed.emit()
+		return true
 	if str(entry.get("kind", "")) == "components":
 		if not _replay_component_change(entry, true):
 			return false
