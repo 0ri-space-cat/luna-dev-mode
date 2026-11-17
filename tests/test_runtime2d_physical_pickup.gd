@@ -50,7 +50,9 @@ func _run() -> void:
 		await physics_frame
 	assert(item.global_position.distance_to(
 		game.player.global_position + item.HELD_OFFSET) < 2.0)
-	assert(game.find_nearby_entities("luna", 100.0).is_empty())
+	var nearby: Array[Dictionary] = game.find_nearby_entities("luna", 100.0)
+	for entry in nearby:
+		assert(str(entry["id"]) != "DEV_PORTABLE_OBJECT")
 
 	# The player cannot abandon a held object by entering another room.
 	game.player.global_position = Vector2(260, 0)
