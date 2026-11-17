@@ -20,7 +20,10 @@ func write_snapshot(data: Dictionary, path: String = PATH) -> bool:
 	# Reject any dictionary that cannot be serialized back as a JSON object.
 	# The game controller separately validates all game-specific fields before
 	# applying a save; this layer is intentionally independent of scene data.
-	var parsed: Variant = JSON.parse_string(encoded)
+	var checked_parser := JSON.new()
+	if checked_parser.parse(encoded) != OK:
+		return _fail("Save could not be decoded")
+	var parsed: Variant = checked_parser.data
 	if not (parsed is Dictionary) or not _supported_format(parsed):
 		return _fail("Save is not serializable as valid V2 JSON")
 	var temporary := path + ".tmp"
@@ -82,7 +85,10 @@ func _read_file(path: String) -> Dictionary:
 		return {}
 	var content: String = file.get_as_text()
 	file.close()
-	var value: Variant = JSON.parse_string(content)
+	var decoder := JSON.new()
+	if decoder.parse(content) != OK:
+		return {}
+	var value: Variant = decoder.data
 	if not (value is Dictionary) or not _supported_format(value):
 		return {}
 	return value as Dictionary
