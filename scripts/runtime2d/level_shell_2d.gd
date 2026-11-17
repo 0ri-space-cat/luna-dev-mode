@@ -106,8 +106,13 @@ func _read_geometry_json(path: String) -> Variant:
 		file.close()
 		last_error = "Geometry manifest exceeds 1 MiB limit"
 		return null
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	var source: String = file.get_as_text()
 	file.close()
+	var parser := JSON.new()
+	if parser.parse(source) != OK:
+		last_error = "Invalid geometry JSON"
+		return null
+	var parsed: Variant = parser.data
 	if not (parsed is Dictionary):
 		last_error = "Invalid geometry JSON"
 		return null
