@@ -6,6 +6,7 @@ const WorldRuleEngine = preload("res://scripts/runtime2d/world_rule_engine_2d.gd
 
 const MAX_LOCATIONS := 128
 const MAX_DOORS := 512
+const MAX_CATALOG_BYTES := 1024 * 1024
 
 var locations: Dictionary = {}
 var door_destinations: Dictionary = {}
@@ -15,15 +16,22 @@ var last_error := ""
 ## One author-produced catalog can be loaded after the map is drawn.
 ## Validation is transactional: a broken entry never partly changes live routes.
 func load_catalog_json(path: String) -> bool:
-	if not path.begins_with("res://"):
-		return _fail("Only bundled level manifests may be loaded")
+	if not path.begins_with("res://") or not path.ends_with(".json"):
+		return _fail("Only bundled JSON level manifests may be loaded")
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return _fail("Location catalog file not found")
-	var value: Variant = JSON.parse_string(file.get_as_text())
+	if file.get_length() <= 0 or file.get_length() > MAX_CATALOG_BYTES:
+		file.close()
+		return _fail("Location catalog exceeds resource limit")
+	var source: String = file.get_as_text()
 	file.close()
-	if not (value is Dictionary):
+	var decoder := JSON.new()
+	if decoder.parse(source) != OK:
 		return _fail("Invalid location catalog JSON")
+	var value: Variant = decoder.data
+	if not (value is Dictionary):
+		return _fail("Location catalog must be an object")
 	return import_catalog(value)
 
 
@@ -40,6 +48,10 @@ func import_catalog(document: Dictionary) -> bool:
 	for row in entries:
 		if not (row is Dictionary) or not (row.get("entries", null) is Dictionary):
 			return _fail("Invalid location row")
+		var required: Variant = row.get("required_access", 0)
+		if typeof(required) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(required)) \
+				or float(required) != floorf(float(required)):
+			return _fail("Invalid access level type")
 		var prepared: Dictionary = {}
 		for key in row["entries"].keys():
 			var pair: Variant = row["entries"][key]
@@ -72,7 +84,7 @@ func import_catalog(document: Dictionary) -> bool:
 				return _fail("Rule IDs must be unique across the catalog")
 			authored_rule_ids[rule_id] = true
 		if not candidate.register_location(str(row.get("id", "")),
-				str(row.get("scene", "")), prepared, int(row.get("required_access", 0)),
+				str(row.get("scene", "")), prepared, int(required),
 				authored, rules):
 			return _fail(candidate.last_error)
 	for row in links:
@@ -101,6 +113,10 @@ func register_location(address: String, scene_path: String, entry_points: Dictio
 	for key in entry_points:
 		if not _valid_id(str(key)) or not (entry_points[key] is Vector2):
 			return _fail("Invalid entry point")
+		var point: Vector2 = entry_points[key]
+		if not is_finite(point.x) or not is_finite(point.y) \
+				or absf(point.x) > 100000.0 or absf(point.y) > 100000.0:
+			return _fail("Invalid entry coordinate")
 	locations[address] = {"scene": scene_path, "entries": entry_points.duplicate(true),
 		"access": required_access, "entities": authored_entities.duplicate(true),
 		"rules": rules.duplicate(true)}
