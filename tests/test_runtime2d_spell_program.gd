@@ -88,10 +88,10 @@ func _run() -> void:
 		{"operation":"TOGGLE", "parameter_id":"alive"},
 		{"operation":"TOGGLE", "parameter_id":"ai_enabled"}
 	]))
-	assert(bool(actor.get_parameter("alive")))
+	assert(not bool(actor.get_parameter("alive")))
 	assert(bool(actor.get_parameter("ai_enabled")))
 	assert(game.command_processor.undo())
-	assert(not bool(actor.get_parameter("alive")))
+	assert(bool(actor.get_parameter("alive")))
 	assert(not bool(actor.get_parameter("ai_enabled")))
 
 	# V2 snapshots preserve the observed physical effect, but do not
