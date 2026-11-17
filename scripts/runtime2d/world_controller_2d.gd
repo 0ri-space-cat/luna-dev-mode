@@ -29,6 +29,7 @@ const WorldRuleEngine2D = preload("res://scripts/runtime2d/world_rule_engine_2d.
 const WorldClock2D = preload("res://scripts/runtime2d/world_clock_2d.gd")
 const GameRecovery2D = preload("res://scripts/runtime2d/game_recovery_2d.gd")
 const PhysicalMotionBatch2D = preload("res://scripts/runtime2d/physical_motion_batch_2d.gd")
+const SpellProgram2D = preload("res://scripts/runtime2d/spell_program_2d.gd")
 
 const DEV_CATALOG := "res://data/runtime2d/DEV_LOCATIONS.json"
 const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
@@ -51,6 +52,7 @@ var event_bus
 var ability_bank
 var timeline
 var wand_edit_policy
+var spell_program
 var world_rules
 var world_clock
 var recovery_guard
@@ -100,6 +102,7 @@ func _ready() -> void:
 	ability_bank = AbilityBankService.new(world_registry, command_processor)
 	timeline = WorldTimeline2D.new()
 	wand_edit_policy = WandEditPolicy2D.new()
+	spell_program = SpellProgram2D.new()
 	world_rules = WorldRuleEngine2D.new()
 	world_rules.rule_rejected.connect(_on_rule_rejected)
 	world_clock = WorldClock2D.new()
@@ -500,6 +503,13 @@ func request_wand_parameter_edit(target_id: String, parameter_id: String,
 			projection, access, parameter_registry, parameter_id):
 		return false
 	return command_processor.execute_set(actor, parameter_id, requested_value, "luna", "wand:luna")
+
+
+## Future E-spell integration: the UI may select a typed command bundle.
+## Target selection/projectile hit-testing happens elsewhere; this entry
+## checks the same permissions as the TAB wand before any parameter changes.
+func request_wand_spell_program(target_id: String, program: Variant) -> bool:
+	return spell_program.apply_to(self, target_id, program)
 
 
 func set_entity_ability(entity_id: String, ability_id: String, enabled: bool) -> bool:
