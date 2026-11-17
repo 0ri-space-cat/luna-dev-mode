@@ -1,0 +1,5 @@
+{
+  "comment": "Intentional invalid test fixture. Never load as an authored map.",
+  "solids": [{"id": "DEV_INVALID_WALL", "kind": "WALL", "rect": [0, 0, -30, 80]}],
+  "zones": []
+}
