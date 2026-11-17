@@ -110,11 +110,14 @@ func _run() -> void:
 
 	# The real 2D physical wall prevents front object from moving too far.
 	# The motion is capped by collision and the whole train follows it.
+	game.player.global_position = Vector2(-150, -160)
+	await physics_frame # Register the source at the test wall before moving props.
+	# Place the group immediately before the atomic sweep. A physics frame
+	# between independent teleports can depenetrate actors using old broadphase
+	# positions, which does not represent a player-issued push.
 	first.global_position = Vector2(-110, -160)
 	second.global_position = Vector2(-82, -160)
 	third.global_position = Vector2(-54, -160)
-	game.player.global_position = Vector2(-150, -160)
-	await physics_frame
 	var wall_a: Vector2 = first.global_position
 	var wall_b: Vector2 = second.global_position
 	var wall_c: Vector2 = third.global_position
