@@ -12,6 +12,7 @@ signal rule_rejected(rule_id: String, reason: String)
 const MAX_RULES_PER_LOCATION := 48
 const MAX_FIRED_FLAGS := 256
 const MAX_ACTIONS_PER_EVENT := 8
+const MAX_CONDITIONS_PER_RULE := 4
 const TRIGGERS := ["ZONE_ENTERED", "ZONE_EXITED"]
 const ACTIONS := ["SET_PARAMETER", "REDIRECT_DOOR", "ANNOUNCE"]
 const PROTECTED_FIELDS := ["access_level", "material"]
@@ -30,7 +31,7 @@ func validate_rules(rules: Variant) -> bool:
 		if not (entry is Dictionary):
 			return _fail("Invalid world rule entry")
 		for key in entry:
-			if str(key) not in ["id", "event", "zone_id", "actor_id", "once", "action"]:
+			if str(key) not in ["id", "event", "zone_id", "actor_id", "once", "action", "conditions"]:
 				return _fail("Unknown world rule field")
 		var rule_id := str(entry.get("id", ""))
 		var zone_id := str(entry.get("zone_id", ""))
@@ -44,6 +45,12 @@ func validate_rules(rules: Variant) -> bool:
 			return _fail("Invalid trigger actor ID")
 		if typeof(entry.get("once", false)) != TYPE_BOOL:
 			return _fail("One-shot flag must be boolean")
+		var conditions: Variant = entry.get("conditions", [])
+		if not (conditions is Array) or conditions.size() > MAX_CONDITIONS_PER_RULE:
+			return _fail("World rule condition budget exceeded")
+		for condition in conditions:
+			if not (condition is Dictionary) or not _validate_condition(condition):
+				return false
 		var action: Variant = entry.get("action", null)
 		if not (action is Dictionary):
 			return _fail("Missing rule action")
@@ -85,6 +92,8 @@ func process_event(event: Dictionary, controller: Node) -> int:
 			continue
 		var id: String = str(rule["id"])
 		if bool(rule.get("once", false)) and _fired.has(id):
+			continue
+		if not _conditions_met(rule, controller, room_id):
 			continue
 		if count >= MAX_ACTIONS_PER_EVENT:
 			rule_rejected.emit(id, "RULE_EVENT_BUDGET")
@@ -133,6 +142,80 @@ func restore_flags(data: Variant) -> bool:
 
 func has_fired(rule_id: String) -> bool:
 	return _fired.has(rule_id)
+
+
+## Authorable conditions are deliberately simple and side-effect-free.
+## An unknown condition rejects the entire catalog entry before it is mounted.
+func _validate_condition(condition: Dictionary) -> bool:
+	var kind: String = str(condition.get("type", ""))
+	var allowed := ["type"]
+	match kind:
+		"ZONE_OCCUPIED":
+			allowed.append("zone_id")
+			allowed.append("actor_id")
+			if not _valid_id(str(condition.get("zone_id", ""))):
+				return _fail("Invalid occupancy zone")
+			if condition.has("actor_id") and not _valid_id(str(condition["actor_id"])):
+				return _fail("Invalid occupancy actor")
+		"PARAMETER_EQUALS":
+			allowed.append_array(["entity_id", "parameter_id", "value"])
+			if not _valid_id(str(condition.get("entity_id", ""))) \
+					or not _valid_id(str(condition.get("parameter_id", ""))) \
+					or not condition.has("value"):
+				return _fail("Invalid parameter condition")
+			var expected: Variant = condition["value"]
+			if typeof(expected) not in [TYPE_BOOL, TYPE_INT, TYPE_FLOAT, TYPE_STRING]:
+				return _fail("Unsupported condition value")
+			if typeof(expected) == TYPE_FLOAT and not is_finite(float(expected)):
+				return _fail("Non-finite condition value")
+			if typeof(expected) == TYPE_STRING and str(expected).length() > 96:
+				return _fail("Condition text exceeds budget")
+		_:
+			return _fail("Unknown world rule condition")
+	for key in condition:
+		if str(key) not in allowed:
+			return _fail("Unknown condition field")
+	return true
+
+
+func _conditions_met(rule: Dictionary, controller: Node, room_id: String) -> bool:
+	for condition in rule.get("conditions", []):
+		match str(condition["type"]):
+			"PARAMETER_EQUALS":
+				var actor = controller.world_registry.get_entity(str(condition["entity_id"]))
+				if actor == null or str(actor.location_id) != room_id:
+					return false
+				var current: Variant = actor.get_parameter(str(condition["parameter_id"]))
+				var expected: Variant = condition["value"]
+				if current == null:
+					return false
+				if typeof(current) in [TYPE_INT, TYPE_FLOAT] \
+						and typeof(expected) in [TYPE_INT, TYPE_FLOAT]:
+					if not is_equal_approx(float(current), float(expected)):
+						return false
+				elif current != expected:
+					return false
+			"ZONE_OCCUPIED":
+				if not is_instance_valid(controller._live_level):
+					return false
+				var zone: Area2D = controller._live_level.geometry.find_zone(
+					str(condition["zone_id"]))
+				if zone == null:
+					return false
+				var occupied := false
+				for body in zone.get_overlapping_bodies():
+					if not body.has_method("get_world_location_id") \
+							or str(body.get_world_location_id()) != room_id:
+						continue
+					if condition.has("actor_id"):
+						var record: Variant = body.get("record")
+						if record == null or str(record.id) != str(condition["actor_id"]):
+							continue
+					occupied = true
+					break
+				if not occupied:
+					return false
+	return true
 
 
 func _validate_action(action: Dictionary) -> bool:
