@@ -467,7 +467,15 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 	if level_scene == null:
 		return false
 	var next_level: Node = level_scene.instantiate()
-	if not (next_level is Node2D) or not next_level.has_method("set_underside"):
+	if not (next_level is Node2D) or not next_level.has_method("set_underside") \
+			or not next_level.has_method("preflight_geometry"):
+		next_level.free()
+		return false
+	# Set any fixture geometry *before* verifying the next level; never
+	# destroy the currently playable room for a missing/corrupt map file.
+	if address.begins_with("DEV_SANDBOX_"):
+		next_level.set("geometry_json_path", DEV_GEOMETRY)
+	if not next_level.preflight_geometry():
 		next_level.free()
 		return false
 	var staged: Variant = _prepare_authored_entities(address)
@@ -478,8 +486,6 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 		_free_unparented(staged)
 		next_level.free()
 		return false
-	if address.begins_with("DEV_SANDBOX_"):
-		next_level.set("geometry_json_path", DEV_GEOMETRY)
 	if is_instance_valid(_live_level):
 		_level_slot.remove_child(_live_level)
 		_live_level.queue_free()
