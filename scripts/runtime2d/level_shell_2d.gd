@@ -38,6 +38,10 @@ func _ready() -> void:
 	geometry.level_size = level_size
 	geometry.name = "GameplayGeometry"
 	collision_root.add_child(geometry)
+	# Even a scene without a geometry JSON needs a valid, bounded navigation
+	# grid. Author-made empty rooms must allow actors to move normally.
+	if not geometry.build_from_description({"solids": [], "zones": []}):
+		push_error("Invalid empty level geometry: " + geometry.last_error)
 	geometry.zone_entered.connect(func(zone_id: String, entity_id: String):
 		zone_entered.emit(zone_id, entity_id))
 	geometry.zone_exited.connect(func(zone_id: String, entity_id: String):
@@ -59,19 +63,61 @@ func _ready() -> void:
 			push_error("Unable to load level geometry: " + last_error)
 
 
-func load_geometry(path: String) -> bool:
+const MAX_GEOMETRY_JSON_BYTES := 1024 * 1024
+
+
+## Called on an instanced, but not yet mounted, authored level. If a geometry
+## manifest is malformed, no live scene, observer, entity or route is touched.
+func preflight_geometry() -> bool:
 	last_error = ""
-	if not path.begins_with("res://"):
-		last_error = "Only bundled, authored layout files are allowed"
+	var validator = LevelGeometry.new()
+	validator.level_size = level_size
+	if not validator.navigation.configure(level_size, []):
+		last_error = validator.navigation.last_error
+		validator.free()
 		return false
+	if geometry_json_path.is_empty():
+		validator.free()
+		return true
+	var payload: Variant = _read_geometry_json(geometry_json_path)
+	if not (payload is Dictionary):
+		validator.free()
+		return false
+	if not validator.validate_description(payload):
+		last_error = validator.last_error
+		validator.free()
+		return false
+	var usable: bool = validator.navigation.configure(level_size, payload.get("solids", []))
+	if not usable:
+		last_error = validator.navigation.last_error
+	validator.free()
+	return usable
+
+
+func _read_geometry_json(path: String) -> Variant:
+	if not path.begins_with("res://"):
+		last_error = "Geometry must be a bundled authored resource"
+		return null
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		last_error = "Layout file is missing"
-		return false
+		last_error = "Geometry file is missing"
+		return null
+	if file.get_length() > MAX_GEOMETRY_JSON_BYTES:
+		file.close()
+		last_error = "Geometry manifest exceeds 1 MiB limit"
+		return null
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
 	if not (parsed is Dictionary):
-		last_error = "Invalid layout JSON"
+		last_error = "Invalid geometry JSON"
+		return null
+	return parsed
+
+
+func load_geometry(path: String) -> bool:
+	last_error = ""
+	var parsed: Variant = _read_geometry_json(path)
+	if not (parsed is Dictionary):
 		return false
 	if not geometry.build_from_description(parsed):
 		last_error = geometry.last_error
