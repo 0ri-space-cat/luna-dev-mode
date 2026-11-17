@@ -79,6 +79,10 @@ func _ready() -> void:
 		"id": "rideable", "label": "RIDEABLE", "kind": "bool",
 		"default": false, "hint": "Можно ли физически сесть на эту сущность."
 	})
+	parameter_registry.register_parameter({
+		"id": "pushable", "label": "PUSHABLE", "kind": "bool",
+		"default": false, "hint": "Можно ли физически двигать объект толчком."
+	})
 	world_registry = WorldRegistry.new()
 	command_processor = CommandProcessor.new()
 	command_processor.configure_world(world_registry)
@@ -204,6 +208,41 @@ func _has_carried_entity(holder_id: String) -> bool:
 				and str(entity.carried_by_id()) == holder_id:
 			return true
 	return false
+
+
+## Real collision-driven pushing, independent of sprite art and camera.
+## The caller may choose a bounded motion, but collision determines how far
+## the object actually travels. Any displacement is part of world snapshots.
+func push_entity(source_id: String, target_id: String, direction: Vector2,
+		distance_px: float = 28.0) -> bool:
+	if source_id == target_id or target_id == "luna" or not is_finite(distance_px) \
+			or distance_px < 1.0 or distance_px > 64.0 \
+			or not is_finite(direction.x) or not is_finite(direction.y) \
+			or direction.length_squared() < 0.01:
+		return false
+	var source: CharacterBody2D = world_registry.get_entity(source_id) as CharacterBody2D
+	var target: CharacterBody2D = world_registry.get_entity(target_id) as CharacterBody2D
+	if source == null or target == null or source.location_id != current_location_id \
+			or target.location_id != current_location_id \
+			or not bool(target.get_parameter("pushable")) \
+			or not target.riding_id.is_empty() or not target.carried_by_id().is_empty():
+		return false
+	var difference: Vector2 = target.global_position - source.global_position
+	if difference.length_squared() > 70.0 * 70.0 or difference.length_squared() < 0.01:
+		return false
+	var heading: Vector2 = direction.normalized()
+	if difference.normalized().dot(heading) < 0.5:
+		return false
+	var old_position: Vector2 = target.global_position
+	# Godot collision motion stops at the wall instead of teleporting across.
+	target.move_and_collide(heading * distance_px)
+	var displaced: float = old_position.distance_to(target.global_position)
+	if displaced < 0.5:
+		return false
+	queue_world_event({"type": "ENTITY_PUSHED", "entity_id": target_id,
+		"source_id": source_id, "distance": displaced,
+		"location_id": current_location_id})
+	return true
 
 
 func pick_up_entity(holder_id: String, target_id: String) -> bool:
