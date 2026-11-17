@@ -35,9 +35,11 @@ func _run() -> void:
 	assert(game.push_entity("luna", target.record.id, Vector2.RIGHT, 64.0))
 	assert(target.global_position.x > -64.0)
 	assert(target.global_position.x <= -40.0)
-	var at_wall: Vector2 = target.global_position
 	assert(not game.push_entity("luna", target.record.id, Vector2.RIGHT, 64.0)
 		or target.global_position.x <= -40.0)
+	# A second contact can consume a tiny safe-margin displacement.
+	# Compare the restored position with the actual saved state.
+	var at_wall: Vector2 = target.global_position
 	var checkpoint: Dictionary = game.make_snapshot().duplicate(true)
 	target.global_position = Vector2(40, 100)
 	assert(game.apply_snapshot(checkpoint))
