@@ -1,4 +1,4 @@
-; Godot 4 project: LUNA: DEV MODE — prototype 0.27 (save-format version is independent)
+; Experimental standalone 2D runtime scaffold (NOT the rejected old 3D graybox or puppet-style 2D prototype).
 config_version=5
 
 [application]
