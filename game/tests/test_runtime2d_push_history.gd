@@ -1,0 +1,152 @@
+extends SceneTree
+## A physical push and an entire short train of PUSHABLE objects form one
+## reversible CommandProcessor transaction. No teleporting through walls.
+const GAME = preload("res://scenes/runtime2d/sandbox.tscn")
+
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	var game = GAME.instantiate()
+	root.add_child(game)
+	await physics_frame
+
+	# Unrelated old NPC cannot affect the test train.
+	var npc = game.world_registry.get_entity("DEV_ENTITY_01")
+	assert(npc != null)
+	assert(game.set_entity_parameter(npc.record.id, "ai_enabled", false))
+	npc.global_position = Vector2(350, 200)
+	var first = game.spawn_actor("DEV_TRAIN_A", "object", "Push A", Vector2(-90, 100))
+	var second = game.spawn_actor("DEV_TRAIN_B", "object", "Push B", Vector2(-62, 100))
+	var third = game.spawn_actor("DEV_TRAIN_C", "object", "Push C", Vector2(-34, 100))
+	assert(first != null and second != null and third != null)
+	for target in [first, second, third]:
+		assert(game.set_entity_parameter(target.record.id, "ai_enabled", false))
+		assert(game.set_entity_parameter(target.record.id, "pushable", true))
+	game.player.global_position = Vector2(-130, 100)
+	await physics_frame
+
+	var origin_a: Vector2 = first.global_position
+	var origin_b: Vector2 = second.global_position
+	var origin_c: Vector2 = third.global_position
+	assert(not game.push_chain("luna", ["DEV_TRAIN_A", "DEV_TRAIN_A"],
+		Vector2.RIGHT, 28.0))
+	assert(not game.push_chain("luna", ["DEV_TRAIN_A", "DOES_NOT_EXIST"],
+		Vector2.RIGHT, 28.0))
+	assert(not game.push_chain("luna", ["DEV_TRAIN_A", "DEV_TRAIN_B"],
+		Vector2.LEFT, 28.0))
+	assert(first.global_position == origin_a and second.global_position == origin_b)
+
+	# Caller order is deliberately shuffled. Engine must move front to rear.
+	var pushed: bool = game.push_chain("luna",
+		["DEV_TRAIN_A", "DEV_TRAIN_C", "DEV_TRAIN_B"], Vector2.RIGHT, 28.0)
+	if not pushed:
+		print("PUSH_HISTORY_DIAGNOSTIC: " + str(game.last_push_error))
+	assert(pushed)
+	var moved_a: Vector2 = first.global_position
+	var moved_b: Vector2 = second.global_position
+	var moved_c: Vector2 = third.global_position
+	assert(moved_a.x > origin_a.x + 26.0)
+	assert(moved_b.x > origin_b.x + 26.0)
+	assert(moved_c.x > origin_c.x + 26.0)
+	# A new unrelated physical obstacle must block Undo of the entire train.
+	# Every member stays where it was, and the history entry remains usable.
+	var wall := StaticBody2D.new()
+	wall.collision_layer = 1
+	wall.collision_mask = 0
+	wall.position = Vector2(-80, 100)
+	var hitbox := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(5, 24)
+	hitbox.shape = shape
+	wall.add_child(hitbox)
+	game._live_level.add_child(wall)
+	await physics_frame
+	# Physics may slightly depenetrate bodies on the registration frame.
+	# Restore the exact committed history positions before testing the new
+	# obstacle, so a rejected Undo must be caused by the swept wall itself.
+	first.global_position = moved_a
+	second.global_position = moved_b
+	third.global_position = moved_c
+	assert(not game.command_processor.undo())
+	assert(first.global_position.distance_to(moved_a) < 0.1)
+	assert(second.global_position.distance_to(moved_b) < 0.1)
+	assert(third.global_position.distance_to(moved_c) < 0.1)
+	wall.queue_free()
+	await physics_frame
+	first.global_position = moved_a
+	second.global_position = moved_b
+	third.global_position = moved_c
+	assert(game.command_processor.undo())
+	assert(first.global_position.distance_to(origin_a) < 0.1)
+	assert(second.global_position.distance_to(origin_b) < 0.1)
+	assert(third.global_position.distance_to(origin_c) < 0.1)
+	assert(game.command_processor.redo())
+	assert(first.global_position.distance_to(moved_a) < 0.1)
+	assert(second.global_position.distance_to(moved_b) < 0.1)
+	assert(third.global_position.distance_to(moved_c) < 0.1)
+
+	# External movement invalidates a stale history entry without damaging
+	# the real world or consuming the Undo record.
+	first.global_position += Vector2(0, 40)
+	assert(not game.command_processor.undo())
+	assert(second.global_position.distance_to(moved_b) < 0.1)
+	assert(third.global_position.distance_to(moved_c) < 0.1)
+	first.global_position = moved_a
+	assert(game.command_processor.undo())
+	assert(first.global_position.distance_to(origin_a) < 0.1)
+	assert(second.global_position.distance_to(origin_b) < 0.1)
+	assert(third.global_position.distance_to(origin_c) < 0.1)
+
+	# The physical chain cannot be extended with an entity from another
+	# room, even when the different rooms share the same 2D coordinates.
+	third.location_id = "DEV_SANDBOX_B"
+	assert(not game.push_chain("luna",
+		["DEV_TRAIN_A", "DEV_TRAIN_B", "DEV_TRAIN_C"], Vector2.RIGHT, 28.0))
+	assert(first.global_position.distance_to(origin_a) < 0.1)
+	third.location_id = "DEV_SANDBOX_A"
+
+	# The real 2D physical wall prevents front object from moving too far.
+	# The motion is capped by collision and the whole train follows it.
+	game.player.global_position = Vector2(-150, -160)
+	await physics_frame # Register the source at the test wall before moving props.
+	# Place the group immediately before the atomic sweep. A physics frame
+	# between independent teleports can depenetrate actors using old broadphase
+	# positions, which does not represent a player-issued push.
+	first.global_position = Vector2(-110, -160)
+	second.global_position = Vector2(-82, -160)
+	third.global_position = Vector2(-54, -160)
+	var wall_a: Vector2 = first.global_position
+	var wall_b: Vector2 = second.global_position
+	var wall_c: Vector2 = third.global_position
+	var wall_push: bool = game.push_chain("luna",
+		["DEV_TRAIN_C", "DEV_TRAIN_B", "DEV_TRAIN_A"], Vector2.RIGHT, 64.0)
+	if not wall_push:
+		print("WALL_PUSH_DIAGNOSTIC: " + str(game.last_push_error)
+			+ " | A " + str(first.global_position)
+			+ " | B " + str(second.global_position)
+			+ " | C " + str(third.global_position)
+			+ " | player " + str(game.player.global_position))
+	assert(wall_push)
+	assert(third.global_position.x > wall_c.x)
+	assert(third.global_position.x < -39.0)
+	assert(first.global_position.x > wall_a.x)
+	assert(game.command_processor.undo())
+	assert(first.global_position.distance_to(wall_a) < 0.1)
+	assert(second.global_position.distance_to(wall_b) < 0.1)
+	assert(third.global_position.distance_to(wall_c) < 0.1)
+
+	# A saved snapshot preserves positions after gameplay and reload.
+	var snapshot: Dictionary = game.make_snapshot().duplicate(true)
+	first.global_position = Vector2(240, 190)
+	assert(game.apply_snapshot(snapshot))
+	first = game.world_registry.get_entity("DEV_TRAIN_A")
+	assert(first.global_position.distance_to(wall_a) < 0.1)
+	assert(game.world_registry.get_entity("DEV_TRAIN_B").global_position.distance_to(wall_b) < 0.1)
+	assert(game.world_registry.get_entity("DEV_TRAIN_C").global_position.distance_to(wall_c) < 0.1)
+
+	game.queue_free()
+	print("LUNA runtime2d P1: atomic multi-body push, collision-limited Undo/Redo passed")
+	quit(0)

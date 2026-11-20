@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://preview.gd" id="1"]
+[ext_resource type="PackedScene" path="res://hack_window.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://hud.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://yuki_console.tscn" id="4"]
+
+[node name="UIPreview" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture_filter = 1
+script = ExtResource("1")
+
+[node name="HUD" parent="." instance=ExtResource("3")]
+
+[node name="Toolbar" type="HBoxContainer" parent="."]
+offset_left = 430.0
+offset_top = 18.0
+
+[node name="Profiles" type="OptionButton" parent="Toolbar"]
+
+[node name="HackWindow" parent="." instance=ExtResource("2")]
+offset_left = 806.0
+offset_top = 177.0
+offset_right = 1262.0
+offset_bottom = 625.0
+
+[node name="Console" parent="." instance=ExtResource("4")]
+offset_left = 425.0
+offset_top = 181.0
+offset_right = 1045.0
+offset_bottom = 477.0
+visible = false

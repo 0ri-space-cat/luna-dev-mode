@@ -1,0 +1,807 @@
+{
+  "front": {
+    "unarmed_idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_unarmed_idle_00.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      }
+    ],
+    "unarmed_walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_unarmed_walk_00.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_unarmed_walk_01.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_unarmed_walk_02.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_unarmed_walk_03.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      }
+    ],
+    "run": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_run_00.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_run_01.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_run_02.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_run_03.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      }
+    ],
+    "cast": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_cast_00.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      }
+    ],
+    "cast_move": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_cast_move_00.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_cast_move_01.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_cast_move_02.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_cast_move_03.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      }
+    ],
+    "windup": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front/master_windup_00.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "reference_height": 1468,
+        "final_palette": true
+      }
+    ]
+  },
+  "front_right": {
+    "unarmed_idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_unarmed_idle_00.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      }
+    ],
+    "unarmed_walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_unarmed_walk_00.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_unarmed_walk_01.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_unarmed_walk_02.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_unarmed_walk_03.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      }
+    ],
+    "run": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_run_00.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_run_01.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_run_02.png",
+        "pivot": [
+          474,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_run_03.png",
+        "pivot": [
+          489,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      }
+    ],
+    "cast": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_cast_00.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      }
+    ],
+    "cast_move": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_cast_move_00.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_cast_move_01.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_cast_move_02.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_cast_move_03.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      }
+    ],
+    "windup": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/front_right/master_windup_00.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222,
+        "reference_height": 1222,
+        "final_palette": true
+      }
+    ]
+  },
+  "side_right": {
+    "unarmed_idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_unarmed_idle_00.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      }
+    ],
+    "unarmed_walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_unarmed_walk_00.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_unarmed_walk_01.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_unarmed_walk_02.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_unarmed_walk_03.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      }
+    ],
+    "run": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_run_00.png",
+        "pivot": [
+          475,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_run_01.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_run_02.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_run_03.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      }
+    ],
+    "cast": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_cast_00.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      }
+    ],
+    "cast_move": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_cast_move_00.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_cast_move_01.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_cast_move_02.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_cast_move_03.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      }
+    ],
+    "windup": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/side_right/master_windup_00.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "reference_height": 1492,
+        "final_palette": true
+      }
+    ]
+  },
+  "back": {
+    "unarmed_idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_unarmed_idle_00.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      }
+    ],
+    "unarmed_walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_unarmed_walk_00.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_unarmed_walk_01.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_unarmed_walk_02.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_unarmed_walk_03.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      }
+    ],
+    "run": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_run_00.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_run_01.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_run_02.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_run_03.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      }
+    ],
+    "cast": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_cast_00.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      }
+    ],
+    "cast_move": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_cast_move_00.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_cast_move_01.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_cast_move_02.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_cast_move_03.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      }
+    ],
+    "windup": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back/master_windup_00.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "reference_height": 1558,
+        "final_palette": true
+      }
+    ]
+  },
+  "back_right": {
+    "run": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_run_00.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_run_01.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_run_02.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_run_03.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      }
+    ],
+    "cast": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_cast_00.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      }
+    ],
+    "cast_move": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_cast_move_00.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_cast_move_01.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_cast_move_02.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_cast_move_03.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      }
+    ],
+    "windup": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_windup_00.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      }
+    ],
+    "unarmed_idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_unarmed_idle_00.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      }
+    ],
+    "unarmed_walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_unarmed_walk_00.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_unarmed_walk_01.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_unarmed_walk_02.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_actions/back_right/master_unarmed_walk_03.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "source": {
+    "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/main/docs/canon/25_V6_FINAL_AUTHOR_ARTIFACT_ROSTER.md",
+    "blob": "9a537a0224ea1f1b14571bf67a860f519cb75492"
+  },
+  "artifacts": [
+    {
+      "key": "time-button",
+      "name": "Кнопка времени"
+    },
+    {
+      "key": "game-camera",
+      "name": "Игровая камера"
+    },
+    {
+      "key": "monocle",
+      "name": "Монокль"
+    },
+    {
+      "key": "compass",
+      "name": "Компас"
+    },
+    {
+      "key": "gravity-gun",
+      "name": "Гравипушка"
+    },
+    {
+      "key": "portal-gun",
+      "name": "Портал ган"
+    },
+    {
+      "key": "hourglass",
+      "name": "Песочные часы"
+    },
+    {
+      "key": "yuki-console",
+      "name": "Консоль Юки"
+    },
+    {
+      "key": "luna-room-door",
+      "name": "Дверь в комнату Луны"
+    },
+    {
+      "key": "miya-potion",
+      "name": "Зелье Мии"
+    },
+    {
+      "key": "toffi-lantern",
+      "name": "Фонарь Тоффи"
+    },
+    {
+      "key": "leya-heart",
+      "name": "Сердце Леи"
+    },
+    {
+      "key": "ori-catalogue",
+      "name": "Каталог Ори"
+    },
+    {
+      "key": "scroll",
+      "name": "Свиток"
+    },
+    {
+      "key": "prism",
+      "name": "Призма"
+    },
+    {
+      "key": "digital-eye",
+      "name": "Цифровой глаз"
+    },
+    {
+      "key": "pixel-globe",
+      "name": "Пиксельный глобус"
+    }
+  ]
+}

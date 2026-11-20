@@ -1,0 +1,25 @@
+{
+  "comment": "Engineering fixtures only. Replace with author-drawn Ethernia map IDs later.",
+  "locations": [
+    {
+      "id": "DEV_SANDBOX_A",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "required_access": 0,
+      "entries": {"entry": [-160, 0]},
+      "entities": [
+        {"id":"DEV_ENTITY_01","category":"object","label":"Тестовая Entity",
+         "position":[60, 50],"parameters":{"alive":true,"ai_enabled":true}}
+      ]
+    },
+    {
+      "id": "DEV_SANDBOX_B",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "required_access": 0,
+      "entries": {"entry": [160, 0]}
+    }
+  ],
+  "doors": [
+    {"id": "DEV_DOOR_A", "destination": "DEV_SANDBOX_B"},
+    {"id": "DEV_DOOR_B", "destination": "DEV_SANDBOX_A"}
+  ]
+}

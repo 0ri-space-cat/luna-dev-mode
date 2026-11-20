@@ -1,0 +1,252 @@
+{
+  "front": {
+    "idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front/idle.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1468,
+        "final_palette": true
+      }
+    ],
+    "walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front/walk_00.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1518,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front/walk_01.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1485,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front/walk_02.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1506,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front/walk_03.png",
+        "pivot": [
+          444,
+          1468
+        ],
+        "height": 1502,
+        "final_palette": true
+      }
+    ]
+  },
+  "side_right": {
+    "idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/side_right/idle.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1492,
+        "final_palette": true
+      }
+    ],
+    "walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/side_right/walk_00.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1438,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/side_right/walk_01.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1437,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/side_right/walk_02.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1435,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/side_right/walk_03.png",
+        "pivot": [
+          472,
+          1492
+        ],
+        "height": 1437,
+        "final_palette": true
+      }
+    ]
+  },
+  "front_right": {
+    "idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front_right/idle_00.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1222
+      }
+    ],
+    "walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front_right/walk_00.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1250
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front_right/walk_01.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1251
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front_right/walk_02.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1283
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/front_right/walk_03.png",
+        "pivot": [
+          451,
+          1222
+        ],
+        "height": 1251
+      }
+    ]
+  },
+  "back": {
+    "idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back/idle.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1558,
+        "final_palette": true
+      }
+    ],
+    "walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back/walk_00.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1551,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back/walk_01.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1551,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back/walk_02.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1564,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back/walk_03.png",
+        "pivot": [
+          424,
+          1558
+        ],
+        "height": 1556,
+        "final_palette": true
+      }
+    ]
+  },
+  "back_right": {
+    "idle": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back_right/idle.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1475,
+        "final_palette": true
+      }
+    ],
+    "walk": [
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back_right/walk_00.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1464,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back_right/walk_01.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1466,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back_right/walk_02.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1441,
+        "final_palette": true
+      },
+      {
+        "path": "res://assets/2d/characters/luna/chibi_master/back_right/walk_03.png",
+        "pivot": [
+          490,
+          1475
+        ],
+        "height": 1439,
+        "final_palette": true
+      }
+    ]
+  }
+}

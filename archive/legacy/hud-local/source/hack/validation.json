@@ -1,0 +1,12 @@
+{
+  "engine": "Godot 4.7.2 local editor import",
+  "texture_count": 66,
+  "errors": [],
+  "browser_checks": [
+    "invalid numeric input displays limits and disables save",
+    "palette opens with six choices",
+    "selecting PINK changes displayed value and closes picker"
+  ],
+  "syntax_check": "node --check passed",
+  "scope": "art components and presentation demo; not integrated with game"
+}

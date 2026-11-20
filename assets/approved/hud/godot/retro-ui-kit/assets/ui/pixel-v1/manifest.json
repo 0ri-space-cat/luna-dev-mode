@@ -1,0 +1,2760 @@
+{
+  "version": 1,
+  "texture_filter": "nearest",
+  "font": "font/PressStart2P-Regular.ttf",
+  "themes": {
+    "luna": {
+      "ink": "#FFF3FF",
+      "accent_ink": "#260D42",
+      "parts": {
+        "window": {
+          "texture": "themes/luna/window.png",
+          "size": [
+            40,
+            40
+          ],
+          "stretch_margin": 12
+        },
+        "copy_normal": {
+          "texture": "themes/luna/copy_normal.png",
+          "size": [
+            22,
+            22
+          ],
+          "stretch_margin": 5
+        },
+        "copy_hover": {
+          "texture": "themes/luna/copy_hover.png",
+          "size": [
+            22,
+            22
+          ],
+          "stretch_margin": 5
+        },
+        "copy_pressed": {
+          "texture": "themes/luna/copy_pressed.png",
+          "size": [
+            22,
+            22
+          ],
+          "stretch_margin": 5
+        },
+        "title_bar": {
+          "texture": "themes/luna/title_bar.png",
+          "size": [
+            24,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "object_header": {
+          "texture": "themes/luna/object_header.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "object_portrait": {
+          "texture": "themes/luna/object_portrait.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 6
+        },
+        "property_panel": {
+          "texture": "themes/luna/property_panel.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "property_row": {
+          "texture": "themes/luna/property_row.png",
+          "size": [
+            20,
+            16
+          ],
+          "stretch_margin": 2
+        },
+        "tab_normal": {
+          "texture": "themes/luna/tab_normal.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_hover": {
+          "texture": "themes/luna/tab_hover.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_selected": {
+          "texture": "themes/luna/tab_selected.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_disabled": {
+          "texture": "themes/luna/tab_disabled.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "field_normal": {
+          "texture": "themes/luna/field_normal.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_focus": {
+          "texture": "themes/luna/field_focus.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_error": {
+          "texture": "themes/luna/field_error.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_on": {
+          "texture": "themes/luna/toggle_on.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_off": {
+          "texture": "themes/luna/toggle_off.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "button_save": {
+          "texture": "themes/luna/button_save.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_hover": {
+          "texture": "themes/luna/button_save_hover.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_pressed": {
+          "texture": "themes/luna/button_save_pressed.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_disabled": {
+          "texture": "themes/luna/button_disabled.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "toast": {
+          "texture": "themes/luna/toast.png",
+          "size": [
+            28,
+            21
+          ],
+          "stretch_margin": 6
+        },
+        "console_panel": {
+          "texture": "themes/luna/console_panel.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 8
+        },
+        "mission_panel": {
+          "texture": "themes/luna/mission_panel.png",
+          "size": [
+            28,
+            24
+          ],
+          "stretch_margin": 6
+        },
+        "hint_panel": {
+          "texture": "themes/luna/hint_panel.png",
+          "size": [
+            26,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "active_tool_panel": {
+          "texture": "themes/luna/active_tool_panel.png",
+          "size": [
+            30,
+            24
+          ],
+          "stretch_margin": 7
+        },
+        "clock_panel": {
+          "texture": "themes/luna/clock_panel.png",
+          "size": [
+            28,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "hud_panel": {
+          "texture": "themes/luna/hud_panel.png",
+          "size": [
+            22,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "slot_normal": {
+          "texture": "themes/luna/slot_normal.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_hover": {
+          "texture": "themes/luna/slot_hover.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_selected": {
+          "texture": "themes/luna/slot_selected.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_disabled": {
+          "texture": "themes/luna/slot_disabled.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "hotkey_backing": {
+          "texture": "themes/luna/hotkey_backing.png",
+          "size": [
+            13,
+            12
+          ],
+          "stretch_margin": 4
+        },
+        "portrait_ring": {
+          "texture": "themes/luna/portrait_ring.png",
+          "size": [
+            56,
+            56
+          ]
+        },
+        "minimap_ring": {
+          "texture": "themes/luna/minimap_ring.png",
+          "size": [
+            80,
+            80
+          ]
+        },
+        "backpack": {
+          "texture": "characters/luna/backpack.png",
+          "size": [
+            1145,
+            1240
+          ]
+        },
+        "portrait": {
+          "texture": "characters/luna/portrait.png",
+          "size": [
+            1226,
+            1226
+          ]
+        }
+      },
+      "cursor": {
+        "texture": "cursors/luna.png",
+        "size": [
+          32,
+          38
+        ]
+      }
+    },
+    "yuki": {
+      "ink": "#380E36",
+      "accent_ink": "#541442",
+      "parts": {
+        "window": {
+          "texture": "themes/yuki/window.png",
+          "size": [
+            40,
+            40
+          ],
+          "stretch_margin": 12
+        },
+        "title_bar": {
+          "texture": "themes/yuki/title_bar.png",
+          "size": [
+            24,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "object_header": {
+          "texture": "themes/yuki/object_header.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "object_portrait": {
+          "texture": "themes/yuki/object_portrait.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 6
+        },
+        "property_panel": {
+          "texture": "themes/yuki/property_panel.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "property_row": {
+          "texture": "themes/yuki/property_row.png",
+          "size": [
+            20,
+            16
+          ],
+          "stretch_margin": 2
+        },
+        "tab_normal": {
+          "texture": "themes/yuki/tab_normal.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_hover": {
+          "texture": "themes/yuki/tab_hover.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_selected": {
+          "texture": "themes/yuki/tab_selected.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_disabled": {
+          "texture": "themes/yuki/tab_disabled.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "field_normal": {
+          "texture": "themes/yuki/field_normal.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_focus": {
+          "texture": "themes/yuki/field_focus.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_error": {
+          "texture": "themes/yuki/field_error.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_on": {
+          "texture": "themes/yuki/toggle_on.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_off": {
+          "texture": "themes/yuki/toggle_off.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "button_save": {
+          "texture": "themes/yuki/button_save.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_hover": {
+          "texture": "themes/yuki/button_save_hover.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_pressed": {
+          "texture": "themes/yuki/button_save_pressed.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_disabled": {
+          "texture": "themes/yuki/button_disabled.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "toast": {
+          "texture": "themes/yuki/toast.png",
+          "size": [
+            28,
+            21
+          ],
+          "stretch_margin": 6
+        },
+        "console_panel": {
+          "texture": "themes/yuki/console_panel.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 8
+        },
+        "mission_panel": {
+          "texture": "themes/yuki/mission_panel.png",
+          "size": [
+            28,
+            24
+          ],
+          "stretch_margin": 6
+        },
+        "hint_panel": {
+          "texture": "themes/yuki/hint_panel.png",
+          "size": [
+            26,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "active_tool_panel": {
+          "texture": "themes/yuki/active_tool_panel.png",
+          "size": [
+            30,
+            24
+          ],
+          "stretch_margin": 7
+        },
+        "clock_panel": {
+          "texture": "themes/yuki/clock_panel.png",
+          "size": [
+            28,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "hud_panel": {
+          "texture": "themes/yuki/hud_panel.png",
+          "size": [
+            22,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "slot_normal": {
+          "texture": "themes/yuki/slot_normal.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_hover": {
+          "texture": "themes/yuki/slot_hover.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_selected": {
+          "texture": "themes/yuki/slot_selected.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_disabled": {
+          "texture": "themes/yuki/slot_disabled.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "hotkey_backing": {
+          "texture": "themes/yuki/hotkey_backing.png",
+          "size": [
+            13,
+            12
+          ],
+          "stretch_margin": 4
+        },
+        "portrait_ring": {
+          "texture": "themes/yuki/portrait_ring.png",
+          "size": [
+            56,
+            56
+          ]
+        },
+        "minimap_ring": {
+          "texture": "themes/yuki/minimap_ring.png",
+          "size": [
+            80,
+            80
+          ]
+        },
+        "backpack": {
+          "texture": "characters/yuki/backpack.png",
+          "size": [
+            1156,
+            1252
+          ]
+        },
+        "portrait": {
+          "texture": "characters/yuki/portrait.png",
+          "size": [
+            1242,
+            1242
+          ]
+        }
+      },
+      "cursor": {
+        "texture": "cursors/yuki.png",
+        "size": [
+          32,
+          38
+        ]
+      }
+    },
+    "ori": {
+      "ink": "#041150",
+      "accent_ink": "#17447F",
+      "parts": {
+        "window": {
+          "texture": "themes/ori/window.png",
+          "size": [
+            40,
+            40
+          ],
+          "stretch_margin": 12
+        },
+        "title_bar": {
+          "texture": "themes/ori/title_bar.png",
+          "size": [
+            24,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "object_header": {
+          "texture": "themes/ori/object_header.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "object_portrait": {
+          "texture": "themes/ori/object_portrait.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 6
+        },
+        "property_panel": {
+          "texture": "themes/ori/property_panel.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "property_row": {
+          "texture": "themes/ori/property_row.png",
+          "size": [
+            20,
+            16
+          ],
+          "stretch_margin": 2
+        },
+        "tab_normal": {
+          "texture": "themes/ori/tab_normal.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_hover": {
+          "texture": "themes/ori/tab_hover.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_selected": {
+          "texture": "themes/ori/tab_selected.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_disabled": {
+          "texture": "themes/ori/tab_disabled.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "field_normal": {
+          "texture": "themes/ori/field_normal.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_focus": {
+          "texture": "themes/ori/field_focus.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_error": {
+          "texture": "themes/ori/field_error.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_on": {
+          "texture": "themes/ori/toggle_on.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_off": {
+          "texture": "themes/ori/toggle_off.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "button_save": {
+          "texture": "themes/ori/button_save.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_hover": {
+          "texture": "themes/ori/button_save_hover.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_pressed": {
+          "texture": "themes/ori/button_save_pressed.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_disabled": {
+          "texture": "themes/ori/button_disabled.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "toast": {
+          "texture": "themes/ori/toast.png",
+          "size": [
+            28,
+            21
+          ],
+          "stretch_margin": 6
+        },
+        "console_panel": {
+          "texture": "themes/ori/console_panel.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 8
+        },
+        "mission_panel": {
+          "texture": "themes/ori/mission_panel.png",
+          "size": [
+            28,
+            24
+          ],
+          "stretch_margin": 6
+        },
+        "hint_panel": {
+          "texture": "themes/ori/hint_panel.png",
+          "size": [
+            26,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "active_tool_panel": {
+          "texture": "themes/ori/active_tool_panel.png",
+          "size": [
+            30,
+            24
+          ],
+          "stretch_margin": 7
+        },
+        "clock_panel": {
+          "texture": "themes/ori/clock_panel.png",
+          "size": [
+            28,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "hud_panel": {
+          "texture": "themes/ori/hud_panel.png",
+          "size": [
+            22,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "slot_normal": {
+          "texture": "themes/ori/slot_normal.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_hover": {
+          "texture": "themes/ori/slot_hover.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_selected": {
+          "texture": "themes/ori/slot_selected.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_disabled": {
+          "texture": "themes/ori/slot_disabled.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "hotkey_backing": {
+          "texture": "themes/ori/hotkey_backing.png",
+          "size": [
+            13,
+            12
+          ],
+          "stretch_margin": 4
+        },
+        "portrait_ring": {
+          "texture": "themes/ori/portrait_ring.png",
+          "size": [
+            56,
+            56
+          ]
+        },
+        "minimap_ring": {
+          "texture": "themes/ori/minimap_ring.png",
+          "size": [
+            80,
+            80
+          ]
+        },
+        "backpack": {
+          "texture": "characters/ori/backpack.png",
+          "size": [
+            1177,
+            1275
+          ]
+        },
+        "portrait": {
+          "texture": "characters/ori/portrait.png",
+          "size": [
+            1231,
+            1231
+          ]
+        }
+      },
+      "cursor": {
+        "texture": "cursors/ori.png",
+        "size": [
+          32,
+          38
+        ]
+      }
+    },
+    "leya": {
+      "ink": "#D9FAE8",
+      "accent_ink": "#184F30",
+      "parts": {
+        "window": {
+          "texture": "themes/leya/window.png",
+          "size": [
+            40,
+            40
+          ],
+          "stretch_margin": 12
+        },
+        "title_bar": {
+          "texture": "themes/leya/title_bar.png",
+          "size": [
+            24,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "object_header": {
+          "texture": "themes/leya/object_header.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "object_portrait": {
+          "texture": "themes/leya/object_portrait.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 6
+        },
+        "property_panel": {
+          "texture": "themes/leya/property_panel.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "property_row": {
+          "texture": "themes/leya/property_row.png",
+          "size": [
+            20,
+            16
+          ],
+          "stretch_margin": 2
+        },
+        "tab_normal": {
+          "texture": "themes/leya/tab_normal.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_hover": {
+          "texture": "themes/leya/tab_hover.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_selected": {
+          "texture": "themes/leya/tab_selected.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_disabled": {
+          "texture": "themes/leya/tab_disabled.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "field_normal": {
+          "texture": "themes/leya/field_normal.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_focus": {
+          "texture": "themes/leya/field_focus.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_error": {
+          "texture": "themes/leya/field_error.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_on": {
+          "texture": "themes/leya/toggle_on.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_off": {
+          "texture": "themes/leya/toggle_off.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "button_save": {
+          "texture": "themes/leya/button_save.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_hover": {
+          "texture": "themes/leya/button_save_hover.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_pressed": {
+          "texture": "themes/leya/button_save_pressed.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_disabled": {
+          "texture": "themes/leya/button_disabled.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "toast": {
+          "texture": "themes/leya/toast.png",
+          "size": [
+            28,
+            21
+          ],
+          "stretch_margin": 6
+        },
+        "console_panel": {
+          "texture": "themes/leya/console_panel.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 8
+        },
+        "mission_panel": {
+          "texture": "themes/leya/mission_panel.png",
+          "size": [
+            28,
+            24
+          ],
+          "stretch_margin": 6
+        },
+        "hint_panel": {
+          "texture": "themes/leya/hint_panel.png",
+          "size": [
+            26,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "active_tool_panel": {
+          "texture": "themes/leya/active_tool_panel.png",
+          "size": [
+            30,
+            24
+          ],
+          "stretch_margin": 7
+        },
+        "clock_panel": {
+          "texture": "themes/leya/clock_panel.png",
+          "size": [
+            28,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "hud_panel": {
+          "texture": "themes/leya/hud_panel.png",
+          "size": [
+            22,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "slot_normal": {
+          "texture": "themes/leya/slot_normal.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_hover": {
+          "texture": "themes/leya/slot_hover.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_selected": {
+          "texture": "themes/leya/slot_selected.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_disabled": {
+          "texture": "themes/leya/slot_disabled.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "hotkey_backing": {
+          "texture": "themes/leya/hotkey_backing.png",
+          "size": [
+            13,
+            12
+          ],
+          "stretch_margin": 4
+        },
+        "portrait_ring": {
+          "texture": "themes/leya/portrait_ring.png",
+          "size": [
+            56,
+            56
+          ]
+        },
+        "minimap_ring": {
+          "texture": "themes/leya/minimap_ring.png",
+          "size": [
+            80,
+            80
+          ]
+        },
+        "backpack": {
+          "texture": "characters/leya/backpack.png",
+          "size": [
+            1186,
+            1285
+          ]
+        },
+        "portrait": {
+          "texture": "characters/leya/portrait.png",
+          "size": [
+            1211,
+            1211
+          ]
+        }
+      },
+      "cursor": {
+        "texture": "cursors/leya.png",
+        "size": [
+          32,
+          38
+        ]
+      }
+    },
+    "toffi": {
+      "ink": "#541D0B",
+      "accent_ink": "#71391B",
+      "parts": {
+        "window": {
+          "texture": "themes/toffi/window.png",
+          "size": [
+            40,
+            40
+          ],
+          "stretch_margin": 12
+        },
+        "title_bar": {
+          "texture": "themes/toffi/title_bar.png",
+          "size": [
+            24,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "object_header": {
+          "texture": "themes/toffi/object_header.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "object_portrait": {
+          "texture": "themes/toffi/object_portrait.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 6
+        },
+        "property_panel": {
+          "texture": "themes/toffi/property_panel.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "property_row": {
+          "texture": "themes/toffi/property_row.png",
+          "size": [
+            20,
+            16
+          ],
+          "stretch_margin": 2
+        },
+        "tab_normal": {
+          "texture": "themes/toffi/tab_normal.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_hover": {
+          "texture": "themes/toffi/tab_hover.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_selected": {
+          "texture": "themes/toffi/tab_selected.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_disabled": {
+          "texture": "themes/toffi/tab_disabled.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "field_normal": {
+          "texture": "themes/toffi/field_normal.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_focus": {
+          "texture": "themes/toffi/field_focus.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_error": {
+          "texture": "themes/toffi/field_error.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_on": {
+          "texture": "themes/toffi/toggle_on.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_off": {
+          "texture": "themes/toffi/toggle_off.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "button_save": {
+          "texture": "themes/toffi/button_save.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_hover": {
+          "texture": "themes/toffi/button_save_hover.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_pressed": {
+          "texture": "themes/toffi/button_save_pressed.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_disabled": {
+          "texture": "themes/toffi/button_disabled.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "toast": {
+          "texture": "themes/toffi/toast.png",
+          "size": [
+            28,
+            21
+          ],
+          "stretch_margin": 6
+        },
+        "console_panel": {
+          "texture": "themes/toffi/console_panel.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 8
+        },
+        "mission_panel": {
+          "texture": "themes/toffi/mission_panel.png",
+          "size": [
+            28,
+            24
+          ],
+          "stretch_margin": 6
+        },
+        "hint_panel": {
+          "texture": "themes/toffi/hint_panel.png",
+          "size": [
+            26,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "active_tool_panel": {
+          "texture": "themes/toffi/active_tool_panel.png",
+          "size": [
+            30,
+            24
+          ],
+          "stretch_margin": 7
+        },
+        "clock_panel": {
+          "texture": "themes/toffi/clock_panel.png",
+          "size": [
+            28,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "hud_panel": {
+          "texture": "themes/toffi/hud_panel.png",
+          "size": [
+            22,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "slot_normal": {
+          "texture": "themes/toffi/slot_normal.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_hover": {
+          "texture": "themes/toffi/slot_hover.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_selected": {
+          "texture": "themes/toffi/slot_selected.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_disabled": {
+          "texture": "themes/toffi/slot_disabled.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "hotkey_backing": {
+          "texture": "themes/toffi/hotkey_backing.png",
+          "size": [
+            13,
+            12
+          ],
+          "stretch_margin": 4
+        },
+        "portrait_ring": {
+          "texture": "themes/toffi/portrait_ring.png",
+          "size": [
+            56,
+            56
+          ]
+        },
+        "minimap_ring": {
+          "texture": "themes/toffi/minimap_ring.png",
+          "size": [
+            80,
+            80
+          ]
+        },
+        "backpack": {
+          "texture": "characters/toffi/backpack.png",
+          "size": [
+            1184,
+            1283
+          ]
+        },
+        "portrait": {
+          "texture": "characters/toffi/portrait.png",
+          "size": [
+            1183,
+            1183
+          ]
+        }
+      },
+      "cursor": {
+        "texture": "cursors/toffi.png",
+        "size": [
+          32,
+          38
+        ]
+      }
+    },
+    "miya": {
+      "ink": "#E5F5FC",
+      "accent_ink": "#102C59",
+      "parts": {
+        "window": {
+          "texture": "themes/miya/window.png",
+          "size": [
+            40,
+            40
+          ],
+          "stretch_margin": 12
+        },
+        "title_bar": {
+          "texture": "themes/miya/title_bar.png",
+          "size": [
+            24,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "object_header": {
+          "texture": "themes/miya/object_header.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "object_portrait": {
+          "texture": "themes/miya/object_portrait.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 6
+        },
+        "property_panel": {
+          "texture": "themes/miya/property_panel.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "property_row": {
+          "texture": "themes/miya/property_row.png",
+          "size": [
+            20,
+            16
+          ],
+          "stretch_margin": 2
+        },
+        "tab_normal": {
+          "texture": "themes/miya/tab_normal.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_hover": {
+          "texture": "themes/miya/tab_hover.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_selected": {
+          "texture": "themes/miya/tab_selected.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_disabled": {
+          "texture": "themes/miya/tab_disabled.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "field_normal": {
+          "texture": "themes/miya/field_normal.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_focus": {
+          "texture": "themes/miya/field_focus.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_error": {
+          "texture": "themes/miya/field_error.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_on": {
+          "texture": "themes/miya/toggle_on.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_off": {
+          "texture": "themes/miya/toggle_off.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "button_save": {
+          "texture": "themes/miya/button_save.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_hover": {
+          "texture": "themes/miya/button_save_hover.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_pressed": {
+          "texture": "themes/miya/button_save_pressed.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_disabled": {
+          "texture": "themes/miya/button_disabled.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "toast": {
+          "texture": "themes/miya/toast.png",
+          "size": [
+            28,
+            21
+          ],
+          "stretch_margin": 6
+        },
+        "console_panel": {
+          "texture": "themes/miya/console_panel.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 8
+        },
+        "mission_panel": {
+          "texture": "themes/miya/mission_panel.png",
+          "size": [
+            28,
+            24
+          ],
+          "stretch_margin": 6
+        },
+        "hint_panel": {
+          "texture": "themes/miya/hint_panel.png",
+          "size": [
+            26,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "active_tool_panel": {
+          "texture": "themes/miya/active_tool_panel.png",
+          "size": [
+            30,
+            24
+          ],
+          "stretch_margin": 7
+        },
+        "clock_panel": {
+          "texture": "themes/miya/clock_panel.png",
+          "size": [
+            28,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "hud_panel": {
+          "texture": "themes/miya/hud_panel.png",
+          "size": [
+            22,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "slot_normal": {
+          "texture": "themes/miya/slot_normal.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_hover": {
+          "texture": "themes/miya/slot_hover.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_selected": {
+          "texture": "themes/miya/slot_selected.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_disabled": {
+          "texture": "themes/miya/slot_disabled.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "hotkey_backing": {
+          "texture": "themes/miya/hotkey_backing.png",
+          "size": [
+            13,
+            12
+          ],
+          "stretch_margin": 4
+        },
+        "portrait_ring": {
+          "texture": "themes/miya/portrait_ring.png",
+          "size": [
+            56,
+            56
+          ]
+        },
+        "minimap_ring": {
+          "texture": "themes/miya/minimap_ring.png",
+          "size": [
+            80,
+            80
+          ]
+        },
+        "backpack": {
+          "texture": "characters/miya/backpack.png",
+          "size": [
+            1142,
+            1237
+          ]
+        },
+        "portrait": {
+          "texture": "characters/miya/portrait.png",
+          "size": [
+            1237,
+            1237
+          ]
+        }
+      },
+      "cursor": {
+        "texture": "cursors/miya.png",
+        "size": [
+          32,
+          38
+        ]
+      }
+    },
+    "oni": {
+      "ink": "#FAFCFC",
+      "accent_ink": "#11234B",
+      "parts": {
+        "window": {
+          "texture": "themes/oni/window.png",
+          "size": [
+            40,
+            40
+          ],
+          "stretch_margin": 12
+        },
+        "title_bar": {
+          "texture": "themes/oni/title_bar.png",
+          "size": [
+            24,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "object_header": {
+          "texture": "themes/oni/object_header.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "object_portrait": {
+          "texture": "themes/oni/object_portrait.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 6
+        },
+        "property_panel": {
+          "texture": "themes/oni/property_panel.png",
+          "size": [
+            28,
+            28
+          ],
+          "stretch_margin": 7
+        },
+        "property_row": {
+          "texture": "themes/oni/property_row.png",
+          "size": [
+            20,
+            16
+          ],
+          "stretch_margin": 2
+        },
+        "tab_normal": {
+          "texture": "themes/oni/tab_normal.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_hover": {
+          "texture": "themes/oni/tab_hover.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_selected": {
+          "texture": "themes/oni/tab_selected.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "tab_disabled": {
+          "texture": "themes/oni/tab_disabled.png",
+          "size": [
+            24,
+            23
+          ],
+          "stretch_margin": 6
+        },
+        "field_normal": {
+          "texture": "themes/oni/field_normal.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_focus": {
+          "texture": "themes/oni/field_focus.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "field_error": {
+          "texture": "themes/oni/field_error.png",
+          "size": [
+            22,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_on": {
+          "texture": "themes/oni/toggle_on.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "toggle_off": {
+          "texture": "themes/oni/toggle_off.png",
+          "size": [
+            26,
+            16
+          ],
+          "stretch_margin": 5
+        },
+        "button_save": {
+          "texture": "themes/oni/button_save.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_hover": {
+          "texture": "themes/oni/button_save_hover.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_save_pressed": {
+          "texture": "themes/oni/button_save_pressed.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "button_disabled": {
+          "texture": "themes/oni/button_disabled.png",
+          "size": [
+            42,
+            22
+          ],
+          "stretch_margin": 6
+        },
+        "toast": {
+          "texture": "themes/oni/toast.png",
+          "size": [
+            28,
+            21
+          ],
+          "stretch_margin": 6
+        },
+        "console_panel": {
+          "texture": "themes/oni/console_panel.png",
+          "size": [
+            32,
+            32
+          ],
+          "stretch_margin": 8
+        },
+        "mission_panel": {
+          "texture": "themes/oni/mission_panel.png",
+          "size": [
+            28,
+            24
+          ],
+          "stretch_margin": 6
+        },
+        "hint_panel": {
+          "texture": "themes/oni/hint_panel.png",
+          "size": [
+            26,
+            18
+          ],
+          "stretch_margin": 5
+        },
+        "active_tool_panel": {
+          "texture": "themes/oni/active_tool_panel.png",
+          "size": [
+            30,
+            24
+          ],
+          "stretch_margin": 7
+        },
+        "clock_panel": {
+          "texture": "themes/oni/clock_panel.png",
+          "size": [
+            28,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "hud_panel": {
+          "texture": "themes/oni/hud_panel.png",
+          "size": [
+            22,
+            18
+          ],
+          "stretch_margin": 6
+        },
+        "slot_normal": {
+          "texture": "themes/oni/slot_normal.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_hover": {
+          "texture": "themes/oni/slot_hover.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_selected": {
+          "texture": "themes/oni/slot_selected.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "slot_disabled": {
+          "texture": "themes/oni/slot_disabled.png",
+          "size": [
+            26,
+            26
+          ],
+          "stretch_margin": 5
+        },
+        "hotkey_backing": {
+          "texture": "themes/oni/hotkey_backing.png",
+          "size": [
+            13,
+            12
+          ],
+          "stretch_margin": 4
+        },
+        "portrait_ring": {
+          "texture": "themes/oni/portrait_ring.png",
+          "size": [
+            56,
+            56
+          ]
+        },
+        "minimap_ring": {
+          "texture": "themes/oni/minimap_ring.png",
+          "size": [
+            80,
+            80
+          ]
+        },
+        "backpack": {
+          "texture": "characters/oni/backpack.png",
+          "size": [
+            1156,
+            1252
+          ]
+        },
+        "portrait": {
+          "texture": "characters/oni/portrait.png",
+          "size": [
+            1231,
+            1231
+          ]
+        }
+      },
+      "cursor": {
+        "texture": "cursors/oni.png",
+        "size": [
+          32,
+          38
+        ]
+      }
+    }
+  },
+  "common": {
+    "button_copy_normal": {
+      "texture": "common/button_copy_normal.png",
+      "size": [
+        22,
+        22
+      ],
+      "stretch_margin": 5
+    },
+    "button_copy_hover": {
+      "texture": "common/button_copy_hover.png",
+      "size": [
+        22,
+        22
+      ],
+      "stretch_margin": 5
+    },
+    "button_copy_pressed": {
+      "texture": "common/button_copy_pressed.png",
+      "size": [
+        22,
+        22
+      ],
+      "stretch_margin": 5
+    },
+    "button_delete_normal": {
+      "texture": "common/button_delete_normal.png",
+      "size": [
+        22,
+        22
+      ],
+      "stretch_margin": 5
+    },
+    "button_delete_hover": {
+      "texture": "common/button_delete_hover.png",
+      "size": [
+        22,
+        22
+      ],
+      "stretch_margin": 5
+    },
+    "button_delete_pressed": {
+      "texture": "common/button_delete_pressed.png",
+      "size": [
+        22,
+        22
+      ],
+      "stretch_margin": 5
+    },
+    "quest_empty": {
+      "texture": "common/quest_empty.png",
+      "size": [
+        7,
+        7
+      ]
+    },
+    "quest_done": {
+      "texture": "common/quest_done.png",
+      "size": [
+        7,
+        7
+      ]
+    },
+    "icon_dropdown": {
+      "texture": "common/icon_dropdown.png",
+      "size": [
+        7,
+        4
+      ]
+    },
+    "signal_4": {
+      "texture": "common/signal_4.png",
+      "size": [
+        10,
+        8
+      ]
+    },
+    "status_active": {
+      "texture": "common/status_active.png",
+      "size": [
+        7,
+        7
+      ]
+    },
+    "status_inactive": {
+      "texture": "common/status_inactive.png",
+      "size": [
+        7,
+        7
+      ]
+    },
+    "color_ramp": {
+      "texture": "common/color_ramp.png",
+      "size": [
+        60,
+        8
+      ]
+    },
+    "color_thumb": {
+      "texture": "common/color_thumb.png",
+      "size": [
+        9,
+        12
+      ],
+      "stretch_margin": 4
+    },
+    "bar_health": {
+      "texture": "common/bar_health.png",
+      "size": [
+        104,
+        8
+      ],
+      "stretch_margin": 3
+    },
+    "bar_mana": {
+      "texture": "common/bar_mana.png",
+      "size": [
+        104,
+        8
+      ],
+      "stretch_margin": 3
+    },
+    "bar_stamina": {
+      "texture": "common/bar_stamina.png",
+      "size": [
+        104,
+        8
+      ],
+      "stretch_margin": 3
+    },
+    "bar_empty": {
+      "texture": "common/bar_empty.png",
+      "size": [
+        104,
+        8
+      ],
+      "stretch_margin": 3
+    },
+    "ability_climb": {
+      "texture": "abilities/climb.png",
+      "size": [
+        441,
+        441
+      ]
+    },
+    "ability_duplicate": {
+      "texture": "abilities/duplicate.png",
+      "size": [
+        423,
+        423
+      ]
+    },
+    "ability_electricity": {
+      "texture": "abilities/electricity.png",
+      "size": [
+        412,
+        412
+      ]
+    },
+    "ability_fire_breath": {
+      "texture": "abilities/fire_breath.png",
+      "size": [
+        540,
+        540
+      ]
+    },
+    "ability_fly": {
+      "texture": "abilities/fly.png",
+      "size": [
+        383,
+        383
+      ]
+    },
+    "ability_freeze": {
+      "texture": "abilities/freeze.png",
+      "size": [
+        461,
+        461
+      ]
+    },
+    "ability_glow": {
+      "texture": "abilities/glow.png",
+      "size": [
+        491,
+        491
+      ]
+    },
+    "ability_gravity_beam": {
+      "texture": "abilities/gravity_beam.png",
+      "size": [
+        534,
+        534
+      ]
+    },
+    "ability_poison": {
+      "texture": "abilities/poison.png",
+      "size": [
+        434,
+        434
+      ]
+    },
+    "ability_regeneration": {
+      "texture": "abilities/regeneration.png",
+      "size": [
+        439,
+        439
+      ]
+    },
+    "ability_resistance": {
+      "texture": "abilities/resistance.png",
+      "size": [
+        397,
+        397
+      ]
+    },
+    "ability_sing": {
+      "texture": "abilities/sing.png",
+      "size": [
+        408,
+        408
+      ]
+    },
+    "ability_swim": {
+      "texture": "abilities/swim.png",
+      "size": [
+        492,
+        492
+      ]
+    },
+    "ability_walk": {
+      "texture": "abilities/walk.png",
+      "size": [
+        455,
+        455
+      ]
+    },
+    "icon_copy": {
+      "texture": "common/icon_copy.png",
+      "size": [
+        295,
+        295
+      ]
+    },
+    "icon_delete": {
+      "texture": "common/icon_delete.png",
+      "size": [
+        303,
+        303
+      ]
+    },
+    "icon_done": {
+      "texture": "common/icon_done.png",
+      "size": [
+        290,
+        290
+      ]
+    },
+    "icon_close": {
+      "texture": "common/icon_close.png",
+      "size": [
+        259,
+        259
+      ]
+    },
+    "window_minimize": {
+      "texture": "common/window_minimize.png",
+      "size": [
+        284,
+        284
+      ]
+    },
+    "window_maximize": {
+      "texture": "common/window_maximize.png",
+      "size": [
+        277,
+        277
+      ]
+    },
+    "map_player": {
+      "texture": "common/map_player.png",
+      "size": [
+        273,
+        273
+      ]
+    },
+    "map_passage": {
+      "texture": "common/map_passage.png",
+      "size": [
+        330,
+        330
+      ]
+    },
+    "map_bridge": {
+      "texture": "common/map_bridge.png",
+      "size": [
+        353,
+        353
+      ]
+    },
+    "map_quest": {
+      "texture": "common/map_quest.png",
+      "size": [
+        262,
+        262
+      ]
+    },
+    "map_pin": {
+      "texture": "common/map_pin.png",
+      "size": [
+        259,
+        259
+      ]
+    },
+    "time_dawn": {
+      "texture": "common/time_dawn.png",
+      "size": [
+        314,
+        314
+      ]
+    },
+    "time_day": {
+      "texture": "common/time_day.png",
+      "size": [
+        208,
+        208
+      ]
+    },
+    "time_dusk": {
+      "texture": "common/time_dusk.png",
+      "size": [
+        315,
+        315
+      ]
+    },
+    "time_night": {
+      "texture": "common/time_night.png",
+      "size": [
+        233,
+        233
+      ]
+    },
+    "hud_health": {
+      "texture": "common/hud_health.png",
+      "size": [
+        483,
+        483
+      ]
+    },
+    "hud_mana": {
+      "texture": "common/hud_mana.png",
+      "size": [
+        523,
+        523
+      ]
+    },
+    "hud_stamina": {
+      "texture": "common/hud_stamina.png",
+      "size": [
+        494,
+        494
+      ]
+    },
+    "property_health": {
+      "texture": "common/property_health.png",
+      "size": [
+        244,
+        244
+      ]
+    },
+    "property_alive": {
+      "texture": "common/property_alive.png",
+      "size": [
+        278,
+        278
+      ]
+    },
+    "property_speed": {
+      "texture": "common/property_speed.png",
+      "size": [
+        304,
+        304
+      ]
+    },
+    "property_behavior": {
+      "texture": "common/property_behavior.png",
+      "size": [
+        257,
+        257
+      ]
+    },
+    "property_tint": {
+      "texture": "common/property_tint.png",
+      "size": [
+        241,
+        241
+      ]
+    },
+    "tab_general": {
+      "texture": "common/tab_general.png",
+      "size": [
+        236,
+        236
+      ]
+    },
+    "tab_appearance": {
+      "texture": "common/tab_appearance.png",
+      "size": [
+        221,
+        221
+      ]
+    },
+    "tab_physics": {
+      "texture": "common/tab_physics.png",
+      "size": [
+        213,
+        213
+      ]
+    },
+    "tab_mind": {
+      "texture": "common/tab_mind.png",
+      "size": [
+        238,
+        238
+      ]
+    },
+    "tab_behavior": {
+      "texture": "common/tab_behavior.png",
+      "size": [
+        214,
+        214
+      ]
+    },
+    "tab_relationships": {
+      "texture": "common/tab_relationships.png",
+      "size": [
+        252,
+        252
+      ]
+    },
+    "tab_abilities": {
+      "texture": "common/tab_abilities.png",
+      "size": [
+        215,
+        215
+      ]
+    },
+    "maple-sample": {
+      "texture": "common/maple-sample.png",
+      "size": [
+        1192,
+        1192
+      ]
+    },
+    "window_moon": {
+      "texture": "common/map_player.png",
+      "size": [
+        273,
+        273
+      ]
+    },
+    "hud_lock": {
+      "texture": "common/hud_lock.png",
+      "size": [
+        16,
+        16
+      ]
+    },
+    "hud_plus": {
+      "texture": "common/hud_plus.png",
+      "size": [
+        5,
+        5
+      ]
+    },
+    "hud_minus": {
+      "texture": "common/hud_minus.png",
+      "size": [
+        5,
+        5
+      ]
+    },
+    "hud_info": {
+      "texture": "common/hud_info.png",
+      "size": [
+        5,
+        5
+      ]
+    },
+    "item_time-button": {
+      "texture": "items/time-button.png",
+      "size": [
+        519,
+        519
+      ]
+    },
+    "item_game-camera": {
+      "texture": "items/game-camera.png",
+      "size": [
+        1019,
+        1019
+      ]
+    },
+    "item_monocle": {
+      "texture": "items/monocle.png",
+      "size": [
+        507,
+        507
+      ]
+    },
+    "item_compass": {
+      "texture": "items/compass.png",
+      "size": [
+        1400,
+        1400
+      ]
+    },
+    "item_gravity-gun": {
+      "texture": "items/gravity-gun.png",
+      "size": [
+        561,
+        561
+      ]
+    },
+    "item_portal-gun": {
+      "texture": "items/portal-gun.png",
+      "size": [
+        1518,
+        1518
+      ]
+    },
+    "item_hourglass": {
+      "texture": "items/hourglass.png",
+      "size": [
+        515,
+        515
+      ]
+    },
+    "item_yuki-console": {
+      "texture": "items/yuki-console.png",
+      "size": [
+        1006,
+        1006
+      ]
+    },
+    "item_luna-room-door": {
+      "texture": "items/luna-room-door.png",
+      "size": [
+        459,
+        459
+      ]
+    },
+    "item_miya-potion": {
+      "texture": "items/miya-potion.png",
+      "size": [
+        710,
+        710
+      ]
+    },
+    "item_toffi-lantern": {
+      "texture": "items/toffi-lantern.png",
+      "size": [
+        1230,
+        1230
+      ]
+    },
+    "item_leya-heart": {
+      "texture": "items/leya-heart.png",
+      "size": [
+        1056,
+        1056
+      ]
+    },
+    "item_ori-catalogue": {
+      "texture": "items/ori-catalogue.png",
+      "size": [
+        448,
+        448
+      ]
+    },
+    "item_scroll": {
+      "texture": "items/scroll.png",
+      "size": [
+        408,
+        408
+      ]
+    },
+    "item_prism": {
+      "texture": "items/prism.png",
+      "size": [
+        415,
+        415
+      ]
+    },
+    "item_digital-eye": {
+      "texture": "items/digital-eye.png",
+      "size": [
+        447,
+        447
+      ]
+    },
+    "item_pixel-globe": {
+      "texture": "items/pixel-globe.png",
+      "size": [
+        378,
+        378
+      ]
+    },
+    "item_wand": {
+      "texture": "items/wand.png",
+      "size": [
+        932,
+        932
+      ]
+    }
+  },
+  "artifact_roster": {
+    "url": "https://github.com/0ri-space-cat/luna-dev-mode/blob/main/docs/canon/25_V6_FINAL_AUTHOR_ARTIFACT_ROSTER.md",
+    "blob": "9a537a0224ea1f1b14571bf67a860f519cb75492"
+  },
+  "artifacts": [
+    {
+      "key": "time-button",
+      "name": "Кнопка времени",
+      "texture": "items/time-button.png"
+    },
+    {
+      "key": "game-camera",
+      "name": "Игровая камера",
+      "texture": "items/game-camera.png"
+    },
+    {
+      "key": "monocle",
+      "name": "Монокль",
+      "texture": "items/monocle.png"
+    },
+    {
+      "key": "compass",
+      "name": "Компас",
+      "texture": "items/compass.png"
+    },
+    {
+      "key": "gravity-gun",
+      "name": "Гравипушка",
+      "texture": "items/gravity-gun.png"
+    },
+    {
+      "key": "portal-gun",
+      "name": "Портал ган",
+      "texture": "items/portal-gun.png"
+    },
+    {
+      "key": "hourglass",
+      "name": "Песочные часы",
+      "texture": "items/hourglass.png"
+    },
+    {
+      "key": "yuki-console",
+      "name": "Консоль Юки",
+      "texture": "items/yuki-console.png"
+    },
+    {
+      "key": "luna-room-door",
+      "name": "Дверь в комнату Луны",
+      "texture": "items/luna-room-door.png"
+    },
+    {
+      "key": "miya-potion",
+      "name": "Зелье Мии",
+      "texture": "items/miya-potion.png"
+    },
+    {
+      "key": "toffi-lantern",
+      "name": "Фонарь Тоффи",
+      "texture": "items/toffi-lantern.png"
+    },
+    {
+      "key": "leya-heart",
+      "name": "Сердце Леи",
+      "texture": "items/leya-heart.png"
+    },
+    {
+      "key": "ori-catalogue",
+      "name": "Каталог Ори",
+      "texture": "items/ori-catalogue.png"
+    },
+    {
+      "key": "scroll",
+      "name": "Свиток",
+      "texture": "items/scroll.png"
+    },
+    {
+      "key": "prism",
+      "name": "Призма",
+      "texture": "items/prism.png"
+    },
+    {
+      "key": "digital-eye",
+      "name": "Цифровой глаз",
+      "texture": "items/digital-eye.png"
+    },
+    {
+      "key": "pixel-globe",
+      "name": "Пиксельный глобус",
+      "texture": "items/pixel-globe.png"
+    }
+  ]
+}

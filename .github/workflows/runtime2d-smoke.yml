@@ -1,0 +1,75 @@
+name: LUNA Runtime2D smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  runtime2d:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: game
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.3
+        run: |
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.3-stable_linux.x86_64
+          sudo mv /tmp/Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Parse project and new 2D scripts
+        run: |
+          set -o pipefail
+          godot --headless --editor --path . --import --quit 2>&1 | tee /tmp/luna-2d-parse.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|^ERROR:' /tmp/luna-2d-parse.log; then
+            exit 1
+          fi
+      - name: Test 2D runtime contracts
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
+      - name: Test authored geometry, physical abilities and world laws
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_world_laws.gd
+      - name: Test AI behavior and approved ability adapters
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_behavior_abilities.gd
+      - name: Test authored doors and atomic checkpoint validation
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_authoring_contract.gd
+      - name: Test guarded world timeline and rewind
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_timeline.gd
+      - name: Test wand editing authorization without HUD
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_wand_policy.gd
+      - name: Test authored A-star navigation and physical detours
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_navigation.gd
+      - name: Test physical CLIMB passages and mixed traversal routes
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_climb.gd
+      - name: Test symmetric local actor avoidance and room isolation
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_avoidance.gd
+      - name: Test author-defined world rules and one-shot persistence
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_world_rules.gd
+      - name: Test bounded world time modes and unscaled safety
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_time_modes.gd
+      - name: Test real event-overflow recovery and safe checkpoints
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_recovery.gd
+      - name: Test dynamic gaze-dependent physical navigation
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_dynamic_observation_nav.gd
+      - name: Test physical RIDEABLE carrier and passenger persistence
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_riding.gd
+      - name: Test P0 map preflight and verified save backups
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_storage_integrity.gd
+      - name: Test P1 physical PICKUP carry and drop contracts
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_physical_pickup.gd
+      - name: Test P1 bounded physical pushing and wall collision
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_push.gd
+      - name: Test P1 multi-zone and parameter rule predicates
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_rule_conditions.gd
+      - name: Test atomic multi-object physical push and Undo history
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_push_history.gd
+      - name: Test protected atomic spell program command bundles
+        run: bash ci/run_godot_script.sh res://tests/test_runtime2d_spell_program.gd
+      - name: Boot 2D main scene
+        run: |
+          set -o pipefail
+          godot --headless --path . --quit-after 8 2>&1 | tee /tmp/runtime2d-boot.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|Invalid call|^ERROR:' /tmp/runtime2d-boot.log; then
+            exit 1
+          fi
