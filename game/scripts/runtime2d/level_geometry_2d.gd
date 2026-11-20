@@ -19,6 +19,8 @@ const MAX_ZONES := 96
 var last_error := ""
 var level_size := Vector2(1536, 1024)
 var navigation = GridNavigation.new()
+var show_placeholder_art := false
+var underside_view := false
 var _solids: Array[StaticBody2D] = []
 var _zones: Array[Area2D] = []
 
@@ -30,6 +32,7 @@ func build_from_description(description: Dictionary) -> bool:
 	if not navigation.configure(level_size, description.get("solids", [])):
 		return _fail(navigation.last_error)
 	clear_geometry()
+	queue_redraw()
 	for entry in description.get("solids", []):
 		var data: Dictionary = entry
 		var rect := _parse_rect(data["rect"])
@@ -169,3 +172,16 @@ func _valid_id(value: String) -> bool:
 func _fail(reason: String) -> bool:
 	last_error = reason
 	return false
+
+func _draw() -> void:
+	if not show_placeholder_art:
+		return
+	for wall in _solids:
+		var collider := wall.get_child(0) as CollisionShape2D
+		var box := collider.shape as RectangleShape2D
+		var bounds := Rect2(wall.position - box.size * 0.5, box.size)
+		if underside_view:
+			draw_rect(bounds, Color("#203954"), false, 4.0)
+			draw_rect(bounds, Color("#75b9d4"), false, 1.0)
+		else:
+			draw_rect(bounds, Color("#62557b") if wall.collision_layer == WALL_LAYER else Color("#897e9e"))

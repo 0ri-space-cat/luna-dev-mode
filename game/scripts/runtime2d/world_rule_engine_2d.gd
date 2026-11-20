@@ -9,6 +9,8 @@ extends RefCounted
 signal rule_fired(rule_id: String, location_id: String)
 signal rule_rejected(rule_id: String, reason: String)
 
+const WorldClock2D = preload("res://scripts/runtime2d/world_clock_2d.gd")
+
 const MAX_RULES_PER_LOCATION := 48
 const MAX_FIRED_FLAGS := 256
 const MAX_ACTIONS_PER_EVENT := 8
@@ -172,6 +174,10 @@ func _validate_condition(condition: Dictionary) -> bool:
 				return _fail("Non-finite condition value")
 			if typeof(expected) == TYPE_STRING and str(expected).length() > 96:
 				return _fail("Condition text exceeds budget")
+		"TIME_WINDOW":
+			allowed.append_array(["start_minute", "end_minute"])
+			if not WorldClock2D.is_valid_window(condition.get("start_minute"), condition.get("end_minute")):
+				return _fail("Invalid daily time window")
 		_:
 			return _fail("Unknown world rule condition")
 	for key in condition:
@@ -216,6 +222,9 @@ func _conditions_met(rule: Dictionary, controller: Node, room_id: String) -> boo
 					occupied = true
 					break
 				if not occupied:
+					return false
+			"TIME_WINDOW":
+				if not controller.world_clock.is_in_window(int(condition["start_minute"]), int(condition["end_minute"])):
 					return false
 	return true
 

@@ -10,6 +10,7 @@ const LocalAvoidance = preload("res://scripts/runtime2d/local_avoidance_2d.gd")
 signal passive_ability_applied(event_data: Dictionary)
 
 var record
+var form_id := ""
 var player_controlled := false
 var world_active := true
 var location_id := ""
@@ -178,6 +179,9 @@ func _physics_process(delta: float) -> void:
 		# Never retain a dangling attachment after deleting/unloading a mount.
 		riding_id = ""
 		refresh_capabilities()
+	if record.parameters.get("frozen", false):
+		velocity = Vector2.ZERO
+		return
 	var movement := Vector2.ZERO
 	if _external_motion:
 		movement = _requested_direction
@@ -238,7 +242,7 @@ func snapshot() -> Dictionary:
 		var value: Variant = record.parameters[key]
 		encoded[key] = (value as Color).to_html() if value is Color else value
 	return {
-		"id": record.id, "category": record.category, "label": record.display_name,
+		"id": record.id, "category": record.category, "label": record.display_name, "form_id": form_id,
 		"location_id": location_id,
 		"ride_id": riding_id, "seat_offset": [seat_offset.x, seat_offset.y],
 		"player": player_controlled, "position": [position.x, position.y],
@@ -249,6 +253,10 @@ func snapshot() -> Dictionary:
 
 func load_snapshot(data: Dictionary, registry) -> bool:
 	var identifier := str(data.get("id", ""))
+	var form: Variant = data.get("form_id", "")
+	if not form is String or form.length() > 96 or (not form.is_empty() and not form.is_valid_identifier()):
+		return false
+	form_id = form
 	var coord: Variant = data.get("position", [])
 	var params: Variant = data.get("parameters", {})
 	if not (coord is Array) or coord.size() != 2 or not (params is Dictionary):

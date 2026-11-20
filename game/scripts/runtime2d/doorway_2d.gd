@@ -6,6 +6,10 @@ extends Area2D
 @export var entity_id := ""
 @export var destination_entry_id := "entry"
 @export_range(12.0, 192.0, 1.0) var interaction_radius := 64.0
+## Both at -1 leaves this door available all day. Minutes are local to the
+## game's day, not the machine's clock.
+@export_range(-1, 1439, 1) var opens_at_minute := -1
+@export_range(-1, 1439, 1) var closes_at_minute := -1
 
 
 func _ready() -> void:
@@ -23,3 +27,9 @@ func _ready() -> void:
 
 func can_interact_from(point: Vector2) -> bool:
 	return point.distance_squared_to(global_position) <= interaction_radius * interaction_radius
+
+
+func is_open_at(clock: RefCounted) -> bool:
+	if opens_at_minute == -1 and closes_at_minute == -1:
+		return true
+	return clock.is_in_window(opens_at_minute, closes_at_minute)

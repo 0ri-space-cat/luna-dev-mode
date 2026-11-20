@@ -12,6 +12,10 @@ const LevelGeometry = preload("res://scripts/runtime2d/level_geometry_2d.gd")
 @export var ordinary_background: Texture2D
 @export var underside_background: Texture2D
 @export_file("*.json") var geometry_json_path := ""
+## Leave white indoors or in locations that provide their own lighting.
+@export var night_tint := Color.WHITE
+@export_range(0, 1439, 1) var night_start_minute := 18 * 60
+@export_range(0, 1439, 1) var night_end_minute := 6 * 60
 
 var plate
 var geometry
@@ -36,6 +40,7 @@ func _ready() -> void:
 	add_child(collision_root)
 	geometry = LevelGeometry.new()
 	geometry.level_size = level_size
+	geometry.show_placeholder_art = ordinary_background == null and underside_background == null
 	geometry.name = "GameplayGeometry"
 	collision_root.add_child(geometry)
 	# Even a scene without a geometry JSON needs a valid, bounded navigation
@@ -132,7 +137,20 @@ func load_geometry(path: String) -> bool:
 
 func set_underside(active: bool) -> void:
 	plate.set_underside(active)
+	if geometry.underside_view != active:
+		geometry.underside_view = active
+		geometry.queue_redraw()
 
 
 func set_background_pair(ordinary: Texture2D, hidden: Texture2D) -> bool:
-	return plate.set_plates(ordinary, hidden)
+	if not plate.set_plates(ordinary, hidden):
+		return false
+	geometry.show_placeholder_art = ordinary == null
+	geometry.queue_redraw()
+	return true
+
+
+func light_tint_at(clock: RefCounted) -> Color:
+	if clock.is_in_window(night_start_minute, night_end_minute):
+		return night_tint
+	return Color.WHITE

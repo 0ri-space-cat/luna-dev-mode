@@ -36,6 +36,9 @@ const DEV_GEOMETRY := "res://data/runtime2d/DEV_SANDBOX_GEOMETRY.json"
 const MAX_ACTORS := 48
 const MAX_CHECKPOINTS := 8
 
+@export_file("*.json") var catalog_path := DEV_CATALOG
+@export var starting_location := "DEV_SANDBOX_A"
+
 var parameter_registry
 var world_registry
 var command_processor
@@ -87,6 +90,8 @@ func _ready() -> void:
 		"id": "pushable", "label": "PUSHABLE", "kind": "bool",
 		"default": false, "hint": "Можно ли физически двигать объект толчком."
 	})
+	for spec in additional_parameters():
+		parameter_registry.register_parameter(spec)
 	world_registry = WorldRegistry.new()
 	command_processor = CommandProcessor.new()
 	command_processor.configure_world(world_registry)
@@ -106,17 +111,20 @@ func _ready() -> void:
 	world_rules = WorldRuleEngine2D.new()
 	world_rules.rule_rejected.connect(_on_rule_rejected)
 	world_clock = WorldClock2D.new()
+	world_clock.minute_changed.connect(_update_world_light)
 	recovery_guard = GameRecovery2D.new()
 	integrity_notice.connect(_on_gameplay_integrity)
 	recovery_guard.recovery_requested.connect(_on_recovery_requested)
 
 	# Only development fixtures, NOT real Ethernia locations or canon geography.
-	assert(router.load_catalog_json(DEV_CATALOG))
+	if not router.load_catalog_json(catalog_path):
+		push_error(router.last_error)
+		return
 
 	player = spawn_actor("luna", "luna", "Луна", Vector2(-160, 0), true)
 	camera.target = player
 	camera.make_current()
-	_enter_location("DEV_SANDBOX_A")
+	_enter_location(starting_location)
 	timeline.reset(make_snapshot())
 	mark_safe_state()
 
@@ -133,7 +141,7 @@ func _on_passive_ability_applied(event_data: Dictionary) -> void:
 
 func spawn_actor(entity_id: String, category: String, label: String,
 		at: Vector2, is_player: bool = false):
-	if world_registry.count_live() >= MAX_ACTORS:
+	if world_registry.count_live() >= actor_capacity():
 		integrity_notice.emit("ENTITY_BUDGET_REACHED")
 		return null
 	if world_registry.get_entity(entity_id) != null or world_registry.was_deleted(entity_id):
@@ -143,18 +151,26 @@ func spawn_actor(entity_id: String, category: String, label: String,
 		actor.free()
 		return null
 	actor.position = at
-	_attach_actor_services(actor)
-	actor.location_id = current_location_id if not current_location_id.is_empty() else "DEV_SANDBOX_A"
-	_actor_slot.add_child(actor)
-	_apply_trusted_visual(actor)
-	if not world_registry.register_entity(entity_id, actor, category.to_upper()):
-		actor.queue_free()
+	actor.location_id = current_location_id if not current_location_id.is_empty() else starting_location
+	if not register_spawned_actor(actor):
+		actor.free()
 		return null
 	return actor
 
 
+func register_spawned_actor(actor: CharacterBody2D) -> bool:
+	if not world_registry.register_entity(actor.record.id, actor, str(actor.record.category).to_upper()):
+		return false
+	_attach_actor_services(actor)
+	_actor_slot.add_child(actor)
+	_apply_trusted_visual(actor)
+	if is_instance_valid(_live_level):
+		_update_actor_activation()
+	return true
+
+
 func clone_actor(entity_id: String):
-	if world_registry.count_live() >= MAX_ACTORS:
+	if world_registry.count_live() >= actor_capacity():
 		integrity_notice.emit("CLONE_BUDGET_REACHED")
 		return null
 	var original = world_registry.get_entity(entity_id)
@@ -514,7 +530,7 @@ func request_wand_spell_program(target_id: String, program: Variant) -> bool:
 
 func set_entity_ability(entity_id: String, ability_id: String, enabled: bool) -> bool:
 	# Other approved abilities await their real behavior adapters; no fake grant.
-	if ability_id not in ["FLY", "SWIM", "CLIMB", "GLOW", "REGENERATION"]:
+	if ability_id not in EntityBlueprint2D.ABILITIES:
 		return false
 	var actor: Node = world_registry.get_entity(entity_id)
 	if actor == null:
@@ -681,7 +697,7 @@ func _prepare_authored_entities(address: String) -> Variant:
 			continue
 		if world_registry.was_deleted(identity):
 			continue
-		if world_registry.count_live() + planned.size() >= MAX_ACTORS:
+		if world_registry.count_live() + planned.size() >= actor_capacity():
 			_free_unparented(planned)
 			integrity_notice.emit("ENTITY_BUDGET_REACHED")
 			return null
@@ -747,6 +763,7 @@ func _enter_location(address: String, entry_id: String = "entry", place_player: 
 	_mount_dev_door()
 	_update_actor_activation()
 	_update_perception(true)
+	_update_world_light()
 	location_entered.emit(address)
 	return true
 
@@ -763,7 +780,7 @@ func _mount_dev_door() -> void:
 	_live_level.add_child(_door)
 
 
-func _nearest_door(max_reach: float = 100.0) -> Node:
+func _nearest_door(max_reach: float = 100.0, require_open: bool = false) -> Node:
 	if not is_instance_valid(_live_level) or not is_instance_valid(player):
 		return null
 	var nearest: Node = null
@@ -775,6 +792,8 @@ func _nearest_door(max_reach: float = 100.0) -> Node:
 			continue
 		var identity: String = str(candidate.get("entity_id"))
 		if identity.is_empty() or not router.door_destinations.has(identity):
+			continue
+		if require_open and candidate.has_method("is_open_at") and not candidate.is_open_at(world_clock):
 			continue
 		var d: float = player.global_position.distance_squared_to(candidate.global_position)
 		if d > distance_sq or not candidate.can_interact_from(player.global_position):
@@ -788,7 +807,7 @@ func enter_nearby_door() -> bool:
 	if not is_instance_valid(player) or not str(player.riding_id).is_empty() \
 			or _has_carried_entity("luna"):
 		return false
-	var nearby: Node = _nearest_door(100.0)
+	var nearby: Node = _nearest_door(100.0, true)
 	if nearby == null:
 		return false
 	var plan: Dictionary = router.resolve_door(str(nearby.get("entity_id")),
@@ -810,7 +829,15 @@ func _process(_delta: float) -> void:
 	_update_perception()
 
 
+func _update_world_light(_minute: int = 0) -> void:
+	if is_instance_valid(_live_level) and _live_level.has_method("light_tint_at"):
+		$World.modulate = _live_level.light_tint_at(world_clock)
+	else:
+		$World.modulate = Color.WHITE
+
+
 func _physics_process(delta: float) -> void:
+	world_clock.advance(delta)
 	if is_instance_valid(player) and player.velocity.length_squared() > 0.01:
 		observer.facing = player.velocity.normalized()
 	observer.luna_eyes_open = luna_eyes_open
@@ -898,7 +925,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var p: Variant = data.get("projection", {})
 	var camera_xy: Variant = data.get("camera_position", [])
 	var mode := str(data.get("camera_mode", ""))
-	if not (incoming is Array) or incoming.is_empty() or incoming.size() > MAX_ACTORS:
+	if not (incoming is Array) or incoming.is_empty() or incoming.size() > actor_capacity():
 		return false
 	if not world_registry.validate_deleted_ids(deleted) or deleted.has("luna"):
 		return false
@@ -1013,10 +1040,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 	router.restore_routes(routes)
 	access = new_access
 	projection = new_projection
-	world_clock.set_mode(new_clock.mode)
 	camera.global_position = Vector2(float(camera_xy[0]), float(camera_xy[1]))
 	camera.set_mode(mode)
 	luna_eyes_open = bool(data.get("eyes_open", true))
+	world_clock.restore(new_clock.snapshot())
 	_update_perception(true)
 	if not _timeline_rollback:
 		timeline.reset(make_snapshot())
@@ -1113,3 +1140,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_:
 			return
 	get_viewport().set_input_as_handled()
+
+
+func additional_parameters() -> Array:
+	return []
+
+
+func actor_capacity() -> int:
+	return MAX_ACTORS

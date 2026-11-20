@@ -79,6 +79,15 @@ func _run() -> void:
 	assert(law.is_solid)
 	assert(law.collision_layer == 1)
 
+	# Only the camera observes this surface. Eye state is independent.
+	for eyes_open in [true, false]:
+		game.luna_eyes_open = eyes_open
+		for on_screen in [true, false]:
+			law.global_position = game.camera.get_screen_center_position() if on_screen else Vector2(5000, 5000)
+			law.apply_observation(game.observation_at(law.global_position))
+			assert(law.is_solid == (not on_screen))
+	game.luna_eyes_open = true
+
 	# Leaving a location must not keep its actors physically present.
 	var clone = game.clone_actor(actor.record.id)
 	assert(clone != null)

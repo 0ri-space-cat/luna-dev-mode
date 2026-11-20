@@ -1,0 +1,616 @@
+{
+  "locations": [
+    {
+      "id": "ISLAND",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Стартовый остров",
+      "color": "738c78",
+      "links": [
+        "CROSSROADS"
+      ],
+      "solids": [
+        {
+          "kind": "SWIM_REQUIRED",
+          "rect": [
+            155,
+            -215,
+            50,
+            155
+          ]
+        },
+        {
+          "kind": "SWIM_REQUIRED",
+          "rect": [
+            155,
+            60,
+            50,
+            155
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MEADOW",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Луга",
+      "color": "879967",
+      "links": [
+        "CROSSROADS",
+        "GROVE"
+      ],
+      "solids": []
+    },
+    {
+      "id": "FOREST",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Большой лес",
+      "color": "486e65",
+      "links": [
+        "GROVE"
+      ],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            -125,
+            -95,
+            60,
+            35
+          ]
+        },
+        {
+          "kind": "WALL",
+          "rect": [
+            210,
+            150,
+            85,
+            45
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAKE",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Озеро Дубликатов",
+      "color": "578999",
+      "links": [
+        "CROSSROADS",
+        "VALLEY",
+        "CAVES"
+      ],
+      "solids": [
+        {
+          "kind": "SWIM_REQUIRED",
+          "rect": [
+            65,
+            60,
+            270,
+            90
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VALLEY",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Долина водопадов",
+      "color": "498796",
+      "links": [
+        "LAKE",
+        "COAST"
+      ],
+      "solids": []
+    },
+    {
+      "id": "LUMA",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Люма",
+      "color": "8a77a8",
+      "links": [
+        "ROOFTOP",
+        "HOME",
+        "CAFE"
+      ],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            -280,
+            -82,
+            145,
+            22
+          ]
+        }
+      ]
+    },
+    {
+      "id": "HOME",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Комната Луны",
+      "color": "957e95",
+      "links": [
+        "LUMA"
+      ],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            -165,
+            70,
+            85,
+            42
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CAFE",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Кафе",
+      "color": "987989",
+      "links": [
+        "LUMA"
+      ],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            -175,
+            -140,
+            110,
+            38
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CAVES",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Кристальные пещеры",
+      "color": "615b87",
+      "links": [
+        "LAKE",
+        "CISTERN",
+        "MOUNTAIN"
+      ],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            -215,
+            -75,
+            140,
+            15
+          ]
+        },
+        {
+          "kind": "WALL",
+          "rect": [
+            120,
+            -215,
+            32,
+            155
+          ]
+        },
+        {
+          "kind": "WALL",
+          "rect": [
+            120,
+            155,
+            32,
+            60
+          ]
+        }
+      ]
+    },
+    {
+      "id": "COAST",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Побережье",
+      "color": "859da5",
+      "links": [
+        "VALLEY"
+      ],
+      "solids": [
+        {
+          "kind": "SWIM_REQUIRED",
+          "rect": [
+            65,
+            60,
+            53,
+            155
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MOUNTAIN",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Небесные острова",
+      "color": "8683a3",
+      "links": [
+        "CROSSROADS",
+        "CAVES"
+      ],
+      "solids": [
+        {
+          "kind": "CLIMB_REQUIRED",
+          "rect": [
+            65,
+            -215,
+            45,
+            155
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DEBUG",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Забытый край",
+      "color": "575975",
+      "links": [],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            205,
+            -215,
+            40,
+            155
+          ]
+        },
+        {
+          "kind": "WALL",
+          "rect": [
+            205,
+            60,
+            40,
+            155
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FAIRY",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Измерение фей",
+      "color": "a78dab",
+      "links": [],
+      "solids": []
+    },
+    {
+      "id": "DREAM",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Лес во сне",
+      "color": "43445d",
+      "links": [],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            -90,
+            -95,
+            25,
+            35
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TOWER",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Башня отражений",
+      "color": "757998",
+      "links": [],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            -175,
+            -130,
+            62,
+            70
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SHELTER",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "За водопадом",
+      "color": "69647c",
+      "links": [],
+      "solids": []
+    },
+    {
+      "id": "BLACK",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Между сценами",
+      "color": "33384c",
+      "links": [],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            -155,
+            -85,
+            32,
+            25
+          ]
+        },
+        {
+          "kind": "WALL",
+          "rect": [
+            -155,
+            60,
+            32,
+            55
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DESKTOP",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "По ту сторону окна",
+      "color": "71668c",
+      "links": [],
+      "solids": []
+    },
+    {
+      "id": "WHITE_VOID",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "title": "Белая Пустота",
+      "color": "b4acbd",
+      "links": [],
+      "solids": []
+    },
+    {
+      "id": "GROVE",
+      "title": "Опушка",
+      "color": "718f77",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "links": [
+        "MEADOW",
+        "FOREST"
+      ],
+      "solids": [
+        {
+          "kind": "SWIM_REQUIRED",
+          "rect": [
+            -270,
+            60,
+            205,
+            67
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CISTERN",
+      "title": "Подземный ручей",
+      "color": "547a9a",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "links": [
+        "CAVES"
+      ],
+      "solids": [
+        {
+          "kind": "SWIM_REQUIRED",
+          "rect": [
+            155,
+            -215,
+            130,
+            155
+          ]
+        },
+        {
+          "kind": "SWIM_REQUIRED",
+          "rect": [
+            155,
+            60,
+            130,
+            155
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ROOFTOP",
+      "title": "Крыши Люмы",
+      "color": "9c81ad",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "links": [
+        "LUMA"
+      ],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            65,
+            140,
+            110,
+            75
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LOST_HOUSE",
+      "title": "Дом без номера",
+      "color": "555471",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "links": [],
+      "solids": [
+        {
+          "kind": "WALL",
+          "rect": [
+            105,
+            60,
+            175,
+            40
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CROSSROADS",
+      "title": "Перепутье",
+      "color": "918496",
+      "scene": "res://scenes/runtime2d/level_shell.tscn",
+      "links": [
+        "ISLAND",
+        "MEADOW",
+        "LAKE",
+        "MOUNTAIN"
+      ],
+      "entries": {
+        "entry": [
+          0,
+          0
+        ]
+      },
+      "solids": []
+    }
+  ]
+}

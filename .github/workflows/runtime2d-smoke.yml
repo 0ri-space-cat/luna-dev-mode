@@ -46,7 +46,7 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_avoidance.gd
       - name: Test author-defined world rules and one-shot persistence
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_world_rules.gd
-      - name: Test bounded world time modes and unscaled safety
+      - name: Test daily time windows, world time modes and unscaled safety
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_time_modes.gd
       - name: Test real event-overflow recovery and safe checkpoints
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_recovery.gd
@@ -66,6 +66,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_push_history.gd
       - name: Test protected atomic spell program command bundles
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_spell_program.gd
+      - name: Test playable Eternia campaign
+        run: bash ci/run_godot_script.sh res://tests/test_eternia_adventure.gd
       - name: Boot 2D main scene
         run: |
           set -o pipefail
