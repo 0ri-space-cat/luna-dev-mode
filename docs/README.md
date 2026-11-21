@@ -21,6 +21,11 @@
 - [Задачи первой игровой сборки](drafts/LUNA_MASTER_CONCEPT_AND_SKELETON_HANDOFF_2026-11-20.md) — рабочая сводка и критерии приёмки.
 - [Исторические карты и варианты загадок](../archive/design/proposals/) — запас идей для обсуждения.
 
+## Сквозные утверждённые решения
+
+- [Профили персонажей, их уникальные инструменты, HUD, двери и метасекреты (21.11)](canon/32_V6_APPROVED_PROFILE_SYSTEM_AND_SCENARIO_HANDOFF_2026_11_21.md). Этот документ фиксирует более поздние решения, чем отдельные устаревшие описания подаренных артефактов.
+- [Актуальный перечень 17 артефактов](canon/25_V6_FINAL_AUTHOR_ARTIFACT_ROSTER.md), с пометкой о новом назначении Пиксельного глобуса.
+
 ## Арт и код
 
 - [Окружение и промпты](art/ENVIRONMENT_ART_DIRECTION_AND_PROMPTS_V1.md) · [разделение сцены на слои](art/SCENE_ENVIRONMENT_LAYERING_AND_ANIMATION_V1.md) · [шаблон сцены](art/SCENE_BRIEF_TEMPLATE.md).
