@@ -24,6 +24,7 @@
 | География и Пустоты | [28. Этерния и метаоткрытия](28_V6_ETERNIA_MAP_AND_META_DISCOVERY_WORKSHOP.md) |
 | Совместная работа над загадками | [29. Процесс проектирования](29_V6_WORLD_PUZZLE_DESIGN_PROCESS.md) |
 | Последние решения 20 ноября | [30. Финальные авторские решения](30_V6_FINAL_AUTHOR_CHOICES_AND_IMPLEMENTATION_RULES.md) |
+| Ответ автора на аудит 22 ноября | [34. Мост III, Белая Пустота, профили, расписания, Призма и Свиток](34_V6_AUTHOR_RESPONSE_TO_NINE_CHAPTER_AUDIT_2026_11_22.md) |
 | Прямое решение о воде, чиби-клонах и тайнике | [33. Водопадный канон](33_V6_WATERFALL_AUTHOR_REVISION_CHIBI_CLONES_2026_11_21.md) |
 | Диалоги, журнал и уточнения мира | [31. Прото-Луна, эмоты и обучение через открытия](31_V6_DIALOGUE_JOURNAL_AND_DISCOVERY.md) |
 
