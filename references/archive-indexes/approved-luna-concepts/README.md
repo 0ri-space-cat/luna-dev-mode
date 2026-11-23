@@ -19,5 +19,5 @@ Curated by the project author (November 2026). Use these visual references to gu
 - The first menu uses **START GAME / OPTIONS / EXIT** as **visual guidance** only; actual buttons must be coded and localizable.
 - Use the clean no-buttons title screen for Godot's runtime menu.
 - Character and gameplay images are art references, not 3D models, textures that can be plugged directly into Godot, or gameplay captures.
-- Follow `docs/canon/` for current narrative/system canon and `art/source/hack/DIRECTION.md` for the hack editor's accepted vertical pixel layout.
+- Follow `docs/manual/00_LUNA_PRODUCTION_MANUAL.md` for current narrative/system design and `art/source/hack/DIRECTION.md` for the hack editor's accepted vertical pixel layout.
 - To avoid misleading screenshots, clearly label concept images as concept art when sharing outside the repository.

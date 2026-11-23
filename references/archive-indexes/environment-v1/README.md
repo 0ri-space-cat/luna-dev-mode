@@ -3,7 +3,7 @@
 **Text documentation is committed; original binary screenshots are NOT yet present in this folder.** The images came from the author's ChatGPT conversation and have not been silently substituted with unrelated web examples. For exact drawings, upload the original images or give them to a subsequent model as attached files.
 
 **Read this folder with:**
-1. [Current V6 creative canon](../../../docs/canon/20_V6_AUTHOR_ONLY_BIBLE.md)
+1. [Current V6 creative canon](https://github.com/0ri-space-cat/luna-dev-mode/blob/main/DEVELOPMENT%20HISTORY/docs/canon/20_V6_AUTHOR_ONLY_BIBLE.md)
 2. [Interior/exterior master prompts](../../../docs/art/ENVIRONMENT_ART_DIRECTION_AND_PROMPTS_V1.md)
 3. [Detailed annotated reference atlas](../../../docs/art/ENVIRONMENT_REFERENCE_ATLAS_V1.md)
 4. [Per-location SAI + Sheets brief template](../../../docs/art/SCENE_BRIEF_TEMPLATE.md)

@@ -16,4 +16,4 @@
 - **Локации.** Начинать с авторской схемы пространства и [брифа сцены](../../docs/art/SCENE_BRIEF_TEMPLATE.md). [Архитектура кадров и палитра](../../docs/art/ENVIRONMENT_ART_DIRECTION_AND_PROMPTS_V1.md) · [фон и интерактивные слои](../../docs/art/SCENE_ENVIRONMENT_LAYERING_AND_ANIMATION_V1.md).
 - **Манифесты Луны.** Исходные `res://assets/2d/characters/luna/…` внутри JSON описывают пути при импорте набора в Godot. Здесь соответствующий корень — `characters/luna/`. Хеши кадров относятся к исходному банку. Палитра `palette_blue_lilac/` лежит отдельно рядом с исходными кадрами.
 
-[Legacy-материалы](../../archive/legacy/) пригодятся для переработки. [Панель, меню и окружение на концептах](../../references/README.md) используются по указанным в каталоге ролям.
+[Legacy-материалы](https://github.com/0ri-space-cat/luna-dev-mode/tree/main/DEVELOPMENT%20HISTORY/archive/legacy/) пригодятся для переработки. [Панель, меню и окружение на концептах](../../references/README.md) используются по указанным в каталоге ролям.
