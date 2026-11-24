@@ -21,6 +21,7 @@ var actor: ElevationBody
 var keyboard := true
 var _surfaces: Array[Dictionary] = []
 var _jump_down := false
+var _impulse_down := false
 @onready var height_readout: Label = $Readout
 
 
@@ -45,6 +46,10 @@ func _physics_process(_delta: float) -> void:
 		if jump_down and not _jump_down:
 			actor.jump()
 		_jump_down = jump_down
+		var impulse_down := Input.is_physical_key_pressed(KEY_I)
+		if impulse_down and not _impulse_down:
+			actor.apply_impulse(Vector2(220.0, 0.0), 180.0)
+		_impulse_down = impulse_down
 		actor.thrust_requested = Input.is_physical_key_pressed(KEY_F)
 		actor.gravity_scale = 0.4 if Input.is_physical_key_pressed(KEY_G) else 1.0
 	height_readout.text = "Z %.1f   Vz %.1f   %s   Returns %d" % [
@@ -62,6 +67,7 @@ func make_snapshot() -> Dictionary:
 			"position": [actor.position.x, actor.position.y],
 			"flight_enabled": actor.flight_enabled,
 			"motion": actor.motion.snapshot(),
+			"dynamics": actor.dynamics_snapshot(),
 		},
 	}
 
@@ -93,6 +99,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 			or _intersects_wall(anchor_point, float(anchor[2])):
 		candidate.free()
 		return false
+	if body.has("dynamics"):
+		var dynamics: Variant = body["dynamics"]
+		if not dynamics is Dictionary or not candidate.load_dynamics(dynamics):
+			candidate.free()
+			return false
 	candidate.flight_enabled = flight
 	actor.free()
 	actor = candidate

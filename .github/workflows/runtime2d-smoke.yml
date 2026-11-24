@@ -28,6 +28,8 @@ jobs:
           fi
       - name: Test new skeleton elevation, supports and recovery
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_elevation.gd
+      - name: Test skeleton mass, impulse and restitution
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_impulse.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws

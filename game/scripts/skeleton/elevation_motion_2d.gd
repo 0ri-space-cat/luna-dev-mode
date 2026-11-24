@@ -3,6 +3,7 @@ extends RefCounted
 ## Supports are one-way top surfaces described in world coordinates.
 
 const EPSILON := 0.00001
+const REST_SPEED := 22.0
 
 var elevation := 0.0
 var vertical_speed := 0.0
@@ -28,7 +29,7 @@ func add_impulse(speed_delta: float) -> void:
 
 
 func step(from: Vector2, to: Vector2, delta: float, acceleration: float,
-		surfaces: Array[Dictionary]) -> void:
+		surfaces: Array[Dictionary], bounciness: float = 0.0) -> void:
 	if delta <= EPSILON:
 		return
 	if acceleration > 0.0 and grounded:
@@ -64,12 +65,17 @@ func step(from: Vector2, to: Vector2, delta: float, acceleration: float,
 			elevation += vertical_speed * remaining + 0.5 * acceleration * remaining * remaining
 			vertical_speed += acceleration * remaining
 			return
+		var impact_speed := -(vertical_speed + acceleration * landing_time)
 		start = start.lerp(to, landing_time / remaining)
 		remaining -= landing_time
 		elevation = landing_height
-		vertical_speed = 0.0
-		grounded = true
-		_update_anchor(start, surfaces)
+		var rebound := impact_speed * bounciness
+		if rebound >= REST_SPEED:
+			vertical_speed = rebound
+		else:
+			vertical_speed = 0.0
+			grounded = true
+			_update_anchor(start, surfaces)
 
 
 func recover() -> Vector2:

@@ -8,7 +8,7 @@ script = ExtResource("1")
 [node name="Controls" type="Label" parent="."]
 offset_left = 80.0
 offset_top = 22.0
-text = "P9-01  |  WASD / arrows: move   Space: jump   F: thrust   G: low gravity"
+text = "P9-01  |  WASD / arrows: move   Space: jump   F: thrust   G: low gravity   I: impulse"
 
 [node name="Readout" type="Label" parent="."]
 offset_left = 80.0
