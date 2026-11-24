@@ -26,6 +26,8 @@ jobs:
           if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|^ERROR:' /tmp/luna-2d-parse.log; then
             exit 1
           fi
+      - name: Test new skeleton elevation, supports and recovery
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_elevation.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws
