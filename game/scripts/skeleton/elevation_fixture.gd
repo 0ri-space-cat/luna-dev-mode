@@ -2,11 +2,19 @@ extends Node2D
 ## Small developer-only test map. Dimensions are fixture tuning.
 
 const ElevationBody = preload("res://scripts/skeleton/elevation_body_2d.gd")
+const WaterVolume = preload("res://scripts/skeleton/water_volume_2d.gd")
 const SaveStore = preload("res://scripts/runtime2d/save_store_2d.gd")
 const ENTITY_ID := "DEV_ELEVATION_ACTOR"
 const FIXTURE_KEY := "p9_01"
 const START := Vector2(176, 264)
 const UPPER_HEIGHT := 72.0
+const WATER_START := Vector2(160, 332)
+const BANK_HEIGHT := 94.0
+const WATER_DECKS: Array[Dictionary] = [
+	{"bounds": Rect2(90, 190, 850, 264), "height": 0.0},
+	{"bounds": Rect2(90, 202, 160, 240), "height": BANK_HEIGHT},
+	{"bounds": Rect2(195, 225, 600, 34), "height": 112.0},
+]
 const SURFACES: Array[Dictionary] = [
 	{"bounds": Rect2(80, 194, 510, 270), "height": 0.0},
 	{"bounds": Rect2(126, 226, 224, 142), "height": UPPER_HEIGHT},
@@ -17,22 +25,35 @@ const WALLS: Array[Dictionary] = [
 	{"bounds": Rect2(830, 230, 28, 184), "height": 160.0, "layer": 2},
 ]
 
+@export var use_water_map := false
+
 var actor: ElevationBody
 var keyboard := true
 var _surfaces: Array[Dictionary] = []
+var _decks: Array[Dictionary] = []
+var _walls: Array[Dictionary] = []
+var _water_volumes: Array[WaterVolume] = []
 var _jump_down := false
 var _impulse_down := false
 @onready var height_readout: Label = $Readout
 
 
 func _ready() -> void:
-	_surfaces.assign(SURFACES)
-	for wall in WALLS:
+	_decks.assign(WATER_DECKS if use_water_map else SURFACES)
+	_surfaces.assign(_decks)
+	if use_water_map:
+		_water_volumes.append(WaterVolume.new(Rect2(250, 206, 480, 224),
+			0.0, 82.0, Vector2(42.0, 0.0), 5.0))
+	else:
+		_walls.assign(WALLS)
+	for wall in _walls:
 		_build_wall(wall)
 	actor = _new_actor()
-	actor.position = START
-	actor.motion.reset_on_surface(START, UPPER_HEIGHT)
-	actor.flight_enabled = true
+	actor.position = WATER_START if use_water_map else START
+	actor.motion.reset_on_surface(actor.position, BANK_HEIGHT if use_water_map else UPPER_HEIGHT)
+	actor.flight_enabled = not use_water_map
+	if use_water_map:
+		actor.configure_water(1.55, true)
 	add_child(actor)
 
 
@@ -51,6 +72,8 @@ func _physics_process(_delta: float) -> void:
 			actor.apply_impulse(Vector2(220.0, 0.0), 180.0)
 		_impulse_down = impulse_down
 		actor.thrust_requested = Input.is_physical_key_pressed(KEY_F)
+		actor.swim_intent = float(Input.is_physical_key_pressed(KEY_R)) \
+			- float(Input.is_physical_key_pressed(KEY_C))
 		actor.gravity_scale = 0.4 if Input.is_physical_key_pressed(KEY_G) else 1.0
 	height_readout.text = "Z %.1f   Vz %.1f   %s   Returns %d" % [
 		actor.motion.elevation, actor.motion.vertical_speed,
@@ -61,19 +84,20 @@ func _physics_process(_delta: float) -> void:
 func make_snapshot() -> Dictionary:
 	return {
 		"format": SaveStore.FORMAT,
-		"fixture": FIXTURE_KEY,
+		"fixture": _fixture_key(),
 		"actor": {
 			"id": actor.entity_id,
 			"position": [actor.position.x, actor.position.y],
 			"flight_enabled": actor.flight_enabled,
 			"motion": actor.motion.snapshot(),
+			"water": actor.water_snapshot(),
 			"dynamics": actor.dynamics_snapshot(),
 		},
 	}
 
 
 func apply_snapshot(data: Dictionary) -> bool:
-	if data.get("format") != SaveStore.FORMAT or data.get("fixture") != FIXTURE_KEY:
+	if data.get("format") != SaveStore.FORMAT or data.get("fixture") != _fixture_key():
 		return false
 	var body: Variant = data.get("actor")
 	if not body is Dictionary or body.get("id") != ENTITY_ID:
@@ -104,6 +128,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 		if not dynamics is Dictionary or not candidate.load_dynamics(dynamics):
 			candidate.free()
 			return false
+	if body.has("water"):
+		var water: Variant = body["water"]
+		if not water is Dictionary or not candidate.load_water(water):
+			candidate.free()
+			return false
 	candidate.flight_enabled = flight
 	actor.free()
 	actor = candidate
@@ -111,8 +140,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 	return true
 
 
+func _fixture_key() -> String:
+	return "p9_01_water" if use_water_map else FIXTURE_KEY
+
+
 func _intersects_wall(point: Vector2, elevation: float) -> bool:
-	for wall in WALLS:
+	for wall in _walls:
 		if elevation >= float(wall["height"]):
 			continue
 		var bounds: Rect2 = wall["bounds"]
@@ -126,7 +159,8 @@ func _new_actor() -> ElevationBody:
 	var body := ElevationBody.new()
 	body.entity_id = ENTITY_ID
 	body.surfaces = _surfaces
-	body.walls = WALLS
+	body.walls = _walls
+	body.water_volumes = _water_volumes
 	return body
 
 
@@ -150,9 +184,19 @@ func _build_wall(wall: Dictionary) -> void:
 
 
 func _draw() -> void:
-	for surface in SURFACES:
-		_draw_platform(surface["bounds"], surface["height"], Color("3f395c"))
-	for wall in WALLS:
+	for surface in _decks:
+		if is_zero_approx(float(surface["height"])):
+			_draw_platform(surface["bounds"], surface["height"], Color("3f395c"))
+	for water in _water_volumes:
+		var top := Rect2(water.bounds.position - Vector2(0.0, water.surface), water.bounds.size)
+		draw_rect(Rect2(Vector2(top.position.x, top.end.y),
+			Vector2(top.size.x, water.surface - water.bottom)), Color(0.12, 0.36, 0.48, 0.45))
+		draw_rect(top, Color(0.26, 0.57, 0.72, 0.38))
+		draw_rect(top, Color("70b3c9"), false, 2.0)
+	for surface in _decks:
+		if not is_zero_approx(float(surface["height"])):
+			_draw_platform(surface["bounds"], surface["height"], Color("3f395c"))
+	for wall in _walls:
 		_draw_platform(wall["bounds"], wall["height"], Color("705d83"))
 
 

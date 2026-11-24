@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/skeleton/elevation_fixture.tscn" id="1"]
+
+[node name="WaterFixture" instance=ExtResource("1")]
+use_water_map = true
+
+[node name="Controls" parent="." index="0"]
+text = "P9-01  |  WASD / arrows: move   R / C: swim up / down   I: impulse"

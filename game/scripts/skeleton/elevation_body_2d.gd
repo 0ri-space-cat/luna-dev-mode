@@ -3,10 +3,15 @@ extends CharacterBody2D
 ## The fixture uses a separate layer per height volume, with walkable tops.
 
 const ElevationMotion = preload("res://scripts/skeleton/elevation_motion_2d.gd")
+const WaterVolume = preload("res://scripts/skeleton/water_volume_2d.gd")
 const GRAVITY := 620.0
 const JUMP_SPEED := 295.0
 const FLIGHT_ACCELERATION := 940.0
 const WALK_SPEED := 175.0
+const SWIM_SPEED := 120.0
+const SWIM_ACCELERATION := 1000.0
+const BODY_HEIGHT := 27.0
+const MAX_WATER_LIFT := 12000.0
 const FOOT_RADIUS := 11.0
 const RECOVERY_HEIGHT := -96.0
 const GROUND_DRAG := 3.0
@@ -17,13 +22,17 @@ const MAX_CONTACTS := 4
 var motion := ElevationMotion.new()
 var surfaces: Array[Dictionary] = []
 var walls: Array[Dictionary] = []
+var water_volumes: Array[WaterVolume] = []
 var direction := Vector2.ZERO
 var gravity_scale := 1.0
 var flight_enabled := false
 var thrust_requested := false
+var swim_intent := 0.0
 var recoveries := 0
 var entity_id := ""
 var _mass := 1.0
+var _buoyancy := 0.0
+var _swim_enabled := false
 var _bounciness := 0.0
 var _impulse_velocity := Vector2.ZERO
 var _marker: Polygon2D
@@ -40,7 +49,7 @@ func _ready() -> void:
 	_marker = Polygon2D.new()
 	_marker.color = Color("eed7f8")
 	_marker.polygon = PackedVector2Array([
-		Vector2(-12, 0), Vector2(-9, -19), Vector2(0, -27),
+		Vector2(-12, 0), Vector2(-9, -19), Vector2(0, -BODY_HEIGHT),
 		Vector2(9, -19), Vector2(12, 0),
 	])
 	add_child(_marker)
@@ -104,21 +113,67 @@ func _valid_impulse_velocity(candidate: Vector2) -> bool:
 	return candidate.is_finite() and candidate.length_squared() <= MAX_IMPULSE_SPEED * MAX_IMPULSE_SPEED
 
 
+func configure_water(buoyancy: float, swim_enabled: bool) -> bool:
+	if not is_finite(buoyancy) or buoyancy < 0.0:
+		return false
+	_buoyancy = buoyancy
+	_swim_enabled = swim_enabled
+	return true
+
+
+func water_snapshot() -> Dictionary:
+	return {"buoyancy": _buoyancy, "swim_enabled": _swim_enabled}
+
+
+func load_water(data: Dictionary) -> bool:
+	var buoyancy: Variant = data.get("buoyancy")
+	var swim_enabled: Variant = data.get("swim_enabled")
+	if typeof(buoyancy) not in [TYPE_INT, TYPE_FLOAT] or not swim_enabled is bool:
+		return false
+	return configure_water(float(buoyancy), swim_enabled)
+
+
 func _physics_process(delta: float) -> void:
-	var drive := direction.limit_length() * WALK_SPEED
+	var drive_speed := WALK_SPEED
 	var acceleration := -GRAVITY * gravity_scale
-	if flight_enabled and thrust_requested:
+	var water := _current_water()
+	if water == null and flight_enabled and thrust_requested:
 		acceleration += FLIGHT_ACCELERATION
-	_move_with_contacts(drive, delta, acceleration)
+
+	if water != null:
+		var fraction := water.submerged_fraction(position, motion.elevation, BODY_HEIGHT)
+		var drag_fraction := 1.0 - exp(-water.resistance * fraction * delta / _mass)
+		_impulse_velocity = _impulse_velocity.lerp(water.flow, drag_fraction)
+		acceleration += minf(GRAVITY * (_buoyancy * fraction / _mass), MAX_WATER_LIFT)
+		acceleration -= motion.vertical_speed * drag_fraction / delta
+		if _swim_enabled:
+			drive_speed = lerpf(WALK_SPEED, SWIM_SPEED, fraction)
+			acceleration += clampf(swim_intent, -1.0, 1.0) * SWIM_ACCELERATION
+		else:
+			# Shallow feet can wade. A floating body has no swimming stroke.
+			drive_speed = lerpf(WALK_SPEED, 0.0, minf(fraction / 0.35, 1.0))
+
+	_move_with_contacts(direction.limit_length() * drive_speed, delta, acceleration)
 	if motion.elevation < RECOVERY_HEIGHT:
 		position = motion.recover()
 		_impulse_velocity = Vector2.ZERO
 		velocity = Vector2.ZERO
 		recoveries += 1
-	else:
+	elif water == null:
 		var drag := GROUND_DRAG if motion.grounded else AIR_DRAG
 		_impulse_velocity *= exp(-drag * delta)
 	_sync_projection()
+
+
+func _current_water() -> WaterVolume:
+	var selected: WaterVolume
+	var greatest_fraction := 0.0
+	for volume in water_volumes:
+		var fraction := volume.submerged_fraction(position, motion.elevation, BODY_HEIGHT)
+		if fraction > greatest_fraction:
+			selected = volume
+			greatest_fraction = fraction
+	return selected
 
 
 func _move_with_contacts(drive: Vector2, delta: float, acceleration: float) -> void:

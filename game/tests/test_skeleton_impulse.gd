@@ -73,11 +73,13 @@ func _run() -> void:
 	assert(is_same(actor, scene.actor))
 	var from_first_slice := json_snapshot.duplicate(true)
 	from_first_slice["actor"].erase("dynamics")
+	from_first_slice["actor"].erase("water")
 	assert(scene.apply_snapshot(from_first_slice))
 	actor = scene.actor
 	assert(actor.dynamics_snapshot()["mass"] == 1.0)
 	assert(actor.dynamics_snapshot()["bounciness"] == 0.0)
 	assert(_planar_impulse(actor).is_zero_approx())
+	assert(actor.water_snapshot() == {"buoyancy": 0.0, "swim_enabled": false})
 
 	_place(actor, Vector2(530, 310), 0.0)
 	assert(actor.configure_dynamics(1.0, 0.5))
