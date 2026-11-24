@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/skeleton/elevation_fixture.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/skeleton/entity_fixture.gd" id="2"]
+
+[node name="EntityFixture" instance=ExtResource("1")]
+script = ExtResource("2")
+
+[node name="Controls" parent="." index="0"]
+text = "P9-02  |  WASD / arrows: move   [ / ]: test MASS"

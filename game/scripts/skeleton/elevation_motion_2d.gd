@@ -20,6 +20,13 @@ func reset_on_surface(point: Vector2, height: float) -> void:
 	_safe_elevation = height
 
 
+func start_on_safe_support(point: Vector2, height: float, surfaces: Array[Dictionary]) -> bool:
+	if not _has_support(point, height, surfaces, true):
+		return false
+	reset_on_surface(point, height)
+	return true
+
+
 func add_impulse(speed_delta: float) -> void:
 	if grounded and speed_delta <= 0.0:
 		return

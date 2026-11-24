@@ -43,15 +43,7 @@ var _seat_down := false
 
 
 func _ready() -> void:
-	_decks.assign(WATER_DECKS if use_water_map else SURFACES)
-	_surfaces.assign(_decks)
-	if use_water_map:
-		_water_volumes.append(WaterVolume.new(Rect2(250, 206, 480, 224),
-			0.0, 82.0, Vector2(42.0, 0.0), 5.0))
-	else:
-		_walls.assign(WALLS)
-	for wall in _walls:
-		_build_wall(wall)
+	_prepare_map()
 	actor = _new_body(ENTITY_ID)
 	actor.position = WATER_START if use_water_map else START
 	actor.motion.reset_on_surface(actor.position, BANK_HEIGHT if use_water_map else UPPER_HEIGHT)
@@ -69,6 +61,17 @@ func _ready() -> void:
 		carrier.flight_enabled = true
 		add_child(carrier)
 
+
+func _prepare_map() -> void:
+	_decks.assign(WATER_DECKS if use_water_map else SURFACES)
+	_surfaces.assign(_decks)
+	if use_water_map:
+		_water_volumes.append(WaterVolume.new(Rect2(250, 206, 480, 224),
+			0.0, 82.0, Vector2(42.0, 0.0), 5.0))
+	else:
+		_walls.assign(WALLS)
+	for wall in _walls:
+		_build_wall(wall)
 
 func _physics_process(_delta: float) -> void:
 	if keyboard:
@@ -166,44 +169,46 @@ func apply_snapshot(data: Dictionary) -> bool:
 func _load_body(body: Variant, entity_id: String) -> ElevationBody:
 	if not body is Dictionary or body.get("id") != entity_id:
 		return null
+	var candidate := _new_body(entity_id)
+	if not _restore_body_state(candidate, body):
+		candidate.free()
+		return null
+	return candidate
+
+
+func _restore_body_state(candidate: ElevationBody, body: Dictionary) -> bool:
 	var point: Variant = body.get("position")
 	var height_state: Variant = body.get("motion")
 	var flight: Variant = body.get("flight_enabled")
 	if not point is Array or point.size() != 2 or not height_state is Dictionary or not flight is bool:
-		return null
+		return false
 	for coordinate in point:
 		if typeof(coordinate) not in [TYPE_FLOAT, TYPE_INT] or not is_finite(float(coordinate)) \
 				or absf(float(coordinate)) > 100000.0:
-			return null
-	var candidate := _new_body(entity_id)
+			return false
 	candidate.position = Vector2(float(point[0]), float(point[1]))
 	if not candidate.motion.load_snapshot(height_state, candidate.position, _surfaces,
 			ElevationBody.RECOVERY_HEIGHT):
-		candidate.free()
-		return null
+		return false
 	var anchor: Array = candidate.motion.snapshot()["anchor"]
 	var anchor_point := Vector2(float(anchor[0]), float(anchor[1]))
 	if _intersects_wall(candidate.position, candidate.motion.elevation) \
 			or _intersects_wall(anchor_point, float(anchor[2])):
-		candidate.free()
-		return null
+		return false
 	if body.has("dynamics"):
 		var dynamics: Variant = body["dynamics"]
 		if not dynamics is Dictionary or not candidate.load_dynamics(dynamics):
-			candidate.free()
-			return null
+			return false
 	if body.has("water"):
 		var water: Variant = body["water"]
 		if not water is Dictionary or not candidate.load_water(water):
-			candidate.free()
-			return null
-	if entity_id == CARRIER_ID:
+			return false
+	if candidate.entity_id == CARRIER_ID:
 		var seat: Variant = body.get("seat")
 		if not seat is Dictionary or not candidate.load_seat(seat):
-			candidate.free()
-			return null
+			return false
 	candidate.flight_enabled = flight
-	return candidate
+	return true
 
 
 func _fixture_key() -> String:
@@ -225,13 +230,17 @@ func _intersects_wall(point: Vector2, elevation: float) -> bool:
 
 func _new_body(entity_id: String) -> ElevationBody:
 	var body := ElevationBody.new()
+	_configure_body(body, entity_id)
+	return body
+
+
+func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	body.entity_id = entity_id
 	body.surfaces = _surfaces
 	body.walls = _walls
 	body.water_volumes = _water_volumes
 	var start := WATER_START if use_water_map else START
 	body.emergency_anchor = Vector3(start.x, start.y, BANK_HEIGHT if use_water_map else UPPER_HEIGHT)
-	return body
 
 
 func _build_wall(wall: Dictionary) -> void:

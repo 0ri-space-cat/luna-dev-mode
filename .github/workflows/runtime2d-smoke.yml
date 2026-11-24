@@ -34,6 +34,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_water.gd
       - name: Test skeleton boarding, load and dismount
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_riding.gd
+      - name: Test skeleton entities and physical wand edits
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_entities.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws
