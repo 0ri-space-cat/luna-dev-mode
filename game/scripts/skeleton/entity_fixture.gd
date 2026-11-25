@@ -12,6 +12,7 @@ const Parameters = preload("res://scripts/skeleton/entity_parameters_2d.gd")
 const LOCATION_ID := "DEV_P9_02"
 const TARGET_ID := "DEV_P9_02_FRIDGE"
 const MAX_ENTITIES := 24
+const YETI_ID := "DEV_P9_02_YETI"
 const PLAYER_DEFINITION := {
 	"id": ENTITY_ID, "category": "player", "label": "Луна", "material": "FABRIC",
 }
@@ -32,7 +33,8 @@ func _ready() -> void:
 	commands.configure_world(entities)
 	actor = spawn_entity(PLAYER_DEFINITION, START, UPPER_HEIGHT)
 	var target := spawn_entity(TARGET_DEFINITION, START + Vector2(48.0, 0.0), UPPER_HEIGHT)
-	if actor == null or target == null:
+	var yeti := spawn_entity({"id": YETI_ID, "category": "yeti", "label": "Йетти", "material": "FABRIC"}, START + Vector2(0, 52), UPPER_HEIGHT)
+	if actor == null or target == null or yeti == null:
 		set_physics_process(false)
 		push_error("Could not place the P9-02 fixture actors on the starting platform")
 
@@ -86,7 +88,8 @@ func _build_entity(definition: Dictionary) -> EntityBody:
 		return null
 	var body := EntityBody.new()
 	_configure_body(body, identity)
-	body.record = EntityRecord.new(identity, category, label, parameters, {"material": material})
+	body.record = EntityRecord.new(identity, category, label, parameters, {"material": material, "alive": category in ["player", "yeti"], "asleep": category == "yeti"})
+	body.world_registry = entities
 	body.location_id = LOCATION_ID
 	return body
 
@@ -100,8 +103,6 @@ func request_wand_parameter_edit(target_id: String, parameter_id: String, value:
 	var height_gap: float = actor.motion.elevation - target.motion.elevation
 	if Vector3(offset.x, offset.y, height_gap).length_squared() > WandPolicy.REACH_PX * WandPolicy.REACH_PX:
 		return false
-	if key not in Parameters.PHYSICS_FIELDS:
-		return false
 	return commands.execute_set(target, key, value, actor.entity_id, "wand:luna")
 
 
@@ -114,8 +115,9 @@ func make_snapshot() -> Dictionary:
 		data["label"] = body.record.display_name
 		data["material"] = body.get_parameter("material")
 		data["location_id"] = body.location_id
+		data["life"] = body.life_snapshot()
 		states.append(data)
-	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entities": states}
+	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 1, "entities": states}
 
 
 func apply_snapshot(data: Dictionary) -> bool:
@@ -124,9 +126,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	if not states is Array or states.is_empty() or states.size() > MAX_ENTITIES:
 		return false
+	var version: Variant = data.get("entity_state_version", 0)
+	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0]:
+		return false
 	var candidates := {}
 	for state in states:
-		var candidate := _build_saved_entity(state)
+		var candidate := _build_saved_entity(state, float(version) == 1.0)
 		if candidate == null or candidates.has(candidate.entity_id):
 			if candidate != null:
 				candidate.free()
@@ -150,11 +155,13 @@ func apply_snapshot(data: Dictionary) -> bool:
 	return true
 
 
-func _build_saved_entity(state: Variant) -> EntityBody:
+func _build_saved_entity(state: Variant, has_life: bool) -> EntityBody:
 	if not state is Dictionary or state.get("location_id") != LOCATION_ID or not state.has("dynamics"):
 		return null
+	if state.has("life") != has_life:
+		return null
 	var body := _build_entity(state)
-	if body != null and not _restore_body_state(body, state):
+	if body != null and (not _restore_body_state(body, state) or (has_life and not body.restore_life(state["life"]))):
 		body.free()
 		return null
 	return body

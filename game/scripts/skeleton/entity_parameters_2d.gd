@@ -25,6 +25,7 @@ func _init() -> void:
 		"tab": "PHYSICS", "min": 0.0, "max": 1.0, "step": 0.0, "default": 0.0,
 		"hint": "Меняет отскок от опор и стен.",
 	})
+	register_parameter({"id": "asleep", "label": "ASLEEP", "kind": "bool", "default": false, "hint": "Сон"})
 
 
 static func storage_id(parameter_id: String) -> String:
