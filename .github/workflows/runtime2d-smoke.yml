@@ -76,6 +76,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_ecology.gd
       - name: Test rare observations, exact bank report and saved delivery
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_administrator_observations.gd
+      - name: Test the Ancient Console and safe White Void visit
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_ancient_console.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws

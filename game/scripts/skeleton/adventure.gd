@@ -65,6 +65,7 @@ func _ready() -> void:
 	home.help_completed.connect(_on_help_completed)
 	home.forest_bank_interacted.connect(_on_forest_press)
 	home.forest_bank_left.connect(_queue_forest_report)
+	home.ancient_console.command_submitted.connect(_on_ancient_command)
 	events.event_dropped.connect(_on_overflow)
 	_recovery_view.finished.connect(_finish_recovery)
 	var profile := _store.read_snapshot(profile_path)
@@ -351,6 +352,7 @@ func report_system_incident(reason: String, overload: bool = false) -> bool:
 
 func _begin_recovery() -> void:
 	events.clear_pending()
+	home.ancient_console.close()
 	home.hide_administrator()
 	system_pause.begin(SystemPause.RECOVERY, home, home.actor)
 	_recovery_view.begin()
@@ -375,7 +377,7 @@ func _finish_recovery() -> void:
 	var checkpoint := home.make_snapshot()
 	_overlay_wand_mode(checkpoint, candidate)
 	var travel := action == Journal.REMOVE_LUNA
-	if travel and not _send_to_black_void():
+	if travel and not _activate_guest(OuterRoutes.BLACK_VOID):
 		_abort_display("Точка прибытия недоступна")
 		return
 	if not _write_profile(candidate, _manual, checkpoint, {}, travel):
@@ -413,12 +415,53 @@ func _abort_display(message: String) -> void:
 	_notice(message)
 
 
-func _send_to_black_void() -> bool:
+func _on_ancient_command(command: String, argument: String) -> void:
+	var console := home.ancient_console
+	var succeeded := false
+	if not _away and not _simulation_suspended() and _interrupted.is_empty() and home.at_ancient_console():
+		match command:
+			"TELEPORT":
+				succeeded = argument == OuterRoutes.WHITE_ADDRESS and _visit_white_void()
+			"TIME_OF_DAY":
+				var clock := home.world_clock
+				var minute: int = {
+					"MORNING": clock.MORNING_MINUTE, "DAY": clock.START_MINUTE,
+					"EVENING": clock.EVENING_MINUTE, "NIGHT": clock.NIGHT_MINUTE,
+				}.get(argument, -1)
+				succeeded = clock.set_time_of_day(minute)
+			"SPAWN":
+				succeeded = home.spawn_console_species(argument)
+	if succeeded:
+		console.close()
+	else:
+		if not console.is_open():
+			console.open()
+		console.reject()
+
+
+func _visit_white_void(saved_guest: Dictionary = {}) -> bool:
+	if not home.can_return_traveler(home.actor.position, home.actor.motion.elevation):
+		return false
+	var checkpoint := home.make_snapshot()
+	if not _activate_guest(OuterRoutes.WHITE_ADDRESS):
+		return false
+	if (not saved_guest.is_empty() and not outer.apply_snapshot(saved_guest)) \
+			or not _write_profile(journal, _manual, checkpoint, {}, true, saved_guest):
+		_reactivate_home(checkpoint)
+		return false
+	_continuity = checkpoint
+	_guest_save = saved_guest
+	_away = true
+	return true
+
+
+func _activate_guest(address: String) -> bool:
 	var leaving_bank := home._at_forest_bank()
 	var guest: OuterRoutes = OUTER.instantiate()
 	guest.position = GUEST_OFFSET
 	guest.process_mode = Node.PROCESS_MODE_PAUSABLE
-	guest.return_to_host = _return_from_black_void
+	guest.hosted_entry = address
+	guest.return_to_host = _return_to_home
 	add_child(guest)
 	var player := home.actor as Island.EntityBody
 	if not guest.mount_host_traveler(player, home.access, home.world_clock):
@@ -436,18 +479,16 @@ func _send_to_black_void() -> bool:
 	return true
 
 
-func _return_from_black_void() -> bool:
+func _return_to_home() -> bool:
 	if not _away or not is_instance_valid(outer):
 		return false
-	var checkpoint := _continuity.duplicate(true)
-	checkpoint["world_clock"] = home.world_clock.snapshot()
-	var stored := _write_profile(journal, _manual, checkpoint, {}, false)
-	_reactivate_home(checkpoint)
+	_reactivate_home(_continuity)
+	var checkpoint := home.make_snapshot()
 	_continuity = checkpoint
 	_away = false
 	_guest_save = {}
 	mark_safe_state()
-	if not stored:
+	if not _write_profile(journal, _manual, checkpoint, {}, false):
 		_notice("Луна вернулась. Запись точки пока недоступна")
 	return true
 
@@ -457,7 +498,13 @@ func _reactivate_home(checkpoint: Dictionary) -> void:
 		if entity["id"] != Island.ENTITY_ID:
 			continue
 		var point := Vector2(entity["position"][0], entity["position"][1])
-		home.return_traveler(point, float(entity["motion"]["elevation"]))
+		var height := float(entity["motion"]["elevation"])
+		if outer.hosted_entry == OuterRoutes.WHITE_ADDRESS and not home.can_return_traveler(point, height):
+			point = Island.AncientConsole.RETURN_POINT
+			height = 0.0
+			if not home.can_return_traveler(point, height):
+				point = Island.SPAWN
+		home.return_traveler(point, height)
 		break
 	outer.hide()
 	outer.get_node("Interface").hide()
@@ -483,10 +530,14 @@ func save_game() -> bool:
 	var checkpoint := _continuity.duplicate(true) if _away else home.make_snapshot()
 	checkpoint["world_clock"] = home.world_clock.snapshot()
 	var guest := outer.make_snapshot() if _away else {}
-	if not _write_profile(journal, checkpoint, checkpoint, {}, _away, guest):
+	var manual := checkpoint
+	if _away and outer.hosted_entry == OuterRoutes.WHITE_ADDRESS:
+		manual = checkpoint.duplicate(true)
+		manual["white_visit"] = guest
+	if not _write_profile(journal, manual, checkpoint, {}, _away, guest):
 		return false
 	_guest_save = guest
-	_manual = checkpoint
+	_manual = manual
 	_continuity = checkpoint
 	mark_safe_state()
 	return true
@@ -501,7 +552,24 @@ func load_game() -> bool:
 		_begin_recovery()
 		return true
 	var checkpoint := _manual if not _manual.is_empty() else _store.read_snapshot(Island.SAVE_PATH)
+	if checkpoint.has("white_visit"):
+		return _load_saved_white_visit(checkpoint)
 	if not apply_local_rollback(checkpoint):
+		return false
+	_queue_forest_report()
+	return true
+
+
+func _load_saved_white_visit(checkpoint: Dictionary) -> bool:
+	var guest: Variant = checkpoint["white_visit"]
+	if not guest is Dictionary or guest.is_empty():
+		return false
+	var previous := home.make_snapshot()
+	if not _apply_home_snapshot(checkpoint):
+		return false
+	if not _visit_white_void(guest):
+		_apply_home_snapshot(previous)
+		mark_safe_state()
 		return false
 	_queue_forest_report()
 	return true
@@ -552,8 +620,13 @@ func _restore_profile(profile: Dictionary) -> bool:
 		return false
 	var interrupted: Dictionary = profile["interrupted"]
 	var continuity: Dictionary = profile["state"]
+	var away: bool = profile["away"]
+	var guest_entry: Variant = profile.get("guest_entry", OuterRoutes.BLACK_VOID if away else "")
 	if interrupted.is_empty() != candidate.pending.is_empty() \
-			or (profile["away"] and (not interrupted.is_empty() or continuity.is_empty() or candidate.applied != 2)):
+			or (away and (not interrupted.is_empty() or continuity.is_empty() \
+				or guest_entry not in [OuterRoutes.BLACK_VOID, OuterRoutes.WHITE_ADDRESS])) \
+			or (guest_entry == OuterRoutes.BLACK_VOID and candidate.applied != 2) \
+			or (not away and guest_entry != ""):
 		return false
 	var guest_save: Variant = profile.get("guest", {})
 	if not guest_save is Dictionary or (not profile["away"] and not guest_save.is_empty()):
@@ -571,7 +644,7 @@ func _restore_profile(profile: Dictionary) -> bool:
 	ecology = candidate_ecology
 	observations = candidate_observations
 	if _away:
-		if not _send_to_black_void():
+		if not _activate_guest(guest_entry):
 			return false
 		if not guest_save.is_empty():
 			if outer.apply_snapshot(guest_save):
@@ -673,7 +746,8 @@ func _write_profile(current: Journal, manual: Dictionary, state: Dictionary, int
 	return _profile_valid and _store.write_snapshot({"format": Store.FORMAT, "kind": PROFILE_KIND,
 		"journal": current.snapshot(), "ecology": ecology.snapshot(), "observations": observations.snapshot(),
 		"manual": manual, "state": state,
-		"away": away, "interrupted": interrupted, "guest": guest}, profile_path)
+		"away": away, "interrupted": interrupted, "guest": guest,
+		"guest_entry": outer.hosted_entry if away else ""}, profile_path)
 
 
 func _copy_journal() -> Journal:

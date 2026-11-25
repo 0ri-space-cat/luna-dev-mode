@@ -54,6 +54,8 @@ func _draw() -> void:
 			_draw_subspace()
 		Routes.BLACK_VOID:
 			_draw_black_void()
+		Routes.WHITE_ADDRESS:
+			_draw_white_void()
 		_:
 			_draw_ground()
 	if world.current_address != Routes.SUBSPACE and world.actor.motion.grounded:
@@ -122,6 +124,19 @@ func _draw_ground() -> void:
 			var opening := Rect2(room.door.position - Vector2(24, 54), Vector2(48, 60))
 			draw_rect(opening, Color(0.96, 0.73, 0.45, 0.39), false, 13.0)
 			draw_rect(opening, Color("ffd490"), false, 3.0)
+
+
+func _draw_white_void() -> void:
+	var room := world._room as Routes.RouteRoom
+	_gradient(Color("fcfaff"), Color("ded9ec"))
+	draw_rect(room.floor_bounds, Color("f5f1fb"))
+	draw_rect(room.floor_bounds, Color("c8bfd7"), false, 2.0)
+	var pad := room.action_bounds
+	draw_rect(pad, Color("e7dfee"))
+	draw_rect(pad.grow(-4.0), Color("9985b4"), false, 2.0)
+	var center := pad.get_center()
+	draw_polyline(PackedVector2Array([center + Vector2(14, -19), center + Vector2(-14, 0),
+		center + Vector2(14, 19)]), Color("716487"), 4.0, true)
 
 
 func _draw_black_void() -> void:

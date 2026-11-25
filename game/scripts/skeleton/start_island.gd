@@ -9,6 +9,10 @@ signal forest_bank_left
 
 const ForestBank = preload("res://scripts/skeleton/forest_bank_2d.gd")
 const FOREST_BANK_SCENE = preload("res://scenes/skeleton/forest_bank.tscn")
+const AncientConsole = preload("res://scripts/skeleton/ancient_console_2d.gd")
+const CONSOLE_FOX := {"category": "fox", "label": "Лисичка", "material": "FABRIC"}
+const CONSOLE_SPAWN_OFFSETS := [Vector2(-48, 26), Vector2(48, 26), Vector2(-72, -5),
+	Vector2(72, -5), Vector2(-48, -35), Vector2(48, -35), Vector2(0, 60)]
 const FRIDGE_COURT := Rect2(1416, -22, 307, 205)
 const FRIDGE_PATH := Rect2(1643, 130, 105, 125)
 const COURT_FRIDGES := {
@@ -35,6 +39,11 @@ const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
 const WorldClock = preload("res://scripts/runtime2d/world_clock_2d.gd")
 const ActiveDuration = preload("res://scripts/runtime2d/active_duration_2d.gd")
 const ISLAND_ID := "ET_START_ISLAND"
+const AREA_LABELS := {
+	ISLAND_ID: "Стартовый остров", Meadows.LOCATION_ID: "Большие луга",
+	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
+	AncientConsole.LOCATION_ID: "Лесная поляна",
+}
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
 const SPAWN := Vector2(320, 374)
@@ -66,7 +75,9 @@ const BRIDGE_RAILS: Array[Dictionary] = [
 
 @export var ecology_fixture := false
 @export var observation_fixture := false
+@export var ancient_console_enabled := false
 var forest_bank: ForestBank
+var ancient_console: AncientConsole
 var _was_at_bank := false
 var _initial_observation_states: Array[Dictionary] = []
 var ability_bank := AbilityBank.new(entities, commands)
@@ -104,6 +115,8 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if ancient_console_enabled and AncientConsole.CLEARING.has_point(point):
+		return AncientConsole.LOCATION_ID
 	if observation_fixture and ForestBank.FOREST.has_point(point):
 		return ForestBank.LOCATION_ID
 	if point.x >= Lake.BOUNDARY:
@@ -129,6 +142,8 @@ func _ready() -> void:
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
+	if ancient_console_enabled:
+		ground.append_array(AncientConsole.DECKS)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	_surfaces.assign(_decks)
@@ -140,6 +155,8 @@ func _ready() -> void:
 	_walls.assign(BRIDGE_RAILS)
 	if observation_fixture:
 		_walls.append({"bounds": ForestBank.REST_SPOT, "height": 96.0, "layer": 2})
+	if ancient_console_enabled:
+		_walls.append({"bounds": AncientConsole.CONSOLE_BODY, "height": 92.0, "layer": 2})
 	for wall in _walls:
 		_build_wall(wall)
 	commands.configure_world(entities)
@@ -163,6 +180,10 @@ func _ready() -> void:
 		_spawn_ecology_fixture()
 	if observation_fixture:
 		_spawn_observation_fixture()
+	if ancient_console_enabled:
+		ancient_console = AncientConsole.new()
+		add_child(ancient_console)
+		ancient_console.attach_interface($Interface)
 	_camera.position = actor.position
 
 
@@ -210,6 +231,31 @@ func _spawn_observation_fixture() -> void:
 func _at_forest_bank() -> bool:
 	return forest_bank != null and ForestBank.MEANDER.has_point(actor.position) \
 		and ForestBank.FOREST.has_point(actor.position)
+
+
+func at_ancient_console() -> bool:
+	return ancient_console != null and not is_instance_valid(_debug_editor) \
+		and is_instance_valid(actor) and (actor as EntityBody).accepts_player_input() and actor.motion.grounded \
+		and not actor.is_attached() and ancient_console.can_interact(actor.position, actor.motion.elevation)
+
+
+func spawn_console_species(species_id: String) -> bool:
+	if species_id != "FOX":
+		return false
+	var definition := CONSOLE_FOX.duplicate()
+	for index in MAX_ENTITIES:
+		var identity := "FOREST_CONSOLE_FOX_%02d" % index
+		if entities.get_entity(identity) == null:
+			definition["id"] = identity
+			break
+	for offset in CONSOLE_SPAWN_OFFSETS:
+		var point: Vector2 = actor.position + offset
+		if AncientConsole.CLEARING.grow(-ElevationBody.FOOT_RADIUS).has_point(point):
+			var fox := spawn_entity(definition, point, 0.0)
+			if fox != null:
+				fox.set_parameter("behavior_mode", "IDLE")
+				return true
+	return false
 
 
 func awake_fridges_nearby() -> int:
@@ -345,6 +391,8 @@ func _configure_body(body: ElevationBody, entity_id: String) -> void:
 
 
 func set_home_active(active: bool) -> void:
+	if not active and ancient_console != null:
+		ancient_console.close()
 	process_mode = Node.PROCESS_MODE_PAUSABLE if active else Node.PROCESS_MODE_DISABLED
 	visible = active
 	$Interface.visible = active
@@ -353,6 +401,11 @@ func set_home_active(active: bool) -> void:
 		_camera.position = actor.position
 		_camera.make_current()
 		_camera.reset_smoothing()
+
+
+func can_return_traveler(point: Vector2, height: float) -> bool:
+	return actor.motion._has_support(point, height, _decks, true) \
+		and ElevationBody.clears_walls(point, height, actor.foot_radius(), _walls)
 
 
 func return_traveler(point: Vector2, height: float) -> void:
@@ -400,11 +453,7 @@ func _physics_process(delta: float) -> void:
 		forest_bank_left.emit()
 	_was_at_bank = at_bank
 	_camera.position = actor.position
-	var area := "Большие луга" if actor.position.x >= Meadows.WEST_BOUNDARY else "Стартовый остров"
-	if actor.position.x >= Lake.BOUNDARY:
-		area = "Озеро Дубликатов"
-	elif _entity_location(actor.position) == ForestBank.LOCATION_ID:
-		area = "Лес"
+	var area: String = AREA_LABELS[_entity_location(actor.position)]
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
 	_status.text = "%s  ·  %s  ·  %s" % [area, PHASE_LABELS[world_clock.phase()], wand]
 	if has_donut:
@@ -414,7 +463,17 @@ func _physics_process(delta: float) -> void:
 	if restriction_text.is_valid():
 		_status.text += restriction_text.call()
 	var action := _nearby_action()
-	_prompt.text = "" if action.is_empty() or is_instance_valid(_debug_editor) else "E  " + action
+	_prompt.text = "" if action.is_empty() or is_instance_valid(_debug_editor) \
+		or (ancient_console != null and ancient_console.is_open()) else "E  " + action
+
+
+func _apply_keyboard_input() -> void:
+	if ancient_console != null and ancient_console.is_open():
+		if at_ancient_console():
+			apply_player_input(Vector2.ZERO)
+			return
+		ancient_console.close()
+	super._apply_keyboard_input()
 
 
 func _update_world_light(_minute: int = 0) -> void:
@@ -442,6 +501,8 @@ func _within_reach(point: Vector2, height: float = 0.0) -> bool:
 
 
 func _nearby_action() -> String:
+	if at_ancient_console():
+		return "Осмотреть Древнюю Консоль"
 	if access.wand_mode == AccessState.ORDINARY and projection.carried and _within_reach(RIFT_SPOT):
 		return "Поднести палочку"
 	if wand_pair.duplicate == null and projection.carried and actor.motion.grounded \
@@ -521,6 +582,10 @@ func _update_ice_support(active: bool) -> void:
 func interact() -> bool:
 	if not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	if at_ancient_console():
+		ancient_console.open()
+		apply_player_input(Vector2.ZERO)
+		return true
 	if forest_bank != null and forest_bank.can_interact(actor.position, actor.motion.elevation):
 		_was_at_bank = true
 		forest_bank.respond()
@@ -601,6 +666,12 @@ func _set_wand_mode(mode: String) -> bool:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if ancient_console != null and ancient_console.is_open():
+		if event.keycode == KEY_ESCAPE:
+			ancient_console.close()
+		if event.keycode not in [KEY_F5, KEY_F7, KEY_F9]:
+			get_viewport().set_input_as_handled()
 		return
 	match event.keycode:
 		KEY_E:
@@ -831,6 +902,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 	donut_refill = float(refill)
 	retreat_step = int(step)
 	_was_at_bank = _at_forest_bank()
+	if ancient_console != null:
+		ancient_console.close()
 	_connect_bridge_body()
 	_configure_plank_marker(entities.get_entity(Meadows.PLANK_ID) as EntityBody)
 	_camera.position = actor.position
@@ -906,7 +979,7 @@ func _draw() -> void:
 		draw_rect(deck.grow(5.0), Color("2b393d"))
 		draw_rect(deck, color)
 	for wall in _walls:
-		if not observation_fixture or wall["bounds"] != ForestBank.REST_SPOT:
+		if wall["bounds"] not in [ForestBank.REST_SPOT, AncientConsole.CONSOLE_BODY]:
 			draw_rect(wall["bounds"], Color("b5a0b0"))
 	draw_rect(Rect2(FRIDGE_SPOT - Vector2(55, 35), Vector2(110, 70)), Color("657572"))
 	draw_circle(RIFT_SPOT, 22.0, Color("3c3354"))

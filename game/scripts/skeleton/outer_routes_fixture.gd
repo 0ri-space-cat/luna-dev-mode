@@ -34,6 +34,7 @@ var crack_elapsed := 0.0
 var cracking := false
 var _drift := Vector2.ZERO
 var return_to_host: Callable
+var hosted_entry := BLACK_VOID
 
 @onready var traveler_visual: Sprite2D = $TravelerVisual
 @onready var _action_hint: Label = $Interface/Action
@@ -56,7 +57,12 @@ func _ready() -> void:
 		_address_input.text_submitted.connect(_submit_address)
 		if not router.load_catalog_json(_catalog_path()):
 			_startup_error(router.last_error)
-		$Interface/Controls.text = "WASD / стрелки · парение    Пробел · торможение    E · действие"
+		if hosted_entry == WHITE_ADDRESS:
+			$Interface/Controls.text = "WASD / стрелки · движение    E · действие"
+			for label: Label in [$Interface/Controls, _status, _action_hint, _feedback]:
+				label.add_theme_color_override("font_color", Color("4b415b"))
+		else:
+			$Interface/Controls.text = "WASD / стрелки · парение    Пробел · торможение    E · действие"
 		return
 	super._ready()
 	if is_instance_valid(actor):
@@ -71,7 +77,8 @@ func mount_host_traveler(body: ElevationBody, host_access: Access, host_clock: C
 	world_clock = host_clock
 	last_safe_address = MEADOWS
 	last_safe_point = router.locations[MEADOWS]["entries"]["entry"]
-	if not _enter_void("entry"):
+	var arrived := _enter_void("entry") if hosted_entry == BLACK_VOID else _move_to_address(hosted_entry)
+	if not arrived:
 		actor = null
 		return false
 	for traveler in actor.map_travelers():
@@ -117,6 +124,8 @@ func _can_place(room: Room, point: Vector2) -> bool:
 
 
 func _can_restore_at(room: Room, body: ElevationBody) -> bool:
+	if return_to_host.is_valid() and hosted_entry == WHITE_ADDRESS:
+		return _can_place(room, body.position)
 	return (room as RouteRoom).travel_bounds.grow(4.0).has_point(body.position)
 
 
@@ -264,6 +273,8 @@ func use_route() -> bool:
 			return not cracking and ride_destination.is_empty() and _finish_buffer()
 		EDGE:
 			return _at_action() and _move_to_address(COAST)
+		WHITE_ADDRESS:
+			return _at_action() and return_to_host.is_valid() and return_to_host.call()
 		BLACK_VOID:
 			if _at_action():
 				return _return_to_safe_point()
@@ -331,7 +342,8 @@ func _physics_process(delta: float) -> void:
 	world_clock.advance(delta)
 	if world_clock.phase() != Clock.Phase.NIGHT:
 		exploration.station_ghost = ""
-	var bounds := (_room as RouteRoom).travel_bounds.grow(-1.0)
+	var margin := actor.motion.safe_margin + 1.0 if current_address == WHITE_ADDRESS else 1.0
+	var bounds := (_room as RouteRoom).travel_bounds.grow(-margin)
 	actor.position = actor.position.clamp(bounds.position, bounds.end)
 	var input := _keyboard_movement().limit_length() if keyboard else Vector2.ZERO
 	match current_address:
@@ -442,6 +454,8 @@ func _update_interface() -> void:
 			_status.text = "Чёрная Пустота"
 		HOUSE_04:
 			_status.text = "Дом №04"
+		WHITE_ADDRESS:
+			_status.text = "Белая Пустота"
 	_action_hint.text = _contextual_action()
 
 
@@ -468,6 +482,8 @@ func _contextual_action() -> String:
 			return "E · восстановиться"
 		EDGE:
 			return "E · на побережье"
+		WHITE_ADDRESS:
+			return "E · вернуться"
 		MEADOWS, LUMA:
 			return "E · сесть на обычного ската"
 	return ""
@@ -492,6 +508,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var clock := Clock.new()
 	var next_exploration := VoidExploration.new()
 	var address: Variant = data.get("address")
+	var white_visit := return_to_host.is_valid() and hosted_entry == WHITE_ADDRESS
+	if (address == WHITE_ADDRESS) != white_visit:
+		return false
 	if data.has("outer_exploration"):
 		if not next_exploration.restore(data["outer_exploration"]) or data.get("routes") != router.snapshot_routes():
 			return false

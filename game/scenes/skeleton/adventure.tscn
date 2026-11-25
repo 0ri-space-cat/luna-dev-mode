@@ -14,6 +14,7 @@ script = ExtResource("1")
 process_mode = 1
 ecology_fixture = true
 observation_fixture = true
+ancient_console_enabled = true
 
 [node name="SystemPause" type="Node" parent="."]
 script = ExtResource("4")
