@@ -10,6 +10,7 @@ const OUTER = preload("res://scenes/skeleton/outer_routes.tscn")
 const Recovery = preload("res://scripts/runtime2d/game_recovery_2d.gd")
 const RecoveryView = preload("res://scripts/runtime2d/recovery_presentation_2d.gd")
 const SystemPause = preload("res://scripts/runtime2d/system_pause_2d.gd")
+const Ecology = preload("res://scripts/runtime2d/ecology_journal_2d.gd")
 const Journal = preload("res://scripts/runtime2d/system_incident_journal_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const Store = preload("res://scripts/runtime2d/save_store_2d.gd")
@@ -20,6 +21,8 @@ const JOURNAL_FLUSH_SECONDS := 30.0
 
 @export var profile_path := "user://luna_adventure.json"
 var journal := Journal.new()
+var ecology := Ecology.new()
+var _ecology_presence_until := 0.0
 var recovery := Recovery.new()
 var events := EventBus.new()
 var outer: OuterRoutes
@@ -50,6 +53,9 @@ func _ready() -> void:
 	home.frost_cast.connect(_on_frost_cast)
 	home.wand_mode_requested = _commit_wand_mode
 	home.commands.parameter_changed.connect(_on_parameter_changed)
+	home.commands.component_changed.connect(_on_component_changed)
+	home.fauna_respawned.connect(_on_fauna_respawned)
+	home.help_completed.connect(_on_help_completed)
 	events.event_dropped.connect(_on_overflow)
 	_recovery_view.finished.connect(_finish_recovery)
 	var profile := _store.read_snapshot(profile_path)
@@ -66,7 +72,7 @@ func _ready() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST and _ready_for_play and journal.serial > 0 and _interrupted.is_empty():
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and _ready_for_play and _has_persistent_history() and _interrupted.is_empty():
 		_write_profile(journal, _manual, _continuity, {}, _away, _guest_save)
 
 
@@ -74,7 +80,10 @@ func _process(delta: float) -> void:
 	if not _ready_for_play or _simulation_suspended():
 		return
 	journal.advance(delta)
-	if is_instance_valid(home.administrator) and not journal.encounter_is_active():
+	if not _away:
+		_tick_ecology(delta)
+	if is_instance_valid(home.administrator) and not journal.encounter_is_active() \
+			and journal.active_seconds >= _ecology_presence_until:
 		home.hide_administrator()
 	events.drain(self)
 	_checkpoint_elapsed += delta
@@ -83,7 +92,7 @@ func _process(delta: float) -> void:
 		mark_safe_state()
 		if not _away and journal.encounter_is_active() and not is_instance_valid(home.administrator):
 			home.show_administrator(_commit_mercy)
-	if journal.serial > 0 and _interrupted.is_empty():
+	if _has_persistent_history() and _interrupted.is_empty():
 		_journal_elapsed += delta
 		if _journal_elapsed >= JOURNAL_FLUSH_SECONDS:
 			_journal_elapsed = 0.0
@@ -134,7 +143,91 @@ func process_event(event: Dictionary) -> void:
 
 
 func _on_parameter_changed(change: Dictionary) -> void:
+	_observe_life_change(change)
 	queue_world_event({"type": "PARAMETER_CHANGED", "change": change})
+
+
+func _observe_life_change(change: Dictionary) -> void:
+	if change["parameter_id"] != "alive" or change["initiator_id"] != Island.ENTITY_ID \
+			or change["source_id"] != "wand:luna":
+		return
+	var subject := home.get_natural_fauna(change["entity_id"])
+	if subject == null or not change["before"] is bool or not change["after"] is bool:
+		return
+	if change["before"] and not change["after"]:
+		if ecology.confirm(subject.entity_id, Ecology.DEATH, journal.active_seconds):
+			_assess_ecology()
+	elif not change["before"] and change["after"] and ecology.close(subject.entity_id, Ecology.DEATH, true):
+		_persist_ecology()
+
+
+func _on_component_changed(change: Dictionary) -> void:
+	if change["initiator_id"] != Island.ENTITY_ID \
+			or change["source_id"] not in ["ability:extract_instance", "ability:install_instance", "wand:ability_enabled"]:
+		return
+	var subject := home.get_natural_fauna(change["entity_id"])
+	if subject == null or not subject.aquatic_bounds.has_area():
+		return
+	var before := Island.Fauna.swim_in(change["before"])
+	var after := Island.Fauna.swim_in(change["after"])
+	var altered := false
+	if before and not after and subject.is_vitally_deprived():
+		altered = ecology.arm_exposure(subject.entity_id)
+	elif not before and after:
+		altered = ecology.exposures.erase(subject.entity_id)
+		altered = ecology.close(subject.entity_id, Ecology.VITAL_LOSS, true) or altered
+	if altered:
+		_persist_ecology()
+
+
+func _on_fauna_respawned(identity: String) -> void:
+	if ecology.close(identity, Ecology.DEATH, false):
+		_persist_ecology()
+
+
+func _on_help_completed(outcome: String, identity: String) -> void:
+	if ecology.record_help(outcome, identity, journal.active_seconds):
+		_persist_ecology()
+
+
+func _tick_ecology(delta: float = 0.0) -> void:
+	var edited := false
+	var previous_count := ecology.episodes.size()
+	for identity in ecology.exposures.keys():
+		var subject := home.get_natural_fauna(identity)
+		var deprived := subject != null and subject.is_vitally_deprived()
+		if ecology.observe_exposure(identity, deprived, delta, journal.active_seconds):
+			edited = true
+	if ecology.episodes.size() > previous_count:
+		_assess_ecology()
+	elif edited:
+		_persist_ecology()
+	if ecology.notice_pending:
+		ecology.notice_pending = false
+		if ecology.restriction_remaining(journal.active_seconds) > 0.0:
+			_ecology_presence_until = journal.active_seconds + 9.0
+			if not journal.encounter_is_active():
+				home.show_administrator(Callable(), journal.attitude)
+			_notice("Администратор · Оставь их в покое. Им нужно восстановиться.")
+		_persist_ecology()
+
+
+func _assess_ecology() -> void:
+	ecology.assess(journal.active_seconds)
+	_persist_ecology()
+
+
+func _has_persistent_history() -> bool:
+	return journal.serial > 0 or not ecology.episodes.is_empty() or not ecology.help.is_empty() \
+		or not ecology.exposures.is_empty()
+
+
+func _persist_ecology() -> void:
+	if _away or not _interrupted.is_empty():
+		return
+	var checkpoint := home.make_snapshot()
+	if _write_profile(journal, _manual, checkpoint, {}, false):
+		_continuity = checkpoint
 
 
 func demonstrate_overload() -> bool:
@@ -361,6 +454,9 @@ func _restore_profile(profile: Dictionary) -> bool:
 			or not profile.get("state") is Dictionary or not profile.get("manual") is Dictionary \
 			or not profile.get("interrupted") is Dictionary or not profile.get("away") is bool:
 		return false
+	var candidate_ecology := Ecology.new()
+	if not candidate_ecology.restore(profile.get("ecology", {}), candidate.active_seconds):
+		return false
 	var interrupted: Dictionary = profile["interrupted"]
 	var continuity: Dictionary = profile["state"]
 	if interrupted.is_empty() != candidate.pending.is_empty() \
@@ -379,6 +475,7 @@ func _restore_profile(profile: Dictionary) -> bool:
 	_interrupted = interrupted
 	_away = profile["away"]
 	journal = candidate
+	ecology = candidate_ecology
 	if _away:
 		if not _send_to_black_void():
 			return false
@@ -458,18 +555,20 @@ func _finish_mercy() -> void:
 
 
 func _on_frost_cast(base_seconds: float) -> void:
-	if journal.record_frost_cast(base_seconds):
+	var overload_adjusted := journal.record_frost_cast(base_seconds)
+	var ecology_adjusted := ecology.record_frost(base_seconds, journal.active_seconds)
+	if overload_adjusted or ecology_adjusted:
 		var checkpoint := home.make_snapshot()
 		if _write_profile(journal, _manual, checkpoint, {}, false):
 			_continuity = checkpoint
 
 
 func _allow_frost() -> bool:
-	return journal.allow_frost()
+	return journal.allow_frost() and ecology.allow_frost(journal.active_seconds)
 
 
 func _restriction_label() -> String:
-	var seconds := ceili(journal.restriction_remaining())
+	var seconds := ceili(maxf(journal.restriction_remaining(), ecology.restriction_remaining(journal.active_seconds)))
 	if seconds <= 0:
 		return ""
 	return "  ·  Ограничение магии %d:%02d" % [floori(seconds / 60.0), seconds % 60]
@@ -478,7 +577,7 @@ func _restriction_label() -> String:
 func _write_profile(current: Journal, manual: Dictionary, state: Dictionary, interrupted: Dictionary,
 		away: bool, guest: Dictionary = {}) -> bool:
 	return _profile_valid and _store.write_snapshot({"format": Store.FORMAT, "kind": PROFILE_KIND,
-		"journal": current.snapshot(), "manual": manual, "state": state,
+		"journal": current.snapshot(), "ecology": ecology.snapshot(), "manual": manual, "state": state,
 		"away": away, "interrupted": interrupted, "guest": guest}, profile_path)
 
 

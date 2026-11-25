@@ -2,9 +2,22 @@ extends "res://scripts/skeleton/entity_fixture.gd"
 ## Continuous P9-03 graybox. The island and meadows share the simulation and camera.
 
 signal frost_cast(active_seconds: float)
+signal fauna_respawned(identity: String)
+signal help_completed(outcome: String, identity: String)
 
 const SystemPause = preload("res://scripts/runtime2d/system_pause_2d.gd")
 const Administrator = preload("res://scripts/skeleton/administrator_body_2d.gd")
+const Fauna = preload("res://scripts/skeleton/fauna_body_2d.gd")
+const AbilityBank = preload("res://scripts/core/ability_bank_service.gd")
+const FOX_START := Vector2(1684, 414)
+const ECOLOGY_CATALOG := "DEV_ECOLOGY_CATALOG"
+const CATALOG_SPOT := Vector2(2413, 486)
+const SWIM_MODULE := {"ability_id": "SWIM", "enabled": true, "protected": false}
+const FISH_POINTS := {
+	"DEV_POOL_FISH_A": Vector2(2532, 375),
+	"DEV_POOL_FISH_B": Vector2(2559, 424),
+	"DEV_POOL_FISH_C": Vector2(2576, 476),
+}
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
@@ -41,6 +54,10 @@ const BRIDGE_RAILS: Array[Dictionary] = [
 	{"bounds": Rect2(656, 404, 199, 18), "height": 92.0, "layer": 1},
 ]
 
+@export var ecology_fixture := false
+var ability_bank := AbilityBank.new(entities, commands)
+var _initial_ecology_states: Array[Dictionary] = []
+var _fish_surfaces: Array[Dictionary] = []
 var wand_pair := WandPair.new()
 var wand_mode_requested: Callable
 var frost_cast_allowed: Callable
@@ -79,7 +96,7 @@ func _entity_location(point: Vector2) -> String:
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -96,6 +113,7 @@ func _ready() -> void:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	_surfaces.assign(_decks)
 	_surfaces.append({"bounds": Lake.POOL, "height": Lake.BED_HEIGHT, "safe": false})
+	_fish_surfaces.assign([{"bounds": Lake.POOL, "height": Lake.BED_HEIGHT}])
 	_water_volumes.append(WaterVolume.new(Lake.POOL, Lake.BED_HEIGHT, 0.0, Vector2.ZERO, 1.2))
 	_water_volumes.append(WaterVolume.new(Meadows.CREEK, Meadows.CREEK_BED, 0.0,
 		Vector2(0, 18), 1.5))
@@ -119,13 +137,15 @@ func _ready() -> void:
 	yeti.set_parameter("behavior_mode", "IDLE")
 	_connect_bridge_body()
 	_spawn_meadow_entities()
+	if ecology_fixture:
+		_spawn_ecology_fixture()
 	_camera.position = actor.position
 
 
 func _spawn_meadow_entities() -> void:
 	var fox := spawn_entity({
 		"id": Meadows.FOX_ID, "category": "fox", "label": "Лисичка", "material": "FABRIC",
-	}, Vector2(1684, 414), 0.0)
+	}, FOX_START, 0.0)
 	var trollik := spawn_entity({
 		"id": Meadows.TROLLIK_ID, "category": "trollik", "label": "Троллик", "material": "FABRIC",
 	}, Vector2(1870, 325), 0.0)
@@ -150,6 +170,112 @@ func _spawn_meadow_entities() -> void:
 			_initial_meadow_states.append(entry)
 
 
+func _spawn_ecology_fixture() -> void:
+	for identity in FISH_POINTS:
+		var fish := spawn_entity({"id": identity, "category": "fish", "label": "Рыба",
+			"material": "FABRIC"}, FISH_POINTS[identity], Lake.BED_HEIGHT)
+		if fish != null:
+			fish.record.set_component("ABILITY_SET", {"instances": {_swim_id(identity): SWIM_MODULE}})
+			fish.set_parameter("size", 0.56)
+			fish.set_parameter("speed", 0.48)
+	var tool := spawn_entity({"id": ECOLOGY_CATALOG, "category": "prop", "label": "Каталог · технический",
+		"material": "METAL"}, CATALOG_SPOT, 0.0)
+	if tool != null:
+		tool.set_parameter("pickable", true)
+	for entry in make_snapshot()["entities"]:
+		if entry["id"] == ECOLOGY_CATALOG or FISH_POINTS.has(entry["id"]):
+			_initial_ecology_states.append(entry)
+
+
+func _create_entity_body(identity: String, category: String) -> EntityBody:
+	if identity == Meadows.FOX_ID and category == "fox":
+		var fox := Fauna.new()
+		fox.birth_point = FOX_START
+		fox.respawned.connect(fauna_respawned.emit)
+		return fox
+	if ecology_fixture and category == "fish" and FISH_POINTS.has(identity):
+		var fish := Fauna.new()
+		fish.birth_point = FISH_POINTS[identity]
+		fish.birth_height = Lake.BED_HEIGHT
+		fish.aquatic_bounds = Lake.POOL
+		fish.respawned.connect(fauna_respawned.emit)
+		return fish
+	return super._create_entity_body(identity, category)
+
+
+func get_natural_fauna(identity: String) -> Fauna:
+	return entities.get_entity(identity) as Fauna
+
+
+func _spawn_on_support(body: EntityBody, point: Vector2, height: float) -> bool:
+	if body is Fauna and body.aquatic_bounds.has_area():
+		return body.motion.start_on_safe_support(point, height, body.surfaces)
+	return super._spawn_on_support(body, point, height)
+
+
+func _holds_ecology_catalog() -> bool:
+	var item := entities.get_entity(ECOLOGY_CATALOG) as EntityBody
+	return item != null and item.is_carried_by(actor)
+
+
+func request_wand_parameter_edit(target_id: String, parameter_id: String, value: Variant) -> bool:
+	if parameter_id == "SWIM_ENABLED":
+		return value is bool and _set_swim_enabled(target_id, value)
+	return super.request_wand_parameter_edit(target_id, parameter_id, value)
+
+
+func _set_swim_enabled(target_id: String, enabled: bool) -> bool:
+	var target := get_natural_fauna(target_id)
+	if not _holds_ecology_catalog() or not _in_fish_reach(target) \
+			or not wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, "mass"):
+		return false
+	var before: Dictionary = target.record.get_components()
+	var after := before.duplicate(true)
+	var module: Dictionary = after.get("ABILITY_SET", {}).get("instances", {}).get(_swim_id(target_id), {})
+	if module.is_empty():
+		return false
+	if module["enabled"] == enabled:
+		return true
+	module["enabled"] = enabled
+	var steps: Array[Dictionary] = [{"kind": "components", "entity_id": target_id,
+		"target": target, "before": before, "after": after}]
+	return commands.execute_batch(steps, ENTITY_ID, "wand:ability_enabled")
+
+
+func request_extract_swim(target_id: String) -> bool:
+	var target := get_natural_fauna(target_id)
+	if not _holds_ecology_catalog() or not _in_fish_reach(target) \
+			or not wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, "mass"):
+		return false
+	return ability_bank.move_instance(ENTITY_ID, target_id, _swim_id(target_id), true)
+
+
+func request_restore_swim(target_id: String) -> bool:
+	var target := get_natural_fauna(target_id)
+	return _holds_ecology_catalog() and _in_fish_reach(target) \
+		and ability_bank.move_instance(ENTITY_ID, target_id, _swim_id(target_id), false)
+
+
+func _restore_nearby_swim() -> bool:
+	for identity in FISH_POINTS:
+		if request_restore_swim(identity):
+			return true
+	return false
+
+
+func _in_fish_reach(target: Fauna) -> bool:
+	if target == null or not target.aquatic_bounds.has_area() or not target.get_parameter("alive") \
+			or target.location_id != _entity_location(actor.position) or not (actor as EntityBody).accepts_player_input():
+		return false
+	var offset: Vector2 = actor.position - target.position
+	var height_gap: float = actor.motion.elevation - target.motion.elevation
+	return Vector3(offset.x, offset.y, height_gap).length_squared() <= WandPolicy.REACH_PX * WandPolicy.REACH_PX
+
+
+func _swim_id(identity: String) -> String:
+	return "SWIM_" + identity
+
+
 func _configure_plank_marker(plank: EntityBody) -> void:
 	var edge := Meadows.PLANK_SIZE / 2.0
 	plank._marker.polygon = PackedVector2Array([
@@ -161,6 +287,9 @@ func _configure_plank_marker(plank: EntityBody) -> void:
 func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	super._configure_body(body, entity_id)
 	body.emergency_anchor = Vector3(SPAWN.x, SPAWN.y, 0.0)
+	if body is Fauna and body.aquatic_bounds.has_area():
+		body.surfaces = _fish_surfaces
+		body.emergency_anchor = Vector3(body.birth_point.x, body.birth_point.y, body.birth_height)
 
 
 func set_home_active(active: bool) -> void:
@@ -243,6 +372,7 @@ func _update_yeti_route() -> void:
 	if yeti.position.distance_squared_to(goal) <= 4.0:
 		retreat_step += 1
 		if retreat_step == YETI_RETREAT.size():
+			help_completed.emit("START_YETI_DONUT", BRIDGE_YETI_ID)
 			return
 		goal = YETI_RETREAT[retreat_step]
 	yeti.autonomous_destination = goal
@@ -429,6 +559,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 		KEY_G:
 			exchange_nearby_wand()
+		KEY_ENTER:
+			if not is_instance_valid(_debug_editor) and _restore_nearby_swim():
+				get_viewport().set_input_as_handled()
 		KEY_F5:
 			if not managed_save and _store.write_snapshot(make_snapshot(), SAVE_PATH):
 				$Interface/SaveNotice.text = "Сохранено"
@@ -439,7 +572,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			$Interface/SaveNotice.text = "Загружено" if apply_snapshot(saved) else "Нет подходящего сохранения"
 
 
-func show_administrator(mercy_request: Callable) -> bool:
+func show_administrator(mercy_request: Callable, disposition: String = Administrator.ANGER) -> bool:
 	hide_administrator()
 	var vicinity := [Vector2(72, 0), Vector2(-72, 0), Vector2(0, 68), Vector2(0, -68),
 		Vector2(46, 0), Vector2(-46, 0)]
@@ -452,7 +585,7 @@ func show_administrator(mercy_request: Callable) -> bool:
 		administrator = Administrator.new()
 		_configure_body(administrator, Administrator.ID)
 		administrator.record = EntityRecord.new(Administrator.ID, Administrator.CATEGORY, "Администратор",
-			parameters, {"alive": false, "ai_enabled": false, "luna_relation": Administrator.ANGER})
+			parameters, {"alive": false, "ai_enabled": false, "luna_relation": disposition})
 		administrator.world_registry = entities
 		administrator.location_id = location
 		administrator.position = point
@@ -477,7 +610,8 @@ func hide_administrator() -> void:
 func _wand_target(target_id: String) -> EntityBody:
 	if target_id == Administrator.ID:
 		return administrator
-	return super._wand_target(target_id)
+	var target := super._wand_target(target_id)
+	return null if target is Fauna and not target.visible else target
 
 
 func _wand_target_ids() -> Array[String]:
@@ -488,9 +622,21 @@ func _wand_target_ids() -> Array[String]:
 
 
 func get_wand_editor_tabs(target_id: String) -> Dictionary:
+	if target_id == ECOLOGY_CATALOG:
+		return {}
 	var tabs := super.get_wand_editor_tabs(target_id)
 	if target_id == Administrator.ID and not tabs.is_empty():
-		return {"Отношения": tabs["Отношения"]}
+		return {} if tabs["Отношения"].is_empty() else {"Отношения": tabs["Отношения"]}
+	if not tabs.is_empty() and _holds_ecology_catalog() and FISH_POINTS.has(target_id):
+		var target := get_natural_fauna(target_id)
+		if target != null and target.get_parameter("alive"):
+			var module_id := _swim_id(target_id)
+			if target.record.get_component("ABILITY_SET").get("instances", {}).has(module_id):
+				tabs["Способности"] = [
+					{"id": "SWIM_ENABLED", "label": "SWIM", "kind": "bool", "value": target.has_vital_swim()},
+					{"id": module_id, "label": "SWIM", "kind": "action", "value": "В банк",
+						"action": func(): return request_extract_swim(target_id)},
+				]
 	return tabs
 
 
@@ -515,6 +661,10 @@ func _toggle_debug_editor() -> void:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
+	if ecology_fixture:
+		data["ecology_layout"] = 1
+		for entry in data["entities"]:
+			entry["components"] = entities.get_entity(entry["id"]).record.get_components()
 	data["island"] = {
 		"access": access.snapshot(), "projection": wand_pair.original.snapshot(), "has_donut": has_donut,
 		"donut_refill": donut_refill, "retreat_step": retreat_step,
@@ -579,6 +729,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 		for entry in _initial_meadow_states:
 			if not data.has("meadows") or entry["id"] == Meadows.PLANK_ID:
 				candidate["entities"].append(entry)
+	if ecology_fixture and not candidate.has("ecology_layout"):
+		candidate = candidate.duplicate(true)
+		for entry in _initial_ecology_states:
+			candidate["entities"].append(entry)
+	elif ecology_fixture and candidate["ecology_layout"] != 1:
+		return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -607,6 +763,39 @@ func apply_snapshot(data: Dictionary) -> bool:
 	_configure_plank_marker(entities.get_entity(Meadows.PLANK_ID) as EntityBody)
 	_camera.position = actor.position
 	return true
+
+
+func _build_saved_entity(state: Variant, version: int) -> EntityBody:
+	var body := super._build_saved_entity(state, version)
+	if body != null and ecology_fixture and not body.record.set_components(state.get("components", {})):
+		body.free()
+		return null
+	return body
+
+
+func _validate_saved_entities(candidates: Dictionary) -> bool:
+	if not ecology_fixture:
+		return super._validate_saved_entities(candidates)
+	var counts := {}
+	var catalog: EntityBody = candidates.get(ECOLOGY_CATALOG)
+	if catalog == null or catalog.record.category != "prop":
+		return false
+	for identity in FISH_POINTS:
+		if not candidates.get(identity) is Fauna:
+			return false
+		counts[_swim_id(identity)] = 0
+	for identity in candidates:
+		for component in ["ABILITY_SET", "ABILITY_BANK"]:
+			var items := AbilityBank.instances(candidates[identity].record.get_components(), component)
+			for module in items:
+				if not counts.has(module):
+					continue
+				if items[module]["ability_id"] != "SWIM" or items[module]["protected"] \
+						or (component == "ABILITY_BANK" and identity != ENTITY_ID) \
+						or (component == "ABILITY_SET" and module != _swim_id(identity)):
+					return false
+				counts[module] += 1
+	return counts.values().all(func(count): return count == 1)
 
 
 func _valid_ground_wand(field: WandProjection) -> bool:

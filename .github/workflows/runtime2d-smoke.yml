@@ -72,6 +72,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_administrator.gd
       - name: Test Administrator stasis, active cooldown and durable surrender
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_administrator_stasis.gd
+      - name: Test ecology across actual fauna, the ability bank and saved interventions
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_ecology.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws

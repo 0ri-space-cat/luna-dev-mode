@@ -12,6 +12,7 @@ script = ExtResource("1")
 
 [node name="Home" parent="." instance=ExtResource("2")]
 process_mode = 1
+ecology_fixture = true
 
 [node name="SystemPause" type="Node" parent="."]
 script = ExtResource("4")

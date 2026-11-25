@@ -69,8 +69,7 @@ func spawn_entity(definition: Dictionary, point: Vector2, height: float) -> Enti
 	var candidate := _build_entity(definition)
 	if candidate == null:
 		return null
-	if not candidate.motion.start_on_safe_support(point, height, _surfaces) \
-			or _intersects_wall(point, height) or not candidate._is_dry(point, height) \
+	if not _spawn_on_support(candidate, point, height) or _intersects_wall(point, height) \
 			or _spawn_is_occupied(point, height):
 		candidate.free()
 		return null
@@ -79,6 +78,10 @@ func spawn_entity(definition: Dictionary, point: Vector2, height: float) -> Enti
 	entities.register_entity(identity, candidate, _target_group(candidate))
 	add_child(candidate)
 	return candidate
+
+
+func _spawn_on_support(body: EntityBody, point: Vector2, height: float) -> bool:
+	return body.motion.start_on_safe_support(point, height, body.surfaces) and body._is_dry(point, height)
 
 
 func _spawn_is_occupied(point: Vector2, height: float) -> bool:
@@ -106,13 +109,17 @@ func _build_entity(definition: Dictionary) -> EntityBody:
 		return null
 	if not parameters.normalize(category, "material", material)["ok"]:
 		return null
-	var body := EntityBody.new()
+	var body := _create_entity_body(identity, category)
 	_configure_body(body, identity)
 	body.record = EntityRecord.new(identity, category, label, parameters, {"material": material, "alive": _starts_alive(category), "asleep": category == "yeti", "ai_enabled": category != "player", "control_source": "PLAYER" if category == "player" else "NONE"})
 	if category != "player":
 		body.configure_seat(EntityBody.SEAT_HEIGHT, EntityBody.SEAT_CAPACITY, false)
 	body.world_registry = entities
 	return body
+
+
+func _create_entity_body(_identity: String, _category: String) -> EntityBody:
+	return EntityBody.new()
 
 
 func request_wand_parameter_edit(target_id: String, parameter_id: String, value: Variant) -> bool:

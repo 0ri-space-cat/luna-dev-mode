@@ -10,7 +10,7 @@ var mercy_requested: Callable
 
 
 func can_edit_parameter(key: String) -> bool:
-	return key == "luna_relation"
+	return key == "luna_relation" and mercy_requested.is_valid()
 
 
 func set_parameter(key: String, value: Variant) -> bool:
