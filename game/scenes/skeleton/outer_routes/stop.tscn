@@ -8,3 +8,4 @@ floor_bounds = Rect2(114, 306, 1052, 294)
 requires_door = false
 travel_bounds = Rect2(114, 306, 1052, 294)
 action_bounds = Rect2(871, 387, 118, 108)
+ghost_bounds = Rect2(692, 511, 128, 75)

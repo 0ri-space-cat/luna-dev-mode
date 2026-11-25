@@ -6,6 +6,8 @@
 script = ExtResource("1")
 floor_bounds = Rect2(119, 356, 242, 226)
 requires_door = false
-travel_bounds = Rect2(62, 192, 1157, 526)
+travel_bounds = Rect2(62, 192, 1157, 552)
 action_bounds = Rect2(895, 390, 112, 97)
-other_floors = Array[Rect2]([Rect2(802, 327, 308, 222)])
+ghost_bounds = Rect2(577, 208, 115, 100)
+record_bounds = Rect2(1030, 638, 106, 72)
+other_floors = Array[Rect2]([Rect2(802, 327, 308, 222), Rect2(145, 173, 240, 120), Rect2(522, 185, 218, 142), Rect2(990, 607, 199, 132)])

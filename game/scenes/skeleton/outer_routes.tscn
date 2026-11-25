@@ -25,7 +25,7 @@ region_rect = Rect2(0, 0, 48, 76)
 
 [node name="Controls" parent="Interface" index="0"]
 offset_top = 755.0
-text = "WASD / стрелки · движение    Пробел · прыжок / торможение в Пустоте    E · действие    F4 · Корзина    F8 · M08    F5 / F9 · снимок"
+text = "WASD / стрелки · движение    Пробел · прыжок / торможение в Пустоте    E · действие    T · день/ночь    F4 · Корзина    F7/F8 · M02/M08    F5 / F9 · снимок"
 
 [node name="Action" type="Label" parent="Interface" index="4"]
 offset_left = 24.0

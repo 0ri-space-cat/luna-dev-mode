@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/skeleton/outer_route_room.gd" id="1"]
+
+[ext_resource type="Script" path="res://scripts/runtime2d/doorway_2d.gd" id="2"]
+
+[node name="LumaStop" type="Node2D"]
+script = ExtResource("1")
+floor_bounds = Rect2(114, 306, 1052, 294)
+travel_bounds = Rect2(114, 306, 1052, 294)
+action_bounds = Rect2(871, 387, 118, 108)
+ghost_bounds = Rect2(692, 511, 128, 75)
+
+[node name="Door" type="Area2D" parent="."]
+position = Vector2(436, 403)
+script = ExtResource("2")
+entity_id = "DEV_LUMA_ADDRESS_DOOR"
