@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/skeleton/address_room.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/runtime2d/doorway_2d.gd" id="2"]
+
+[node name="AddressInterior" type="Node2D"]
+script = ExtResource("1")
+floor_bounds = Rect2(650, 212, 390, 252)
+floor_height = 48.0
+column_bounds = Rect2(882, 287, 46, 67)
+column_top = 152.0
+
+[node name="Door" type="Area2D" parent="."]
+position = Vector2(726, 330)
+script = ExtResource("2")
+entity_id = "DEV_ADDRESS_BACK"

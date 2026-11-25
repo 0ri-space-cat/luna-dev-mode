@@ -560,7 +560,12 @@ func body_height() -> float:
 
 
 func fits_walls_at(point: Vector2, elevation: float, radius: float) -> bool:
-	for wall in walls:
+	return clears_walls(point, elevation, radius, walls)
+
+
+static func clears_walls(point: Vector2, elevation: float, radius: float,
+		room_walls: Array[Dictionary]) -> bool:
+	for wall in room_walls:
 		if elevation >= float(wall["height"]):
 			continue
 		var bounds: Rect2 = wall["bounds"]

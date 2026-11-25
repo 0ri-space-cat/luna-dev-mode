@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/skeleton/address_fixture.gd" id="1"]
+
+[node name="AddressFixture" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Readout" type="Label" parent="."]
+visible = false
+
+[node name="Interface" type="CanvasLayer" parent="."]
+
+[node name="Controls" type="Label" parent="Interface"]
+offset_left = 24.0
+offset_top = 20.0
+text = "E — пройти   ·   Tab — адрес двери   ·   F2 — режим палочки   ·   F3 — доступ героя   ·   F5 / F9 — сохранение"
+
+[node name="Status" type="Label" parent="Interface"]
+offset_left = 24.0
+offset_top = 52.0
+
+[node name="Feedback" type="Label" parent="Interface"]
+offset_left = 24.0
+offset_top = 133.0
+
+[node name="AddressInput" type="LineEdit" parent="Interface"]
+visible = false
+offset_left = 24.0
+offset_top = 85.0
+offset_right = 405.0
+offset_bottom = 120.0
+placeholder_text = "Адрес двери"
+max_length = 96

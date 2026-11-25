@@ -1,0 +1,20 @@
+{
+  "locations": [
+    {
+      "id": "DEV_ADDRESS_HALL",
+      "scene": "res://scenes/skeleton/address_hall.tscn",
+      "required_access": 0,
+      "entries": {"entry": [498, 330]}
+    },
+    {
+      "id": "DEV_ADDRESS_ROOM",
+      "scene": "res://scenes/skeleton/address_interior.tscn",
+      "required_access": 1,
+      "entries": {"entry": [768, 330]}
+    }
+  ],
+  "doors": [
+    {"id": "DEV_ADDRESS_OUT", "destination": "DEV_ADDRESS_ROOM"},
+    {"id": "DEV_ADDRESS_BACK", "destination": "DEV_ADDRESS_HALL"}
+  ]
+}

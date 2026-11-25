@@ -191,7 +191,7 @@ func _restore_body_state(candidate: ElevationBody, body: Dictionary) -> bool:
 				or absf(float(coordinate)) > 100000.0:
 			return false
 	candidate.position = Vector2(float(point[0]), float(point[1]))
-	if not candidate.motion.load_snapshot(height_state, candidate.position, _surfaces,
+	if not candidate.motion.load_snapshot(height_state, candidate.position, candidate.surfaces,
 			ElevationBody.RECOVERY_HEIGHT):
 		return false
 	var anchor: Array = candidate.motion.snapshot()["anchor"]
@@ -247,7 +247,7 @@ func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	body.emergency_anchor = Vector3(start.x, start.y, BANK_HEIGHT if use_water_map else UPPER_HEIGHT)
 
 
-func _build_wall(wall: Dictionary) -> void:
+func _build_wall(wall: Dictionary, mount: Node2D = null) -> void:
 	var bounds: Rect2 = wall["bounds"]
 	var solid := StaticBody2D.new()
 	solid.position = bounds.get_center()
@@ -258,12 +258,17 @@ func _build_wall(wall: Dictionary) -> void:
 	shape.size = bounds.size
 	collider.shape = shape
 	solid.add_child(collider)
-	add_child(solid)
-	_surfaces.append({
+	(mount if mount != null else self).add_child(solid)
+	_surfaces.append(_wall_surface(wall))
+
+
+func _wall_surface(wall: Dictionary) -> Dictionary:
+	var bounds: Rect2 = wall["bounds"]
+	return {
 		"bounds": bounds.grow(ElevationBody.FOOT_RADIUS),
 		"height": wall["height"],
 		"safe": false,
-	})
+	}
 
 
 func _draw() -> void:
