@@ -65,6 +65,7 @@ func _run() -> void:
 		body.erase("life")
 		body.erase("control")
 		body.erase("movement")
+		body.erase("editor")
 	assert(scene.apply_snapshot(legacy))
 	assert(not scene.entities.get_entity(FRIDGE).get_parameter("alive"))
 	assert(scene.actor.get_parameter("alive"))

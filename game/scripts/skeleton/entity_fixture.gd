@@ -1,6 +1,9 @@
 extends "res://scripts/skeleton/elevation_fixture.gd"
 ## Developer map for ID-based creation, editing and saving of 2D+Z entities.
 
+const DebugEditor = preload("res://scripts/skeleton/entity_editor_debug.gd")
+var _debug_editor: DebugEditor
+
 const EntityBody = preload("res://scripts/skeleton/entity_body_2d.gd")
 const EntityRecord = preload("res://scripts/core/entity_record.gd")
 const WorldRegistry = preload("res://scripts/core/world_registry.gd")
@@ -56,7 +59,7 @@ func spawn_entity(definition: Dictionary, point: Vector2, height: float) -> Enti
 		candidate.free()
 		return null
 	candidate.position = point
-	entities.register_entity(identity, candidate, candidate.record.category)
+	entities.register_entity(identity, candidate, _target_group(candidate))
 	add_child(candidate)
 	return candidate
 
@@ -120,8 +123,9 @@ func make_snapshot() -> Dictionary:
 		data["life"] = body.life_snapshot()
 		data["control"] = body.control_snapshot()
 		data["movement"] = body.movement_snapshot()
+		data["editor"] = body.editor_snapshot()
 		states.append(data)
-	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 3, "entities": states}
+	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 4, "entities": states}
 
 
 func apply_snapshot(data: Dictionary) -> bool:
@@ -131,7 +135,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not states is Array or states.is_empty() or states.size() > MAX_ENTITIES:
 		return false
 	var version: Variant = data.get("entity_state_version", 0)
-	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0, 3.0]:
+	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0, 3.0, 4.0]:
 		return false
 	var candidates := {}
 	for state in states:
@@ -146,6 +150,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 		_free_candidates(candidates)
 		return false
 
+	if is_instance_valid(_debug_editor):
+		_debug_editor.free()
+		_debug_editor = null
 	for identity in entities.list_ids():
 		var previous := entities.get_entity(identity)
 		entities.unregister_entity(identity)
@@ -153,7 +160,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	actor = candidates[ENTITY_ID]
 	for identity in candidates:
 		var body: EntityBody = candidates[identity]
-		entities.register_entity(identity, body, body.record.category)
+		entities.register_entity(identity, body, _target_group(body))
 		add_child(body)
 	commands.clear_history()
 	return true
@@ -162,10 +169,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	if not state is Dictionary or state.get("location_id") != LOCATION_ID or not state.has("dynamics"):
 		return null
-	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3):
+	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3) or state.has("editor") != (version >= 4):
 		return null
 	var body := _build_entity(state)
-	if body != null and ((version >= 3 and not body.restore_movement(state["movement"])) or not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
+	if body != null and ((version >= 4 and not body.restore_editor(state["editor"])) or (version >= 3 and not body.restore_movement(state["movement"])) or not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
 		body.free()
 		return null
 	return body
@@ -179,6 +186,10 @@ func _free_candidates(candidates: Dictionary) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
 		return
+	if event.keycode == KEY_TAB:
+		_toggle_debug_editor()
+		get_viewport().set_input_as_handled()
+		return
 	if event.keycode not in [KEY_BRACKETLEFT, KEY_BRACKETRIGHT]:
 		return
 	var target := entities.get_entity(TARGET_ID) as EntityBody
@@ -190,6 +201,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if is_instance_valid(_debug_editor):
+		apply_player_input(Vector2.ZERO)
+		return
 	var movement := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	movement.x += float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
 	movement.y += float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W))
@@ -215,3 +229,59 @@ func return_to_luna() -> bool:
 	# Recovery control is independent of the wand and never teleports a body.
 	var luna := actor as EntityBody
 	return luna.set_parameter("control_source", "PLAYER") and luna.set_parameter("ai_enabled", false)
+
+
+func _target_group(body: EntityBody) -> String:
+	return "LUNA" if body.record.category == "player" else body.record.category.to_upper()
+
+
+func get_wand_editor_tabs(target_id: String) -> Dictionary:
+	if not (actor as EntityBody).accepts_player_input():
+		return {}
+	var target := entities.get_entity(target_id) as EntityBody
+	if not wand_policy.authorize(actor, target, LOCATION_ID, projection, access, parameters, "mass"):
+		return {}
+	var offset := Vector3(actor.position.x - target.position.x, actor.position.y - target.position.y,
+		actor.motion.elevation - target.motion.elevation)
+	if offset.length_squared() > WandPolicy.REACH_PX * WandPolicy.REACH_PX:
+		return {}
+	var tabs := {}
+	for tab in Parameters.EDITOR_TABS:
+		var fields: Array[Dictionary] = []
+		for key in Parameters.EDITOR_TABS[tab]:
+			if not target.can_edit_parameter(key):
+				continue
+			var spec := parameters.get_spec(target.record.category, key)
+			if spec.is_empty():
+				continue
+			spec["value"] = target.get_parameter(key)
+			if key == "ai_enabled":
+				spec["label"] = "AUTONOMY"
+			fields.append(spec)
+		tabs[tab] = fields
+	return tabs
+
+
+func _toggle_debug_editor() -> void:
+	if is_instance_valid(_debug_editor):
+		_debug_editor.free()
+		_debug_editor = null
+		return
+	var selected := ""
+	var nearest := INF
+	for identity in entities.list_ids():
+		var tabs := get_wand_editor_tabs(identity)
+		if tabs.is_empty():
+			continue
+		var target := entities.get_entity(identity) as Node2D
+		var distance := actor.position.distance_squared_to(target.position)
+		if distance < nearest:
+			nearest = distance
+			selected = identity
+	if selected.is_empty():
+		return
+	_debug_editor = DebugEditor.new()
+	_debug_editor.position = Vector2(80, 90)
+	add_child(_debug_editor)
+	_debug_editor.populate(get_wand_editor_tabs(selected),
+		func(key: String, value: Variant): return request_wand_parameter_edit(selected, key, value))

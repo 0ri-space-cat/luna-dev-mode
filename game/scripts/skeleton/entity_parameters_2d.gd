@@ -11,6 +11,15 @@ const STORAGE_ALIASES := {
 	"restitution": "bounciness",
 }
 const PHYSICS_FIELDS := ["mass", "bounciness"]
+const BEHAVIOR_FIELDS := ["behavior_mode", "target_group", "sense_range", "follow_distance", "luna_relation"]
+const EDITOR_TABS := {
+	"Общее": ["alive", "asleep"],
+	"Облик": ["size", "color"],
+	"Физика": ["mass", "bounciness"],
+	"Разум": ["ai_enabled", "control_source", "sense_range"],
+	"Поведение": ["speed", "behavior_mode", "target_group", "follow_distance"],
+	"Отношения": ["luna_relation"],
+}
 
 
 func _init() -> void:
@@ -35,10 +44,15 @@ static func storage_id(parameter_id: String) -> String:
 
 
 func normalize(category: String, parameter_id: String, proposed: Variant) -> Dictionary:
-	if parameter_id in PHYSICS_FIELDS or parameter_id in ["size", "speed"]:
+	if parameter_id in PHYSICS_FIELDS or parameter_id in ["size", "speed", "sense_range", "follow_distance"]:
 		var spec := get_spec(category, parameter_id)
 		if typeof(proposed) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(proposed)):
 			return {"ok": false, "error": "Expected a finite number"}
 		if float(proposed) < spec["min"] or float(proposed) > spec["max"]:
 			return {"ok": false, "error": "Outside the supported physics range"}
+	if parameter_id == "color":
+		for choice in PALETTE:
+			if proposed is Color and proposed == choice["value"]:
+				return {"ok": true, "value": proposed}
+		return {"ok": false, "error": "Unknown palette color"}
 	return super.normalize(category, parameter_id, proposed)

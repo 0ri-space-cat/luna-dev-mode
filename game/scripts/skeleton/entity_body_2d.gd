@@ -7,6 +7,7 @@ const Parameters = preload("res://scripts/skeleton/entity_parameters_2d.gd")
 const Brain = preload("res://scripts/runtime2d/behavior_brain_2d.gd")
 var brain := Brain.new()
 var world_registry
+var navigation = null
 
 var record: EntityRecord
 var location_id := ""
@@ -20,7 +21,30 @@ func get_parameter(key: String) -> Variant:
 	return record.get_parameter(key)
 
 
+func can_edit_parameter(key: String) -> bool:
+	if key == "alive":
+		return record.category in ["fridge", "prop"]
+	if key == "asleep":
+		return record.category == "yeti"
+	return key in Parameters.PHYSICS_FIELDS or key in Parameters.BEHAVIOR_FIELDS or key in ["size", "speed", "color", "ai_enabled", "control_source"]
+
+
+func _ready() -> void:
+	super._ready()
+	_marker.color = get_parameter("color")
+
+
 func set_parameter(key: String, value: Variant) -> bool:
+	if not can_edit_parameter(key):
+		return false
+	if key in Parameters.BEHAVIOR_FIELDS or key == "color":
+		var checked: Dictionary = record.registry.normalize(record.category, key, value)
+		if not checked["ok"]:
+			return false
+		record.parameters[key] = checked["value"]
+		if key == "color" and _marker != null:
+			_marker.color = checked["value"]
+		return true
 	if key in ["size", "speed"]:
 		var checked: Dictionary = record.registry.normalize(record.category, key, value)
 		if not checked["ok"]:
@@ -192,3 +216,22 @@ func restore_movement(state: Variant) -> bool:
 	record.parameters["size"] = size_value
 	record.parameters["speed"] = speed_value
 	return true
+
+
+func editor_snapshot() -> Dictionary:
+	var data := {"color": get_parameter("color").to_html()}
+	for key in Parameters.BEHAVIOR_FIELDS:
+		data[key] = get_parameter(key)
+	return data
+
+
+func restore_editor(state: Variant) -> bool:
+	if not state is Dictionary or state.size() != Parameters.BEHAVIOR_FIELDS.size() + 1:
+		return false
+	var encoded: Variant = state.get("color")
+	if not encoded is String or encoded.length() != 8 or not Color.html_is_valid(encoded):
+		return false
+	for key in Parameters.BEHAVIOR_FIELDS:
+		if not set_parameter(key, state.get(key)):
+			return false
+	return set_parameter("color", Color.html(encoded))
