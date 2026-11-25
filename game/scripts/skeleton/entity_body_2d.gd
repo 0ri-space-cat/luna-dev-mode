@@ -26,7 +26,7 @@ func can_edit_parameter(key: String) -> bool:
 		return record.category in ["fridge", "prop"]
 	if key == "asleep":
 		return record.category == "yeti"
-	return key in Parameters.PHYSICS_FIELDS or key in Parameters.BEHAVIOR_FIELDS or key in ["size", "speed", "color", "ai_enabled", "control_source"]
+	return key in Parameters.PHYSICS_FIELDS or key in Parameters.BEHAVIOR_FIELDS or key in ["size", "speed", "color", "ai_enabled", "control_source", "gravity_scale"]
 
 
 func _ready() -> void:
@@ -44,6 +44,13 @@ func set_parameter(key: String, value: Variant) -> bool:
 		record.parameters[key] = checked["value"]
 		if key == "color" and _marker != null:
 			_marker.color = checked["value"]
+		return true
+	if key == "gravity_scale":
+		var checked: Dictionary = record.registry.normalize(record.category, key, value)
+		if not checked["ok"]:
+			return false
+		gravity_scale = float(checked["value"])
+		record.parameters[key] = gravity_scale
 		return true
 	if key in ["size", "speed"]:
 		var checked: Dictionary = record.registry.normalize(record.category, key, value)

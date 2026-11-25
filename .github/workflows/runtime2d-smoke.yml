@@ -44,6 +44,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_size_speed.gd
       - name: Test skeleton six-tab editor and behaviour
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_editor.gd
+      - name: Test skeleton individual gravity
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_gravity.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws

@@ -15,7 +15,7 @@ const BEHAVIOR_FIELDS := ["behavior_mode", "target_group", "sense_range", "follo
 const EDITOR_TABS := {
 	"Общее": ["alive", "asleep"],
 	"Облик": ["size", "color"],
-	"Физика": ["mass", "bounciness"],
+	"Физика": ["mass", "bounciness", "gravity_scale"],
 	"Разум": ["ai_enabled", "control_source", "sense_range"],
 	"Поведение": ["speed", "behavior_mode", "target_group", "follow_distance"],
 	"Отношения": ["luna_relation"],
@@ -34,6 +34,7 @@ func _init() -> void:
 		"tab": "PHYSICS", "min": 0.0, "max": 1.0, "step": 0.0, "default": 0.0,
 		"hint": "Меняет отскок от опор и стен.",
 	})
+	register_parameter({"id": "gravity_scale", "label": "GRAVITY_SCALE", "kind": "float", "min": 0.0, "max": 3.0, "step": 0.1, "default": 1.0, "hint": "Сила гравитации"})
 	register_parameter({"id": "asleep", "label": "ASLEEP", "kind": "bool", "default": false, "hint": "Сон"})
 	register_parameter({"id": "control_source", "label": "CONTROL_SOURCE", "kind": "enum", "default": "NONE", "choices": [{"name": "NONE", "value": "NONE"}, {"name": "PLAYER", "value": "PLAYER"}], "hint": "Источник управления"})
 
@@ -44,7 +45,7 @@ static func storage_id(parameter_id: String) -> String:
 
 
 func normalize(category: String, parameter_id: String, proposed: Variant) -> Dictionary:
-	if parameter_id in PHYSICS_FIELDS or parameter_id in ["size", "speed", "sense_range", "follow_distance"]:
+	if parameter_id in PHYSICS_FIELDS or parameter_id in ["size", "speed", "sense_range", "follow_distance", "gravity_scale"]:
 		var spec := get_spec(category, parameter_id)
 		if typeof(proposed) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(proposed)):
 			return {"ok": false, "error": "Expected a finite number"}

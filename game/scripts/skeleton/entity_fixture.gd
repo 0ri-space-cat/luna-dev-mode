@@ -124,8 +124,9 @@ func make_snapshot() -> Dictionary:
 		data["control"] = body.control_snapshot()
 		data["movement"] = body.movement_snapshot()
 		data["editor"] = body.editor_snapshot()
+		data["gravity_scale"] = body.get_parameter("gravity_scale")
 		states.append(data)
-	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 4, "entities": states}
+	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 5, "entities": states}
 
 
 func apply_snapshot(data: Dictionary) -> bool:
@@ -135,7 +136,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not states is Array or states.is_empty() or states.size() > MAX_ENTITIES:
 		return false
 	var version: Variant = data.get("entity_state_version", 0)
-	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0, 3.0, 4.0]:
+	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]:
 		return false
 	var candidates := {}
 	for state in states:
@@ -169,10 +170,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	if not state is Dictionary or state.get("location_id") != LOCATION_ID or not state.has("dynamics"):
 		return null
-	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3) or state.has("editor") != (version >= 4):
+	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3) or state.has("editor") != (version >= 4) or state.has("gravity_scale") != (version >= 5):
 		return null
 	var body := _build_entity(state)
-	if body != null and ((version >= 4 and not body.restore_editor(state["editor"])) or (version >= 3 and not body.restore_movement(state["movement"])) or not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
+	if body != null and ((version >= 5 and not body.set_parameter("gravity_scale", state["gravity_scale"])) or (version >= 4 and not body.restore_editor(state["editor"])) or (version >= 3 and not body.restore_movement(state["movement"])) or not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
 		body.free()
 		return null
 	return body
