@@ -59,13 +59,44 @@ func _run() -> void:
 		await physics_frame
 	assert(scene.ice_remaining == 0.0 and scene.actor.recoveries == 1)
 	assert(scene.actor.position.x < Meadows.CREEK.position.x and scene.actor.motion.grounded)
+	assert(await _check_plank(scene))
 	assert(await _walk_to(scene, Vector2(1370, 374)))
 	assert(await _walk_to(scene, Vector2(1145, 374)))
 	assert(scene.actor.location_id == scene.ISLAND_ID)
-	print("P9-03: linked meadows, fauna, dry loop, jump, ice and bank recovery passed")
+	print("P9-03: linked meadows, dry loop, jump, ice, portable plank and bank recovery passed")
 	scene.queue_free()
 	await process_frame
 	quit()
+
+
+func _check_plank(scene: Node) -> bool:
+	scene.freeze_selected = false
+	assert(await _walk_to(scene, Vector2(1435, 388)))
+	assert(scene.interact())
+	var plank = scene.entities.get_entity(Meadows.PLANK_ID)
+	assert(plank.is_carried())
+	assert(await _walk_to(scene, Vector2(1509, 408)))
+	assert(scene.interact() and not plank.is_carried())
+	assert(scene.actor.position.x < Meadows.CREEK.position.x)
+	assert(scene.ice_remaining == 0.0)
+	assert(await _walk_to(scene, Vector2(1570, 408)))
+	assert(scene.actor.motion.grounded)
+
+	var saved: Dictionary = JSON.parse_string(JSON.stringify(scene.make_snapshot()))
+	assert(scene.apply_snapshot(saved))
+	assert(await _walk_to(scene, Vector2(1650, 408)))
+	assert(await _walk_to(scene, Vector2(1488, 408)))
+	assert(scene.actor.recoveries == 0)
+
+	assert(await _walk_to(scene, Vector2(1565, 408)))
+	assert(scene.interact())
+	plank = scene.entities.get_entity(Meadows.PLANK_ID)
+	assert(plank.is_carried())
+	for tick in range(100):
+		await physics_frame
+	assert(scene.actor.recoveries == 1 and plank.is_carried())
+	assert(scene.actor.position.x < Meadows.CREEK.position.x)
+	return true
 
 
 func _walk_to(scene: Node, target: Vector2, max_ticks: int = 150) -> bool:

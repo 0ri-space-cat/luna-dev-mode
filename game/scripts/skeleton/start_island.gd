@@ -29,6 +29,7 @@ var retreat_step := -1
 var ice_remaining := 0.0
 var freeze_selected := false
 var _initial_meadow_states: Array[Dictionary] = []
+var _plank_surface := {}
 var _store := SaveStore.new()
 
 @onready var _camera: Camera2D = $Camera
@@ -78,19 +79,22 @@ func _ready() -> void:
 	yeti.set_parameter("size", 2.0)
 	yeti.set_parameter("behavior_mode", "IDLE")
 	_connect_bridge_body()
-	_spawn_meadow_fauna()
+	_spawn_meadow_entities()
 	_camera.position = actor.position
 
 
-func _spawn_meadow_fauna() -> void:
+func _spawn_meadow_entities() -> void:
 	var fox := spawn_entity({
 		"id": Meadows.FOX_ID, "category": "fox", "label": "Лисичка", "material": "FABRIC",
 	}, Vector2(1684, 414), 0.0)
 	var trollik := spawn_entity({
 		"id": Meadows.TROLLIK_ID, "category": "trollik", "label": "Троллик", "material": "FABRIC",
 	}, Vector2(1870, 325), 0.0)
-	if fox == null or trollik == null:
-		push_error("Could not place the meadow fauna")
+	var plank := spawn_entity({
+		"id": Meadows.PLANK_ID, "category": "prop", "label": "Доска", "material": "WOOD",
+	}, Meadows.PLANK_START, 0.0)
+	if fox == null or trollik == null or plank == null:
+		push_error("Could not place the meadow entities")
 		return
 	fox.set_parameter("size", 0.7)
 	fox.set_parameter("speed", 1.05)
@@ -98,9 +102,21 @@ func _spawn_meadow_fauna() -> void:
 	trollik.set_parameter("behavior_mode", "CHASE")
 	trollik.set_parameter("target_group", "LUNA")
 	trollik.set_parameter("sense_range", 1.7)
+	plank.set_parameter("pickable", true)
+	plank.set_parameter("mass", 0.8)
+	plank.set_parameter("color", Color("efb68e"))
+	_configure_plank_marker(plank)
 	for entry in make_snapshot()["entities"]:
-		if entry["id"] in [Meadows.FOX_ID, Meadows.TROLLIK_ID]:
+		if entry["id"] in [Meadows.FOX_ID, Meadows.TROLLIK_ID, Meadows.PLANK_ID]:
 			_initial_meadow_states.append(entry)
+
+
+func _configure_plank_marker(plank: EntityBody) -> void:
+	var edge := Meadows.PLANK_SIZE / 2.0
+	plank._marker.polygon = PackedVector2Array([
+		-edge, Vector2(edge.x, -edge.y), edge, Vector2(-edge.x, edge.y),
+	])
+	actor.z_index = 1
 
 
 func _configure_body(body: ElevationBody, entity_id: String) -> void:
@@ -125,6 +141,7 @@ func _physics_process(delta: float) -> void:
 		if ice_remaining > 0.0:
 			_set_ice_time(maxf(0.0, ice_remaining - delta))
 		_update_yeti_route()
+		_refresh_plank_surface()
 	_camera.position = actor.position
 	var area := "Большие луга" if actor.position.x >= Meadows.WEST_BOUNDARY else "Стартовый остров"
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
@@ -165,9 +182,45 @@ func _nearby_action() -> String:
 	var yeti := entities.get_entity(BRIDGE_YETI_ID) as EntityBody
 	if has_donut and not yeti.get_parameter("asleep") and _within_reach(yeti.position, yeti.motion.elevation):
 		return "Предложить пончик"
+	var plank := entities.get_entity(Meadows.PLANK_ID) as EntityBody
+	if plank != null:
+		if actor.has_passenger():
+			if _plank_placement(plank).is_finite():
+				return "Положить доску поперёк ручья"
+			return "Отпустить"
+		if not plank.is_attached() and plank.get_parameter("pickable") \
+				and actor.position.distance_squared_to(plank.position) <= ElevationBody.BOARD_RADIUS * ElevationBody.BOARD_RADIUS \
+				and absf(actor.motion.elevation - plank.motion.elevation) <= ElevationBody.BOARD_HEIGHT:
+			return "Взять доску"
 	if freeze_selected and _can_freeze_creek():
 		return "Заморозить воду"
 	return ""
+
+
+func _plank_placement(plank: EntityBody) -> Vector2:
+	if not plank.is_carried() or plank._carrier != actor or not actor.motion.grounded:
+		return Vector2.INF
+	var side := signf(Meadows.CREEK.get_center().x - actor.position.x)
+	var point := actor.position + Vector2(side * 58.0, 0.0)
+	return point if not Meadows.plank_support(point, plank.body_size).is_empty() else Vector2.INF
+
+
+func _refresh_plank_surface() -> void:
+	var plank := entities.get_entity(Meadows.PLANK_ID) as EntityBody
+	var surface := {}
+	if plank != null and not plank.is_attached() and plank.motion.grounded and is_zero_approx(plank.motion.elevation):
+		surface = Meadows.plank_support(plank.position, plank.body_size)
+	_set_plank_surface(surface)
+
+
+func _set_plank_surface(surface: Dictionary) -> void:
+	if surface == _plank_surface:
+		return
+	if not _plank_surface.is_empty():
+		_surfaces.erase(_plank_surface)
+	_plank_surface = surface
+	if not surface.is_empty():
+		_surfaces.append(surface)
 
 
 func _can_freeze_creek() -> bool:
@@ -204,6 +257,17 @@ func interact() -> bool:
 			return true
 		"Заморозить воду":
 			_set_ice_time(Meadows.ICE_SECONDS)
+			return true
+		"Положить доску поперёк ручья":
+			var plank := entities.get_entity(Meadows.PLANK_ID) as EntityBody
+			if not actor.try_place_carried(_plank_placement(plank), 0.0):
+				return false
+			_refresh_plank_surface()
+			return true
+		"Взять доску":
+			if not interact_with_attachment(Meadows.PLANK_ID):
+				return false
+			_refresh_plank_surface()
 			return true
 	return interact_with_attachment()
 
@@ -250,7 +314,7 @@ func make_snapshot() -> Dictionary:
 		"access": access.snapshot(), "projection": projection.snapshot(), "has_donut": has_donut,
 		"donut_refill": donut_refill, "retreat_step": retreat_step,
 	}
-	data["meadows"] = {"ice_remaining": ice_remaining}
+	data["meadows"] = {"ice_remaining": ice_remaining, "layout_version": 2}
 	return data
 
 
@@ -282,6 +346,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if typeof(ice) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(ice)) \
 			or float(ice) < 0.0 or float(ice) > Meadows.ICE_SECONDS:
 		return false
+	var layout: Variant = meadow_state.get("layout_version", 1)
+	if typeof(layout) not in [TYPE_INT, TYPE_FLOAT] or float(layout) not in [1.0, 2.0]:
+		return false
 	var fridge_found := false
 	var yeti_found := false
 	for state in states:
@@ -291,14 +358,25 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not fridge_found or not yeti_found:
 		return false
 	var candidate := data
-	if not data.has("meadows"):
-		# M3.44 saves predate the fauna and have no transient supports.
+	if float(layout) == 1.0:
 		candidate = data.duplicate(true)
-		candidate["entities"].append_array(_initial_meadow_states)
+		for entry in _initial_meadow_states:
+			if not data.has("meadows") or entry["id"] == Meadows.PLANK_ID:
+				candidate["entities"].append(entry)
+	var plank: Dictionary = {}
+	for state in candidate["entities"]:
+		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
+			plank = state
+			break
+	if plank.is_empty():
+		return false
 	var previous_ice := ice_remaining
+	var previous_plank := _plank_surface
 	_set_ice_time(float(ice))
+	_set_plank_surface(_saved_plank_surface(plank))
 	if not super.apply_snapshot(candidate):
 		_set_ice_time(previous_ice)
+		_set_plank_surface(previous_plank)
 		return false
 	access = next_access
 	projection = next_projection
@@ -306,8 +384,28 @@ func apply_snapshot(data: Dictionary) -> bool:
 	donut_refill = float(refill)
 	retreat_step = int(step)
 	_connect_bridge_body()
+	_configure_plank_marker(entities.get_entity(Meadows.PLANK_ID) as EntityBody)
 	_camera.position = actor.position
 	return true
+
+
+func _saved_plank_surface(state: Dictionary) -> Dictionary:
+	var motion: Variant = state.get("motion")
+	var attachment: Variant = state.get("attachment")
+	var movement: Variant = state.get("movement")
+	var point: Variant = state.get("position")
+	if not motion is Dictionary or not attachment is Dictionary or not movement is Dictionary \
+			or not point is Array or point.size() != 2:
+		return {}
+	if motion.get("grounded") != true or motion.get("elevation") != 0 or attachment.get("carrier_id") != "":
+		return {}
+	var size: Variant = movement.get("size")
+	for value in [point[0], point[1], size]:
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
+			return {}
+	if float(size) < 0.5 or float(size) > 2.0:
+		return {}
+	return Meadows.plank_support(Vector2(float(point[0]), float(point[1])), float(size))
 
 
 func _draw() -> void:

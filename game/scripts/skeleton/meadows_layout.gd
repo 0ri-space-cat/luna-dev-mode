@@ -18,6 +18,27 @@ const ICE_SECONDS := 7.0
 const FREEZE_REACH := 62.0
 const FOX_ID := "MEADOWS_FOX"
 const TROLLIK_ID := "MEADOWS_TROLLIK"
+const PLANK_ID := "MEADOWS_PLANK"
+const PLANK_START := Vector2(1435, 410)
+const PLANK_SIZE := Vector2(124, 42)
+const PLANK_BANK_OVERLAP := 8.0
+
+
+static func plank_support(point: Vector2, scale_factor: float) -> Dictionary:
+	var size := PLANK_SIZE * scale_factor
+	var bounds := Rect2(point - size / 2.0, size)
+	if not CREEK.has_point(point):
+		return {}
+	var left := CREEK.position.x - PLANK_BANK_OVERLAP
+	var right := CREEK.end.x + PLANK_BANK_OVERLAP
+	if bounds.position.x > left or bounds.end.x < right:
+		return {}
+	if not M1_BANK.has_point(Vector2(left, bounds.position.y)) \
+			or not M1_BANK.has_point(Vector2(left, bounds.end.y)) \
+			or not M2.has_point(Vector2(right, bounds.position.y)) \
+			or not M2.has_point(Vector2(right, bounds.end.y)):
+		return {}
+	return {"bounds": bounds, "height": 0.0, "safe": false}
 
 
 static func draw_on(canvas: Node2D, frozen: bool) -> void:

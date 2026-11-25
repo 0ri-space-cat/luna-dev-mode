@@ -24,6 +24,7 @@ const BOARD_HEIGHT := 26.0
 const DISMOUNT_DISTANCE := 28.0
 const MAX_SAFE_DROP := 30.0
 const CARRY_MASS_LIMIT := 3.0
+const PLACE_REACH := 64.0
 const MAX_RIDER_FOOTPRINT_RATIO := 1.5
 
 var motion := ElevationMotion.new()
@@ -245,6 +246,25 @@ func try_drop() -> bool:
 	return has_passenger() and _rider.is_carried() and _rider._try_release()
 
 
+## The caller supplies a surface already supported by the surrounding geometry.
+func try_place_carried(point: Vector2, floor: float) -> bool:
+	if not has_passenger() or not _rider.is_carried() or not motion.grounded:
+		return false
+	if not point.is_finite() or not is_finite(floor) or point.distance_to(position) > PLACE_REACH \
+			or absf(motion.elevation - floor) > MAX_SAFE_DROP:
+		return false
+	var item := _rider
+	if not item._clear_step(point, floor) or not item._release_is_clear(point, floor, item.motion.elevation):
+		return false
+	item._detach_from_carrier()
+	item.position = point
+	item.motion.elevation = floor
+	item.motion.grounded = true
+	item.motion.vertical_speed = 0.0
+	item._sync_projection()
+	return true
+
+
 func _try_release() -> bool:
 	var feet := motion.elevation
 	var release_height := _carrier.motion.elevation if _carried else feet
@@ -254,16 +274,20 @@ func _try_release() -> bool:
 		var floor := _dry_landing_height(point, release_height)
 		if not is_finite(floor) or not _clear_step(point, floor) or not _release_is_clear(point, floor, feet):
 			continue
-		_carrier._rider = null
-		if not _carried:
-			_carrier.direction = Vector2.ZERO
-			_carrier.thrust_requested = false
-			_carrier.swim_intent = 0.0
-		_carrier = null
-		_carried = false
+		_detach_from_carrier()
 		_place_on_dismount(point, floor, feet)
 		return true
 	return false
+
+
+func _detach_from_carrier() -> void:
+	_carrier._rider = null
+	if not _carried:
+		_carrier.direction = Vector2.ZERO
+		_carrier.thrust_requested = false
+		_carrier.swim_intent = 0.0
+	_carrier = null
+	_carried = false
 
 
 func _release_is_clear(_point: Vector2, _floor: float, _feet: float) -> bool:
