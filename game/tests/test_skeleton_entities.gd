@@ -44,7 +44,7 @@ func _run() -> void:
 	for canonical in aliases:
 		assert(scene.Parameters.storage_id(canonical) == aliases[canonical])
 	assert(scene.parameters.get_spec("fridge", "alive")["kind"] == "bool")
-	assert(not scene.request_wand_parameter_edit(TARGET_ID, "MOVE_SPEED", 2.0))
+	assert(not scene.request_wand_parameter_edit(TARGET_ID, "BASE_COLOR", Color.RED))
 
 	var fixture_location: String = target.location_id
 	assert(scene.projection.drop_at(scene.actor.position, fixture_location))

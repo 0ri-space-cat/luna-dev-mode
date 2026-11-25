@@ -8,6 +8,7 @@ const REST_SPEED := 22.0
 var elevation := 0.0
 var vertical_speed := 0.0
 var grounded := false
+var safe_margin := 14.0
 var _safe_position := Vector2.ZERO
 var _safe_elevation := 0.0
 
@@ -173,7 +174,7 @@ func _has_support(point: Vector2, height: float, surfaces: Array[Dictionary],
 		if require_safe_anchor:
 			if not surface.get("safe", true):
 				continue
-			bounds = bounds.grow(-14.0)
+			bounds = bounds.grow(-safe_margin)
 		if bounds.has_point(point) and is_equal_approx(float(surface["height"]), height):
 			return true
 	return false

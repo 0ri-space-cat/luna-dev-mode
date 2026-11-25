@@ -56,6 +56,7 @@ func _run() -> void:
 	legacy["entity_state_version"] = 1
 	for body in legacy["entities"]:
 		body.erase("control")
+		body.erase("movement")
 	assert(scene.apply_snapshot(legacy))
 	assert(scene.actor.accepts_player_input())
 	assert(not scene.entities.get_entity(YETI).accepts_player_input())

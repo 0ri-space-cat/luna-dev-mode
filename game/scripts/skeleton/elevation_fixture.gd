@@ -196,8 +196,8 @@ func _restore_body_state(candidate: ElevationBody, body: Dictionary) -> bool:
 		return false
 	var anchor: Array = candidate.motion.snapshot()["anchor"]
 	var anchor_point := Vector2(float(anchor[0]), float(anchor[1]))
-	if _intersects_wall(candidate.position, candidate.motion.elevation) \
-			or _intersects_wall(anchor_point, float(anchor[2])):
+	if not candidate.fits_walls_at(candidate.position, candidate.motion.elevation, candidate.foot_radius()) \
+			or not candidate.fits_walls_at(anchor_point, float(anchor[2]), candidate.foot_radius()):
 		return false
 	if body.has("dynamics"):
 		var dynamics: Variant = body["dynamics"]

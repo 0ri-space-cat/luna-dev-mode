@@ -35,7 +35,7 @@ static func storage_id(parameter_id: String) -> String:
 
 
 func normalize(category: String, parameter_id: String, proposed: Variant) -> Dictionary:
-	if parameter_id in PHYSICS_FIELDS:
+	if parameter_id in PHYSICS_FIELDS or parameter_id in ["size", "speed"]:
 		var spec := get_spec(category, parameter_id)
 		if typeof(proposed) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(proposed)):
 			return {"ok": false, "error": "Expected a finite number"}

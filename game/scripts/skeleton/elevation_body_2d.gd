@@ -42,6 +42,9 @@ var _swim_enabled := false
 var _bounciness := 0.0
 var _impulse_velocity := Vector2.ZERO
 var _marker: Polygon2D
+var _footprint: CircleShape2D
+var body_size := 1.0
+var drive_multiplier := 1.0
 var _carrier: SkeletonElevationBody2D
 var _rider: SkeletonElevationBody2D
 var _seat_height := 0.0
@@ -54,7 +57,8 @@ func _ready() -> void:
 	collision_layer = 0
 	var footprint := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
-	circle.radius = FOOT_RADIUS
+	circle.radius = foot_radius()
+	_footprint = circle
 	footprint.shape = circle
 	add_child(footprint)
 	_marker = Polygon2D.new()
@@ -64,6 +68,7 @@ func _ready() -> void:
 		Vector2(9, -19), Vector2(12, 0),
 	])
 	add_child(_marker)
+	_marker.scale = Vector2.ONE * body_size
 	_sync_projection()
 
 
@@ -249,7 +254,7 @@ func _dry_landing_height(point: Vector2, feet: float) -> float:
 	for surface in surfaces:
 		var height: float = surface["height"]
 		var bounds: Rect2 = surface["bounds"]
-		if not surface.get("safe", true) or not bounds.grow(-FOOT_RADIUS).has_point(point):
+		if not surface.get("safe", true) or not bounds.grow(-foot_radius()).has_point(point):
 			continue
 		if height > feet + ElevationMotion.EPSILON or feet - height > MAX_SAFE_DROP:
 			continue
@@ -260,7 +265,7 @@ func _dry_landing_height(point: Vector2, feet: float) -> float:
 
 func _is_dry(point: Vector2, feet: float) -> bool:
 	for volume in water_volumes:
-		if volume.submerged_fraction(point, feet, BODY_HEIGHT) > 0.0:
+		if volume.submerged_fraction(point, feet, body_height()) > 0.0:
 			return false
 	return true
 
@@ -349,7 +354,7 @@ func _physics_process(delta: float) -> void:
 		acceleration += FLIGHT_ACCELERATION * load_factor
 
 	if water != null:
-		var fraction := water.submerged_fraction(position, motion.elevation, BODY_HEIGHT)
+		var fraction := water.submerged_fraction(position, motion.elevation, body_height())
 		var drag_fraction := 1.0 - exp(-water.resistance * fraction * delta / total_mass)
 		_impulse_velocity = _impulse_velocity.lerp(water.flow, drag_fraction)
 		acceleration += minf(GRAVITY * (_buoyancy * fraction / total_mass), MAX_WATER_LIFT)
@@ -361,7 +366,7 @@ func _physics_process(delta: float) -> void:
 			# Shallow feet can wade. A floating body has no swimming stroke.
 			drive_speed = lerpf(WALK_SPEED, 0.0, minf(fraction / 0.35, 1.0))
 
-	_move_with_contacts(direction.limit_length() * drive_speed * load_factor, delta, acceleration)
+	_move_with_contacts(direction.limit_length() * drive_speed * load_factor * drive_multiplier, delta, acceleration)
 	if open_seat and not _seat_is_safe():
 		position = position_before
 		motion.load_snapshot(motion_before, position, surfaces, RECOVERY_HEIGHT)
@@ -384,7 +389,7 @@ func _current_water() -> WaterVolume:
 	var selected: WaterVolume
 	var greatest_fraction := 0.0
 	for volume in water_volumes:
-		var fraction := volume.submerged_fraction(position, motion.elevation, BODY_HEIGHT)
+		var fraction := volume.submerged_fraction(position, motion.elevation, body_height())
 		if fraction > greatest_fraction:
 			selected = volume
 			greatest_fraction = fraction
@@ -443,4 +448,33 @@ func _draw() -> void:
 	if not is_finite(shadow_height):
 		return
 	draw_set_transform(Vector2(0.0, -shadow_height), 0.0, Vector2(1.0, 0.42))
-	draw_circle(Vector2.ZERO, FOOT_RADIUS, Color(0.05, 0.04, 0.1, 0.65))
+	draw_circle(Vector2.ZERO, foot_radius(), Color(0.05, 0.04, 0.1, 0.65))
+
+
+func foot_radius() -> float:
+	return FOOT_RADIUS * body_size
+
+
+func body_height() -> float:
+	return BODY_HEIGHT * body_size
+
+
+func fits_walls_at(point: Vector2, elevation: float, radius: float) -> bool:
+	for wall in walls:
+		if elevation >= float(wall["height"]):
+			continue
+		var bounds: Rect2 = wall["bounds"]
+		var closest := point.clamp(bounds.position, bounds.end)
+		if point.distance_to(closest) < radius - 0.01:
+			return false
+	return true
+
+
+func _apply_body_size(value: float) -> void:
+	body_size = value
+	motion.safe_margin = 14.0 * value
+	if _footprint != null:
+		_footprint.radius = foot_radius()
+	if _marker != null:
+		_marker.scale = Vector2.ONE * value
+		queue_redraw()

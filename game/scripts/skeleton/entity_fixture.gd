@@ -64,9 +64,9 @@ func spawn_entity(definition: Dictionary, point: Vector2, height: float) -> Enti
 func _spawn_is_occupied(point: Vector2, height: float) -> bool:
 	for identity in entities.list_ids():
 		var body := entities.get_entity(identity) as EntityBody
-		if absf(body.motion.elevation - height) >= ElevationBody.BODY_HEIGHT:
+		if height >= body.motion.elevation + body.body_height() or body.motion.elevation >= height + ElevationBody.BODY_HEIGHT:
 			continue
-		if body.position.distance_to(point) < 2.0 * ElevationBody.FOOT_RADIUS:
+		if body.position.distance_to(point) < ElevationBody.FOOT_RADIUS + body.foot_radius():
 			return true
 	return false
 
@@ -119,8 +119,9 @@ func make_snapshot() -> Dictionary:
 		data["location_id"] = body.location_id
 		data["life"] = body.life_snapshot()
 		data["control"] = body.control_snapshot()
+		data["movement"] = body.movement_snapshot()
 		states.append(data)
-	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 2, "entities": states}
+	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 3, "entities": states}
 
 
 func apply_snapshot(data: Dictionary) -> bool:
@@ -130,7 +131,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not states is Array or states.is_empty() or states.size() > MAX_ENTITIES:
 		return false
 	var version: Variant = data.get("entity_state_version", 0)
-	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0]:
+	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0, 3.0]:
 		return false
 	var candidates := {}
 	for state in states:
@@ -161,10 +162,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	if not state is Dictionary or state.get("location_id") != LOCATION_ID or not state.has("dynamics"):
 		return null
-	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2):
+	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3):
 		return null
 	var body := _build_entity(state)
-	if body != null and (not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
+	if body != null and ((version >= 3 and not body.restore_movement(state["movement"])) or not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
 		body.free()
 		return null
 	return body

@@ -21,6 +21,17 @@ func get_parameter(key: String) -> Variant:
 
 
 func set_parameter(key: String, value: Variant) -> bool:
+	if key in ["size", "speed"]:
+		var checked: Dictionary = record.registry.normalize(record.category, key, value)
+		if not checked["ok"]:
+			return false
+		var number := float(checked["value"])
+		if key == "size" and not _try_resize(number):
+			return false
+		if key == "speed":
+			drive_multiplier = number / 2.0
+		record.parameters[key] = number
+		return true
 	if key in ["ai_enabled", "control_source"]:
 		var checked: Dictionary = record.registry.normalize(record.category, key, value)
 		if not checked["ok"]:
@@ -132,4 +143,52 @@ func restore_control(state: Variant) -> bool:
 		return false
 	record.parameters["ai_enabled"] = autonomy
 	record.parameters["control_source"] = source
+	return true
+
+
+func _try_resize(value: float) -> bool:
+	if is_riding() or has_rider():
+		return false
+	var radius := FOOT_RADIUS * value
+	if not fits_walls_at(position, motion.elevation, radius):
+		return false
+	var state := motion.snapshot()
+	var anchor: Array = state["anchor"]
+	var anchor_point := Vector2(float(anchor[0]), float(anchor[1]))
+	if not fits_walls_at(anchor_point, float(anchor[2]), radius):
+		return false
+	var candidate := ElevationMotion.new()
+	candidate.safe_margin = 14.0 * value
+	if not candidate.load_snapshot(state, position, surfaces, RECOVERY_HEIGHT):
+		return false
+	if value > body_size:
+		for identity in world_registry.list_ids():
+			var other = world_registry.get_entity(identity)
+			if other == self:
+				continue
+			if motion.elevation >= other.motion.elevation + other.body_height() or other.motion.elevation >= motion.elevation + BODY_HEIGHT * value:
+				continue
+			if position.distance_to(other.position) < radius + other.foot_radius():
+				return false
+	_apply_body_size(value)
+	return true
+
+
+func movement_snapshot() -> Dictionary:
+	return {"size": get_parameter("size"), "speed": get_parameter("speed")}
+
+
+func restore_movement(state: Variant) -> bool:
+	if not state is Dictionary or state.size() != 2:
+		return false
+	for key in ["size", "speed"]:
+		var checked: Dictionary = record.registry.normalize(record.category, key, state.get(key))
+		if not checked["ok"] or not is_equal_approx(float(state[key]), float(checked["value"])):
+			return false
+	var size_value := float(state["size"])
+	var speed_value := float(state["speed"])
+	_apply_body_size(size_value)
+	drive_multiplier = speed_value / 2.0
+	record.parameters["size"] = size_value
+	record.parameters["speed"] = speed_value
 	return true

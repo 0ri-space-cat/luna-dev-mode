@@ -40,6 +40,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_life.gd
       - name: Test skeleton multiple entity control
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_control.gd
+      - name: Test skeleton size and movement speed
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_size_speed.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws
