@@ -44,7 +44,7 @@ func _run() -> void:
 	assert(scene.request_wand_parameter_edit(TARGET, "GRAVITY_SCALE", 0.0))
 	await _ticks(20)
 	assert(body.motion.grounded and is_equal_approx(body.motion.elevation, base_height))
-	var bad := scene.make_snapshot()
+	var bad: Dictionary = scene.make_snapshot()
 	for entry in bad["entities"]:
 		if entry["id"] == TARGET:
 			entry["gravity_scale"] = "invalid"

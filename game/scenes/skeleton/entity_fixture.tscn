@@ -7,4 +7,4 @@
 script = ExtResource("2")
 
 [node name="Controls" parent="." index="0"]
-text = "P9-02  |  WASD / arrows: move   [ / ]: test MASS"
+text = "P9-02  |  WASD / arrows: move   E: board / pick up   TAB: edit"

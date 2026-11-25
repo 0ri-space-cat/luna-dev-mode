@@ -23,6 +23,8 @@ const BOARD_RADIUS := 30.0
 const BOARD_HEIGHT := 26.0
 const DISMOUNT_DISTANCE := 28.0
 const MAX_SAFE_DROP := 30.0
+const CARRY_MASS_LIMIT := 3.0
+const MAX_RIDER_FOOTPRINT_RATIO := 1.5
 
 var motion := ElevationMotion.new()
 var surfaces: Array[Dictionary] = []
@@ -47,6 +49,7 @@ var body_size := 1.0
 var drive_multiplier := 1.0
 var _carrier: SkeletonElevationBody2D
 var _rider: SkeletonElevationBody2D
+var _carried := false
 var _seat_height := 0.0
 var _seat_capacity := 0.0
 var _protected_seat := false
@@ -73,7 +76,7 @@ func _ready() -> void:
 
 
 func jump() -> void:
-	if motion.grounded and not is_riding():
+	if motion.grounded and not is_attached():
 		motion.add_impulse(JUMP_SPEED * _load_factor())
 
 
@@ -82,7 +85,7 @@ func configure_dynamics(mass: float, bounciness: float) -> bool:
 		return false
 	if bounciness < 0.0 or bounciness > 1.0:
 		return false
-	if is_riding() and mass > _carrier._seat_capacity:
+	if is_attached() and mass > (CARRY_MASS_LIMIT if _carried else _carrier._seat_capacity):
 		return false
 	_mass = mass
 	_bounciness = bounciness
@@ -90,7 +93,7 @@ func configure_dynamics(mass: float, bounciness: float) -> bool:
 
 
 func apply_impulse(planar: Vector2, vertical: float = 0.0) -> bool:
-	if is_riding():
+	if is_attached():
 		return _carrier.apply_impulse(planar, vertical)
 	var total_mass := _total_mass()
 	var planar_delta := Vector2(planar.x / total_mass, planar.y / total_mass)
@@ -155,7 +158,7 @@ func load_water(data: Dictionary) -> bool:
 
 
 func configure_seat(height: float, capacity: float, protected: bool) -> bool:
-	if is_instance_valid(_rider) or not is_finite(height) or not is_finite(capacity):
+	if has_passenger() or not is_finite(height) or not is_finite(capacity):
 		return false
 	if height <= 0.0 or capacity <= 0.0:
 		return false
@@ -181,54 +184,90 @@ func load_seat(data: Dictionary) -> bool:
 
 
 func is_riding() -> bool:
+	return is_attached() and not _carried
+
+
+func is_carried() -> bool:
+	return is_attached() and _carried
+
+
+func is_attached() -> bool:
 	return is_instance_valid(_carrier)
 
 
 func has_rider() -> bool:
+	return has_passenger() and not _rider._carried
+
+
+func has_passenger() -> bool:
 	return is_instance_valid(_rider)
 
 
 func try_board(rider: SkeletonElevationBody2D) -> bool:
-	if not _can_attach(rider) or not is_inside_tree() or not rider.is_inside_tree():
+	return _try_attach(rider, false)
+
+
+func try_pick_up(item: SkeletonElevationBody2D) -> bool:
+	return _try_attach(item, true)
+
+
+func _try_attach(rider: SkeletonElevationBody2D, carried: bool) -> bool:
+	if not _can_attach(rider, carried) or not is_inside_tree() or not rider.is_inside_tree():
 		return false
 	if get_parent() != rider.get_parent() or position.distance_to(rider.position) > BOARD_RADIUS:
 		return false
-	if absf(motion.elevation + _seat_height - rider.motion.elevation) > BOARD_HEIGHT:
+	var elevation := motion.elevation + _attachment_height(carried)
+	var reach_height := motion.elevation if carried else elevation
+	if absf(reach_height - rider.motion.elevation) > BOARD_HEIGHT:
 		return false
-	if not rider._clear_step(position, minf(rider.motion.elevation, motion.elevation + _seat_height)):
+	if not rider._clear_step(position, minf(rider.motion.elevation, elevation)):
 		return false
-	_attach(rider)
+	_attach(rider, carried)
 	return true
 
 
-func restore_rider(rider: SkeletonElevationBody2D) -> bool:
-	if not _can_attach(rider) or not position.is_equal_approx(rider.position):
+func restore_rider(rider: SkeletonElevationBody2D, carried: bool = false) -> bool:
+	if not _can_attach(rider, carried) or not position.is_equal_approx(rider.position):
 		return false
-	if not is_equal_approx(rider.motion.elevation, motion.elevation + _seat_height):
+	if not is_equal_approx(rider.motion.elevation, motion.elevation + _attachment_height(carried)):
 		return false
 	if rider.motion.grounded or not is_equal_approx(rider.motion.vertical_speed, motion.vertical_speed):
 		return false
-	_attach(rider)
+	_attach(rider, carried)
 	return true
 
 
 func try_dismount() -> bool:
-	if not is_riding():
-		return false
+	return is_riding() and _try_release()
+
+
+func try_drop() -> bool:
+	return has_passenger() and _rider.is_carried() and _rider._try_release()
+
+
+func _try_release() -> bool:
 	var feet := motion.elevation
+	var release_height := _carrier.motion.elevation if _carried else feet
+	var distance := maxf(DISMOUNT_DISTANCE, foot_radius() + _carrier.foot_radius() + 2.0)
 	for direction_to_exit in [Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT, Vector2.UP]:
-		var point: Vector2 = position + direction_to_exit * DISMOUNT_DISTANCE
-		var floor := _dry_landing_height(point, feet)
-		if not is_finite(floor) or not _clear_step(point, floor):
+		var point: Vector2 = position + direction_to_exit * distance
+		var floor := _dry_landing_height(point, release_height)
+		if not is_finite(floor) or not _clear_step(point, floor) or not _release_is_clear(point, floor, feet):
 			continue
 		_carrier._rider = null
-		_carrier.direction = Vector2.ZERO
-		_carrier.thrust_requested = false
-		_carrier.swim_intent = 0.0
+		if not _carried:
+			_carrier.direction = Vector2.ZERO
+			_carrier.thrust_requested = false
+			_carrier.swim_intent = 0.0
 		_carrier = null
+		_carried = false
 		_place_on_dismount(point, floor, feet)
 		return true
 	return false
+
+
+func _release_is_clear(_point: Vector2, _floor: float, _feet: float) -> bool:
+	return true
 
 
 func _place_on_dismount(point: Vector2, floor: float, feet: float) -> void:
@@ -254,7 +293,7 @@ func _dry_landing_height(point: Vector2, feet: float) -> float:
 	for surface in surfaces:
 		var height: float = surface["height"]
 		var bounds: Rect2 = surface["bounds"]
-		if not surface.get("safe", true) or not bounds.grow(-foot_radius()).has_point(point):
+		if not surface.get("safe", true) or not bounds.grow(-motion.safe_margin).has_point(point):
 			continue
 		if height > feet + ElevationMotion.EPSILON or feet - height > MAX_SAFE_DROP:
 			continue
@@ -270,17 +309,36 @@ func _is_dry(point: Vector2, feet: float) -> bool:
 	return true
 
 
-func _can_attach(rider: SkeletonElevationBody2D) -> bool:
-	if not is_instance_valid(rider) or rider == self or has_rider() or is_riding():
-		return false
-	if rider.is_riding() or rider.has_rider() or rider._mass > _seat_capacity:
-		return false
-	return _seat_is_safe()
+func _allows_ride() -> bool:
+	return _seat_capacity > 0.0
 
 
-func _attach(rider: SkeletonElevationBody2D) -> void:
+func _allows_pickup() -> bool:
+	return false
+
+
+func _attachment_height(carried: bool) -> float:
+	return body_height() if carried else _seat_height * body_size
+
+
+func _can_attach(rider: SkeletonElevationBody2D, carried: bool) -> bool:
+	if not is_instance_valid(rider) or rider == self or has_passenger() or is_attached():
+		return false
+	if rider.is_attached() or rider.has_passenger():
+		return false
+	if carried:
+		if not rider._allows_pickup() or rider._mass > CARRY_MASS_LIMIT or rider.foot_radius() > foot_radius():
+			return false
+	elif not _allows_ride() or rider._mass > _seat_capacity \
+			or rider.foot_radius() > foot_radius() * MAX_RIDER_FOOTPRINT_RATIO:
+		return false
+	return _attachment_space_is_safe(rider, carried)
+
+
+func _attach(rider: SkeletonElevationBody2D, carried: bool) -> void:
 	_rider = rider
 	rider._carrier = self
+	rider._carried = carried
 	rider.direction = Vector2.ZERO
 	rider.thrust_requested = false
 	rider.swim_intent = 0.0
@@ -288,10 +346,13 @@ func _attach(rider: SkeletonElevationBody2D) -> void:
 	_update_rider_position()
 
 
-func _seat_is_safe() -> bool:
-	if _protected_seat:
+func _attachment_space_is_safe(rider: SkeletonElevationBody2D, carried: bool) -> bool:
+	var feet := motion.elevation + _attachment_height(carried)
+	if not rider.fits_walls_at(position, feet, rider.foot_radius()):
+		return false
+	if carried or _protected_seat:
 		return true
-	var head := motion.elevation + _seat_height + BODY_HEIGHT
+	var head := feet + rider.body_height()
 	for volume in water_volumes:
 		if volume.bounds.has_point(position) and head <= volume.surface:
 			return false
@@ -299,10 +360,10 @@ func _seat_is_safe() -> bool:
 
 
 func _update_rider_position() -> void:
-	if not has_rider():
+	if not has_passenger():
 		return
 	_rider.position = position
-	_rider.motion.elevation = motion.elevation + _seat_height
+	_rider.motion.elevation = motion.elevation + _attachment_height(_rider._carried)
 	_rider.motion.vertical_speed = motion.vertical_speed
 	_rider.motion.grounded = false
 	if _rider._marker != null:
@@ -310,13 +371,15 @@ func _update_rider_position() -> void:
 
 
 func _exit_tree() -> void:
-	if has_rider():
+	if has_passenger():
 		_rider._carrier = null
+		_rider._carried = false
 		_rider._recover_after_carrier_loss()
 		_rider = null
-	if is_riding():
+	if is_attached():
 		_carrier._rider = null
 		_carrier = null
+		_carried = false
 
 
 func _recover_after_carrier_loss() -> void:
@@ -332,7 +395,7 @@ func _recover_after_carrier_loss() -> void:
 
 
 func _total_mass() -> float:
-	return _mass + _rider._mass if has_rider() else _mass
+	return _mass + _rider._mass if has_passenger() else _mass
 
 
 func _load_factor() -> float:
@@ -340,11 +403,10 @@ func _load_factor() -> float:
 
 
 func _physics_process(delta: float) -> void:
-	if is_riding():
+	if is_attached():
 		return
-	var open_seat := has_rider() and not _protected_seat
 	var position_before := position
-	var motion_before := motion.snapshot() if open_seat else {}
+	var motion_before := motion.snapshot() if has_passenger() else {}
 	var total_mass := _total_mass()
 	var load_factor := _load_factor()
 	var drive_speed := WALK_SPEED
@@ -367,7 +429,8 @@ func _physics_process(delta: float) -> void:
 			drive_speed = lerpf(WALK_SPEED, 0.0, minf(fraction / 0.35, 1.0))
 
 	_move_with_contacts(direction.limit_length() * drive_speed * load_factor * drive_multiplier, delta, acceleration)
-	if open_seat and not _seat_is_safe():
+	if has_passenger() and (not _rider._clear_step(position, _rider.motion.elevation) \
+			or not _attachment_space_is_safe(_rider, _rider._carried)):
 		position = position_before
 		motion.load_snapshot(motion_before, position, surfaces, RECOVERY_HEIGHT)
 		motion.vertical_speed = 0.0

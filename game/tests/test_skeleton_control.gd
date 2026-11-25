@@ -59,6 +59,7 @@ func _run() -> void:
 		body.erase("movement")
 		body.erase("editor")
 		body.erase("gravity_scale")
+		body.erase("attachment")
 	assert(scene.apply_snapshot(legacy))
 	assert(scene.actor.accepts_player_input())
 	assert(not scene.entities.get_entity(YETI).accepts_player_input())

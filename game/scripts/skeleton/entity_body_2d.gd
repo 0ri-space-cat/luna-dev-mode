@@ -5,6 +5,8 @@ const EntityRecord = preload("res://scripts/core/entity_record.gd")
 const Parameters = preload("res://scripts/skeleton/entity_parameters_2d.gd")
 
 const Brain = preload("res://scripts/runtime2d/behavior_brain_2d.gd")
+const SEAT_HEIGHT := 16.0
+const SEAT_CAPACITY := 2.0
 var brain := Brain.new()
 var world_registry
 var navigation = null
@@ -26,6 +28,10 @@ func can_edit_parameter(key: String) -> bool:
 		return record.category in ["fridge", "prop"]
 	if key == "asleep":
 		return record.category == "yeti"
+	if key == "rideable":
+		return _seat_capacity > 0.0
+	if key == "pickable":
+		return record.category != "player"
 	return key in Parameters.PHYSICS_FIELDS or key in Parameters.BEHAVIOR_FIELDS or key in ["size", "speed", "color", "ai_enabled", "control_source", "gravity_scale"]
 
 
@@ -37,6 +43,13 @@ func _ready() -> void:
 func set_parameter(key: String, value: Variant) -> bool:
 	if not can_edit_parameter(key):
 		return false
+	if key in Parameters.ATTACHMENT_FIELDS:
+		if not value is bool:
+			return false
+		if not value and (has_rider() if key == "rideable" else is_carried()):
+			return false
+		record.parameters[key] = value
+		return true
 	if key in Parameters.BEHAVIOR_FIELDS or key == "color":
 		var checked: Dictionary = record.registry.normalize(record.category, key, value)
 		if not checked["ok"]:
@@ -120,6 +133,35 @@ func _can_act() -> bool:
 	return get_parameter("alive") and not get_parameter("asleep")
 
 
+func _allows_ride() -> bool:
+	return super._allows_ride() and get_parameter("rideable") == true
+
+
+func _allows_pickup() -> bool:
+	return can_edit_parameter("pickable") and get_parameter("pickable") == true
+
+
+func _release_is_clear(point: Vector2, floor: float, feet: float) -> bool:
+	for identity in world_registry.list_ids():
+		var other := world_registry.get_entity(identity) as SkeletonElevationBody2D
+		if other == null or other == self or other == _carrier:
+			continue
+		if floor >= other.motion.elevation + other.body_height() or other.motion.elevation >= feet + body_height():
+			continue
+		if point.distance_to(other.position) < foot_radius() + other.foot_radius():
+			return false
+	return true
+
+
+func attachment_snapshot() -> Dictionary:
+	return {
+		"rideable": get_parameter("rideable"),
+		"pickable": get_parameter("pickable"),
+		"carrier_id": _carrier.entity_id if is_attached() else "",
+		"carried": is_carried(),
+	}
+
+
 func _stop_active_motion() -> void:
 	direction = Vector2.ZERO
 	thrust_requested = false
@@ -142,7 +184,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _wander_on_support(delta: float) -> Vector2:
-	if not motion.grounded or is_riding():
+	if not motion.grounded or is_attached():
 		return Vector2.ZERO
 	var heading := brain.direction_for(self, world_registry, delta)
 	for attempt in range(4):
@@ -178,7 +220,7 @@ func restore_control(state: Variant) -> bool:
 
 
 func _try_resize(value: float) -> bool:
-	if is_riding() or has_rider():
+	if is_attached() or has_passenger():
 		return false
 	var radius := FOOT_RADIUS * value
 	if not fits_walls_at(position, motion.elevation, radius):

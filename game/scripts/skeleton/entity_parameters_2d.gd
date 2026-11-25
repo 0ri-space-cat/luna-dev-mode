@@ -12,8 +12,9 @@ const STORAGE_ALIASES := {
 }
 const PHYSICS_FIELDS := ["mass", "bounciness"]
 const BEHAVIOR_FIELDS := ["behavior_mode", "target_group", "sense_range", "follow_distance", "luna_relation"]
+const ATTACHMENT_FIELDS := ["rideable", "pickable"]
 const EDITOR_TABS := {
-	"Общее": ["alive", "asleep"],
+	"Общее": ["alive", "asleep", "rideable", "pickable"],
 	"Облик": ["size", "color"],
 	"Физика": ["mass", "bounciness", "gravity_scale"],
 	"Разум": ["ai_enabled", "control_source", "sense_range"],
@@ -36,6 +37,8 @@ func _init() -> void:
 	})
 	register_parameter({"id": "gravity_scale", "label": "GRAVITY_SCALE", "kind": "float", "min": 0.0, "max": 3.0, "step": 0.1, "default": 1.0, "hint": "Сила гравитации"})
 	register_parameter({"id": "asleep", "label": "ASLEEP", "kind": "bool", "default": false, "hint": "Сон"})
+	register_parameter({"id": "rideable", "label": "RIDEABLE", "kind": "bool", "default": false, "hint": "Можно оседлать"})
+	register_parameter({"id": "pickable", "label": "PICKABLE", "kind": "bool", "default": false, "hint": "Можно поднять"})
 	register_parameter({"id": "control_source", "label": "CONTROL_SOURCE", "kind": "enum", "default": "NONE", "choices": [{"name": "NONE", "value": "NONE"}, {"name": "PLAYER", "value": "PLAYER"}], "hint": "Источник управления"})
 
 

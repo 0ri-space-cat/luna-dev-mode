@@ -92,6 +92,8 @@ func _build_entity(definition: Dictionary) -> EntityBody:
 	var body := EntityBody.new()
 	_configure_body(body, identity)
 	body.record = EntityRecord.new(identity, category, label, parameters, {"material": material, "alive": category in ["player", "yeti"], "asleep": category == "yeti", "ai_enabled": category != "player", "control_source": "PLAYER" if category == "player" else "NONE"})
+	if category != "player":
+		body.configure_seat(EntityBody.SEAT_HEIGHT, EntityBody.SEAT_CAPACITY, false)
 	body.world_registry = entities
 	body.location_id = LOCATION_ID
 	return body
@@ -125,8 +127,9 @@ func make_snapshot() -> Dictionary:
 		data["movement"] = body.movement_snapshot()
 		data["editor"] = body.editor_snapshot()
 		data["gravity_scale"] = body.get_parameter("gravity_scale")
+		data["attachment"] = body.attachment_snapshot()
 		states.append(data)
-	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 5, "entities": states}
+	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 6, "entities": states}
 
 
 func apply_snapshot(data: Dictionary) -> bool:
@@ -136,7 +139,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not states is Array or states.is_empty() or states.size() > MAX_ENTITIES:
 		return false
 	var version: Variant = data.get("entity_state_version", 0)
-	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]:
+	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
 		return false
 	var candidates := {}
 	for state in states:
@@ -148,6 +151,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 			return false
 		candidates[candidate.entity_id] = candidate
 	if not candidates.has(ENTITY_ID):
+		_free_candidates(candidates)
+		return false
+	if version >= 6 and not _restore_attachments(states, candidates):
 		_free_candidates(candidates)
 		return false
 
@@ -170,13 +176,43 @@ func apply_snapshot(data: Dictionary) -> bool:
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	if not state is Dictionary or state.get("location_id") != LOCATION_ID or not state.has("dynamics"):
 		return null
-	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3) or state.has("editor") != (version >= 4) or state.has("gravity_scale") != (version >= 5):
+	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3) or state.has("editor") != (version >= 4) or state.has("gravity_scale") != (version >= 5) or state.has("attachment") != (version >= 6):
 		return null
 	var body := _build_entity(state)
 	if body != null and ((version >= 5 and not body.set_parameter("gravity_scale", state["gravity_scale"])) or (version >= 4 and not body.restore_editor(state["editor"])) or (version >= 3 and not body.restore_movement(state["movement"])) or not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
 		body.free()
 		return null
 	return body
+
+
+func _restore_attachments(states: Array, candidates: Dictionary) -> bool:
+	for state in states:
+		var body: EntityBody = candidates[state["id"]]
+		var attachment: Variant = state["attachment"]
+		if not attachment is Dictionary or attachment.size() != 4:
+			return false
+		for field in Parameters.ATTACHMENT_FIELDS:
+			var value: Variant = attachment.get(field)
+			if not value is bool:
+				return false
+			if body.can_edit_parameter(field):
+				if not body.set_parameter(field, value):
+					return false
+			elif value:
+				return false
+	for state in states:
+		var attachment: Dictionary = state["attachment"]
+		var carrier_id: Variant = attachment.get("carrier_id")
+		var carried: Variant = attachment.get("carried")
+		if not carrier_id is String or not carried is bool:
+			return false
+		if not carrier_id.is_empty():
+			var carrier_body: EntityBody = candidates.get(carrier_id)
+			if carrier_body == null or not carrier_body.restore_rider(candidates[state["id"]], carried):
+				return false
+		elif carried:
+			return false
+	return true
 
 
 func _free_candidates(candidates: Dictionary) -> void:
@@ -191,6 +227,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_toggle_debug_editor()
 		get_viewport().set_input_as_handled()
 		return
+	if event.keycode == KEY_E and not is_instance_valid(_debug_editor):
+		if interact_with_attachment():
+			get_viewport().set_input_as_handled()
+		return
 	if event.keycode not in [KEY_BRACKETLEFT, KEY_BRACKETRIGHT]:
 		return
 	var target := entities.get_entity(TARGET_ID) as EntityBody
@@ -198,7 +238,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	var mass := 1.0 if event.keycode == KEY_BRACKETLEFT else 4.0
 	if request_wand_parameter_edit(TARGET_ID, "MASS", mass):
-		$Controls.text = "P9-02  |  [ / ]: test MASS   Current MASS %.1f" % target.get_parameter("mass")
+		$Controls.text = "P9-02  |  E: board / pick up   TAB: edit   MASS %.1f" % target.get_parameter("mass")
 
 
 func _apply_keyboard_input() -> void:
@@ -230,6 +270,30 @@ func return_to_luna() -> bool:
 	# Recovery control is independent of the wand and never teleports a body.
 	var luna := actor as EntityBody
 	return luna.set_parameter("control_source", "PLAYER") and luna.set_parameter("ai_enabled", false)
+
+
+func interact_with_attachment(target_id: String = "") -> bool:
+	var luna := actor as EntityBody
+	if not luna.accepts_player_input():
+		return false
+	if luna.is_riding():
+		return luna.try_dismount()
+	if luna.has_passenger():
+		return luna.try_drop()
+	if not target_id.is_empty():
+		var target := entities.get_entity(target_id) as EntityBody
+		return target != null and (target.try_board(luna) or luna.try_pick_up(target))
+	var closest_id := ""
+	var closest_distance := INF
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		if body == luna or not (body._allows_ride() or body._allows_pickup()):
+			continue
+		var distance: float = luna.position.distance_squared_to(body.position)
+		if distance < closest_distance:
+			closest_distance = distance
+			closest_id = identity
+	return not closest_id.is_empty() and interact_with_attachment(closest_id)
 
 
 func _target_group(body: EntityBody) -> String:
