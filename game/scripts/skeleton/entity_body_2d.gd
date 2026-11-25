@@ -140,6 +140,15 @@ func _allows_ride() -> bool:
 	return super._allows_ride() and get_parameter("rideable") == true
 
 
+func can_fly() -> bool:
+	if super.can_fly():
+		return true
+	for entry in record.get_component("ABILITY_SET").get("instances", {}).values():
+		if entry["enabled"] and entry["ability_id"] == "FLY":
+			return true
+	return false
+
+
 func _allows_pickup() -> bool:
 	return can_edit_parameter("pickable") and get_parameter("pickable") == true
 

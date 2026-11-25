@@ -17,7 +17,8 @@ const DEFINITIONS := {
 		"world_position": {"type": "position", "default": [0.0, 0.0, 0.0]}
 	},
 	"ABILITY_SET": {
-		"ids": {"type": "identifiers", "default": []}
+		"ids": {"type": "identifiers", "default": []},
+		"instances": {"type": "ability_instances"}
 	},
 	"TRIGGER_ZONE": {
 		"enabled": {"type": "bool", "default": true},
@@ -35,14 +36,17 @@ const DEFINITIONS := {
 		"effects": {"type": "effect_recipe", "default": []}
 	},
 	"ABILITY_BANK": {
-		"stock": {"type": "ability_stock", "default": {}}
+		"stock": {"type": "ability_stock", "default": {}},
+		"instances": {"type": "ability_instances"}
 	}
 }
 
 static func defaults(id: String) -> Dictionary:
 	var result := {}
 	for field in DEFINITIONS.get(id, {}).keys():
-		result[field] = DEFINITIONS[id][field]["default"]
+		var spec: Dictionary = DEFINITIONS[id][field]
+		if spec.has("default"):
+			result[field] = spec["default"]
 	return result
 
 static func validate(id: String, data: Variant) -> Dictionary:
@@ -105,6 +109,18 @@ static func validate(id: String, data: Variant) -> Dictionary:
 						return {"ok": false}
 					checked_stock[str(ability_id)] = int(value[ability_id])
 				value = checked_stock
+			"ability_instances":
+				if not value is Dictionary or value.size() > 16:
+					return {"ok": false}
+				for instance_id in value:
+					if not _is_ability_identifier(instance_id):
+						return {"ok": false}
+					var instance: Variant = value[instance_id]
+					if not instance is Dictionary or instance.size() != 3 \
+							or not _is_ability_identifier(instance.get("ability_id")) \
+							or not instance.get("enabled") is bool or not instance.get("protected") is bool:
+						return {"ok": false}
+				value = value.duplicate(true)
 			"identifiers":
 				if typeof(value) != TYPE_ARRAY or value.size() > 16:
 					return {"ok": false}
@@ -142,6 +158,11 @@ static func validate(id: String, data: Variant) -> Dictionary:
 				value = float(value)
 		result[key] = value
 	return {"ok": true, "value": result}
+
+
+static func _is_ability_identifier(value: Variant) -> bool:
+	return value is String and value.length() <= 64 and value.is_valid_identifier()
+
 
 static func validate_collection(data: Variant) -> bool:
 	if typeof(data) != TYPE_DICTIONARY or data.size() > 12:

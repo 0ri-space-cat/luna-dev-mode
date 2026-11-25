@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/skeleton/entity_fixture.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/skeleton/ability_fixture.gd" id="2"]
+
+[node name="AbilityFixture" instance=ExtResource("1")]
+script = ExtResource("2")
+
+[node name="Controls" parent="." index="0"]
+text = "E — взять артефакт   ·   Tab — извлечь FLY   ·   Enter с Каталогом — установить в скамейку   ·   F — тяга"
+
+[node name="BankReadout" type="Label" parent="." index="2"]
+offset_left = 80.0
+offset_top = 78.0

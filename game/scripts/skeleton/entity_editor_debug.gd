@@ -22,6 +22,13 @@ func _add_input(row: HBoxContainer, spec: Dictionary, submit: Callable) -> void:
 	var key: String = spec["id"]
 	var initial: Variant = spec["value"]
 	match spec["kind"]:
+		"action":
+			var button := Button.new()
+			button.text = initial
+			button.pressed.connect(func():
+				if spec["action"].call():
+					button.disabled = true)
+			row.add_child(button)
 		"bool":
 			var toggle := CheckBox.new()
 			toggle.button_pressed = initial

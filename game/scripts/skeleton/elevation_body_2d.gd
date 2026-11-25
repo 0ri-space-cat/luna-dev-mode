@@ -192,6 +192,10 @@ func is_carried() -> bool:
 	return is_attached() and _carried
 
 
+func is_carried_by(holder: SkeletonElevationBody2D) -> bool:
+	return is_carried() and _carrier == holder
+
+
 func is_attached() -> bool:
 	return is_instance_valid(_carrier)
 
@@ -431,6 +435,10 @@ func _load_factor() -> float:
 	return _mass / _total_mass()
 
 
+func can_fly() -> bool:
+	return flight_enabled
+
+
 func _physics_process(delta: float) -> void:
 	if is_attached():
 		return
@@ -441,7 +449,7 @@ func _physics_process(delta: float) -> void:
 	var drive_speed := WALK_SPEED
 	var acceleration := -GRAVITY * gravity_scale
 	var water := _current_water()
-	if water == null and flight_enabled and thrust_requested:
+	if water == null and thrust_requested and can_fly():
 		acceleration += FLIGHT_ACCELERATION * load_factor
 
 	if water != null:

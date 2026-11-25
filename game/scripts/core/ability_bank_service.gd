@@ -1,8 +1,8 @@
 extends RefCounted
-## Atomic, physical capability transfer. The bank stores counts in a typed
-## component on a real entity; it is not an XP/perk unlock or a global cheat.
-## Ability runtime behaviors are resolved separately by AbilityService.
+## Atomic capability transfer over the shared bank and entity components.
+## The legacy runtime uses stock counts. New modules keep their identity.
 
+const Components = preload("res://scripts/core/component_registry.gd")
 const MAX_STOCK_PER_ABILITY := 8
 var world
 var commands
@@ -34,13 +34,10 @@ func extract(holder_id: String, donor_id: String, ability_id: String) -> bool:
 	stock[ability_id] = int(stock.get(ability_id, 0)) + 1
 	var donor_before: Dictionary = donor_record.get_components()
 	var donor_after: Dictionary = donor_before.duplicate(true)
-	if ids.is_empty():
-		donor_after.erase("ABILITY_SET")
-	else:
-		donor_after["ABILITY_SET"] = {"ids": ids}
+	_write_collection(donor_after, "ABILITY_SET", "ids", ids)
 	var holder_before: Dictionary = holder_record.get_components()
 	var holder_after: Dictionary = holder_before.duplicate(true)
-	holder_after["ABILITY_BANK"] = {"stock": stock}
+	_write_collection(holder_after, "ABILITY_BANK", "stock", stock)
 	return _commit(holder, holder_id, holder_before, holder_after,
 		donor, donor_id, donor_before, donor_after, "ability:extract")
 
@@ -68,13 +65,10 @@ func inject(holder_id: String, recipient_id: String, ability_id: String) -> bool
 		stock[ability_id] = int(stock[ability_id]) - 1
 	var holder_before: Dictionary = holder_record.get_components()
 	var holder_after: Dictionary = holder_before.duplicate(true)
-	if stock.is_empty():
-		holder_after.erase("ABILITY_BANK")
-	else:
-		holder_after["ABILITY_BANK"] = {"stock": stock}
+	_write_collection(holder_after, "ABILITY_BANK", "stock", stock)
 	var recipient_before: Dictionary = target_record.get_components()
 	var recipient_after: Dictionary = recipient_before.duplicate(true)
-	recipient_after["ABILITY_SET"] = {"ids": ids}
+	_write_collection(recipient_after, "ABILITY_SET", "ids", ids)
 	return _commit(holder, holder_id, holder_before, holder_after,
 		recipient, recipient_id, recipient_before, recipient_after, "ability:inject")
 
@@ -84,7 +78,67 @@ func amount(holder_id: String, ability_id: String) -> int:
 	if holder == null or holder.get("record") == null:
 		return 0
 	var bank: Dictionary = holder.get("record").get_component("ABILITY_BANK")
-	return int(bank.get("stock", {}).get(ability_id, 0))
+	var count: int = int(bank.get("stock", {}).get(ability_id, 0))
+	for entry in bank.get("instances", {}).values():
+		if entry["ability_id"] == ability_id:
+			count += 1
+	return count
+
+
+func move_instance(holder_id: String, other_id: String, instance_id: String, extracting: bool) -> bool:
+	last_error = ""
+	var holder: Node = world.get_entity(holder_id)
+	var other: Node = world.get_entity(other_id)
+	if not _valid_pair(holder, other, holder_id, other_id, instance_id):
+		return false
+	var holder_before: Dictionary = holder.record.get_components()
+	var other_before: Dictionary = other.record.get_components()
+	if other.record.category in ["player", "luna"]:
+		return _fail("Playable heroes cannot transfer permanent modules")
+	var stock := instances(holder_before, "ABILITY_BANK")
+	var installed := instances(other_before, "ABILITY_SET")
+	var source := installed if extracting else stock
+	var destination := stock if extracting else installed
+	if not source.has(instance_id) or destination.has(instance_id) or destination.size() >= 16:
+		return _fail("Instance unavailable at this source or destination")
+	var module: Dictionary = source[instance_id]
+	if module["protected"]:
+		return _fail("Protected module")
+	if not extracting:
+		if other_before.get("ABILITY_SET", {}).get("ids", []).has(module["ability_id"]):
+			return _fail("Target already has this capability")
+		for existing in installed.values():
+			if existing["ability_id"] == module["ability_id"]:
+				return _fail("Target already has this capability")
+	source.erase(instance_id)
+	destination[instance_id] = module
+	var holder_after := holder_before.duplicate(true)
+	var other_after := other_before.duplicate(true)
+	_write_collection(holder_after, "ABILITY_BANK", "instances", stock)
+	_write_collection(other_after, "ABILITY_SET", "instances", installed)
+	var operation := "ability:extract_instance" if extracting else "ability:install_instance"
+	return _commit(holder, holder_id, holder_before, holder_after,
+		other, other_id, other_before, other_after, operation)
+
+
+static func instances(components: Dictionary, component_id: String) -> Dictionary:
+	return components.get(component_id, {}).get("instances", {}).duplicate(true)
+
+
+func _write_collection(components: Dictionary, component_id: String, field: String, value: Variant) -> void:
+	var component: Dictionary = components.get(component_id, {}).duplicate(true)
+	if value.is_empty():
+		component.erase(field)
+	else:
+		component[field] = value
+	# Empty defaults must not keep a component alive after its last module moved.
+	for key in component.keys():
+		if component[key].is_empty():
+			component.erase(key)
+	if component.is_empty():
+		components.erase(component_id)
+	else:
+		components[component_id] = Components.validate(component_id, component)["value"]
 
 
 func _valid_pair(a: Node, b: Node, id_a: String, id_b: String, ability_id: String) -> bool:

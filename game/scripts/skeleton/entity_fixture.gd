@@ -172,6 +172,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if version >= 6 and not _restore_attachments(states, candidates):
 		_free_candidates(candidates)
 		return false
+	if not _validate_saved_entities(candidates):
+		_free_candidates(candidates)
+		return false
 
 	if is_instance_valid(_debug_editor):
 		_debug_editor.free()
@@ -186,6 +189,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 		entities.register_entity(identity, body, _target_group(body))
 		add_child(body)
 	commands.clear_history()
+	return true
+
+
+func _validate_saved_entities(_candidates: Dictionary) -> bool:
 	return true
 
 
