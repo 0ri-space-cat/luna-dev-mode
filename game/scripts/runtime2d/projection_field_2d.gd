@@ -34,6 +34,13 @@ func is_underside_at(player_position: Vector2, location_id: String = "") -> bool
 	return player_position.distance_to(ground_position) > radius
 
 
+static func is_outside_all(fields: Array, point: Vector2, location_id: String) -> bool:
+	for field in fields:
+		if not field.is_underside_at(point, location_id):
+			return false
+	return true
+
+
 func snapshot() -> Dictionary:
 	return {"carried": carried, "position": [ground_position.x, ground_position.y],
 		"location_id": ground_location_id, "radius": radius}
@@ -41,7 +48,12 @@ func snapshot() -> Dictionary:
 
 func restore(data: Dictionary) -> bool:
 	var point: Variant = data.get("position", [])
-	var next_radius: float = float(data.get("radius", -1.0))
+	var raw_radius: Variant = data.get("radius")
+	var raw_location: Variant = data.get("location_id", "")
+	var raw_carried: Variant = data.get("carried", true)
+	if typeof(raw_radius) not in [TYPE_INT, TYPE_FLOAT] or not raw_location is String or not raw_carried is bool:
+		return false
+	var next_radius := float(raw_radius)
 	if not (point is Array) or point.size() != 2 or next_radius <= 0.0 or next_radius > 4096.0 or not is_finite(next_radius):
 		return false
 	for value in point:
@@ -49,10 +61,10 @@ func restore(data: Dictionary) -> bool:
 			return false
 	if absf(float(point[0])) > 100000.0 or absf(float(point[1])) > 100000.0:
 		return false
-	var restored_location := str(data.get("location_id", ""))
+	var restored_location: String = raw_location
 	if not restored_location.is_empty() and (not restored_location.is_valid_identifier() or restored_location.length() > 96):
 		return false
-	carried = bool(data.get("carried", true))
+	carried = raw_carried
 	ground_location_id = restored_location
 	ground_position = Vector2(float(point[0]), float(point[1]))
 	radius = next_radius

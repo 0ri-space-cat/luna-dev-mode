@@ -91,10 +91,7 @@ func _apply_keyboard_input() -> void:
 			carrier.try_board(actor)
 	_seat_down = seat_down
 	var controlled := carrier if actor.is_riding() else actor
-	var movement := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	movement.x += float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
-	movement.y += float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W))
-	controlled.direction = movement
+	controlled.direction = _keyboard_movement()
 	var jump_down := Input.is_physical_key_pressed(KEY_SPACE)
 	if jump_down and not _jump_down:
 		controlled.jump()
@@ -107,6 +104,13 @@ func _apply_keyboard_input() -> void:
 	controlled.swim_intent = float(Input.is_physical_key_pressed(KEY_R)) \
 		- float(Input.is_physical_key_pressed(KEY_C))
 	controlled.gravity_scale = 0.4 if Input.is_physical_key_pressed(KEY_G) else 1.0
+
+
+func _keyboard_movement() -> Vector2:
+	var movement := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	movement.x += float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
+	movement.y += float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W))
+	return movement
 
 
 func make_snapshot() -> Dictionary:
