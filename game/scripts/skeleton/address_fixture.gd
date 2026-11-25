@@ -69,7 +69,8 @@ func _load_room(address: String) -> Room:
 	var door := instance.get_node_or_null("Door") as Doorway
 	if room == null or not room.floor_bounds.has_area() or not is_finite(room.floor_height) \
 			or (room.column_bounds.has_area() and (not is_finite(room.column_top) or room.column_top <= room.floor_height)) \
-			or door == null or not router.door_destinations.has(door.entity_id):
+			or (door == null and room.requires_door) \
+			or (door != null and not router.door_destinations.has(door.entity_id)):
 		instance.free()
 		return null
 	return room
@@ -110,7 +111,7 @@ func _place_actor(point: Vector2) -> void:
 
 
 func _door_nearby() -> bool:
-	return _room != null and actor.motion.grounded \
+	return _room != null and _room.door != null and actor.motion.grounded \
 		and is_equal_approx(actor.motion.elevation, _room.floor_height) \
 		and _room.door.can_interact_from(actor.global_position)
 
@@ -126,16 +127,26 @@ func enter_nearby_door() -> bool:
 		return false
 	var plan := router.resolve_door(_room.door.entity_id, access.avatar_access_level,
 		_room.door.destination_entry_id)
-	if not plan.get("ok", false):
-		return false
-	var candidate := _load_room(plan["address"])
+	return _follow_plan(plan)
+
+
+func _move_to_address(address: String, entry_id := "entry") -> bool:
+	return _follow_plan(router.resolve_address(address, access.avatar_access_level, entry_id))
+
+
+func _follow_plan(plan: Dictionary) -> bool:
+	return plan.get("ok", false) and _arrive_at(plan["address"], plan["position"])
+
+
+func _arrive_at(address: String, point: Vector2) -> bool:
+	var candidate := _load_room(address)
 	if candidate == null:
 		return false
-	if not _can_place(candidate, plan["position"]):
+	if not _can_place(candidate, point):
 		candidate.free()
 		return false
-	_mount_room(candidate, plan["address"])
-	_place_actor(plan["position"])
+	_mount_room(candidate, address)
+	_place_actor(point)
 	return true
 
 

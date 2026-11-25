@@ -7,8 +7,9 @@ const Doorway = preload("res://scripts/runtime2d/doorway_2d.gd")
 @export var floor_height := 0.0
 @export var column_bounds: Rect2
 @export var column_top := 0.0
+@export var requires_door := true
 
-@onready var door: Doorway = $Door
+@onready var door := get_node_or_null("Door") as Doorway
 
 
 func floor_surface() -> Dictionary:
@@ -26,6 +27,8 @@ func walls() -> Array[Dictionary]:
 
 
 func _draw() -> void:
+	if door == null:
+		return
 	var opening := Rect2(door.position - Vector2(17, 46 + floor_height), Vector2(34, 46))
 	draw_rect(opening, Color("473750"))
 	draw_rect(opening, Color("c8a9cf"), false, 3.0)

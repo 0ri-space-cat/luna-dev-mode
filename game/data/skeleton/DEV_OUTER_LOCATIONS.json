@@ -1,0 +1,12 @@
+{
+  "locations": [
+    {"id": "DEV_OUTER_MEADOWS", "scene": "res://scenes/skeleton/outer_routes/stop.tscn", "entries": {"entry": [750, 439]}},
+    {"id": "DEV_OUTER_LUMA", "scene": "res://scenes/skeleton/outer_routes/stop.tscn", "entries": {"entry": [810, 439]}},
+    {"id": "DEV_OUTER_COAST", "scene": "res://scenes/skeleton/outer_routes/stop.tscn", "entries": {"entry": [230, 439]}},
+    {"id": "DEV_OUTER_BUFFER", "scene": "res://scenes/skeleton/outer_routes/buffer.tscn", "entries": {"entry": [393, 433]}},
+    {"id": "DEV_OUTER_SUBSPACE", "scene": "res://scenes/skeleton/outer_routes/subspace.tscn", "entries": {"entry": [640, 582]}},
+    {"id": "DEV_OUTER_EDGE", "scene": "res://scenes/skeleton/outer_routes/edge.tscn", "entries": {"entry": [250, 432]}},
+    {"id": "DEV_OUTER_TRASH", "scene": "res://scenes/skeleton/outer_routes/trash.tscn", "entries": {"entry": [221, 442]}}
+  ],
+  "doors": []
+}

@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/skeleton/address_fixture.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/skeleton/outer_routes_fixture.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/art_probe/luna.png" id="3"]
+[ext_resource type="Script" path="res://scripts/skeleton/outer_routes_presentation.gd" id="4"]
+
+[node name="OuterRoutes" instance=ExtResource("1")]
+script = ExtResource("2")
+
+[node name="Presentation" type="Node2D" parent="." index="0"]
+script = ExtResource("4")
+
+[node name="TravelerVisual" type="Sprite2D" parent="." index="1"]
+z_index = 2
+texture_filter = 1
+position = Vector2(200, 432)
+scale = Vector2(2, 2)
+texture = ExtResource("3")
+centered = false
+offset = Vector2(-24, -70)
+region_enabled = true
+region_filter_clip_enabled = true
+region_rect = Rect2(0, 0, 48, 76)
+
+[node name="Controls" parent="Interface" index="0"]
+offset_top = 755.0
+text = "WASD / стрелки · движение    Пробел · прыжок / торможение в Пустоте    E · действие    F4 · Корзина    F8 · M08    F5 / F9 · снимок"
+
+[node name="Action" type="Label" parent="Interface" index="4"]
+offset_left = 24.0
+offset_top = 88.0
+theme_override_colors/font_color = Color(1, 0.87, 0.6, 1)
