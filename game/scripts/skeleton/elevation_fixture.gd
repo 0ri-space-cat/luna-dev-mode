@@ -75,34 +75,38 @@ func _prepare_map() -> void:
 
 func _physics_process(_delta: float) -> void:
 	if keyboard:
-		var seat_down := Input.is_physical_key_pressed(KEY_E)
-		if seat_down and not _seat_down and is_instance_valid(carrier):
-			if actor.is_riding():
-				actor.try_dismount()
-			else:
-				carrier.try_board(actor)
-		_seat_down = seat_down
-		var controlled := carrier if actor.is_riding() else actor
-		var movement := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-		movement.x += float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
-		movement.y += float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W))
-		controlled.direction = movement
-		var jump_down := Input.is_physical_key_pressed(KEY_SPACE)
-		if jump_down and not _jump_down:
-			controlled.jump()
-		_jump_down = jump_down
-		var impulse_down := Input.is_physical_key_pressed(KEY_I)
-		if impulse_down and not _impulse_down:
-			controlled.apply_impulse(Vector2(220.0, 0.0), 180.0)
-		_impulse_down = impulse_down
-		controlled.thrust_requested = Input.is_physical_key_pressed(KEY_F)
-		controlled.swim_intent = float(Input.is_physical_key_pressed(KEY_R)) \
-			- float(Input.is_physical_key_pressed(KEY_C))
-		controlled.gravity_scale = 0.4 if Input.is_physical_key_pressed(KEY_G) else 1.0
+		_apply_keyboard_input()
 	height_readout.text = "Z %.1f   Vz %.1f   %s   Returns %d" % [
 		actor.motion.elevation, actor.motion.vertical_speed,
 		"Supported" if actor.motion.grounded else "Airborne", actor.recoveries,
 	]
+
+
+func _apply_keyboard_input() -> void:
+	var seat_down := Input.is_physical_key_pressed(KEY_E)
+	if seat_down and not _seat_down and is_instance_valid(carrier):
+		if actor.is_riding():
+			actor.try_dismount()
+		else:
+			carrier.try_board(actor)
+	_seat_down = seat_down
+	var controlled := carrier if actor.is_riding() else actor
+	var movement := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	movement.x += float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
+	movement.y += float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W))
+	controlled.direction = movement
+	var jump_down := Input.is_physical_key_pressed(KEY_SPACE)
+	if jump_down and not _jump_down:
+		controlled.jump()
+	_jump_down = jump_down
+	var impulse_down := Input.is_physical_key_pressed(KEY_I)
+	if impulse_down and not _impulse_down:
+		controlled.apply_impulse(Vector2(220.0, 0.0), 180.0)
+	_impulse_down = impulse_down
+	controlled.thrust_requested = Input.is_physical_key_pressed(KEY_F)
+	controlled.swim_intent = float(Input.is_physical_key_pressed(KEY_R)) \
+		- float(Input.is_physical_key_pressed(KEY_C))
+	controlled.gravity_scale = 0.4 if Input.is_physical_key_pressed(KEY_G) else 1.0
 
 
 func make_snapshot() -> Dictionary:

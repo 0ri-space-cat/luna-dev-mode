@@ -63,6 +63,7 @@ func _run() -> void:
 	legacy["entities"] = legacy["entities"].filter(func(body): return body["id"] != YETI)
 	for body in legacy["entities"]:
 		body.erase("life")
+		body.erase("control")
 	assert(scene.apply_snapshot(legacy))
 	assert(not scene.entities.get_entity(FRIDGE).get_parameter("alive"))
 	assert(scene.actor.get_parameter("alive"))

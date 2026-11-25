@@ -21,6 +21,13 @@ func get_parameter(key: String) -> Variant:
 
 
 func set_parameter(key: String, value: Variant) -> bool:
+	if key in ["ai_enabled", "control_source"]:
+		var checked: Dictionary = record.registry.normalize(record.category, key, value)
+		if not checked["ok"]:
+			return false
+		record.parameters[key] = checked["value"]
+		_stop_active_motion()
+		return true
 	if key == "alive" and record.category in ["fridge", "prop"] or key == "asleep" and record.category == "yeti":
 		if not value is bool:
 			return false
@@ -85,8 +92,10 @@ func jump() -> void:
 func _physics_process(delta: float) -> void:
 	if not _can_act():
 		_stop_active_motion()
-	elif record.category != "player" and get_parameter("ai_enabled"):
+	elif get_parameter("ai_enabled"):
 		direction = _wander_on_support(delta)
+	elif not accepts_player_input():
+		_stop_active_motion()
 	super._physics_process(delta)
 
 
@@ -104,3 +113,23 @@ func _wander_on_support(delta: float) -> Vector2:
 		brain.avoid_obstacle()
 		heading = brain.direction_for(self, world_registry, 0.0)
 	return Vector2.ZERO
+
+
+func accepts_player_input() -> bool:
+	return _can_act() and not get_parameter("ai_enabled") and get_parameter("control_source") == "PLAYER"
+
+
+func control_snapshot() -> Dictionary:
+	return {"ai_enabled": get_parameter("ai_enabled"), "control_source": get_parameter("control_source")}
+
+
+func restore_control(state: Variant) -> bool:
+	if not state is Dictionary or state.size() != 2:
+		return false
+	var autonomy: Variant = state.get("ai_enabled")
+	var source: Variant = state.get("control_source")
+	if not autonomy is bool or not source is String or source not in ["NONE", "PLAYER"]:
+		return false
+	record.parameters["ai_enabled"] = autonomy
+	record.parameters["control_source"] = source
+	return true

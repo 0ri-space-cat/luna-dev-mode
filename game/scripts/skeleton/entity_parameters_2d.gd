@@ -26,6 +26,7 @@ func _init() -> void:
 		"hint": "Меняет отскок от опор и стен.",
 	})
 	register_parameter({"id": "asleep", "label": "ASLEEP", "kind": "bool", "default": false, "hint": "Сон"})
+	register_parameter({"id": "control_source", "label": "CONTROL_SOURCE", "kind": "enum", "default": "NONE", "choices": [{"name": "NONE", "value": "NONE"}, {"name": "PLAYER", "value": "PLAYER"}], "hint": "Источник управления"})
 
 
 static func storage_id(parameter_id: String) -> String:

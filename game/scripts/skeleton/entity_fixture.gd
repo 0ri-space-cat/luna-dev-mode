@@ -88,13 +88,15 @@ func _build_entity(definition: Dictionary) -> EntityBody:
 		return null
 	var body := EntityBody.new()
 	_configure_body(body, identity)
-	body.record = EntityRecord.new(identity, category, label, parameters, {"material": material, "alive": category in ["player", "yeti"], "asleep": category == "yeti"})
+	body.record = EntityRecord.new(identity, category, label, parameters, {"material": material, "alive": category in ["player", "yeti"], "asleep": category == "yeti", "ai_enabled": category != "player", "control_source": "PLAYER" if category == "player" else "NONE"})
 	body.world_registry = entities
 	body.location_id = LOCATION_ID
 	return body
 
 
 func request_wand_parameter_edit(target_id: String, parameter_id: String, value: Variant) -> bool:
+	if not (actor as EntityBody).accepts_player_input():
+		return false
 	var target := entities.get_entity(target_id) as EntityBody
 	var key := Parameters.storage_id(parameter_id)
 	if not wand_policy.authorize(actor, target, LOCATION_ID, projection, access, parameters, key):
@@ -116,8 +118,9 @@ func make_snapshot() -> Dictionary:
 		data["material"] = body.get_parameter("material")
 		data["location_id"] = body.location_id
 		data["life"] = body.life_snapshot()
+		data["control"] = body.control_snapshot()
 		states.append(data)
-	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 1, "entities": states}
+	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 2, "entities": states}
 
 
 func apply_snapshot(data: Dictionary) -> bool:
@@ -127,11 +130,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not states is Array or states.is_empty() or states.size() > MAX_ENTITIES:
 		return false
 	var version: Variant = data.get("entity_state_version", 0)
-	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0]:
+	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0]:
 		return false
 	var candidates := {}
 	for state in states:
-		var candidate := _build_saved_entity(state, float(version) == 1.0)
+		var candidate := _build_saved_entity(state, int(version))
 		if candidate == null or candidates.has(candidate.entity_id):
 			if candidate != null:
 				candidate.free()
@@ -155,13 +158,13 @@ func apply_snapshot(data: Dictionary) -> bool:
 	return true
 
 
-func _build_saved_entity(state: Variant, has_life: bool) -> EntityBody:
+func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	if not state is Dictionary or state.get("location_id") != LOCATION_ID or not state.has("dynamics"):
 		return null
-	if state.has("life") != has_life:
+	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2):
 		return null
 	var body := _build_entity(state)
-	if body != null and (not _restore_body_state(body, state) or (has_life and not body.restore_life(state["life"]))):
+	if body != null and (not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
 		body.free()
 		return null
 	return body
@@ -183,3 +186,31 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var mass := 1.0 if event.keycode == KEY_BRACKETLEFT else 4.0
 	if request_wand_parameter_edit(TARGET_ID, "MASS", mass):
 		$Controls.text = "P9-02  |  [ / ]: test MASS   Current MASS %.1f" % target.get_parameter("mass")
+
+
+func _apply_keyboard_input() -> void:
+	var movement := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	movement.x += float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
+	movement.y += float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W))
+	var jump_down := Input.is_physical_key_pressed(KEY_SPACE)
+	apply_player_input(movement, jump_down and not _jump_down)
+	_jump_down = jump_down
+	if Input.is_physical_key_pressed(KEY_HOME):
+		return_to_luna()
+
+
+func apply_player_input(movement: Vector2, jump_requested: bool = false) -> void:
+	if not movement.is_finite():
+		return
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		if body.accepts_player_input():
+			body.direction = movement.limit_length()
+			if jump_requested:
+				body.jump()
+
+
+func return_to_luna() -> bool:
+	# Recovery control is independent of the wand and never teleports a body.
+	var luna := actor as EntityBody
+	return luna.set_parameter("control_source", "PLAYER") and luna.set_parameter("ai_enabled", false)
