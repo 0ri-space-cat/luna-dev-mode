@@ -30,7 +30,8 @@ func _run() -> void:
 	assert(not scene.interact() and scene.has_donut)
 	assert(scene.request_wand_parameter_edit(scene.BRIDGE_YETI_ID, "ASLEEP", false))
 	assert(scene.interact() and not scene.has_donut)
-	assert(await _walk_to(scene, Vector2(1060, 374)))
+	assert(await _walk_to(scene, Vector2(1260, 374), 250))
+	assert(scene.actor.location_id == "ET_MEADOWS_MAIN")
 	var yeti_position: Vector2 = scene.entities.get_entity(scene.BRIDGE_YETI_ID).position
 	assert(yeti_position.y > 445.0)
 
@@ -40,14 +41,14 @@ func _run() -> void:
 	assert(scene.apply_snapshot(saved))
 	assert(scene.access.wand_mode == Access.ORDINARY)
 	assert(scene.entities.get_entity(scene.BRIDGE_YETI_ID).position.is_equal_approx(yeti_position))
-	assert(await _walk_to(scene, Vector2(320, 374), 280))
+	assert(await _walk_to(scene, Vector2(320, 374), 350))
 	assert(await _walk_to(scene, Vector2(320, 255)))
 	assert(scene.interact() and scene.has_donut)
 	assert(await _walk_to(scene, Vector2(320, 480)))
 	assert(scene.interact() and scene.access.wand_mode == Access.PLAYFUL)
 	assert(scene.has_donut)
 	assert(await _walk_to(scene, Vector2(320, 374)))
-	assert(await _walk_to(scene, Vector2(1060, 374), 280))
+	assert(await _walk_to(scene, Vector2(1260, 374), 350))
 	print("P9-03: island, physical bridge, donut, saved retreat and repeatable rift passed")
 	scene.queue_free()
 	await process_frame

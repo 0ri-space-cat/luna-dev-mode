@@ -35,6 +35,14 @@ func _location_id() -> String:
 	return LOCATION_ID
 
 
+func _entity_location(_point: Vector2) -> String:
+	return _location_id()
+
+
+func _starts_alive(category: String) -> bool:
+	return category in ["player", "yeti"]
+
+
 func _editor_parent() -> Node:
 	return self
 
@@ -67,6 +75,7 @@ func spawn_entity(definition: Dictionary, point: Vector2, height: float) -> Enti
 		candidate.free()
 		return null
 	candidate.position = point
+	candidate.location_id = _entity_location(point)
 	entities.register_entity(identity, candidate, _target_group(candidate))
 	add_child(candidate)
 	return candidate
@@ -99,11 +108,10 @@ func _build_entity(definition: Dictionary) -> EntityBody:
 		return null
 	var body := EntityBody.new()
 	_configure_body(body, identity)
-	body.record = EntityRecord.new(identity, category, label, parameters, {"material": material, "alive": category in ["player", "yeti"], "asleep": category == "yeti", "ai_enabled": category != "player", "control_source": "PLAYER" if category == "player" else "NONE"})
+	body.record = EntityRecord.new(identity, category, label, parameters, {"material": material, "alive": _starts_alive(category), "asleep": category == "yeti", "ai_enabled": category != "player", "control_source": "PLAYER" if category == "player" else "NONE"})
 	if category != "player":
 		body.configure_seat(EntityBody.SEAT_HEIGHT, EntityBody.SEAT_CAPACITY, false)
 	body.world_registry = entities
-	body.location_id = _location_id()
 	return body
 
 
@@ -112,7 +120,7 @@ func request_wand_parameter_edit(target_id: String, parameter_id: String, value:
 		return false
 	var target := entities.get_entity(target_id) as EntityBody
 	var key := Parameters.storage_id(parameter_id)
-	if not wand_policy.authorize(actor, target, _location_id(), projection, access, parameters, key):
+	if not wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, key):
 		return false
 	var offset: Vector2 = actor.global_position - target.global_position
 	var height_gap: float = actor.motion.elevation - target.motion.elevation
@@ -129,7 +137,7 @@ func make_snapshot() -> Dictionary:
 		data["category"] = body.record.category
 		data["label"] = body.record.display_name
 		data["material"] = body.get_parameter("material")
-		data["location_id"] = body.location_id
+		data["location_id"] = _entity_location(body.position)
 		data["life"] = body.life_snapshot()
 		data["control"] = body.control_snapshot()
 		data["movement"] = body.movement_snapshot()
@@ -182,7 +190,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 
 
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:
-	if not state is Dictionary or state.get("location_id") != _location_id() or not state.has("dynamics"):
+	if not state is Dictionary or not state.has("dynamics"):
 		return null
 	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3) or state.has("editor") != (version >= 4) or state.has("gravity_scale") != (version >= 5) or state.has("attachment") != (version >= 6):
 		return null
@@ -190,6 +198,11 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	if body != null and ((version >= 5 and not body.set_parameter("gravity_scale", state["gravity_scale"])) or (version >= 4 and not body.restore_editor(state["editor"])) or (version >= 3 and not body.restore_movement(state["movement"])) or not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
 		body.free()
 		return null
+	if body != null:
+		body.location_id = _entity_location(body.position)
+		if state.get("location_id") != body.location_id:
+			body.free()
+			return null
 	return body
 
 
@@ -312,7 +325,7 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 	if not (actor as EntityBody).accepts_player_input():
 		return {}
 	var target := entities.get_entity(target_id) as EntityBody
-	if not wand_policy.authorize(actor, target, _location_id(), projection, access, parameters, "mass"):
+	if not wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, "mass"):
 		return {}
 	var offset := Vector3(actor.position.x - target.position.x, actor.position.y - target.position.y,
 		actor.motion.elevation - target.motion.elevation)

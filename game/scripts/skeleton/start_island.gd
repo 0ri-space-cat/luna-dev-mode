@@ -1,6 +1,7 @@
 extends "res://scripts/skeleton/entity_fixture.gd"
-## The first playable P9-03 graybox. S0–S3 share one simulation and camera.
+## Continuous P9-03 graybox. The island and meadows share the simulation and camera.
 
+const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
 const ISLAND_ID := "ET_START_ISLAND"
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -25,6 +26,9 @@ const BRIDGE_RAILS: Array[Dictionary] = [
 var has_donut := false
 var donut_refill := 0.0
 var retreat_step := -1
+var ice_remaining := 0.0
+var freeze_selected := false
+var _initial_meadow_states: Array[Dictionary] = []
 var _store := SaveStore.new()
 
 @onready var _camera: Camera2D = $Camera
@@ -36,13 +40,25 @@ func _location_id() -> String:
 	return ISLAND_ID
 
 
+func _entity_location(point: Vector2) -> String:
+	return Meadows.LOCATION_ID if point.x >= Meadows.WEST_BOUNDARY else ISLAND_ID
+
+
+func _starts_alive(category: String) -> bool:
+	return category in ["fox", "trollik"] or super._starts_alive(category)
+
+
 func _editor_parent() -> Node:
 	return $Interface
 
 
 func _ready() -> void:
 	_decks.assign(ISLAND_DECKS)
+	for bounds in Meadows.DECKS:
+		_decks.append({"bounds": bounds, "height": 0.0})
 	_surfaces.assign(_decks)
+	_water_volumes.append(WaterVolume.new(Meadows.CREEK, Meadows.CREEK_BED, 0.0,
+		Vector2(0, 18), 1.5))
 	_walls.assign(BRIDGE_RAILS)
 	for wall in _walls:
 		_build_wall(wall)
@@ -62,7 +78,29 @@ func _ready() -> void:
 	yeti.set_parameter("size", 2.0)
 	yeti.set_parameter("behavior_mode", "IDLE")
 	_connect_bridge_body()
+	_spawn_meadow_fauna()
 	_camera.position = actor.position
+
+
+func _spawn_meadow_fauna() -> void:
+	var fox := spawn_entity({
+		"id": Meadows.FOX_ID, "category": "fox", "label": "Лисичка", "material": "FABRIC",
+	}, Vector2(1684, 414), 0.0)
+	var trollik := spawn_entity({
+		"id": Meadows.TROLLIK_ID, "category": "trollik", "label": "Троллик", "material": "FABRIC",
+	}, Vector2(1870, 325), 0.0)
+	if fox == null or trollik == null:
+		push_error("Could not place the meadow fauna")
+		return
+	fox.set_parameter("size", 0.7)
+	fox.set_parameter("speed", 1.05)
+	trollik.set_parameter("speed", 0.85)
+	trollik.set_parameter("behavior_mode", "CHASE")
+	trollik.set_parameter("target_group", "LUNA")
+	trollik.set_parameter("sense_range", 1.7)
+	for entry in make_snapshot()["entities"]:
+		if entry["id"] in [Meadows.FOX_ID, Meadows.TROLLIK_ID]:
+			_initial_meadow_states.append(entry)
 
 
 func _configure_body(body: ElevationBody, entity_id: String) -> void:
@@ -77,17 +115,24 @@ func _connect_bridge_body() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		body.location_id = _entity_location(body.position)
 	if keyboard:
 		_apply_keyboard_input()
 	if not is_instance_valid(_debug_editor):
 		donut_refill = maxf(0.0, donut_refill - delta)
+		if ice_remaining > 0.0:
+			_set_ice_time(maxf(0.0, ice_remaining - delta))
 		_update_yeti_route()
 	_camera.position = actor.position
-	var area := "Стартовый остров" if actor.position.x < 925.0 else "Край Больших лугов"
+	var area := "Большие луга" if actor.position.x >= Meadows.WEST_BOUNDARY else "Стартовый остров"
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
 	_status.text = "%s  ·  %s" % [area, wand]
 	if has_donut:
 		_status.text += "  ·  Пончик"
+	if freeze_selected:
+		_status.text += "  ·  Заморозка"
 	var action := _nearby_action()
 	_prompt.text = "" if action.is_empty() or is_instance_valid(_debug_editor) else "E  " + action
 
@@ -120,7 +165,26 @@ func _nearby_action() -> String:
 	var yeti := entities.get_entity(BRIDGE_YETI_ID) as EntityBody
 	if has_donut and not yeti.get_parameter("asleep") and _within_reach(yeti.position, yeti.motion.elevation):
 		return "Предложить пончик"
+	if freeze_selected and _can_freeze_creek():
+		return "Заморозить воду"
 	return ""
+
+
+func _can_freeze_creek() -> bool:
+	if ice_remaining > 0.0 or not projection.carried or not actor.motion.grounded:
+		return false
+	var closest := actor.position.clamp(Meadows.ICE_BOUNDS.position, Meadows.ICE_BOUNDS.end)
+	return actor.position.distance_squared_to(closest) <= Meadows.FREEZE_REACH * Meadows.FREEZE_REACH
+
+
+func _set_ice_time(seconds: float) -> void:
+	if seconds > 0.0 and ice_remaining <= 0.0:
+		_surfaces.append(Meadows.ICE_SURFACE)
+		queue_redraw()
+	elif seconds <= 0.0 and ice_remaining > 0.0:
+		_surfaces.erase(Meadows.ICE_SURFACE)
+		queue_redraw()
+	ice_remaining = seconds
 
 
 func interact() -> bool:
@@ -138,6 +202,9 @@ func interact() -> bool:
 			if retreat_step < 0:
 				retreat_step = 0
 			return true
+		"Заморозить воду":
+			_set_ice_time(Meadows.ICE_SECONDS)
+			return true
 	return interact_with_attachment()
 
 
@@ -151,6 +218,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_TAB:
 			_toggle_debug_editor()
 			get_viewport().set_input_as_handled()
+		KEY_2:
+			if not is_instance_valid(_debug_editor):
+				freeze_selected = true
+		KEY_1, KEY_3, KEY_4:
+			if not is_instance_valid(_debug_editor):
+				freeze_selected = false
 		KEY_ESCAPE:
 			if is_instance_valid(_debug_editor):
 				_toggle_debug_editor()
@@ -177,6 +250,7 @@ func make_snapshot() -> Dictionary:
 		"access": access.snapshot(), "projection": projection.snapshot(), "has_donut": has_donut,
 		"donut_refill": donut_refill, "retreat_step": retreat_step,
 	}
+	data["meadows"] = {"ice_remaining": ice_remaining}
 	return data
 
 
@@ -201,13 +275,30 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	if typeof(step) not in [TYPE_INT, TYPE_FLOAT] or float(step) not in [-1.0, 0.0, 1.0, 2.0]:
 		return false
+	var meadow_state: Variant = data.get("meadows", {"ice_remaining": 0.0})
+	if not meadow_state is Dictionary:
+		return false
+	var ice: Variant = meadow_state.get("ice_remaining")
+	if typeof(ice) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(ice)) \
+			or float(ice) < 0.0 or float(ice) > Meadows.ICE_SECONDS:
+		return false
 	var fridge_found := false
 	var yeti_found := false
 	for state in states:
 		if state is Dictionary:
 			fridge_found = fridge_found or (state.get("id") == FRIDGE_ID and state.get("category") == "fridge")
 			yeti_found = yeti_found or (state.get("id") == BRIDGE_YETI_ID and state.get("category") == "yeti")
-	if not fridge_found or not yeti_found or not super.apply_snapshot(data):
+	if not fridge_found or not yeti_found:
+		return false
+	var candidate := data
+	if not data.has("meadows"):
+		# M3.44 saves predate the fauna and have no transient supports.
+		candidate = data.duplicate(true)
+		candidate["entities"].append_array(_initial_meadow_states)
+	var previous_ice := ice_remaining
+	_set_ice_time(float(ice))
+	if not super.apply_snapshot(candidate):
+		_set_ice_time(previous_ice)
 		return false
 	access = next_access
 	projection = next_projection
@@ -235,4 +326,5 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	draw_string(font, FRIDGE_SPOT + Vector2(-48, -47), "Холодильник")
 	draw_string(font, RIFT_SPOT + Vector2(-28, 48), "Разлом")
-	draw_string(font, Vector2(1005, 339), "Большие луга")
+	draw_string(font, Vector2(1005, 339), "К Большим лугам →")
+	Meadows.draw_on(self, ice_remaining > 0.0)
