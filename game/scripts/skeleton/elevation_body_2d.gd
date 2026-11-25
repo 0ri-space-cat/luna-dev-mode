@@ -54,6 +54,7 @@ var _carried := false
 var _seat_height := 0.0
 var _seat_capacity := 0.0
 var _protected_seat := false
+var _map_reparenting := false
 
 
 func _ready() -> void:
@@ -403,7 +404,22 @@ func _update_rider_position() -> void:
 		_rider._sync_projection()
 
 
+func map_travelers() -> Array[SkeletonElevationBody2D]:
+	var group: Array[SkeletonElevationBody2D] = [self]
+	if has_passenger():
+		group.append(_rider)
+	return group
+
+
+func reparent_for_map(destination: Node2D) -> void:
+	_map_reparenting = true
+	reparent(destination, false)
+	_map_reparenting = false
+
+
 func _exit_tree() -> void:
+	if _map_reparenting:
+		return
 	if has_passenger():
 		_rider._carrier = null
 		_rider._carried = false

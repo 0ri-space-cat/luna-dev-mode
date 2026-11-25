@@ -1,6 +1,9 @@
 extends "res://scripts/skeleton/entity_fixture.gd"
 ## Continuous P9-03 graybox. The island and meadows share the simulation and camera.
 
+const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
+const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
+const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
 const WorldClock = preload("res://scripts/runtime2d/world_clock_2d.gd")
 const ActiveDuration = preload("res://scripts/runtime2d/active_duration_2d.gd")
@@ -34,6 +37,10 @@ const BRIDGE_RAILS: Array[Dictionary] = [
 	{"bounds": Rect2(656, 404, 199, 18), "height": 92.0, "layer": 1},
 ]
 
+var wand_pair := WandPair.new()
+var wand_mode_requested: Callable
+var managed_save := false
+var _wand_hold := 0.0
 var has_donut := false
 var donut_refill := 0.0
 var retreat_step := -1
@@ -58,6 +65,8 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if point.x >= Lake.BOUNDARY:
+		return Lake.LOCATION_ID
 	return Meadows.LOCATION_ID if point.x >= Meadows.WEST_BOUNDARY else ISLAND_ID
 
 
@@ -70,13 +79,16 @@ func _editor_parent() -> Node:
 
 
 func _ready() -> void:
+	wand_pair.original = projection
 	world_clock.minute_changed.connect(_update_world_light)
 	_ice_duration.active_changed.connect(_update_ice_support)
 	_update_world_light()
 	_decks.assign(ISLAND_DECKS)
-	for bounds in Meadows.DECKS:
+	for bounds in Meadows.DECKS + Lake.DECKS:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	_surfaces.assign(_decks)
+	_surfaces.append({"bounds": Lake.POOL, "height": Lake.BED_HEIGHT, "safe": false})
+	_water_volumes.append(WaterVolume.new(Lake.POOL, Lake.BED_HEIGHT, 0.0, Vector2.ZERO, 1.2))
 	_water_volumes.append(WaterVolume.new(Meadows.CREEK, Meadows.CREEK_BED, 0.0,
 		Vector2(0, 18), 1.5))
 	_walls.assign(BRIDGE_RAILS)
@@ -143,6 +155,38 @@ func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	body.emergency_anchor = Vector3(SPAWN.x, SPAWN.y, 0.0)
 
 
+func set_home_active(active: bool) -> void:
+	process_mode = Node.PROCESS_MODE_PAUSABLE if active else Node.PROCESS_MODE_DISABLED
+	visible = active
+	$Interface.visible = active
+	_camera.enabled = active
+	if active:
+		_camera.position = actor.position
+		_camera.make_current()
+		_camera.reset_smoothing()
+
+
+func return_traveler(point: Vector2, height: float) -> void:
+	for body in actor.map_travelers():
+		body.surfaces = _surfaces
+		body.walls = _walls
+		body.water_volumes = _water_volumes
+		body.reparent_for_map(self)
+		body.show()
+		(body as EntityBody).location_id = _entity_location(point)
+	actor.position = point
+	actor.motion.reset_on_surface(point, height)
+	actor.emergency_anchor = Vector3(SPAWN.x, SPAWN.y, 0.0)
+	actor.gravity_scale = actor.get_parameter("gravity_scale")
+	actor.direction = Vector2.ZERO
+	actor.velocity = Vector2.ZERO
+	actor._impulse_velocity = Vector2.ZERO
+	actor._sync_projection()
+	actor._update_rider_position()
+	_connect_bridge_body()
+	set_home_active(true)
+
+
 func _connect_bridge_body() -> void:
 	var yeti := entities.get_entity(BRIDGE_YETI_ID) as EntityBody
 	yeti.collision_layer = EntityBody.BODY_OBSTACLE_LAYER
@@ -155,6 +199,7 @@ func _physics_process(delta: float) -> void:
 		body.location_id = _entity_location(body.position)
 	if keyboard:
 		_apply_keyboard_input()
+		tick_wand_self_hack(delta, Input.is_physical_key_pressed(KEY_TAB))
 	if not is_instance_valid(_debug_editor):
 		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
@@ -163,6 +208,8 @@ func _physics_process(delta: float) -> void:
 		_refresh_plank_surface()
 	_camera.position = actor.position
 	var area := "Большие луга" if actor.position.x >= Meadows.WEST_BOUNDARY else "Стартовый остров"
+	if actor.position.x >= Lake.BOUNDARY:
+		area = "Озеро Дубликатов"
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
 	_status.text = "%s  ·  %s  ·  %s" % [area, PHASE_LABELS[world_clock.phase()], wand]
 	if has_donut:
@@ -199,6 +246,9 @@ func _within_reach(point: Vector2, height: float = 0.0) -> bool:
 func _nearby_action() -> String:
 	if access.wand_mode == AccessState.ORDINARY and projection.carried and _within_reach(RIFT_SPOT):
 		return "Поднести палочку"
+	if wand_pair.duplicate == null and projection.carried and actor.motion.grounded \
+			and actor.position.x < Lake.POOL.position.x and _within_reach(Lake.CONTACT):
+		return "Коснуться воды палочкой"
 	var fridge := entities.get_entity(FRIDGE_ID) as EntityBody
 	if not has_donut and donut_refill <= 0.0 and _within_reach(fridge.position, fridge.motion.elevation):
 		return "Взять пончик"
@@ -273,7 +323,11 @@ func interact() -> bool:
 		return false
 	match _nearby_action():
 		"Поднести палочку":
-			return access.set_wand_mode(AccessState.PLAYFUL)
+			return _set_wand_mode(AccessState.PLAYFUL)
+		"Коснуться воды палочкой":
+			var duplicated := wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID)
+			queue_redraw()
+			return duplicated
 		"Взять пончик":
 			has_donut = true
 			donut_refill = DONUT_REFILL_SECONDS
@@ -304,6 +358,41 @@ func interact() -> bool:
 	return interact_with_attachment()
 
 
+func exchange_nearby_wand() -> bool:
+	if not (actor as EntityBody).accepts_player_input() or not actor.motion.grounded \
+			or not actor.motion._has_support(actor.position, actor.motion.elevation, _surfaces, true):
+		return false
+	if not wand_pair.exchange(actor.position, _entity_location(actor.position)):
+		return false
+	projection = wand_pair.active()
+	_wand_hold = 0.0
+	queue_redraw()
+	return true
+
+
+func _can_hack_second_wand() -> bool:
+	return access.wand_mode == AccessState.PLAYFUL and (actor as EntityBody).accepts_player_input() \
+		and actor.motion.grounded and not is_instance_valid(_debug_editor) \
+		and wand_pair.can_hack_other(actor.position, _entity_location(actor.position))
+
+
+func tick_wand_self_hack(delta: float, held_down: bool) -> bool:
+	if not held_down or not _can_hack_second_wand():
+		_wand_hold = 0.0
+		return false
+	_wand_hold = minf(_wand_hold + delta, WAND_HOLD_SECONDS)
+	if _wand_hold < WAND_HOLD_SECONDS:
+		return false
+	_wand_hold = 0.0
+	return _set_wand_mode(AccessState.DEVELOPER)
+
+
+func _set_wand_mode(mode: String) -> bool:
+	if wand_mode_requested.is_valid() and not wand_mode_requested.call(mode):
+		return false
+	return access.set_wand_mode(mode)
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
 		return
@@ -312,7 +401,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if interact():
 				get_viewport().set_input_as_handled()
 		KEY_TAB:
-			_toggle_debug_editor()
+			if not _can_hack_second_wand():
+				_toggle_debug_editor()
 			get_viewport().set_input_as_handled()
 		KEY_2:
 			if not is_instance_valid(_debug_editor):
@@ -324,10 +414,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if is_instance_valid(_debug_editor):
 				_toggle_debug_editor()
 				get_viewport().set_input_as_handled()
+		KEY_G:
+			exchange_nearby_wand()
 		KEY_F5:
-			if _store.write_snapshot(make_snapshot(), SAVE_PATH):
+			if not managed_save and _store.write_snapshot(make_snapshot(), SAVE_PATH):
 				$Interface/SaveNotice.text = "Сохранено"
 		KEY_F9:
+			if managed_save:
+				return
 			var saved := _store.read_snapshot(SAVE_PATH)
 			$Interface/SaveNotice.text = "Загружено" if apply_snapshot(saved) else "Нет подходящего сохранения"
 
@@ -343,11 +437,12 @@ func _toggle_debug_editor() -> void:
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
 	data["island"] = {
-		"access": access.snapshot(), "projection": projection.snapshot(), "has_donut": has_donut,
+		"access": access.snapshot(), "projection": wand_pair.original.snapshot(), "has_donut": has_donut,
 		"donut_refill": donut_refill, "retreat_step": retreat_step,
 	}
 	data["meadows"] = {"ice_remaining": ice_remaining, "layout_version": 2}
 	data["world_clock"] = world_clock.snapshot()
+	data["wand_pair"] = wand_pair.snapshot()
 	return data
 
 
@@ -369,6 +464,13 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not access_data is Dictionary or not next_access.restore(access_data) \
 			or not projection_data is Dictionary or not next_projection.restore(projection_data) \
 			or not food is bool:
+		return false
+	var pair := WandPair.new()
+	var legacy_held := WandPair.ORIGINAL if next_projection.carried else ""
+	var wand_data: Variant = data.get("wand_pair", {"held": legacy_held, "retained": WandPair.ORIGINAL, "duplicate": {}})
+	if not pair.restore(next_projection, wand_data):
+		return false
+	if pair.duplicate != null and (not _valid_ground_wand(pair.original) or not _valid_ground_wand(pair.duplicate)):
 		return false
 	if typeof(refill) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(refill)) \
 			or float(refill) < 0.0 or float(refill) > DONUT_REFILL_SECONDS:
@@ -414,7 +516,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 		_set_plank_surface(previous_plank)
 		return false
 	access = next_access
-	projection = next_projection
+	wand_pair = pair
+	projection = wand_pair.active()
+	_wand_hold = 0.0
+	queue_redraw()
 	world_clock.restore(next_clock.snapshot())
 	has_donut = food
 	donut_refill = float(refill)
@@ -423,6 +528,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 	_configure_plank_marker(entities.get_entity(Meadows.PLANK_ID) as EntityBody)
 	_camera.position = actor.position
 	return true
+
+
+func _valid_ground_wand(field: WandProjection) -> bool:
+	return field.carried or (field.ground_location_id == _entity_location(field.ground_position) \
+		and actor.motion._has_support(field.ground_position, 0.0, _decks, true))
 
 
 func _saved_plank_surface(state: Dictionary) -> Dictionary:
@@ -462,3 +572,9 @@ func _draw() -> void:
 	draw_string(font, RIFT_SPOT + Vector2(-28, 48), "Разлом")
 	draw_string(font, Vector2(1005, 339), "К Большим лугам →")
 	Meadows.draw_on(self, ice_remaining > 0.0)
+	Lake.draw_on(self)
+	for field in [wand_pair.original, wand_pair.duplicate]:
+		if field != null and not field.carried:
+			var point: Vector2 = field.ground_position
+			draw_line(point + Vector2(-11, 7), point + Vector2(11, -7), Color("ead1ff"), 5.0)
+			draw_circle(point + Vector2(11, -7), 4.0, Color("ffd98d"))

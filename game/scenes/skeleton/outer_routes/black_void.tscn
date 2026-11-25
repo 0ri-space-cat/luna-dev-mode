@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/skeleton/outer_route_room.gd" id="1"]
 
-[node name="Trash" type="Node2D"]
+[node name="BlackVoid" type="Node2D"]
 script = ExtResource("1")
 floor_bounds = Rect2(119, 356, 242, 226)
 requires_door = false

@@ -56,7 +56,7 @@ func _run() -> void:
 			break
 	Input.action_release("ui_up")
 	assert(world.cracking and world.current_address == Routes.BUFFER)
-	assert(not world.use_route() and not world.send_to_trash())
+	assert(not world.use_route() and not world.send_to_black_void())
 	assert(world.apply_snapshot(_round_trip_snapshot()))
 	assert(world.cracking)
 	traveler = world.actor
@@ -83,7 +83,7 @@ func _run() -> void:
 	world._place_actor(Vector2(463, 524))
 	var recovery_point := world.actor.position
 	world.world_clock.set_time_of_day(world.Clock.NIGHT_MINUTE)
-	assert(world.send_to_trash() and world.current_address == Routes.TRASH)
+	assert(world.send_to_black_void() and world.current_address == Routes.BLACK_VOID)
 	assert(world.actor == traveler and world.last_safe_point == recovery_point)
 	assert(not world.use_route())
 	var broken := _round_trip_snapshot()
@@ -108,7 +108,7 @@ func _run() -> void:
 	assert(world.actor.position == recovery_point and world.actor.gravity_scale == 1.0)
 	assert(world.access.wand_mode == Access.ORDINARY and world.actor.dynamics_snapshot()["mass"] == 1.5)
 	assert(world.world_clock.phase() == world.Clock.Phase.NIGHT)
-	print("P9-07: safe ride, M08 return, deliberate P01, gravity fall, coastal exit and Trash recovery passed")
+	print("P9-07: safe ride, M08 return, deliberate P01, gravity fall, coastal exit and Black Void recovery passed")
 	world.queue_free()
 	await process_frame
 	quit()

@@ -13,9 +13,9 @@ var reason := ""
 var _safe_snapshot: Dictionary = {}
 
 
-func capture(world: Dictionary) -> bool:
+func capture(world: Dictionary, shape: Callable = Callable()) -> bool:
 	# Don't overwrite the last known-good checkpoint during an incident.
-	if pending or not _valid_snapshot(world):
+	if pending or not _valid_snapshot(world, shape):
 		return false
 	_safe_snapshot = world.duplicate(true)
 	return true
@@ -46,10 +46,20 @@ func has_checkpoint() -> bool:
 	return not _safe_snapshot.is_empty()
 
 
-func _valid_snapshot(data: Dictionary) -> bool:
+func recover(restore_world: Callable) -> bool:
+	var saved := snapshot_for_recovery()
+	if saved.is_empty() or not restore_world.call(saved):
+		return false
+	acknowledge()
+	return true
+
+
+func _valid_snapshot(data: Dictionary, shape: Callable) -> bool:
 	if typeof(data.get("format", null)) not in [TYPE_INT, TYPE_FLOAT] or float(data["format"]) != 2.0:
 		return false
 	var entities: Variant = data.get("entities", null)
 	if not (entities is Array) or entities.is_empty() or entities.size() > MAX_SAFE_ACTORS:
 		return false
+	if shape.is_valid():
+		return shape.call(data) == true
 	return data.get("routes", null) is Dictionary and data.get("projection", null) is Dictionary

@@ -1,6 +1,7 @@
 extends "res://scripts/skeleton/address_fixture.gd"
 ## External routes share the same traveler, safe placement and world clock.
 
+const BorrowedEntity = preload("res://scripts/skeleton/entity_body_2d.gd")
 const RouteRoom = preload("res://scripts/skeleton/outer_route_room.gd")
 const VoidExploration = preload("res://scripts/skeleton/void_exploration_2d.gd")
 const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
@@ -10,7 +11,7 @@ const COAST := "DEV_OUTER_COAST"
 const BUFFER := "DEV_OUTER_BUFFER"
 const SUBSPACE := "DEV_OUTER_SUBSPACE"
 const EDGE := "DEV_OUTER_EDGE"
-const TRASH := "DEV_OUTER_TRASH"
+const BLACK_VOID := "DEV_OUTER_BLACK_VOID"
 const HOUSE_04 := "ET_LUMA_RES_04"
 const WHITE_ADDRESS := "META_WHITE_VOID"
 const ORDINARY_STOPS := [MEADOWS, LUMA, COAST]
@@ -32,6 +33,7 @@ var outward_elapsed := 0.0
 var crack_elapsed := 0.0
 var cracking := false
 var _drift := Vector2.ZERO
+var return_to_host: Callable
 
 @onready var traveler_visual: Sprite2D = $TravelerVisual
 @onready var _action_hint: Label = $Interface/Action
@@ -50,22 +52,54 @@ func _start_address() -> String:
 
 
 func _ready() -> void:
+	if return_to_host.is_valid():
+		_address_input.text_submitted.connect(_submit_address)
+		if not router.load_catalog_json(_catalog_path()):
+			_startup_error(router.last_error)
+		$Interface/Controls.text = "WASD / стрелки · парение    Пробел · торможение    E · действие"
+		return
 	super._ready()
 	if is_instance_valid(actor):
 		_remember_safe_point()
 
 
+func mount_host_traveler(body: ElevationBody, host_access: Access, host_clock: Clock) -> bool:
+	if not return_to_host.is_valid() or actor != null or body.is_attached():
+		return false
+	actor = body
+	access = host_access
+	world_clock = host_clock
+	last_safe_address = MEADOWS
+	last_safe_point = router.locations[MEADOWS]["entries"]["entry"]
+	if not _enter_void("entry"):
+		actor = null
+		return false
+	for traveler in actor.map_travelers():
+		traveler.surfaces = _surfaces
+		traveler.walls = _walls
+		traveler.water_volumes = _water_volumes
+		traveler.reparent_for_map(self)
+		traveler.hide()
+	actor._update_rider_position()
+	return true
+
+
 func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	super._configure_body(body, entity_id)
+	if return_to_host.is_valid() and is_instance_valid(actor):
+		body._apply_body_size(actor.body_size)
 	body.hide()
 
 
 func _place_actor(point: Vector2) -> void:
 	super._place_actor(point)
+	if actor is BorrowedEntity:
+		for traveler in actor.map_travelers():
+			(traveler as BorrowedEntity).location_id = current_address
 	_record_text = ""
 	if current_address != exploration.station_ghost:
 		exploration.station_ghost = ""
-	actor.gravity_scale = 0.0 if current_address == TRASH else 1.0
+	actor.gravity_scale = 0.0 if current_address == BLACK_VOID else 1.0
 	_drift = Vector2.ZERO
 	if current_address == SUBSPACE:
 		actor.motion.elevation = FALL_HEIGHT
@@ -111,7 +145,7 @@ func play_buffer_melody(melody_id: String) -> bool:
 
 
 ## Integration point for a completed administrative intervention.
-func send_to_trash() -> bool:
+func send_to_black_void() -> bool:
 	if current_address not in ORDINARY_STOPS:
 		return false
 	_remember_safe_point()
@@ -132,7 +166,7 @@ func station_ghost_available() -> bool:
 
 
 func void_ghost_available() -> bool:
-	return current_address == TRASH and exploration.ghost_waiting()
+	return current_address == BLACK_VOID and exploration.ghost_waiting()
 
 
 func request_door_address(destination: String) -> bool:
@@ -187,7 +221,7 @@ func enter_nearby_door() -> bool:
 func read_local_record() -> String:
 	if not _near_record():
 		return ""
-	if current_address == TRASH:
+	if current_address == BLACK_VOID:
 		return WHITE_ADDRESS
 	if current_address == HOUSE_04:
 		return "M08"
@@ -195,7 +229,7 @@ func read_local_record() -> String:
 
 
 func _enter_void(entry_id: String) -> bool:
-	if not _move_to_address(TRASH, entry_id):
+	if not _move_to_address(BLACK_VOID, entry_id):
 		return false
 	exploration.begin_void_visit()
 	return true
@@ -219,7 +253,7 @@ func _board_void_ghost() -> bool:
 
 
 func _near_record() -> bool:
-	return current_address in [HOUSE_04, TRASH] and _at_area((_room as RouteRoom).record_bounds)
+	return current_address in [HOUSE_04, BLACK_VOID] and _at_area((_room as RouteRoom).record_bounds)
 
 
 func use_route() -> bool:
@@ -230,7 +264,7 @@ func use_route() -> bool:
 			return not cracking and ride_destination.is_empty() and _finish_buffer()
 		EDGE:
 			return _at_action() and _move_to_address(COAST)
-		TRASH:
+		BLACK_VOID:
 			if _at_action():
 				return _return_to_safe_point()
 			if _board_void_ghost():
@@ -258,6 +292,8 @@ func _remember_safe_point() -> void:
 
 
 func _return_to_safe_point() -> bool:
+	if current_address == BLACK_VOID and return_to_host.is_valid():
+		return return_to_host.call()
 	if last_safe_address not in ORDINARY_STOPS:
 		return false
 	# The exact checkpoint is preferred. Its authored entry is a bounded fallback
@@ -271,6 +307,8 @@ func _finish_buffer() -> bool:
 		moved = _move_to_address(HOUSE_04)
 	elif ride_destination.is_empty():
 		moved = _return_to_safe_point()
+	elif ride_destination == MEADOWS and return_to_host.is_valid():
+		moved = return_to_host.call()
 	else:
 		moved = _move_to_address(ride_destination)
 	if moved:
@@ -303,7 +341,7 @@ func _physics_process(delta: float) -> void:
 			actor.direction = Vector2.ZERO
 			if actor.motion.grounded:
 				_move_to_address(EDGE)
-		TRASH:
+		BLACK_VOID:
 			exploration.advance_void(delta)
 			_tick_drift(delta, input, keyboard and Input.is_physical_key_pressed(KEY_SPACE))
 		_:
@@ -354,11 +392,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		or not is_instance_valid(actor):
 		return
 	var key: Key = event.physical_keycode if event.physical_keycode != KEY_NONE else event.keycode
+	if return_to_host.is_valid() and key not in [KEY_E, KEY_C, KEY_TAB, KEY_ESCAPE]:
+		return
 	match key:
 		KEY_E:
 			use_route()
 		KEY_F4:
-			send_to_trash()
+			send_to_black_void()
 		KEY_F8:
 			play_buffer_melody("M08")
 		KEY_F7:
@@ -398,8 +438,8 @@ func _update_interface() -> void:
 			_status.text = ""
 		EDGE:
 			_status.text = "Забытый край"
-		TRASH:
-			_status.text = "Чёрная Пустота · Корзина" if _room.floor_bounds.has_point(actor.position) else "Чёрная Пустота"
+		BLACK_VOID:
+			_status.text = "Чёрная Пустота"
 		HOUSE_04:
 			_status.text = "Дом №04"
 	_action_hint.text = _contextual_action()
@@ -424,7 +464,7 @@ func _contextual_action() -> String:
 	if not _at_action():
 		return ""
 	match current_address:
-		TRASH:
+		BLACK_VOID:
 			return "E · восстановиться"
 		EDGE:
 			return "E · на побережье"
@@ -446,6 +486,7 @@ func make_snapshot() -> Dictionary:
 
 
 func apply_snapshot(data: Dictionary) -> bool:
+	data = _migrate_void_address(data)
 	var safe: Variant = data.get("last_safe")
 	var journey: Variant = data.get("journey")
 	var clock := Clock.new()
@@ -484,8 +525,44 @@ func apply_snapshot(data: Dictionary) -> bool:
 	cracking = journey["cracking"]
 	crack_elapsed = journey["crack_elapsed"]
 	_drift = Vector2(float(journey["drift"][0]), float(journey["drift"][1]))
-	actor.gravity_scale = 0.0 if current_address == TRASH else 1.0
+	actor.gravity_scale = 0.0 if current_address == BLACK_VOID else 1.0
 	return true
+
+
+func _restore_traveler(next_actor: ElevationBody) -> void:
+	if not return_to_host.is_valid():
+		super._restore_traveler(next_actor)
+		return
+	actor.position = next_actor.position
+	actor.motion = next_actor.motion
+	actor.emergency_anchor = next_actor.emergency_anchor
+	actor.direction = Vector2.ZERO
+	actor.velocity = Vector2.ZERO
+	actor._impulse_velocity = Vector2.ZERO
+	actor._sync_projection()
+	for traveler in actor.map_travelers():
+		(traveler as BorrowedEntity).location_id = current_address
+	actor._update_rider_position()
+	next_actor.free()
+
+
+func _restore_access(next_access: Access) -> void:
+	if not return_to_host.is_valid():
+		super._restore_access(next_access)
+
+
+func _migrate_void_address(data: Dictionary) -> Dictionary:
+	const OLD_ADDRESS := "DEV_OUTER_TRASH"
+	var routes: Variant = data.get("routes")
+	if data.get("address") != OLD_ADDRESS and (not routes is Dictionary \
+			or routes.get("DEV_RES_04_NATURAL_DOOR") != OLD_ADDRESS):
+		return data
+	var migrated := data.duplicate(true)
+	if migrated.get("address") == OLD_ADDRESS:
+		migrated["address"] = BLACK_VOID
+	if routes is Dictionary and routes.get("DEV_RES_04_NATURAL_DOOR") == OLD_ADDRESS:
+		migrated["routes"]["DEV_RES_04_NATURAL_DOOR"] = BLACK_VOID
+	return migrated
 
 
 func _valid_exploration(address: Variant, journey: Dictionary, candidate: VoidExploration) -> bool:
@@ -514,7 +591,7 @@ func _valid_journey(address: Variant, data: Variant) -> bool:
 		or not _in_range(data.get("crack_elapsed"), CRACK_SECONDS) \
 		or not data.get("cracking") is bool or not _valid_pair(data.get("drift"), 1.0):
 		return false
-	if address != TRASH and (float(data["drift"][0]) != 0.0 or float(data["drift"][1]) != 0.0):
+	if address != BLACK_VOID and (float(data["drift"][0]) != 0.0 or float(data["drift"][1]) != 0.0):
 		return false
 	if address != BUFFER:
 		return data["destination"] == "" and data["elapsed"] == 0.0 \

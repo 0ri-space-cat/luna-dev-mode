@@ -1075,13 +1075,7 @@ func mark_safe_state() -> bool:
 
 
 func recover_last_safe_state() -> bool:
-	var saved: Dictionary = recovery_guard.snapshot_for_recovery()
-	if saved.is_empty():
-		return false
-	if not apply_snapshot(saved):
-		return false
-	recovery_guard.acknowledge()
-	return true
+	return recovery_guard.recover(apply_snapshot)
 
 
 func save_to_disk() -> bool:

@@ -64,10 +64,12 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_underside.gd
       - name: Test the 2D+Z exterior and interior projection sample
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_art_probe.gd
-      - name: Test loading-frame travel and Trash recovery
+      - name: Test loading-frame travel and Black Void recovery
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_outer_routes.gd
       - name: Test voluntary ghost rides, house address and the distant record
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_void_exploration.gd
+      - name: Test the integrated island, wand reset and Black Void recovery
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_administrator.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws

@@ -241,14 +241,23 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var anchor: Array = next_actor.motion.snapshot()["anchor"]
 	next_actor.emergency_anchor = Vector3(float(anchor[0]), float(anchor[1]), float(anchor[2]))
 	# A save resumes an occupied room; avatar permissions still apply to new entries.
+	_mount_room(next_room, address)
+	_restore_traveler(next_actor)
+	actor.surfaces = _surfaces
+	actor.walls = _walls
+	_restore_access(next_access)
+	router.restore_routes(saved_routes)
+	_address_input.hide()
+	return true
+
+
+
+func _restore_traveler(next_actor: ElevationBody) -> void:
 	actor.free()
 	actor = next_actor
 	actor.z_index = 1
-	_mount_room(next_room, address)
-	actor.surfaces = _surfaces
-	actor.walls = _walls
-	access = next_access
-	router.restore_routes(saved_routes)
-	_address_input.hide()
 	add_child(actor)
-	return true
+
+
+func _restore_access(next_access: Access) -> void:
+	access = next_access

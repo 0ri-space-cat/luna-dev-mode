@@ -52,8 +52,8 @@ func _draw() -> void:
 			_draw_buffer()
 		Routes.SUBSPACE:
 			_draw_subspace()
-		Routes.TRASH:
-			_draw_trash()
+		Routes.BLACK_VOID:
+			_draw_black_void()
 		_:
 			_draw_ground()
 	if world.current_address != Routes.SUBSPACE and world.actor.motion.grounded:
@@ -124,7 +124,7 @@ func _draw_ground() -> void:
 			draw_rect(opening, Color("ffd490"), false, 3.0)
 
 
-func _draw_trash() -> void:
+func _draw_black_void() -> void:
 	var room := world._room as Routes.RouteRoom
 	_gradient(Color("151224"), Color("201a37"))
 	for index in 44:
@@ -142,7 +142,7 @@ func _draw_trash() -> void:
 	draw_arc(pad.get_center(), 25.0, -0.6, PI * 1.45, 30, Color("f5dcb7"), 3.0)
 
 
-	var exterior: Vector2 = world.router.locations[Routes.TRASH]["entries"]["house_exterior"]
+	var exterior: Vector2 = world.router.locations[Routes.BLACK_VOID]["entries"]["house_exterior"]
 	draw_rect(Rect2(exterior + Vector2(-53, -62), Vector2(111, 52)), Color("786880"))
 	draw_colored_polygon(PackedVector2Array([exterior + Vector2(-61, -61), exterior + Vector2(3, -88),
 		exterior + Vector2(63, -61)]), Color("b28998"))

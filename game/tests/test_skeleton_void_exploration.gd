@@ -23,7 +23,7 @@ func _run() -> void:
 	assert(world.current_address == Routes.MEADOWS)
 	await _test_ghost_route()
 	await _test_house_route()
-	assert(world.send_to_trash())
+	assert(world.send_to_black_void())
 	assert(world.read_local_record() == "" and not world.void_ghost_available())
 	assert(world._record_text == "")
 	assert(not world.use_route())
@@ -44,10 +44,15 @@ func _test_ghost_route() -> void:
 	var traveler := world.actor
 	world._place_actor(Vector2(755, 545))
 	assert(world.use_route())
-	assert(world.current_address == Routes.TRASH and world.actor == traveler)
+	assert(world.current_address == Routes.BLACK_VOID and world.actor == traveler)
 	assert(world.actor.position == Vector2(638, 254))
 	assert(not world._at_action() and world.read_local_record() == "")
 	assert(not world.use_route())
+	var legacy := _snapshot()
+	legacy["address"] = "DEV_OUTER_TRASH"
+	legacy["routes"]["DEV_RES_04_NATURAL_DOOR"] = "DEV_OUTER_TRASH"
+	assert(world.apply_snapshot(legacy) and world.current_address == Routes.BLACK_VOID)
+	traveler = world.actor
 	var delay := world.exploration.return_delay
 	assert(delay >= Routes.VoidExploration.MIN_WAIT and delay <= Routes.VoidExploration.MAX_WAIT)
 
@@ -66,7 +71,7 @@ func _test_ghost_route() -> void:
 			break
 		await physics_frame
 	assert(world.void_ghost_available())
-	assert(world.current_address == Routes.TRASH and world._record_text == "")
+	assert(world.current_address == Routes.BLACK_VOID and world._record_text == "")
 	world.world_clock.set_time_of_day(Clock.START_MINUTE)
 	assert(world.use_route() and world.current_address == Routes.LUMA)
 	assert(world.actor == traveler and world.world_clock.phase() == Clock.Phase.NIGHT)
@@ -87,7 +92,7 @@ func _test_house_route() -> void:
 	assert(world.actor == traveler and world.actor.position == source)
 	assert(world.use_route() and world.current_address == Routes.HOUSE_04)
 	assert(world.toggle_local_door() and world.current_address == Routes.HOUSE_04)
-	assert(world.use_route() and world.current_address == Routes.TRASH)
+	assert(world.use_route() and world.current_address == Routes.BLACK_VOID)
 	assert(world.actor.position == Vector2(248, 242) and not world.use_route())
 
 	world._place_actor(Vector2(950, 440))
