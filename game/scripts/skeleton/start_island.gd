@@ -4,7 +4,17 @@ extends "res://scripts/skeleton/entity_fixture.gd"
 signal frost_cast(active_seconds: float)
 signal fauna_respawned(identity: String)
 signal help_completed(outcome: String, identity: String)
+signal forest_bank_interacted
+signal forest_bank_left
 
+const ForestBank = preload("res://scripts/skeleton/forest_bank_2d.gd")
+const FOREST_BANK_SCENE = preload("res://scenes/skeleton/forest_bank.tscn")
+const FRIDGE_COURT := Rect2(1416, -22, 307, 205)
+const FRIDGE_PATH := Rect2(1643, 130, 105, 125)
+const COURT_FRIDGES := {
+	"DEV_FRIDGE_A": Vector2(1463, 28), "DEV_FRIDGE_B": Vector2(1530, 28), "DEV_FRIDGE_C": Vector2(1597, 28),
+	"DEV_FRIDGE_D": Vector2(1463, 106), "DEV_FRIDGE_E": Vector2(1530, 106), "DEV_FRIDGE_F": Vector2(1597, 106),
+}
 const SystemPause = preload("res://scripts/runtime2d/system_pause_2d.gd")
 const Administrator = preload("res://scripts/skeleton/administrator_body_2d.gd")
 const Fauna = preload("res://scripts/skeleton/fauna_body_2d.gd")
@@ -55,6 +65,10 @@ const BRIDGE_RAILS: Array[Dictionary] = [
 ]
 
 @export var ecology_fixture := false
+@export var observation_fixture := false
+var forest_bank: ForestBank
+var _was_at_bank := false
+var _initial_observation_states: Array[Dictionary] = []
 var ability_bank := AbilityBank.new(entities, commands)
 var _initial_ecology_states: Array[Dictionary] = []
 var _fish_surfaces: Array[Dictionary] = []
@@ -90,6 +104,8 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture and ForestBank.FOREST.has_point(point):
+		return ForestBank.LOCATION_ID
 	if point.x >= Lake.BOUNDARY:
 		return Lake.LOCATION_ID
 	return Meadows.LOCATION_ID if point.x >= Meadows.WEST_BOUNDARY else ISLAND_ID
@@ -109,7 +125,11 @@ func _ready() -> void:
 	_ice_duration.active_changed.connect(_update_ice_support)
 	_update_world_light()
 	_decks.assign(ISLAND_DECKS)
-	for bounds in Meadows.DECKS + Lake.DECKS:
+	var ground := Meadows.DECKS + Lake.DECKS
+	if observation_fixture:
+		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
+		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
+	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	_surfaces.assign(_decks)
 	_surfaces.append({"bounds": Lake.POOL, "height": Lake.BED_HEIGHT, "safe": false})
@@ -118,6 +138,8 @@ func _ready() -> void:
 	_water_volumes.append(WaterVolume.new(Meadows.CREEK, Meadows.CREEK_BED, 0.0,
 		Vector2(0, 18), 1.5))
 	_walls.assign(BRIDGE_RAILS)
+	if observation_fixture:
+		_walls.append({"bounds": ForestBank.REST_SPOT, "height": 96.0, "layer": 2})
 	for wall in _walls:
 		_build_wall(wall)
 	commands.configure_world(entities)
@@ -139,6 +161,8 @@ func _ready() -> void:
 	_spawn_meadow_entities()
 	if ecology_fixture:
 		_spawn_ecology_fixture()
+	if observation_fixture:
+		_spawn_observation_fixture()
 	_camera.position = actor.position
 
 
@@ -168,6 +192,34 @@ func _spawn_meadow_entities() -> void:
 	for entry in make_snapshot()["entities"]:
 		if entry["id"] in [Meadows.FOX_ID, Meadows.TROLLIK_ID, Meadows.PLANK_ID]:
 			_initial_meadow_states.append(entry)
+
+
+func _spawn_observation_fixture() -> void:
+	forest_bank = FOREST_BANK_SCENE.instantiate()
+	add_child(forest_bank)
+	for identity in COURT_FRIDGES:
+		var fridge := spawn_entity({"id": identity, "category": "fridge", "label": "Холодильник",
+			"material": "METAL"}, COURT_FRIDGES[identity], 0.0)
+		if fridge != null:
+			fridge.set_parameter("behavior_mode", "IDLE")
+	for state in make_snapshot()["entities"]:
+		if COURT_FRIDGES.has(state["id"]):
+			_initial_observation_states.append(state)
+
+
+func _at_forest_bank() -> bool:
+	return forest_bank != null and ForestBank.MEANDER.has_point(actor.position) \
+		and ForestBank.FOREST.has_point(actor.position)
+
+
+func awake_fridges_nearby() -> int:
+	var count := 0
+	for identity in entities.query_ids({"category": "fridge", "alive": true}, MAX_ENTITIES):
+		var fridge := entities.get_entity(identity) as EntityBody
+		if fridge.visible and fridge.location_id == actor.location_id \
+				and fridge.position.distance_squared_to(actor.position) <= 290.0 * 290.0:
+			count += 1
+	return count
 
 
 func _spawn_ecology_fixture() -> void:
@@ -343,10 +395,16 @@ func _physics_process(delta: float) -> void:
 		_ice_duration.tick(delta)
 		_update_yeti_route()
 		_refresh_plank_surface()
+	var at_bank := _at_forest_bank()
+	if _was_at_bank and not at_bank:
+		forest_bank_left.emit()
+	_was_at_bank = at_bank
 	_camera.position = actor.position
 	var area := "Большие луга" if actor.position.x >= Meadows.WEST_BOUNDARY else "Стартовый остров"
 	if actor.position.x >= Lake.BOUNDARY:
 		area = "Озеро Дубликатов"
+	elif _entity_location(actor.position) == ForestBank.LOCATION_ID:
+		area = "Лес"
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
 	_status.text = "%s  ·  %s  ·  %s" % [area, PHASE_LABELS[world_clock.phase()], wand]
 	if has_donut:
@@ -463,6 +521,11 @@ func _update_ice_support(active: bool) -> void:
 func interact() -> bool:
 	if not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	if forest_bank != null and forest_bank.can_interact(actor.position, actor.motion.elevation):
+		_was_at_bank = true
+		forest_bank.respond()
+		forest_bank_interacted.emit()
+		return true
 	match _nearby_action():
 		"Поднести палочку":
 			return _set_wand_mode(AccessState.PLAYFUL)
@@ -661,6 +724,8 @@ func _toggle_debug_editor() -> void:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
+	if observation_fixture:
+		data["observation_layout"] = 1
 	if ecology_fixture:
 		data["ecology_layout"] = 1
 		for entry in data["entities"]:
@@ -735,6 +800,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 			candidate["entities"].append(entry)
 	elif ecology_fixture and candidate["ecology_layout"] != 1:
 		return false
+	if observation_fixture and not candidate.has("observation_layout"):
+		candidate = candidate.duplicate(true)
+		for entry in _initial_observation_states:
+			candidate["entities"].append(entry)
+	elif observation_fixture and candidate["observation_layout"] != 1:
+		return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -759,6 +830,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	has_donut = food
 	donut_refill = float(refill)
 	retreat_step = int(step)
+	_was_at_bank = _at_forest_bank()
 	_connect_bridge_body()
 	_configure_plank_marker(entities.get_entity(Meadows.PLANK_ID) as EntityBody)
 	_camera.position = actor.position
@@ -774,6 +846,11 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
+	if observation_fixture:
+		for identity in COURT_FRIDGES:
+			var fridge: EntityBody = candidates.get(identity)
+			if fridge == null or fridge.record.category != "fridge":
+				return false
 	if not ecology_fixture:
 		return super._validate_saved_entities(candidates)
 	var counts := {}
@@ -829,7 +906,8 @@ func _draw() -> void:
 		draw_rect(deck.grow(5.0), Color("2b393d"))
 		draw_rect(deck, color)
 	for wall in _walls:
-		draw_rect(wall["bounds"], Color("b5a0b0"))
+		if not observation_fixture or wall["bounds"] != ForestBank.REST_SPOT:
+			draw_rect(wall["bounds"], Color("b5a0b0"))
 	draw_rect(Rect2(FRIDGE_SPOT - Vector2(55, 35), Vector2(110, 70)), Color("657572"))
 	draw_circle(RIFT_SPOT, 22.0, Color("3c3354"))
 	draw_arc(RIFT_SPOT, 22.0, -0.8, 4.8, 28, Color("bca3e4"), 3.0, true)

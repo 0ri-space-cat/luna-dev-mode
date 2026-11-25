@@ -10,6 +10,7 @@ const OUTER = preload("res://scenes/skeleton/outer_routes.tscn")
 const Recovery = preload("res://scripts/runtime2d/game_recovery_2d.gd")
 const RecoveryView = preload("res://scripts/runtime2d/recovery_presentation_2d.gd")
 const SystemPause = preload("res://scripts/runtime2d/system_pause_2d.gd")
+const Observations = preload("res://scripts/runtime2d/administrator_observations_2d.gd")
 const Ecology = preload("res://scripts/runtime2d/ecology_journal_2d.gd")
 const Journal = preload("res://scripts/runtime2d/system_incident_journal_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
@@ -18,10 +19,16 @@ const GUEST_OFFSET := Vector2(6000, 0)
 const PROFILE_KIND := "luna_adventure"
 const CHECKPOINT_SECONDS := 0.5
 const JOURNAL_FLUSH_SECONDS := 30.0
+const OBSERVATION_SECONDS := 7.0
+const OBSERVATION_GAP := 20.0
 
 @export var profile_path := "user://luna_adventure.json"
 var journal := Journal.new()
 var ecology := Ecology.new()
+var observations := Observations.new()
+var _observation_presence_until := 0.0
+var _observation_next_at := 0.0
+var _observation_line := ""
 var _ecology_presence_until := 0.0
 var recovery := Recovery.new()
 var events := EventBus.new()
@@ -56,6 +63,8 @@ func _ready() -> void:
 	home.commands.component_changed.connect(_on_component_changed)
 	home.fauna_respawned.connect(_on_fauna_respawned)
 	home.help_completed.connect(_on_help_completed)
+	home.forest_bank_interacted.connect(_on_forest_press)
+	home.forest_bank_left.connect(_queue_forest_report)
 	events.event_dropped.connect(_on_overflow)
 	_recovery_view.finished.connect(_finish_recovery)
 	var profile := _store.read_snapshot(profile_path)
@@ -66,6 +75,8 @@ func _ready() -> void:
 	if not _profile_valid:
 		_notice("Запись мира недоступна")
 	_ready_for_play = true
+	if _profile_valid and not profile.is_empty():
+		_queue_forest_report()
 	if not _away and _interrupted.is_empty():
 		mark_safe_state()
 		_present_encounter()
@@ -82,8 +93,9 @@ func _process(delta: float) -> void:
 	journal.advance(delta)
 	if not _away:
 		_tick_ecology(delta)
+		_tick_observations(delta)
 	if is_instance_valid(home.administrator) and not journal.encounter_is_active() \
-			and journal.active_seconds >= _ecology_presence_until:
+			and journal.active_seconds >= maxf(_ecology_presence_until, _observation_presence_until):
 		home.hide_administrator()
 	events.drain(self)
 	_checkpoint_elapsed += delta
@@ -144,7 +156,73 @@ func process_event(event: Dictionary) -> void:
 
 func _on_parameter_changed(change: Dictionary) -> void:
 	_observe_life_change(change)
+	_observe_yeti_change(change)
 	queue_world_event({"type": "PARAMETER_CHANGED", "change": change})
+
+
+func _observe_yeti_change(change: Dictionary) -> void:
+	if change["entity_id"] != Island.BRIDGE_YETI_ID or change["parameter_id"] != "asleep" \
+			or change["source_id"] != "wand:luna" or change["initiator_id"] != Island.ENTITY_ID:
+		return
+	if not change["before"] and change["after"] and observations.start_nap():
+		_persist_home_history()
+	elif change["before"] and not change["after"] and observations.record_wake():
+		_persist_home_history()
+
+
+func _on_forest_press() -> void:
+	if observations.record_forest_press():
+		_persist_home_history()
+
+
+func _queue_forest_report() -> void:
+	if observations.queue_forest_report():
+		_persist_home_history()
+
+
+func _tick_observations(delta: float) -> void:
+	var yeti := home.entities.get_entity(Island.BRIDGE_YETI_ID) as Island.EntityBody
+	if yeti != null:
+		observations.observe_sleep(yeti.get_parameter("asleep"), delta)
+	if observations.watching_fridges() and observations.observe_fridges(home.awake_fridges_nearby(), delta):
+		_persist_home_history()
+	if not _observation_line.is_empty() and journal.active_seconds >= _observation_presence_until:
+		var label: Label = home.get_node("Interface/SaveNotice")
+		if label.text == _observation_line:
+			label.text = ""
+		_observation_line = ""
+	if observations.pending.is_empty() or journal.encounter_is_active() \
+			or journal.active_seconds < _ecology_presence_until:
+		return
+	var forest_report: bool = observations.pending[0]["topic"] == Observations.FOREST
+	var show_after := _observation_presence_until if forest_report else _observation_next_at
+	if journal.active_seconds < show_after:
+		return
+	var previous := observations.snapshot()
+	var item := observations.take_pending()
+	if not _persist_home_history():
+		observations.restore(previous)
+		_observation_next_at = journal.active_seconds + 2.0
+		_observation_presence_until = journal.active_seconds + 2.0
+		return
+	_observation_presence_until = journal.active_seconds + OBSERVATION_SECONDS
+	_observation_next_at = journal.active_seconds + OBSERVATION_GAP
+	_observation_line = _observation_message(item)
+	home.show_administrator(Callable(), journal.attitude)
+	_notice(_observation_line)
+
+
+func _observation_message(item: Dictionary) -> String:
+	match item["topic"]:
+		Observations.YETI:
+			return "Администратор · Я начинаю подозревать, что будильник здесь ты."
+		Observations.FRIDGES:
+			return "Администратор · Холодильников уже %d. Им понадобится расписание." % item["count"]
+		Observations.FOREST:
+			var count: int = item["count"]
+			var unit := "раза" if count % 10 in [2, 3, 4] and count % 100 not in [12, 13, 14] else "раз"
+			return "Администратор · На берегу ты нажала E %d %s." % [count, unit]
+	return ""
 
 
 func _observe_life_change(change: Dictionary) -> void:
@@ -158,7 +236,7 @@ func _observe_life_change(change: Dictionary) -> void:
 		if ecology.confirm(subject.entity_id, Ecology.DEATH, journal.active_seconds):
 			_assess_ecology()
 	elif not change["before"] and change["after"] and ecology.close(subject.entity_id, Ecology.DEATH, true):
-		_persist_ecology()
+		_persist_home_history()
 
 
 func _on_component_changed(change: Dictionary) -> void:
@@ -177,17 +255,17 @@ func _on_component_changed(change: Dictionary) -> void:
 		altered = ecology.exposures.erase(subject.entity_id)
 		altered = ecology.close(subject.entity_id, Ecology.VITAL_LOSS, true) or altered
 	if altered:
-		_persist_ecology()
+		_persist_home_history()
 
 
 func _on_fauna_respawned(identity: String) -> void:
 	if ecology.close(identity, Ecology.DEATH, false):
-		_persist_ecology()
+		_persist_home_history()
 
 
 func _on_help_completed(outcome: String, identity: String) -> void:
 	if ecology.record_help(outcome, identity, journal.active_seconds):
-		_persist_ecology()
+		_persist_home_history()
 
 
 func _tick_ecology(delta: float = 0.0) -> void:
@@ -201,7 +279,7 @@ func _tick_ecology(delta: float = 0.0) -> void:
 	if ecology.episodes.size() > previous_count:
 		_assess_ecology()
 	elif edited:
-		_persist_ecology()
+		_persist_home_history()
 	if ecology.notice_pending:
 		ecology.notice_pending = false
 		if ecology.restriction_remaining(journal.active_seconds) > 0.0:
@@ -209,25 +287,28 @@ func _tick_ecology(delta: float = 0.0) -> void:
 			if not journal.encounter_is_active():
 				home.show_administrator(Callable(), journal.attitude)
 			_notice("Администратор · Оставь их в покое. Им нужно восстановиться.")
-		_persist_ecology()
+		_persist_home_history()
 
 
 func _assess_ecology() -> void:
 	ecology.assess(journal.active_seconds)
-	_persist_ecology()
+	_persist_home_history()
 
 
 func _has_persistent_history() -> bool:
 	return journal.serial > 0 or not ecology.episodes.is_empty() or not ecology.help.is_empty() \
-		or not ecology.exposures.is_empty()
+		or not ecology.exposures.is_empty() or observations.wakes > 0 or observations.forest_count > 0 \
+		or not observations.pending.is_empty() or not observations.delivered.is_empty()
 
 
-func _persist_ecology() -> void:
+func _persist_home_history() -> bool:
 	if _away or not _interrupted.is_empty():
-		return
+		return false
 	var checkpoint := home.make_snapshot()
-	if _write_profile(journal, _manual, checkpoint, {}, false):
-		_continuity = checkpoint
+	if not _write_profile(journal, _manual, checkpoint, {}, false):
+		return false
+	_continuity = checkpoint
+	return true
 
 
 func demonstrate_overload() -> bool:
@@ -333,6 +414,7 @@ func _abort_display(message: String) -> void:
 
 
 func _send_to_black_void() -> bool:
+	var leaving_bank := home._at_forest_bank()
 	var guest: OuterRoutes = OUTER.instantiate()
 	guest.position = GUEST_OFFSET
 	guest.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -349,6 +431,8 @@ func _send_to_black_void() -> bool:
 	guest.add_child(camera)
 	camera.make_current()
 	outer = guest
+	if leaving_bank:
+		observations.queue_forest_report()
 	return true
 
 
@@ -417,7 +501,10 @@ func load_game() -> bool:
 		_begin_recovery()
 		return true
 	var checkpoint := _manual if not _manual.is_empty() else _store.read_snapshot(Island.SAVE_PATH)
-	return apply_local_rollback(checkpoint)
+	if not apply_local_rollback(checkpoint):
+		return false
+	_queue_forest_report()
+	return true
 
 
 func _commit_wand_mode(mode: String) -> bool:
@@ -439,7 +526,10 @@ func _commit_wand_mode(mode: String) -> bool:
 func _apply_home_snapshot(checkpoint: Dictionary) -> bool:
 	var data := checkpoint.duplicate(true)
 	_overlay_wand_mode(data, journal)
-	return home.apply_snapshot(data)
+	if not home.apply_snapshot(data):
+		return false
+	observations.clear_transient_observation()
+	return true
 
 
 func _overlay_wand_mode(checkpoint: Dictionary, source: Journal) -> void:
@@ -456,6 +546,9 @@ func _restore_profile(profile: Dictionary) -> bool:
 		return false
 	var candidate_ecology := Ecology.new()
 	if not candidate_ecology.restore(profile.get("ecology", {}), candidate.active_seconds):
+		return false
+	var candidate_observations := Observations.new()
+	if not candidate_observations.restore(profile.get("observations", {})):
 		return false
 	var interrupted: Dictionary = profile["interrupted"]
 	var continuity: Dictionary = profile["state"]
@@ -476,6 +569,7 @@ func _restore_profile(profile: Dictionary) -> bool:
 	_away = profile["away"]
 	journal = candidate
 	ecology = candidate_ecology
+	observations = candidate_observations
 	if _away:
 		if not _send_to_black_void():
 			return false
@@ -577,7 +671,8 @@ func _restriction_label() -> String:
 func _write_profile(current: Journal, manual: Dictionary, state: Dictionary, interrupted: Dictionary,
 		away: bool, guest: Dictionary = {}) -> bool:
 	return _profile_valid and _store.write_snapshot({"format": Store.FORMAT, "kind": PROFILE_KIND,
-		"journal": current.snapshot(), "ecology": ecology.snapshot(), "manual": manual, "state": state,
+		"journal": current.snapshot(), "ecology": ecology.snapshot(), "observations": observations.snapshot(),
+		"manual": manual, "state": state,
 		"away": away, "interrupted": interrupted, "guest": guest}, profile_path)
 
 
