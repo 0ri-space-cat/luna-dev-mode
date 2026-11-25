@@ -7,12 +7,15 @@ const Parameters = preload("res://scripts/skeleton/entity_parameters_2d.gd")
 const Brain = preload("res://scripts/runtime2d/behavior_brain_2d.gd")
 const SEAT_HEIGHT := 16.0
 const SEAT_CAPACITY := 2.0
+const BODY_OBSTACLE_LAYER := 1 << 8
 var brain := Brain.new()
 var world_registry
 var navigation = null
 
 var record: EntityRecord
 var location_id := ""
+var step_obstacle: SkeletonElevationBody2D
+var autonomous_destination := Vector2.INF
 
 
 func get_world_location_id() -> String:
@@ -186,6 +189,10 @@ func _physics_process(delta: float) -> void:
 func _wander_on_support(delta: float) -> Vector2:
 	if not motion.grounded or is_attached():
 		return Vector2.ZERO
+	if autonomous_destination.is_finite():
+		var offset := autonomous_destination - position
+		var step_length := WALK_SPEED * delta * drive_multiplier
+		return offset.limit_length(step_length) / step_length if step_length > 0.0 else Vector2.ZERO
 	var heading := brain.direction_for(self, world_registry, delta)
 	for attempt in range(4):
 		if heading.is_zero_approx():
@@ -197,6 +204,15 @@ func _wander_on_support(delta: float) -> Vector2:
 		brain.avoid_obstacle()
 		heading = brain.direction_for(self, world_registry, 0.0)
 	return Vector2.ZERO
+
+
+func _update_wall_mask(feet: float) -> void:
+	super._update_wall_mask(feet)
+	if not is_instance_valid(step_obstacle) or step_obstacle.is_attached() or _carrier == step_obstacle:
+		return
+	var bottom := step_obstacle.motion.elevation
+	if feet < bottom + step_obstacle.body_height() and feet + body_height() > bottom:
+		collision_mask |= BODY_OBSTACLE_LAYER
 
 
 func accepts_player_input() -> bool:

@@ -220,7 +220,7 @@ func _try_attach(rider: SkeletonElevationBody2D, carried: bool) -> bool:
 	var reach_height := motion.elevation if carried else elevation
 	if absf(reach_height - rider.motion.elevation) > BOARD_HEIGHT:
 		return false
-	if not rider._clear_step(position, minf(rider.motion.elevation, elevation)):
+	if not rider._clear_step(position, minf(rider.motion.elevation, elevation), self):
 		return false
 	_attach(rider, carried)
 	return true
@@ -280,10 +280,15 @@ func _place_on_dismount(point: Vector2, floor: float, feet: float) -> void:
 		_sync_projection()
 
 
-func _clear_step(target: Vector2, feet: float) -> bool:
+func _clear_step(target: Vector2, feet: float, destination_body: SkeletonElevationBody2D = null) -> bool:
 	var original_mask := collision_mask
 	_update_wall_mask(feet)
+	var exclude_destination := destination_body != null and destination_body not in get_collision_exceptions()
+	if exclude_destination:
+		add_collision_exception_with(destination_body)
 	var blocked := test_move(global_transform, target - position)
+	if exclude_destination:
+		remove_collision_exception_with(destination_body)
 	collision_mask = original_mask
 	return not blocked
 

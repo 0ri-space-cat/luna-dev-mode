@@ -31,6 +31,14 @@ var access := AccessState.new()
 var projection := WandProjection.new()
 
 
+func _location_id() -> String:
+	return LOCATION_ID
+
+
+func _editor_parent() -> Node:
+	return self
+
+
 func _ready() -> void:
 	_prepare_map()
 	commands.configure_world(entities)
@@ -95,7 +103,7 @@ func _build_entity(definition: Dictionary) -> EntityBody:
 	if category != "player":
 		body.configure_seat(EntityBody.SEAT_HEIGHT, EntityBody.SEAT_CAPACITY, false)
 	body.world_registry = entities
-	body.location_id = LOCATION_ID
+	body.location_id = _location_id()
 	return body
 
 
@@ -104,7 +112,7 @@ func request_wand_parameter_edit(target_id: String, parameter_id: String, value:
 		return false
 	var target := entities.get_entity(target_id) as EntityBody
 	var key := Parameters.storage_id(parameter_id)
-	if not wand_policy.authorize(actor, target, LOCATION_ID, projection, access, parameters, key):
+	if not wand_policy.authorize(actor, target, _location_id(), projection, access, parameters, key):
 		return false
 	var offset: Vector2 = actor.global_position - target.global_position
 	var height_gap: float = actor.motion.elevation - target.motion.elevation
@@ -129,12 +137,12 @@ func make_snapshot() -> Dictionary:
 		data["gravity_scale"] = body.get_parameter("gravity_scale")
 		data["attachment"] = body.attachment_snapshot()
 		states.append(data)
-	return {"format": SaveStore.FORMAT, "fixture": LOCATION_ID, "entity_state_version": 6, "entities": states}
+	return {"format": SaveStore.FORMAT, "fixture": _location_id(), "entity_state_version": 6, "entities": states}
 
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var states: Variant = data.get("entities")
-	if data.get("format") != SaveStore.FORMAT or data.get("fixture") != LOCATION_ID:
+	if data.get("format") != SaveStore.FORMAT or data.get("fixture") != _location_id():
 		return false
 	if not states is Array or states.is_empty() or states.size() > MAX_ENTITIES:
 		return false
@@ -174,7 +182,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 
 
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:
-	if not state is Dictionary or state.get("location_id") != LOCATION_ID or not state.has("dynamics"):
+	if not state is Dictionary or state.get("location_id") != _location_id() or not state.has("dynamics"):
 		return null
 	if state.has("life") != (version >= 1) or state.has("control") != (version >= 2) or state.has("movement") != (version >= 3) or state.has("editor") != (version >= 4) or state.has("gravity_scale") != (version >= 5) or state.has("attachment") != (version >= 6):
 		return null
@@ -304,7 +312,7 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 	if not (actor as EntityBody).accepts_player_input():
 		return {}
 	var target := entities.get_entity(target_id) as EntityBody
-	if not wand_policy.authorize(actor, target, LOCATION_ID, projection, access, parameters, "mass"):
+	if not wand_policy.authorize(actor, target, _location_id(), projection, access, parameters, "mass"):
 		return {}
 	var offset := Vector3(actor.position.x - target.position.x, actor.position.y - target.position.y,
 		actor.motion.elevation - target.motion.elevation)
@@ -347,6 +355,6 @@ func _toggle_debug_editor() -> void:
 		return
 	_debug_editor = DebugEditor.new()
 	_debug_editor.position = Vector2(80, 90)
-	add_child(_debug_editor)
+	_editor_parent().add_child(_debug_editor)
 	_debug_editor.populate(get_wand_editor_tabs(selected),
 		func(key: String, value: Variant): return request_wand_parameter_edit(selected, key, value))

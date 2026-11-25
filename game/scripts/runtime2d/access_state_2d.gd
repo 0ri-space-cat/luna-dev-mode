@@ -1,5 +1,6 @@
 extends RefCounted
 ## Separate authority domains. Editing the wand does not grant avatar entry.
+const ORDINARY := "ORDINARY"
 const PLAYFUL := "PLAYFUL"
 const DEVELOPER := "DEVELOPER"
 
@@ -8,7 +9,7 @@ var avatar_access_level := 0
 
 
 func set_wand_mode(value: String) -> bool:
-	if value != PLAYFUL and value != DEVELOPER:
+	if value not in [ORDINARY, PLAYFUL, DEVELOPER]:
 		return false
 	wand_mode = value
 	return true
@@ -26,10 +27,12 @@ func snapshot() -> Dictionary:
 
 
 func restore(data: Dictionary) -> bool:
-	var mode: String = str(data.get("wand_mode", ""))
-	var tier: int = int(data.get("avatar_access_level", -1))
-	if (mode != PLAYFUL and mode != DEVELOPER) or tier < 0 or tier > 3:
+	var mode: Variant = data.get("wand_mode")
+	var tier: Variant = data.get("avatar_access_level")
+	if mode not in [ORDINARY, PLAYFUL, DEVELOPER]:
+		return false
+	if typeof(tier) not in [TYPE_INT, TYPE_FLOAT] or float(tier) not in [0.0, 1.0, 2.0, 3.0]:
 		return false
 	wand_mode = mode
-	avatar_access_level = tier
+	avatar_access_level = int(tier)
 	return true
