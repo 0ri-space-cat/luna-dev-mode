@@ -118,7 +118,7 @@ func _build_entity(definition: Dictionary) -> EntityBody:
 func request_wand_parameter_edit(target_id: String, parameter_id: String, value: Variant) -> bool:
 	if not (actor as EntityBody).accepts_player_input():
 		return false
-	var target := entities.get_entity(target_id) as EntityBody
+	var target := _wand_target(target_id)
 	var key := Parameters.storage_id(parameter_id)
 	if not wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, key):
 		return false
@@ -331,7 +331,7 @@ func _target_group(body: EntityBody) -> String:
 func get_wand_editor_tabs(target_id: String) -> Dictionary:
 	if not (actor as EntityBody).accepts_player_input():
 		return {}
-	var target := entities.get_entity(target_id) as EntityBody
+	var target := _wand_target(target_id)
 	if not wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, "mass"):
 		return {}
 	var offset := Vector3(actor.position.x - target.position.x, actor.position.y - target.position.y,
@@ -355,6 +355,14 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 	return tabs
 
 
+func _wand_target(target_id: String) -> EntityBody:
+	return entities.get_entity(target_id) as EntityBody
+
+
+func _wand_target_ids() -> Array[String]:
+	return entities.list_ids()
+
+
 func _toggle_debug_editor() -> void:
 	if is_instance_valid(_debug_editor):
 		_debug_editor.free()
@@ -362,19 +370,26 @@ func _toggle_debug_editor() -> void:
 		return
 	var selected := ""
 	var nearest := INF
-	for identity in entities.list_ids():
+	for identity in _wand_target_ids():
 		var tabs := get_wand_editor_tabs(identity)
 		if tabs.is_empty():
 			continue
-		var target := entities.get_entity(identity) as Node2D
+		var target := _wand_target(identity)
 		var distance := actor.position.distance_squared_to(target.position)
 		if distance < nearest:
 			nearest = distance
 			selected = identity
-	if selected.is_empty():
+	_open_debug_editor(selected)
+
+
+func _open_debug_editor(selected: String) -> void:
+	if selected.is_empty() or is_instance_valid(_debug_editor):
+		return
+	var tabs := get_wand_editor_tabs(selected)
+	if tabs.is_empty():
 		return
 	_debug_editor = DebugEditor.new()
 	_debug_editor.position = Vector2(80, 90)
 	_editor_parent().add_child(_debug_editor)
-	_debug_editor.populate(get_wand_editor_tabs(selected),
+	_debug_editor.populate(tabs,
 		func(key: String, value: Variant): return request_wand_parameter_edit(selected, key, value))

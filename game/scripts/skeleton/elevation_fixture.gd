@@ -254,6 +254,7 @@ func _configure_body(body: ElevationBody, entity_id: String) -> void:
 func _build_wall(wall: Dictionary, mount: Node2D = null) -> void:
 	var bounds: Rect2 = wall["bounds"]
 	var solid := StaticBody2D.new()
+	solid.disable_mode = CollisionObject2D.DISABLE_MODE_KEEP_ACTIVE
 	solid.position = bounds.get_center()
 	solid.collision_layer = wall["layer"]
 	solid.collision_mask = 0

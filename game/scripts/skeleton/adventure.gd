@@ -9,6 +9,7 @@ const OuterRoutes = preload("res://scripts/skeleton/outer_routes_fixture.gd")
 const OUTER = preload("res://scenes/skeleton/outer_routes.tscn")
 const Recovery = preload("res://scripts/runtime2d/game_recovery_2d.gd")
 const RecoveryView = preload("res://scripts/runtime2d/recovery_presentation_2d.gd")
+const SystemPause = preload("res://scripts/runtime2d/system_pause_2d.gd")
 const Journal = preload("res://scripts/runtime2d/system_incident_journal_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const Store = preload("res://scripts/runtime2d/save_store_2d.gd")
@@ -37,10 +38,16 @@ var _journal_elapsed := 0.0
 
 @onready var home: Island = $Home
 @onready var _recovery_view: RecoveryView = $Recovery
+@onready var system_pause: SystemPause = $SystemPause
 
 
 func _ready() -> void:
 	home.managed_save = true
+	home.system_pause = system_pause
+	system_pause.ended.connect(_on_pause_ended)
+	home.frost_cast_allowed = _allow_frost
+	home.restriction_text = _restriction_label
+	home.frost_cast.connect(_on_frost_cast)
 	home.wand_mode_requested = _commit_wand_mode
 	home.commands.parameter_changed.connect(_on_parameter_changed)
 	events.event_dropped.connect(_on_overflow)
@@ -55,17 +62,27 @@ func _ready() -> void:
 	_ready_for_play = true
 	if not _away and _interrupted.is_empty():
 		mark_safe_state()
+		_present_encounter()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and _ready_for_play and journal.serial > 0 and _interrupted.is_empty():
+		_write_profile(journal, _manual, _continuity, {}, _away, _guest_save)
 
 
 func _process(delta: float) -> void:
-	if not _ready_for_play or get_tree().paused:
+	if not _ready_for_play or _simulation_suspended():
 		return
 	journal.advance(delta)
+	if is_instance_valid(home.administrator) and not journal.encounter_is_active():
+		home.hide_administrator()
 	events.drain(self)
 	_checkpoint_elapsed += delta
 	if _checkpoint_elapsed >= CHECKPOINT_SECONDS:
 		_checkpoint_elapsed = 0.0
 		mark_safe_state()
+		if not _away and journal.encounter_is_active() and not is_instance_valid(home.administrator):
+			home.show_administrator(_commit_mercy)
 	if journal.serial > 0 and _interrupted.is_empty():
 		_journal_elapsed += delta
 		if _journal_elapsed >= JOURNAL_FLUSH_SECONDS:
@@ -77,6 +94,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if not _ready_for_play or get_tree().paused or not event is InputEventKey or not event.pressed or event.echo:
 		return
 	var key: Key = event.physical_keycode if event.physical_keycode != KEY_NONE else event.keycode
+	if not system_pause.mode.is_empty():
+		_handle_suspended_key(key)
+		return
 	match key:
 		KEY_F5:
 			_notice("Сохранено" if save_game() else "Сохранение недоступно")
@@ -87,6 +107,22 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_:
 			return
 	get_viewport().set_input_as_handled()
+
+
+func _handle_suspended_key(key: Key) -> void:
+	if key == KEY_F5 and system_pause.mode == SystemPause.STASIS:
+		_notice("Сохранено" if save_game() else "Сохранение недоступно")
+	elif key in [KEY_TAB, KEY_ESCAPE] and is_instance_valid(home._debug_editor):
+		home._toggle_debug_editor()
+	elif key == KEY_TAB and system_pause.mode == SystemPause.STASIS and system_pause.freed:
+		home._toggle_debug_editor()
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
+func _simulation_suspended() -> bool:
+	return get_tree().paused or not system_pause.mode.is_empty()
 
 
 func queue_world_event(event: Dictionary) -> bool:
@@ -102,7 +138,7 @@ func _on_parameter_changed(change: Dictionary) -> void:
 
 
 func demonstrate_overload() -> bool:
-	if _away or not _interrupted.is_empty():
+	if _away or _simulation_suspended() or not _interrupted.is_empty():
 		return false
 	mark_safe_state()
 	for index in EventBus.MAX_QUEUE + 1:
@@ -125,7 +161,7 @@ func mark_safe_state() -> bool:
 
 
 func report_system_incident(reason: String, overload: bool = false) -> bool:
-	if _away or get_tree().paused or not _interrupted.is_empty() \
+	if _away or _simulation_suspended() or not _interrupted.is_empty() \
 			or not recovery.has_checkpoint() or not recovery.report(reason):
 		return false
 	var checkpoint := recovery.snapshot_for_recovery()
@@ -141,7 +177,8 @@ func report_system_incident(reason: String, overload: bool = false) -> bool:
 
 func _begin_recovery() -> void:
 	events.clear_pending()
-	get_tree().paused = true
+	home.hide_administrator()
+	system_pause.begin(SystemPause.RECOVERY, home, home.actor)
 	_recovery_view.begin()
 
 
@@ -157,9 +194,10 @@ func _finish_recovery() -> void:
 		_abort_display("Симуляция восстановлена. Запись инцидента недоступна")
 		mark_safe_state()
 		return
+	system_pause.finish()
 	var action: String = journal.pending["action"]
 	var candidate := _copy_journal()
-	candidate.acknowledge()
+	candidate.acknowledge(Time.get_unix_time_from_system())
 	var checkpoint := home.make_snapshot()
 	_overlay_wand_mode(checkpoint, candidate)
 	var travel := action == Journal.REMOVE_LUNA
@@ -179,7 +217,6 @@ func _finish_recovery() -> void:
 	if not journal.wand_mode.is_empty():
 		home.access.set_wand_mode(journal.wand_mode)
 	_recovery_view.hide()
-	get_tree().paused = false
 	if not travel:
 		mark_safe_state()
 	match action:
@@ -187,15 +224,18 @@ func _finish_recovery() -> void:
 			_notice("Администратор · Возможности палочки сброшены")
 		Journal.REMOVE_LUNA:
 			_notice("Администратор · Луна перемещена")
+		Journal.PARLEY, Journal.STARE, Journal.STASIS:
+			pass
 		_:
 			_notice("Симуляция восстановлена")
+	_present_encounter(action in [Journal.PARLEY, Journal.STARE, Journal.STASIS])
 	if not action.is_empty():
 		intervention_applied.emit(action)
 
 
 func _abort_display(message: String) -> void:
 	_recovery_view.hide()
-	get_tree().paused = false
+	system_pause.finish()
 	_notice(message)
 
 
@@ -250,11 +290,13 @@ func _reactivate_home(checkpoint: Dictionary) -> void:
 
 
 func apply_local_rollback(checkpoint: Dictionary) -> bool:
-	if _away or not _interrupted.is_empty() or get_tree().paused:
+	if _away or not _interrupted.is_empty() or _simulation_suspended():
 		return false
 	if not _apply_home_snapshot(checkpoint):
 		return false
 	mark_safe_state()
+	if journal.encounter_is_active():
+		_present_encounter()
 	return true
 
 
@@ -274,7 +316,7 @@ func save_game() -> bool:
 
 
 func load_game() -> bool:
-	if get_tree().paused:
+	if _simulation_suspended():
 		return false
 	if _away:
 		return not _guest_save.is_empty() and outer.apply_snapshot(_guest_save)
@@ -351,6 +393,86 @@ func _restore_profile(profile: Dictionary) -> bool:
 			return false
 		_begin_recovery()
 	return true
+
+
+func _present_encounter(announce: bool = true) -> void:
+	if _away or not journal.encounter_is_active():
+		return
+	home.show_administrator(_commit_mercy)
+	match journal.encounter:
+		Journal.PARLEY:
+			if announce:
+				_notice("Администратор · Пожалуйста, не доводи систему до перезапуска.")
+		Journal.STARE:
+			if announce:
+				_notice("")
+		Journal.STASIS:
+			var remaining := clampf(journal.stasis_deadline - Time.get_unix_time_from_system(), 0.0, Journal.STASIS_SECONDS)
+			if remaining > 0.0:
+				system_pause.begin(SystemPause.STASIS, home, home.actor, remaining)
+				_notice("Стазис")
+			elif journal.stasis_deadline > 0.0:
+				_clear_stasis()
+
+
+func _on_pause_ended(mode: String) -> void:
+	if mode != SystemPause.STASIS or journal.stasis_deadline <= 0.0:
+		return
+	_clear_stasis()
+	_notice("Стазис снят")
+	if is_instance_valid(home._debug_editor):
+		system_pause.begin(SystemPause.EDITOR, home, home.actor)
+
+
+func _clear_stasis() -> void:
+	journal.stasis_deadline = 0.0
+	var checkpoint := home.make_snapshot()
+	if _write_profile(journal, _manual, checkpoint, {}, _away, _guest_save):
+		_continuity = checkpoint
+
+
+func _commit_mercy(target: Island.Administrator) -> bool:
+	if target != home.administrator or _away or not _interrupted.is_empty() \
+			or (system_pause.mode == SystemPause.STASIS and not system_pause.freed) \
+			or home.get_wand_editor_tabs(target.entity_id).is_empty():
+		return false
+	var candidate := _copy_journal()
+	if not candidate.surrender():
+		return false
+	var checkpoint := home.make_snapshot()
+	if not _write_profile(candidate, _manual, checkpoint, {}, false):
+		return false
+	journal = candidate
+	_continuity = checkpoint
+	call_deferred("_finish_mercy")
+	return true
+
+
+func _finish_mercy() -> void:
+	if is_instance_valid(home._debug_editor):
+		home._toggle_debug_editor()
+	if system_pause.mode == SystemPause.STASIS:
+		system_pause.finish()
+	home.hide_administrator()
+	_notice("Администратор · Сдаюсь. Ты победила.")
+
+
+func _on_frost_cast(base_seconds: float) -> void:
+	if journal.record_frost_cast(base_seconds):
+		var checkpoint := home.make_snapshot()
+		if _write_profile(journal, _manual, checkpoint, {}, false):
+			_continuity = checkpoint
+
+
+func _allow_frost() -> bool:
+	return journal.allow_frost()
+
+
+func _restriction_label() -> String:
+	var seconds := ceili(journal.restriction_remaining())
+	if seconds <= 0:
+		return ""
+	return "  ·  Ограничение магии %d:%02d" % [floori(seconds / 60.0), seconds % 60]
 
 
 func _write_profile(current: Journal, manual: Dictionary, state: Dictionary, interrupted: Dictionary,

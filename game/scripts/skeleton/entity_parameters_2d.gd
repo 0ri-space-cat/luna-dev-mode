@@ -10,6 +10,12 @@ const STORAGE_ALIASES := {
 	"base_color": "color",
 	"restitution": "bounciness",
 }
+const ADMIN_RELATION := {
+	"id": "luna_relation", "label": "LUNA_RELATION", "kind": "enum", "default": "ANGER",
+	"choices": [{"name": "ANGER", "value": "ANGER"}, {"name": "MERCY", "value": "MERCY"}],
+	"hint": "Отношение к Луне.",
+}
+
 const PHYSICS_FIELDS := ["mass", "bounciness"]
 const BEHAVIOR_FIELDS := ["behavior_mode", "target_group", "sense_range", "follow_distance", "luna_relation"]
 const ATTACHMENT_FIELDS := ["rideable", "pickable"]
@@ -47,7 +53,15 @@ static func storage_id(parameter_id: String) -> String:
 	return STORAGE_ALIASES.get(key, key)
 
 
+func get_spec(category: String, parameter_id: String) -> Dictionary:
+	if category == "administrator" and parameter_id == "luna_relation":
+		return ADMIN_RELATION.duplicate(true)
+	return super.get_spec(category, parameter_id)
+
+
 func normalize(category: String, parameter_id: String, proposed: Variant) -> Dictionary:
+	if category == "administrator" and parameter_id == "luna_relation":
+		return _normalize_using_spec(ADMIN_RELATION, proposed)
 	if parameter_id in PHYSICS_FIELDS or parameter_id in ["size", "speed", "sense_range", "follow_distance", "gravity_scale"]:
 		var spec := get_spec(category, parameter_id)
 		if typeof(proposed) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(proposed)):

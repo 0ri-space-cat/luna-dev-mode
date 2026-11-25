@@ -58,6 +58,7 @@ var _map_reparenting := false
 
 
 func _ready() -> void:
+	disable_mode = CollisionObject2D.DISABLE_MODE_KEEP_ACTIVE
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	collision_layer = 0
 	var footprint := CollisionShape2D.new()

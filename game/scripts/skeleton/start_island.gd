@@ -1,6 +1,10 @@
 extends "res://scripts/skeleton/entity_fixture.gd"
 ## Continuous P9-03 graybox. The island and meadows share the simulation and camera.
 
+signal frost_cast(active_seconds: float)
+
+const SystemPause = preload("res://scripts/runtime2d/system_pause_2d.gd")
+const Administrator = preload("res://scripts/skeleton/administrator_body_2d.gd")
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
@@ -39,6 +43,10 @@ const BRIDGE_RAILS: Array[Dictionary] = [
 
 var wand_pair := WandPair.new()
 var wand_mode_requested: Callable
+var frost_cast_allowed: Callable
+var restriction_text: Callable
+var system_pause: SystemPause
+var administrator: Administrator
 var managed_save := false
 var _wand_hold := 0.0
 var has_donut := false
@@ -216,6 +224,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Пончик"
 	if freeze_selected:
 		_status.text += "  ·  Заморозка"
+	if restriction_text.is_valid():
+		_status.text += restriction_text.call()
 	var action := _nearby_action()
 	_prompt.text = "" if action.is_empty() or is_instance_valid(_debug_editor) else "E  " + action
 
@@ -306,6 +316,8 @@ func _set_plank_surface(surface: Dictionary) -> void:
 func _can_freeze_creek() -> bool:
 	if ice_remaining > 0.0 or not projection.carried or not actor.motion.grounded:
 		return false
+	if frost_cast_allowed.is_valid() and not frost_cast_allowed.call():
+		return false
 	var closest := actor.position.clamp(Meadows.ICE_BOUNDS.position, Meadows.ICE_BOUNDS.end)
 	return actor.position.distance_squared_to(closest) <= Meadows.FREEZE_REACH * Meadows.FREEZE_REACH
 
@@ -339,6 +351,7 @@ func interact() -> bool:
 			return true
 		"Заморозить воду":
 			_ice_duration.start()
+			frost_cast.emit(Meadows.ICE_SECONDS)
 			return true
 		"Отдохнуть до утра":
 			return world_clock.set_time_of_day(WorldClock.MORNING_MINUTE)
@@ -401,7 +414,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if interact():
 				get_viewport().set_input_as_handled()
 		KEY_TAB:
-			if not _can_hack_second_wand():
+			if not _can_hack_second_wand() or not get_wand_editor_tabs(Administrator.ID).is_empty():
 				_toggle_debug_editor()
 			get_viewport().set_input_as_handled()
 		KEY_2:
@@ -426,12 +439,78 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			$Interface/SaveNotice.text = "Загружено" if apply_snapshot(saved) else "Нет подходящего сохранения"
 
 
+func show_administrator(mercy_request: Callable) -> bool:
+	hide_administrator()
+	var vicinity := [Vector2(72, 0), Vector2(-72, 0), Vector2(0, 68), Vector2(0, -68),
+		Vector2(46, 0), Vector2(-46, 0)]
+	for offset in vicinity:
+		var point: Vector2 = actor.position + offset
+		var location := _entity_location(point)
+		if location != _entity_location(actor.position) or _intersects_wall(point, 0.0) \
+				or _spawn_is_occupied(point, 0.0) or not actor.motion._has_support(point, 0.0, _decks, true):
+			continue
+		administrator = Administrator.new()
+		_configure_body(administrator, Administrator.ID)
+		administrator.record = EntityRecord.new(Administrator.ID, Administrator.CATEGORY, "Администратор",
+			parameters, {"alive": false, "ai_enabled": false, "luna_relation": Administrator.ANGER})
+		administrator.world_registry = entities
+		administrator.location_id = location
+		administrator.position = point
+		administrator.motion.reset_on_surface(point, 0.0)
+		administrator.mercy_requested = mercy_request
+		add_child(administrator)
+		administrator.set_physics_process(false)
+		var label := Label.new()
+		label.text = administrator.record.display_name
+		label.position = Vector2(-63, -58)
+		administrator.add_child(label)
+		return true
+	return false
+
+
+func hide_administrator() -> void:
+	if is_instance_valid(administrator):
+		administrator.free()
+	administrator = null
+
+
+func _wand_target(target_id: String) -> EntityBody:
+	if target_id == Administrator.ID:
+		return administrator
+	return super._wand_target(target_id)
+
+
+func _wand_target_ids() -> Array[String]:
+	var ids := super._wand_target_ids()
+	if is_instance_valid(administrator):
+		ids.append(Administrator.ID)
+	return ids
+
+
+func get_wand_editor_tabs(target_id: String) -> Dictionary:
+	var tabs := super.get_wand_editor_tabs(target_id)
+	if target_id == Administrator.ID and not tabs.is_empty():
+		return {"Отношения": tabs["Отношения"]}
+	return tabs
+
+
 func _toggle_debug_editor() -> void:
-	super._toggle_debug_editor()
-	var active := not is_instance_valid(_debug_editor)
+	if not is_instance_valid(_debug_editor) and not get_wand_editor_tabs(Administrator.ID).is_empty():
+		_open_debug_editor(Administrator.ID)
+	else:
+		super._toggle_debug_editor()
+	var editor_open := is_instance_valid(_debug_editor)
+	if system_pause != null:
+		if editor_open:
+			_debug_editor.process_mode = Node.PROCESS_MODE_ALWAYS
+			if system_pause.mode.is_empty():
+				system_pause.begin(SystemPause.EDITOR, self, actor)
+		elif system_pause.mode == SystemPause.EDITOR:
+			system_pause.finish()
+		return
 	for identity in entities.list_ids():
 		var body := entities.get_entity(identity) as EntityBody
-		body.set_physics_process(active)
+		body.set_physics_process(not editor_open)
 
 
 func make_snapshot() -> Dictionary:
