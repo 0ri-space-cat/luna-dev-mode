@@ -1,0 +1,20 @@
+{
+  "locations": [
+    {
+      "id": "DEV_ART_EXTERIOR",
+      "scene": "res://scenes/skeleton/art_probe_exterior.tscn",
+      "required_access": 0,
+      "entries": {"entry": [110, 247], "threshold": [437, 208]}
+    },
+    {
+      "id": "DEV_ART_INTERIOR",
+      "scene": "res://scenes/skeleton/art_probe_interior.tscn",
+      "required_access": 0,
+      "entries": {"entry": [53, 158]}
+    }
+  ],
+  "doors": [
+    {"id": "DEV_ART_IN", "destination": "DEV_ART_INTERIOR"},
+    {"id": "DEV_ART_OUT", "destination": "DEV_ART_EXTERIOR"}
+  ]
+}

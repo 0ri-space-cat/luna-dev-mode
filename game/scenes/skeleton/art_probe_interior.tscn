@@ -1,0 +1,36 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/skeleton/art_probe_room.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/runtime2d/doorway_2d.gd" id="2"]
+
+[node name="ArtProbeInterior" type="Node2D"]
+script = ExtResource("1")
+floor_bounds = Rect2(0, 0, 448, 320)
+isometric = true
+oni_position = Vector2(159, 245)
+stairs = Array[Rect2]([Rect2(125, 112, 31, 68), Rect2(156, 112, 31, 68), Rect2(187, 112, 31, 68), Rect2(218, 112, 31, 68), Rect2(249, 112, 31, 68)])
+raised_deck = Rect2(280, 73, 145, 141)
+obstacles = Array[Dictionary]([{
+"bounds": Rect2(290, 73, 135, 141),
+"height": 30.0,
+"layer": 1
+}, {
+"bounds": Rect2(230, 230, 70, 45),
+"height": 43.0,
+"layer": 2,
+"visual": "crate"
+}, {
+"bounds": Rect2(-12, -12, 12, 332),
+"height": 132.0,
+"layer": 4
+}, {
+"bounds": Rect2(0, -12, 448, 12),
+"height": 132.0,
+"layer": 4
+}])
+
+[node name="Door" type="Area2D" parent="."]
+position = Vector2(0, 158)
+script = ExtResource("2")
+entity_id = "DEV_ART_OUT"
+destination_entry_id = "threshold"

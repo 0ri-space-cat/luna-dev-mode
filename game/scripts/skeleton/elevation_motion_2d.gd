@@ -4,6 +4,7 @@ extends RefCounted
 
 const EPSILON := 0.00001
 const REST_SPEED := 22.0
+const MAX_STEP_RISE := 6.0
 
 var elevation := 0.0
 var vertical_speed := 0.0
@@ -46,6 +47,11 @@ func step(from: Vector2, to: Vector2, delta: float, acceleration: float,
 	var remaining := delta
 	while remaining > EPSILON:
 		if grounded:
+			var next_tread := _entered_tread_height(start, to, surfaces)
+			if next_tread > elevation:
+				elevation = next_tread
+				_update_anchor(to, surfaces)
+				return
 			var end_on_support := _support_exit(start, to, surfaces)
 			if end_on_support >= 1.0:
 				_update_anchor(to, surfaces)
@@ -137,6 +143,19 @@ func _descending_impact(height: float, acceleration: float) -> float:
 	if acceleration > 0.0 and descending_speed <= EPSILON:
 		return -1.0
 	return (-vertical_speed - descending_speed) / acceleration
+
+
+func _entered_tread_height(from: Vector2, to: Vector2, surfaces: Array[Dictionary]) -> float:
+	var result := elevation
+	for surface in surfaces:
+		if not surface.get("walk_up", false):
+			continue
+		var height: float = surface["height"]
+		var bounds: Rect2 = surface["bounds"]
+		if height > result and height <= elevation + MAX_STEP_RISE and bounds.has_point(to) \
+				and not bounds.has_point(from):
+			result = height
+	return result
 
 
 func _support_exit(from: Vector2, to: Vector2, surfaces: Array[Dictionary]) -> float:

@@ -24,21 +24,30 @@ func _fixture_key() -> String:
 	return "p9_05_address"
 
 
+func _catalog_path() -> String:
+	return CATALOG
+
+
+func _start_address() -> String:
+	return HALL
+
+
 func _ready() -> void:
 	_address_input.text_submitted.connect(_submit_address)
-	if not router.load_catalog_json(CATALOG):
+	if not router.load_catalog_json(_catalog_path()):
 		_startup_error(router.last_error)
 		return
-	var plan := router.resolve_address(HALL, access.avatar_access_level)
-	var room := _load_room(HALL)
+	var address := _start_address()
+	var plan := router.resolve_address(address, access.avatar_access_level)
+	var room := _load_room(address)
 	actor = _new_body(ENTITY_ID)
 	if room == null or not plan.get("ok", false) or not _can_place(room, plan["position"]):
 		if room != null:
 			room.free()
 		actor.free()
-		_startup_error("Hall has no valid starting point")
+		_startup_error("Starting room has no valid starting point")
 		return
-	_mount_room(room, HALL)
+	_mount_room(room, address)
 	_place_actor(plan["position"])
 	actor.z_index = 1
 	add_child(actor)
@@ -71,12 +80,16 @@ func _can_place(room: Room, point: Vector2) -> bool:
 		and ElevationBody.clears_walls(point, room.floor_height, actor.foot_radius(), room.walls())
 
 
+func _can_restore_at(room: Room, body: ElevationBody) -> bool:
+	return _can_place(room, body.position)
+
+
 func _mount_room(room: Room, address: String) -> void:
 	if is_instance_valid(_room):
 		_room.free()
 	_room = room
 	current_address = address
-	_decks.assign([_room.floor_surface()])
+	_decks.assign(_room.support_surfaces())
 	_surfaces.assign(_decks)
 	_walls.assign(_room.walls())
 	add_child(_room)
@@ -138,10 +151,7 @@ func _apply_keyboard_input() -> void:
 	if _address_input.visible:
 		actor.direction = Vector2.ZERO
 		return
-	var movement := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	movement.x += float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
-	movement.y += float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W))
-	actor.direction = movement.limit_length()
+	actor.direction = _keyboard_movement().limit_length()
 	var jump_down := Input.is_physical_key_pressed(KEY_SPACE)
 	if jump_down and not _jump_down:
 		actor.jump()
@@ -208,12 +218,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if next_room == null:
 		return false
 	var next_actor := _new_body(ENTITY_ID)
-	var next_surfaces: Array[Dictionary] = [next_room.floor_surface()]
+	var next_surfaces := next_room.support_surfaces()
 	next_actor.walls = next_room.walls()
 	for wall in next_actor.walls:
 		next_surfaces.append(_wall_surface(wall))
 	next_actor.surfaces = next_surfaces
-	if not _restore_body_state(next_actor, body) or not _can_place(next_room, next_actor.position):
+	if not _restore_body_state(next_actor, body) or not _can_restore_at(next_room, next_actor):
 		next_actor.free()
 		next_room.free()
 		return false

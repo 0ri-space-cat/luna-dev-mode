@@ -15,6 +15,10 @@ func floor_surface() -> Dictionary:
 	return {"bounds": floor_bounds, "height": floor_height}
 
 
+func support_surfaces() -> Array[Dictionary]:
+	return [floor_surface()]
+
+
 func walls() -> Array[Dictionary]:
 	if column_bounds.has_area():
 		return [{"bounds": column_bounds, "height": column_top, "layer": 1}]
