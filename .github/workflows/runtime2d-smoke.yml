@@ -54,6 +54,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_world_time.gd
       - name: Test the finite ability instance and bank access
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_ability_bank.gd
+      - name: Test an authored rule in the 2D+Z skeleton
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_world_rule.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws

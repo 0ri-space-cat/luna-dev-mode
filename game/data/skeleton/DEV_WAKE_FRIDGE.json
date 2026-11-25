@@ -1,0 +1,19 @@
+[
+  {
+    "id": "DEV_WAKE_FRIDGE",
+    "event": "ZONE_ENTERED",
+    "zone_id": "DEV_WAKE_PLATE",
+    "actor_id": "DEV_ELEVATION_ACTOR",
+    "once": true,
+    "conditions": [
+      {"type": "TIME_WINDOW", "start_minute": 540, "end_minute": 1080},
+      {"type": "PARAMETER_EQUALS", "entity_id": "DEV_P9_02_FRIDGE", "parameter_id": "alive", "value": false}
+    ],
+    "action": {
+      "type": "SET_PARAMETER",
+      "entity_id": "DEV_P9_02_FRIDGE",
+      "parameter_id": "alive",
+      "value": true
+    }
+  }
+]
