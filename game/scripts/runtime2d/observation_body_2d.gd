@@ -31,12 +31,14 @@ func _ready() -> void:
 
 
 func apply_observation(state: Dictionary) -> void:
-	var seen: bool = bool(state.get("player_camera" if observer_source == CAMERA else "luna_eyes", false))
-	var desired: bool = true
-	if solidity_rule == WHEN_UNOBSERVED:
-		desired = not seen
-	elif solidity_rule == WHEN_OBSERVED:
-		desired = seen
-	is_solid = desired
+	is_solid = solid_for(solidity_rule, observer_source, state)
 	# Collision changes are deferred: safe even during physics flushing.
-	set_deferred("collision_layer", 1 if desired else 0)
+	set_deferred("collision_layer", 1 if is_solid else 0)
+
+
+static func solid_for(rule: String, source: String, state: Dictionary) -> bool:
+	var seen: bool = bool(state.get("player_camera" if source == CAMERA else "luna_eyes", false))
+	match rule:
+		WHEN_UNOBSERVED: return not seen
+		WHEN_OBSERVED: return seen
+	return true

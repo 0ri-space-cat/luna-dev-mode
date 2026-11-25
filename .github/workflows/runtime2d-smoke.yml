@@ -56,6 +56,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_ability_bank.gd
       - name: Test an authored rule in the 2D+Z skeleton
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_world_rule.gd
+      - name: Test camera and gaze-dependent height supports
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_observation.gd
       - name: Test 2D runtime contracts
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_foundation.gd
       - name: Test authored geometry, physical abilities and world laws
