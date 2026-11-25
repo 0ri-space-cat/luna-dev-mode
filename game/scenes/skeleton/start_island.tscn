@@ -13,6 +13,8 @@ position_smoothing_speed = 10.0
 [node name="Readout" type="Label" parent="."]
 visible = false
 
+[node name="WorldLight" type="CanvasModulate" parent="."]
+
 [node name="Interface" type="CanvasLayer" parent="."]
 
 [node name="Status" type="Label" parent="Interface"]

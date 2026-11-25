@@ -2,6 +2,8 @@ extends "res://scripts/skeleton/entity_fixture.gd"
 ## Continuous P9-03 graybox. The island and meadows share the simulation and camera.
 
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
+const WorldClock = preload("res://scripts/runtime2d/world_clock_2d.gd")
+const ActiveDuration = preload("res://scripts/runtime2d/active_duration_2d.gd")
 const ISLAND_ID := "ET_START_ISLAND"
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -13,6 +15,15 @@ const YETI_RETREAT := [Vector2(975, 374), Vector2(975, 482)]
 const INTERACT_REACH := 64.0
 const DONUT_REFILL_SECONDS := 8.0
 const SAVE_PATH := "user://luna_start_island.json"
+const CAMP_REACH := 40.0
+const PHASE_LABELS := {
+	WorldClock.Phase.MORNING: "Утро", WorldClock.Phase.DAY: "День",
+	WorldClock.Phase.EVENING: "Вечер", WorldClock.Phase.NIGHT: "Ночь",
+}
+const PHASE_TINTS := {
+	WorldClock.Phase.MORNING: Color("e8dcef"), WorldClock.Phase.DAY: Color.WHITE,
+	WorldClock.Phase.EVENING: Color("e9b8a8"), WorldClock.Phase.NIGHT: Color("8194c6"),
+}
 const ISLAND_DECKS: Array[Dictionary] = [
 	{"bounds": Rect2(95, 142, 565, 456), "height": 0.0},
 	{"bounds": Rect2(623, 344, 261, 60), "height": 0.0},
@@ -26,7 +37,11 @@ const BRIDGE_RAILS: Array[Dictionary] = [
 var has_donut := false
 var donut_refill := 0.0
 var retreat_step := -1
-var ice_remaining := 0.0
+var world_clock := WorldClock.new()
+var _ice_duration := ActiveDuration.new(Meadows.ICE_SECONDS)
+var ice_remaining: float:
+	get:
+		return _ice_duration.remaining
 var freeze_selected := false
 var _initial_meadow_states: Array[Dictionary] = []
 var _plank_surface := {}
@@ -35,6 +50,7 @@ var _store := SaveStore.new()
 @onready var _camera: Camera2D = $Camera
 @onready var _status: Label = $Interface/Status
 @onready var _prompt: Label = $Interface/Prompt
+@onready var _world_light: CanvasModulate = $WorldLight
 
 
 func _location_id() -> String:
@@ -54,6 +70,9 @@ func _editor_parent() -> Node:
 
 
 func _ready() -> void:
+	world_clock.minute_changed.connect(_update_world_light)
+	_ice_duration.active_changed.connect(_update_ice_support)
+	_update_world_light()
 	_decks.assign(ISLAND_DECKS)
 	for bounds in Meadows.DECKS:
 		_decks.append({"bounds": bounds, "height": 0.0})
@@ -137,21 +156,25 @@ func _physics_process(delta: float) -> void:
 	if keyboard:
 		_apply_keyboard_input()
 	if not is_instance_valid(_debug_editor):
+		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
-		if ice_remaining > 0.0:
-			_set_ice_time(maxf(0.0, ice_remaining - delta))
+		_ice_duration.tick(delta)
 		_update_yeti_route()
 		_refresh_plank_surface()
 	_camera.position = actor.position
 	var area := "Большие луга" if actor.position.x >= Meadows.WEST_BOUNDARY else "Стартовый остров"
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
-	_status.text = "%s  ·  %s" % [area, wand]
+	_status.text = "%s  ·  %s  ·  %s" % [area, PHASE_LABELS[world_clock.phase()], wand]
 	if has_donut:
 		_status.text += "  ·  Пончик"
 	if freeze_selected:
 		_status.text += "  ·  Заморозка"
 	var action := _nearby_action()
 	_prompt.text = "" if action.is_empty() or is_instance_valid(_debug_editor) else "E  " + action
+
+
+func _update_world_light(_minute: int = 0) -> void:
+	_world_light.color = PHASE_TINTS[world_clock.phase()]
 
 
 func _update_yeti_route() -> void:
@@ -192,9 +215,16 @@ func _nearby_action() -> String:
 				and actor.position.distance_squared_to(plank.position) <= ElevationBody.BOARD_RADIUS * ElevationBody.BOARD_RADIUS \
 				and absf(actor.motion.elevation - plank.motion.elevation) <= ElevationBody.BOARD_HEIGHT:
 			return "Взять доску"
+	if actor.motion.grounded and not actor.is_attached() \
+			and actor.position.distance_squared_to(Meadows.CAMP_SPOT) <= CAMP_REACH * CAMP_REACH:
+		return "Отдохнуть до утра" if _rest_until_morning() else "Отдохнуть до ночи"
 	if freeze_selected and _can_freeze_creek():
 		return "Заморозить воду"
 	return ""
+
+
+func _rest_until_morning() -> bool:
+	return world_clock.phase() in [WorldClock.Phase.EVENING, WorldClock.Phase.NIGHT]
 
 
 func _plank_placement(plank: EntityBody) -> Vector2:
@@ -230,14 +260,12 @@ func _can_freeze_creek() -> bool:
 	return actor.position.distance_squared_to(closest) <= Meadows.FREEZE_REACH * Meadows.FREEZE_REACH
 
 
-func _set_ice_time(seconds: float) -> void:
-	if seconds > 0.0 and ice_remaining <= 0.0:
+func _update_ice_support(active: bool) -> void:
+	if active:
 		_surfaces.append(Meadows.ICE_SURFACE)
-		queue_redraw()
-	elif seconds <= 0.0 and ice_remaining > 0.0:
+	else:
 		_surfaces.erase(Meadows.ICE_SURFACE)
-		queue_redraw()
-	ice_remaining = seconds
+	queue_redraw()
 
 
 func interact() -> bool:
@@ -256,8 +284,12 @@ func interact() -> bool:
 				retreat_step = 0
 			return true
 		"Заморозить воду":
-			_set_ice_time(Meadows.ICE_SECONDS)
+			_ice_duration.start()
 			return true
+		"Отдохнуть до утра":
+			return world_clock.set_time_of_day(WorldClock.MORNING_MINUTE)
+		"Отдохнуть до ночи":
+			return world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
 		"Положить доску поперёк ручья":
 			var plank := entities.get_entity(Meadows.PLANK_ID) as EntityBody
 			if not actor.try_place_carried(_plank_placement(plank), 0.0):
@@ -315,6 +347,7 @@ func make_snapshot() -> Dictionary:
 		"donut_refill": donut_refill, "retreat_step": retreat_step,
 	}
 	data["meadows"] = {"ice_remaining": ice_remaining, "layout_version": 2}
+	data["world_clock"] = world_clock.snapshot()
 	return data
 
 
@@ -325,6 +358,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	var next_access := AccessState.new()
 	var next_projection := WandProjection.new()
+	var next_clock := WorldClock.new()
+	if data.has("world_clock") and not next_clock.restore(data["world_clock"]):
+		return false
 	var access_data: Variant = island.get("access")
 	var projection_data: Variant = island.get("projection")
 	var food: Variant = island.get("has_donut")
@@ -342,9 +378,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var meadow_state: Variant = data.get("meadows", {"ice_remaining": 0.0})
 	if not meadow_state is Dictionary:
 		return false
-	var ice: Variant = meadow_state.get("ice_remaining")
-	if typeof(ice) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(ice)) \
-			or float(ice) < 0.0 or float(ice) > Meadows.ICE_SECONDS:
+	var next_ice := ActiveDuration.new(Meadows.ICE_SECONDS)
+	if not next_ice.restore(meadow_state.get("ice_remaining")):
 		return false
 	var layout: Variant = meadow_state.get("layout_version", 1)
 	if typeof(layout) not in [TYPE_INT, TYPE_FLOAT] or float(layout) not in [1.0, 2.0]:
@@ -372,14 +407,15 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	var previous_ice := ice_remaining
 	var previous_plank := _plank_surface
-	_set_ice_time(float(ice))
+	_ice_duration.restore(next_ice.remaining)
 	_set_plank_surface(_saved_plank_surface(plank))
 	if not super.apply_snapshot(candidate):
-		_set_ice_time(previous_ice)
+		_ice_duration.restore(previous_ice)
 		_set_plank_surface(previous_plank)
 		return false
 	access = next_access
 	projection = next_projection
+	world_clock.restore(next_clock.snapshot())
 	has_donut = food
 	donut_refill = float(refill)
 	retreat_step = int(step)

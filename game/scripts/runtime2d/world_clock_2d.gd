@@ -12,8 +12,13 @@ const NORMAL := "NORMAL"
 const FAST := "FAST"
 const SCALES := {SLOW: 0.5, NORMAL: 1.0, FAST: 2.0}
 const MINUTES_PER_DAY := 24 * 60
+const MORNING_MINUTE := 6 * 60
 const START_MINUTE := 9 * 60
+const EVENING_MINUTE := 18 * 60
+const NIGHT_MINUTE := 22 * 60
 const MINUTES_PER_SIM_SECOND := 1.0
+
+enum Phase { MORNING, DAY, EVENING, NIGHT }
 
 var mode := NORMAL
 var _day_minute: float = float(START_MINUTE)
@@ -47,6 +52,17 @@ func advance(unscaled_delta: float) -> void:
 
 func minute_of_day() -> int:
 	return int(_day_minute)
+
+
+func phase() -> Phase:
+	var minute := minute_of_day()
+	if minute < MORNING_MINUTE or minute >= NIGHT_MINUTE:
+		return Phase.NIGHT
+	if minute < START_MINUTE:
+		return Phase.MORNING
+	if minute < EVENING_MINUTE:
+		return Phase.DAY
+	return Phase.EVENING
 
 
 func set_time_of_day(minute: float) -> bool:

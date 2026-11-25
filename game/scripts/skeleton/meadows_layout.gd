@@ -22,6 +22,7 @@ const PLANK_ID := "MEADOWS_PLANK"
 const PLANK_START := Vector2(1435, 410)
 const PLANK_SIZE := Vector2(124, 42)
 const PLANK_BANK_OVERLAP := 8.0
+const CAMP_SPOT := Vector2(1290, 495)
 
 
 static func plank_support(point: Vector2, scale_factor: float) -> Dictionary:
@@ -55,3 +56,7 @@ static func draw_on(canvas: Node2D, frozen: bool) -> void:
 	canvas.draw_string(font, Vector2(1870, 597), "Высокий край")
 	canvas.draw_circle(Vector2(1770, 300), 33.0, Color("779080"))
 	canvas.draw_rect(Rect2(1925, 543, 38, 17), Color("9a8a87"))
+	canvas.draw_circle(CAMP_SPOT, 18.0, Color("6a574a"))
+	canvas.draw_circle(CAMP_SPOT, 9.0, Color("f4ad62"))
+	canvas.draw_circle(CAMP_SPOT + Vector2(0, -3), 4.0, Color("ffe2a0"))
+	canvas.draw_rect(Rect2(CAMP_SPOT + Vector2(20, -9), Vector2(30, 18)), Color("d0afbc"))
