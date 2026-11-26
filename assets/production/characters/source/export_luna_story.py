@@ -35,8 +35,8 @@ DOOR_STEPS = (
 )
 
 
-def frame_on_canvas(name, divisor, source_anchor, size, anchor):
-    image = load(STUDIES / f"{name}.png")
+def frame_on_canvas(name, divisor, source_anchor, size, anchor, *, source_dir=STUDIES):
+    image = load(source_dir / f"{name}.png")
     alpha = image.getchannel("A").point(lambda value: 255 if value >= 144 else 0)
     image.putalpha(alpha)
     bounds = alpha.getbbox()

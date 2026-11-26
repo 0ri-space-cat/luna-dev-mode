@@ -117,8 +117,6 @@ def main():
     for name, height in CLASSIC_HEIGHTS.items():
         diagonal = load(CHARACTERS / "source" / f"{name}-front-right.png")
         frame = fitted(diagonal, (128, 192), height, BASELINE, align_feet=True)
-        if name == "oni":
-            frame.alpha_composite(load(CHARACTERS / "source/oni-knee-seams-front-right.png"))
         save(frame, CHARACTERS, f"{name}-idle-front-right")
 
         for direction in ("side-right", "back-right", "back"):
@@ -130,7 +128,6 @@ def main():
         if name == "oni":
             front = load(ASSETS / "approved/characters/oni/idle_front.png")
             frame = fitted(front, (128, 192), height, BASELINE)
-            frame.alpha_composite(load(CHARACTERS / "source/oni-knee-seams-front.png"))
             save(frame, CHARACTERS, "oni-idle-front")
             continue
         image = load(CHARACTERS / "source" / f"{name}-front.png")
