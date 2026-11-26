@@ -16,6 +16,8 @@ var record: EntityRecord
 var location_id := ""
 var step_obstacle: SkeletonElevationBody2D
 var autonomous_destination := Vector2.INF
+# Transient musical interest; never overwrites autonomous scripts or saved relationships.
+var music_interest := Vector2.INF
 
 
 func get_world_location_id() -> String:
@@ -211,6 +213,14 @@ func _wander_on_support(delta: float) -> Vector2:
 		var offset := autonomous_destination - position
 		var step_length := WALK_SPEED * delta * drive_multiplier
 		return offset.limit_length(step_length) / step_length if step_length > 0.0 else Vector2.ZERO
+	if music_interest.is_finite():
+		var offset := music_interest - position
+		if offset.length() <= 36.0:
+			return Vector2.ZERO
+		var approach := offset.normalized()
+		var ahead := position + approach * 22.0
+		if is_equal_approx(_dry_landing_height(ahead, motion.elevation), motion.elevation) and _clear_step(ahead, motion.elevation):
+			return approach
 	var heading := brain.direction_for(self, world_registry, delta)
 	for attempt in range(4):
 		if heading.is_zero_approx():

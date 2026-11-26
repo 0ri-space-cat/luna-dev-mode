@@ -44,6 +44,10 @@ const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
 const ADDRESS_SCHEMA := 11
+const Social = preload("res://scripts/runtime2d/friend_progress_2d.gd")
+const Music = preload("res://scripts/runtime2d/flute_2d.gd")
+const Visits = preload("res://scripts/skeleton/oni_music_layout.gd")
+const ATTRACTION_SECONDS := 14.0
 const Life = preload("res://scripts/skeleton/coastal_life_layout.gd")
 const LAB_ICE_SECONDS := 40.0
 const CoastExtra = preload("res://scripts/skeleton/coast_observation_layout.gd")
@@ -126,6 +130,17 @@ var mia_route_step := 0
 var _lab_ice := ActiveDuration.new(LAB_ICE_SECONDS)
 var _pool_water: WaterVolume
 var _initial_life_states: Array[Dictionary] = []
+var social := Social.new()
+var oni_route_index := 0
+var _initial_oni: Dictionary = {}
+var flute_owned := false
+var prism_active := false
+var music_focus := false
+var music := Music.new()
+var _note_audio: AudioStreamPlayer
+var _tones: Dictionary = {}
+var _attraction := ActiveDuration.new(ATTRACTION_SECONDS)
+var _music_original_scale := 0.0
 var _fish_surfaces: Array[Dictionary] = []
 var wand_pair := WandPair.new()
 var wand_mode_requested: Callable
@@ -293,7 +308,7 @@ func _entity_limit() -> int:
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -382,6 +397,8 @@ func _ready() -> void:
 			_spawn_mirror_snail()
 		_spawn_lake_stone()
 		_spawn_coastal_life()
+		_spawn_oni()
+		_setup_flute()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -452,6 +469,156 @@ func _sync_crystal_observation() -> void:
 		_surfaces.erase(CoastExtra.BRIDGE)
 	# Reclose only after the actual body clears the doorway, never crush it.
 	_set_crystal_door(crystal_observer.luna_eyes_open and not _door_occupied())
+
+
+func _spawn_oni() -> void:
+	var oni := spawn_entity({"id": Visits.ONI_ID, "category": "oni", "label": "Они", "material": "FABRIC"}, Visits.LAKE, 0.0)
+	if oni == null:
+		push_error("Could not place Oni")
+		return
+	oni.set_parameter("behavior_mode", "IDLE")
+	oni.set_parameter("speed", 1.25)
+	oni.set_parameter("color", Color("efb68e"))
+	for entry in make_snapshot()["entities"]:
+		if entry["id"] == Visits.ONI_ID:
+			_initial_oni = entry
+
+
+func _tick_oni() -> void:
+	var oni := entities.get_entity(Visits.ONI_ID) as EntityBody
+	if oni == null or not oni.get_parameter("ai_enabled") or oni.is_attached() or oni.has_passenger():
+		return
+	var towards_cape := world_clock.phase() in [WorldClock.Phase.DAY, WorldClock.Phase.EVENING]
+	var last := Visits.ROUTE.size() - 1
+	var target: Vector2 = Visits.ROUTE[oni_route_index]
+	if oni.motion.grounded and oni.position.distance_to(target) < 5.0:
+		var next := clampi(oni_route_index + (1 if towards_cape else -1), 0, last)
+		if next == oni_route_index:
+			oni.autonomous_destination = Vector2.INF
+			return
+		oni_route_index = next
+		target = Visits.ROUTE[oni_route_index]
+	oni.autonomous_destination = target
+
+
+func _oni_site() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return ""
+	var oni := entities.get_entity(Visits.ONI_ID) as EntityBody
+	if oni == null or not oni.motion.grounded or oni.is_attached() or not _within_reach(oni.position, oni.motion.elevation):
+		return ""
+	if oni.position.distance_to(Visits.LAKE) <= 10.0 and _entity_location(actor.position) == Valley.LOCATION_ID:
+		return "W1"
+	if oni.position.distance_to(Visits.CAPE) <= 10.0 and Coast.CAPE.has_point(actor.position):
+		return "K6"
+	return ""
+
+
+func _observe_with_oni() -> bool:
+	var site := _oni_site()
+	if site.is_empty():
+		return false
+	var fresh := social.observe_with_oni(site)
+	if fresh:
+		if site == "W1":
+			$Interface/SaveNotice.text = "Они: Смотри, отражение и берег. Как любопытно." if world_clock.phase() != WorldClock.Phase.EVENING else "Они: Теперь башня и на берегу, и в воде."
+		else:
+			$Interface/SaveNotice.text = "Они: Иногда мне кажется, море помнит, каким был берег. Сейчас " + ("отлив." if _coast_tide.surface < 1.0 else "вода поднялась.")
+		if social.oni_sites.size() == 2 and not social.prism_owned:
+			social.prism_owned = true
+			$Interface/SaveNotice.text = "Они: Возьми эту Призму. Мне интересно, что ты обнаружишь."
+	else:
+		$Interface/SaveNotice.text = "Они: Хорошо здесь, правда?"
+	return true
+
+
+func _setup_flute() -> void:
+	_note_audio = AudioStreamPlayer.new()
+	add_child(_note_audio)
+	for letter in Music.GLYPHS:
+		_tones[letter] = Music.tone(letter)
+
+
+func _can_take_flute() -> bool:
+	return observation_fixture and not flute_owned and actor.motion.grounded \
+		and _entity_location(actor.position) == ForestBank.LOCATION_ID \
+		and actor.position.distance_to(Visits.FLUTE) <= 22.0
+
+
+func _take_flute() -> bool:
+	if not _can_take_flute():
+		return false
+	flute_owned = true
+	queue_redraw()
+	return true
+
+
+func toggle_prism() -> bool:
+	if not social.prism_owned or is_instance_valid(_debug_editor):
+		return false
+	prism_active = not prism_active
+	queue_redraw()
+	return true
+
+
+func _set_music_focus(active: bool) -> bool:
+	if active and (not flute_owned or not (actor as EntityBody).accepts_player_input() or actor.is_attached() \
+			or not actor.motion.grounded or is_instance_valid(_debug_editor)):
+		return false
+	music_focus = active
+	music.clear()
+	apply_player_input(Vector2.ZERO)
+	return true
+
+
+func _play_note(letter: String) -> bool:
+	if not music_focus or not music.note(letter):
+		return false
+	if _note_audio != null:
+		_note_audio.stream = _tones[letter]
+		_note_audio.play()
+	return true
+
+
+func perform_music(phrase: String) -> bool:
+	if not flute_owned or not (actor as EntityBody).accepts_player_input() \
+			or actor.is_attached() or actor.has_passenger() or not actor.motion.grounded:
+		return false
+	match Music.resolve(phrase):
+		"M02":
+			_attraction.start()
+			return true
+		"M03":
+			if _music_original_scale > 0.0:
+				return true
+			var prior: float = actor.body_size
+			if not actor.set_parameter("size", minf(prior, 0.5)):
+				return false
+			_music_original_scale = prior
+			return true
+		"M04":
+			if _music_original_scale <= 0.0 or not actor.set_parameter("size", _music_original_scale):
+				return false
+			_music_original_scale = 0.0
+			return true
+		"M06":
+			for point in [CoastExtra.HIGH_VIEW, Vector2(2410, 818), Vector2(2430, 818)]:
+				if _ordinary_arrival_is_safe(Coast.LOCATION_ID, point, 18.0):
+					_move_home_travelers(point, Coast.LOCATION_ID, 18.0)
+					return true
+	return false
+
+
+func _tick_music(delta: float) -> void:
+	_attraction.tick(delta)
+	for identity in entities.list_ids():
+		var animal := entities.get_entity(identity) as EntityBody
+		animal.music_interest = Vector2.INF
+		if _attraction.remaining <= 0.0 or animal.record.category not in ["fox", "trollik", "crab", "turtle", "mirror_snail"] \
+				or animal.location_id != _entity_location(actor.position) or animal.position.distance_to(actor.position) > 160.0 \
+				or not animal.get_parameter("alive") or not animal.visible:
+			continue
+		animal.music_interest = actor.position
 
 
 func _spawn_coastal_life() -> void:
@@ -600,6 +767,10 @@ func _apply_lab_effect(effect_id: String) -> void:
 		return
 	if _apply_alchemy(effect_id):
 		mia_experienced = true
+		var mia := entities.get_entity(Life.MIA_ID) as EntityBody
+		if mia != null and _within_reach(mia.position, mia.motion.elevation) and mia.get_parameter("alive"):
+			social.complete("MIA")
+			$Interface/SaveNotice.text = "Мия: Вот это да! Посмотри, что получилось."
 		_alchemy_panel.configure_access(false, flask_state > 0, flask_state == 0)
 		_alchemy_panel.hide()
 
@@ -1113,8 +1284,8 @@ func _ordinary_arrival_points(address: String) -> Array[Vector2]:
 	return []
 
 
-func _ordinary_arrival_is_safe(address: String, point: Vector2) -> bool:
-	if _entity_location(point) != address or not can_return_traveler(point, 0.0) or not actor._is_dry(point, 0.0):
+func _ordinary_arrival_is_safe(address: String, point: Vector2, height: float = 0.0) -> bool:
+	if _entity_location(point) != address or not can_return_traveler(point, height) or not actor._is_dry(point, height):
 		return false
 	var travelers := actor.map_travelers()
 	for identity in entities.list_ids():
@@ -1126,7 +1297,7 @@ func _ordinary_arrival_is_safe(address: String, point: Vector2) -> bool:
 				return false
 	if actor.has_passenger():
 		var rider := actor._rider
-		var feet: float = actor._attachment_height(rider._carried)
+		var feet: float = height + actor._attachment_height(rider._carried)
 		if not rider.fits_walls_at(point, feet, rider.foot_radius()):
 			return false
 	return true
@@ -1143,9 +1314,9 @@ func teleport_known_location(address: String) -> bool:
 	return false
 
 
-func _move_home_travelers(point: Vector2, address: String) -> void:
+func _move_home_travelers(point: Vector2, address: String, height: float = 0.0) -> void:
 	actor.position = point
-	actor.motion.reset_on_surface(point, 0.0)
+	actor.motion.reset_on_surface(point, height)
 	actor.direction = Vector2.ZERO
 	actor.velocity = Vector2.ZERO
 	actor._impulse_velocity = Vector2.ZERO
@@ -1207,6 +1378,8 @@ func _physics_process(delta: float) -> void:
 		_tick_lake(world_clock.sim_delta(delta))
 		_lab_ice.tick(world_clock.sim_delta(delta))
 		_tick_mia()
+		_tick_oni()
+		_tick_music(world_clock.sim_delta(delta))
 		_update_yeti_route()
 		_refresh_plank_surface()
 	_update_alchemy_light()
@@ -1230,6 +1403,12 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Глаза закрыты"
 	if _alchemy_bubble.remaining > 0.0:
 		_status.text += "  ·  Пузырь %d" % ceili(_alchemy_bubble.remaining)
+	if flute_owned:
+		_status.text += "  ·  M: свирель"
+	if social.prism_owned:
+		_status.text += "  ·  P: Призма" + (" ✓" if prism_active else "")
+	if music_focus:
+		_status.text += "  ·  " + Music.arrows(music.phrase) + "  Enter"
 	if hourglass_owned:
 		_status.text += "  ·  H " + world_clock.mode
 	if flask_state > 0:
@@ -1242,6 +1421,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if music_focus:
+		apply_player_input(Vector2.ZERO)
+		return
 	if _alchemy_panel != null and _alchemy_panel.visible:
 		apply_player_input(Vector2.ZERO)
 		return
@@ -1372,6 +1554,10 @@ func _nearby_action() -> String:
 		return "Взять Песочные часы"
 	if _mia_at_upper():
 		return "Поговорить с Мией"
+	if _can_take_flute():
+		return "Взять свирель"
+	if not _oni_site().is_empty():
+		return "Посмотреть вместе с Они"
 	if _at_alchemy_station():
 		return "Алхимическая установка"
 	if at_ancient_console():
@@ -1485,6 +1671,10 @@ func interact() -> bool:
 			return _take_hourglass()
 		"Поговорить с Мией":
 			return _gift_flask()
+		"Взять свирель":
+			return _take_flute()
+		"Посмотреть вместе с Они":
+			return _observe_with_oni()
 		"Алхимическая установка":
 			_alchemy_panel.configure_access(false, flask_state > 0, mia_experienced and flask_state == 0)
 			_alchemy_panel.show()
@@ -1591,7 +1781,28 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.keycode not in [KEY_F5, KEY_F7, KEY_F9]:
 			get_viewport().set_input_as_handled()
 		return
+	if music_focus:
+		match event.keycode:
+			KEY_UP: _play_note("U")
+			KEY_DOWN: _play_note("D")
+			KEY_LEFT: _play_note("L")
+			KEY_RIGHT: _play_note("R")
+			KEY_BACKSPACE: music.clear()
+			KEY_ENTER:
+				var phrase := music.phrase
+				_set_music_focus(false)
+				if not perform_music(phrase):
+					$Interface/SaveNotice.text = "Мелодия не изменила окружение."
+			KEY_ESCAPE, KEY_M: _set_music_focus(false)
+		get_viewport().set_input_as_handled()
+		return
 	match event.keycode:
+		KEY_M:
+			if _set_music_focus(true):
+				get_viewport().set_input_as_handled()
+		KEY_P:
+			if toggle_prism():
+				get_viewport().set_input_as_handled()
 		KEY_F2:
 			if observation_fixture and not is_instance_valid(_debug_editor):
 				set_luna_eyes(not crystal_observer.luna_eyes_open)
@@ -1765,6 +1976,13 @@ func make_snapshot() -> Dictionary:
 		data["mia_experienced"] = mia_experienced
 		data["mia_route_step"] = mia_route_step
 		data["lab_ice"] = _lab_ice.remaining
+		data["friend_layout"] = 1
+		data["social"] = social.snapshot()
+		data["oni_route_index"] = oni_route_index
+		data["flute_owned"] = flute_owned
+		data["prism_active"] = prism_active
+		data["music_scale"] = _music_original_scale
+		data["music_attraction"] = _attraction.remaining
 	data["luna_eyes_open"] = crystal_observer.luna_eyes_open
 	data["luna_facing"] = [crystal_observer.facing.x, crystal_observer.facing.y]
 	if observation_fixture and ecology_fixture:
@@ -1787,6 +2005,21 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_access := AccessState.new()
 	var next_projection := WandProjection.new()
 	var next_clock := WorldClock.new()
+	var next_social := Social.new()
+	var next_oni: Variant = data.get("oni_route_index", 0)
+	var next_flute: Variant = data.get("flute_owned", false)
+	var next_prism: Variant = data.get("prism_active", false)
+	var next_music_scale: Variant = data.get("music_scale", 0.0)
+	var next_attraction := ActiveDuration.new(ATTRACTION_SECONDS)
+	if data.has("social") and not next_social.restore(data["social"]):
+		return false
+	if not next_flute is bool or not next_prism is bool or (next_prism and not next_social.prism_owned) \
+			or typeof(next_oni) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_oni)) \
+			or float(next_oni) != floorf(float(next_oni)) or int(next_oni) < 0 or int(next_oni) >= Visits.ROUTE.size() \
+			or typeof(next_music_scale) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_music_scale)) \
+			or (float(next_music_scale) != 0.0 and (not next_flute or float(next_music_scale) < 0.5 or float(next_music_scale) > 2.0)) \
+			or not next_attraction.restore(data.get("music_attraction", 0.0)) or (not next_flute and next_attraction.remaining > 0.0):
+		return false
 	var next_hourglass: Variant = data.get("hourglass_owned", false)
 	var next_flask: Variant = data.get("flask_state", 0)
 	var next_recipe: Variant = data.get("flask_effect", "")
@@ -1912,6 +2145,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 				candidate["entities"].append(entry.duplicate(true))
 		elif candidate["coastal_life_layout"] != 1:
 			return false
+	if observation_fixture:
+		if not candidate.has("friend_layout"):
+			if _initial_oni.is_empty():
+				return false
+			candidate = candidate.duplicate(true)
+			candidate["entities"].append(_initial_oni.duplicate(true))
+		elif candidate["friend_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -1947,6 +2188,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 			if not previous_coast_bridge:
 				_surfaces.erase(CoastExtra.BRIDGE)
 		return false
+	social = next_social
+	oni_route_index = int(next_oni)
+	flute_owned = next_flute
+	prism_active = next_prism
+	_music_original_scale = float(next_music_scale)
+	_attraction.restore(next_attraction.remaining)
+	music_focus = false
+	music.clear()
 	hourglass_owned = next_hourglass
 	flask_state = int(next_flask)
 	flask_effect = next_recipe
@@ -2059,6 +2308,9 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		var oni: EntityBody = candidates.get(Visits.ONI_ID)
+		if oni == null or oni.record.category != "oni":
+			return false
 		var stone: EntityBody = candidates.get(LAKE_STONE_ID)
 		if stone == null or stone.record.category != "prop":
 			return false
@@ -2178,6 +2430,7 @@ func _draw() -> void:
 		Lake.draw_shallow_on(self)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
+		Visits.draw_on(self, flute_owned, prism_active)
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
 			var point: Vector2 = field.ground_position

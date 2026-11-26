@@ -25,8 +25,9 @@ static func draw_on(canvas: Node2D, tide: float, hourglass_taken: bool, flask_st
 	canvas.draw_rect(POOL, Color("788d8b"), false, 1.5)
 	if not hourglass_taken:
 		var p := HOURGLASS_POINT
-		canvas.draw_colored_polygon(PackedVector2Array([p + Vector2(-7, -14), p + Vector2(7, -14),
-			p + Vector2(-7, 0), p + Vector2(7, 0)]), Color("efc583"))
+		# Two valid triangles instead of a self-intersecting bow tie.
+		canvas.draw_colored_polygon(PackedVector2Array([p + Vector2(-7, -14), p + Vector2(7, -14), p + Vector2(0, -7)]), Color("efc583"))
+		canvas.draw_colored_polygon(PackedVector2Array([p + Vector2(0, -7), p + Vector2(7, 0), p + Vector2(-7, 0)]), Color("efc583"))
 		canvas.draw_line(p + Vector2(-9, -15), p + Vector2(9, -15), Color("795f66"), 3.0)
 		canvas.draw_line(p + Vector2(-9, 1), p + Vector2(9, 1), Color("795f66"), 3.0)
 	if flask_state == 0:

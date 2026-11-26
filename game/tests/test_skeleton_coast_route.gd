@@ -158,9 +158,31 @@ func _run() -> void:
 	assert(await _walk_to(scene, Vector2(2240, 600)))
 	assert(await _walk_to(scene, Vector2(2240, 425)))
 	assert(scene.actor.location_id == Valley.LOCATION_ID and scene.actor.recoveries == 0)
+	# Additional independent friend and music contracts, without discovery gates.
+	var ledger = scene.Social.new()
+	assert(ledger.observe_with_oni("K6"))
+	assert(not ledger.observe_with_oni("K6") and ledger.meetings.size() == 1)
+	assert(ledger.observe_with_oni("W1") and ledger.meetings.size() == 1)
+	assert(ledger.complete("MIA") and ledger.complete("LEIA") and ledger.can_gather())
+	ledger.prism_owned = true
+	var restored = scene.Social.new()
+	assert(restored.restore(ledger.snapshot()) and restored.prism_owned)
+	assert(scene.Music.resolve("RDRUL") == "M06" and scene.Music.resolve("URULDR") == "M02")
+	assert(scene.Music.resolve("RDRU").is_empty())
+	assert(not scene.perform_music("RDRUL"))
+	scene.actor.position = scene.Visits.FLUTE
+	scene.actor.motion.reset_on_surface(scene.actor.position, 0.0)
+	assert(scene._take_flute() and not scene._take_flute())
+	assert(scene.perform_music("LDLURD") and scene.actor.body_size == 0.5)
+	assert(scene.perform_music("RURDLU") and scene.actor.body_size == 1.0)
+	assert(scene.perform_music("RDRUL"))
+	assert(scene.actor.location_id == Coast.LOCATION_ID and scene.actor.motion.elevation == 18.0)
+	assert(scene.actor.motion._has_support(scene.actor.position, 18.0, scene._decks, true))
+	var music_save: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(music_save) and scene.flute_owned and scene.actor.motion.elevation == 18.0)
 	scene.queue_free()
 	await process_frame
-	print("M3.82: invisible cascade, tower shore, dry coast and schema migration passed")
+	print("M3.98–104: coast, unique artifacts, friend ledger and flute effects passed")
 	quit()
 
 
