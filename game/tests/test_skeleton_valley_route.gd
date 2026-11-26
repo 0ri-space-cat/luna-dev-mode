@@ -39,7 +39,11 @@ func _run() -> void:
 	assert(Lake.LOCATION_ID == "ET_DUPLICATE_LAKE_CAVERN" and Lake.FEATURE_ID == "ET_DUPLICATE_LAKE")
 	assert(scene.wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID))
 	var saved: Dictionary = scene.make_snapshot()
-	assert(saved["address_schema"] == 12)
+	assert(saved["address_schema"] == scene.ADDRESS_SCHEMA)
+	for schema in range(12, scene.ADDRESS_SCHEMA):
+		var recent: Dictionary = saved.duplicate(true)
+		recent["address_schema"] = schema
+		assert(scene.apply_snapshot(recent))
 	var previous_v11: Dictionary = saved.duplicate(true)
 	previous_v11["address_schema"] = 11
 	assert(scene.apply_snapshot(previous_v11))

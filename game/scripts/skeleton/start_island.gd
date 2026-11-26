@@ -43,7 +43,12 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 13
+const ADDRESS_SCHEMA := 14
+const Mountain = preload("res://scripts/skeleton/mountain_layout.gd")
+const Highland = preload("res://scripts/runtime2d/highland_artifacts_2d.gd")
+var highland := Highland.new()
+var _initial_highland_states: Array[Dictionary] = []
+var _mountain_echo := 0.0
 const AM = preload("res://scripts/runtime2d/antimemetic_2d.gd")
 var antimemetic := AM.new()
 var _initial_am_states: Array[Dictionary] = []
@@ -88,6 +93,7 @@ const AREA_LABELS := {
 	Coast.HOUSE_ID: "Дом вечерних окон", Coast.GROTTO_ID: "Морской грот",
 	Valley.TOWER_ID: "Башня отражений", Tunnel.LOCATION_ID: "Подводный тоннель",
 	City.CITY_ID: "Люма", City.CAFE_ID: "Кафе", City.HOME_ID: "Комната Луны",
+	Mountain.MOUNTAIN: "Горы", Mountain.UPDRAFT: "Долина восходящего ветра", Mountain.SKY: "Небесные острова", Mountain.ORACLE: "Обзор Оракула",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -200,6 +206,14 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture:
+		var mountain_address := Mountain.address(point)
+		if not mountain_address.is_empty():
+			return mountain_address
+	return _entity_location_v13(point)
+
+
+func _entity_location_v13(point: Vector2) -> String:
 	if observation_fixture:
 		var city_address := City.location_at(point)
 		if not city_address.is_empty():
@@ -336,11 +350,11 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 67 if observation_fixture else super._entity_limit()
+	return 69 if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -357,14 +371,14 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
-		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS)
+		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS + Mountain.GROUND)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
-		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE]:
+		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
@@ -401,6 +415,8 @@ func _ready() -> void:
 		for wall in City.WALLS:
 			_walls.append(wall)
 		_walls.append(AM.MONUMENT)
+		_walls.append_array(Mountain.ROOT_WALLS)
+		_walls.append(Mountain.ANCHOR_WALL)
 	if ancient_console_enabled:
 		_walls.append({"bounds": AncientConsole.CONSOLE_BODY, "height": 92.0, "layer": 2})
 	for wall in _walls:
@@ -441,6 +457,7 @@ func _ready() -> void:
 			_setup_ori()
 		_setup_flute()
 		_setup_antimemetic()
+		_setup_highland()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -667,7 +684,7 @@ const ORI_FLY_DONOR := "C3_FLY_RAY"
 const ORI_CUSTOMER := "C3_CUSTOMER"
 const ORI_GLOW_INSTANCE := "GLOW_C3_LIZARD"
 const ORI_FLY_INSTANCE := "FLY_C3_RAY"
-const ORI_MODULES := {ORI_GLOW_INSTANCE: "GLOW", ORI_FLY_INSTANCE: "FLY"}
+const ORI_MODULES := {ORI_GLOW_INSTANCE: "GLOW", ORI_FLY_INSTANCE: "FLY", Mountain.FLY_INSTANCE: "FLY"}
 const ORI_CREATED_PREFIX := "ORI_CREATED_"
 var ori := OriCatalog.new()
 var _ori_panel: PanelContainer
@@ -955,7 +972,7 @@ func _take_city_tool(key: String) -> bool:
 
 
 func _ordinary_public_addresses() -> Array[String]:
-	return [ISLAND_ID, Meadows.LOCATION_ID, ForestBank.LOCATION_ID, Valley.LOCATION_ID, Lake.LOCATION_ID, Valley.CRYSTAL_ID, Coast.LOCATION_ID, City.CITY_ID, City.CAFE_ID, City.HOME_ID]
+	return [ISLAND_ID, Meadows.LOCATION_ID, ForestBank.LOCATION_ID, Valley.LOCATION_ID, Lake.LOCATION_ID, Valley.CRYSTAL_ID, Coast.LOCATION_ID, City.CITY_ID, City.CAFE_ID, City.HOME_ID, Mountain.MOUNTAIN, Mountain.UPDRAFT, Mountain.SKY, Mountain.ORACLE]
 
 
 func _observe_city_tools() -> void:
@@ -1088,7 +1105,7 @@ func gravity_pull(target_id: String = "") -> bool:
 			closest = target
 			distance = gap
 	if closest == null:
-		return false
+		return _mountain_anchor_pull() if target_id.is_empty() else false
 	var direction_to_actor: Vector2 = (actor.position - closest.position).normalized()
 	if float(closest.get_parameter("mass")) > 3.0:
 		return actor.apply_impulse(-direction_to_actor * 145.0, 18.0)
@@ -1630,6 +1647,142 @@ func _valid_evening(data: Variant) -> bool:
 
 
 
+
+func _setup_highland() -> void:
+	var oracle := spawn_entity({"id": Mountain.ORACLE_ID, "category": "oracle", "label": "Оракул", "material": "FABRIC"}, Mountain.ORACLE_POINT, 18.0)
+	var ray := spawn_entity({"id": Mountain.RAY_ID, "category": "ray", "label": "Свободный скат", "material": "FABRIC"}, Mountain.RAY_POINT, 0.0)
+	if oracle == null or ray == null:
+		push_error("Could not place mountain residents")
+		return
+	oracle.set_parameter("behavior_mode", "IDLE")
+	ray.set_parameter("behavior_mode", "IDLE")
+	ray.set_parameter("size", 1.35)
+	ray.set_parameter("rideable", true)
+	ray.set_parameter("mass", 1.2)
+	if ecology_fixture:
+		ray.record.set_component("ABILITY_SET", {"instances": {Mountain.FLY_INSTANCE: {"ability_id": "FLY", "enabled": true, "protected": false}}})
+	else:
+		ray.flight_enabled = true
+	for state in make_snapshot()["entities"]:
+		if state["id"] in [Mountain.ORACLE_ID, Mountain.RAY_ID]:
+			_initial_highland_states.append(state.duplicate(true))
+
+
+func _highland_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return ""
+	if not highland.camera_owned and Mountain.TREE_POCKET.has_point(actor.position) and _within_reach(Mountain.CAMERA_POINT):
+		return "Взять Камеру"
+	if not highland.compass_owned and Mountain.H1.has_point(actor.position) and _within_reach(Mountain.COMPASS):
+		return "Взять Гравитационный компас"
+	var oracle := entities.get_entity(Mountain.ORACLE_ID) as EntityBody
+	if oracle != null and oracle.get_parameter("alive") and oracle.location_id == _entity_location(actor.position) and _within_reach(oracle.position, oracle.motion.elevation):
+		return "Поговорить с Оракулом"
+	if Mountain.H4.has_point(actor.position) and _within_reach(Mountain.H4_NOTE):
+		return "Рассмотреть старые рисунки"
+	return ""
+
+
+func _interact_highland() -> bool:
+	match _highland_action():
+		"Взять Камеру":
+			highland.camera_owned = true
+			$Interface/SaveNotice.text = "Камера · F4: следовать за Луной / оставить кадр"
+			queue_redraw()
+			return true
+		"Взять Гравитационный компас":
+			highland.compass_owned = true
+			$Interface/SaveNotice.text = "Компас · F6: изменить силу гравитации"
+			queue_redraw()
+			return true
+		"Поговорить с Оракулом":
+			$Interface/SaveNotice.text = "Оракул: Заметила, как лёгкие вещи подхватывает ветер? Тяжёлые иногда даже не шелохнутся."
+			return true
+		"Рассмотреть старые рисунки":
+			$Interface/SaveNotice.text = "На листе три рисунка: палочка у разрыва контура, палочка вдали, две перекрывающиеся области."
+			return true
+	return false
+
+
+func cycle_compass() -> bool:
+	if not highland.compass_owned or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
+		return false
+	highland.gravity_index = (highland.gravity_index + 1) % Mountain.STRENGTHS.size()
+	_sync_highland_forces()
+	return true
+
+
+func toggle_camera_lock() -> bool:
+	if not highland.camera_owned or is_instance_valid(_debug_editor) or not (actor as EntityBody).accepts_player_input():
+		return false
+	if highland.camera_mode == "FOLLOW":
+		highland.camera_lock = _camera.get_screen_center_position()
+		highland.camera_mode = "LOCKED"
+	else:
+		highland.camera_mode = "FOLLOW"
+	_update_local_camera()
+	_camera.reset_smoothing()
+	_sync_mountain_bridge()
+	return true
+
+
+func return_to_luna() -> bool:
+	if not super.return_to_luna():
+		return false
+	highland.camera_mode = "FOLLOW"
+	_update_local_camera()
+	_camera.reset_smoothing()
+	_sync_mountain_bridge()
+	return true
+
+
+func _sync_highland_forces() -> void:
+	if not observation_fixture:
+		return
+	for id in entities.list_ids():
+		var body := entities.get_entity(id) as EntityBody
+		if body == null:
+			continue
+		body.environmental_wind = Mountain.wind_at(body.position, body.motion.elevation)
+		body.world_gravity_multiplier = float(Mountain.STRENGTHS[highland.gravity_index]) if highland.compass_owned else 1.0
+
+
+func _sync_mountain_bridge() -> void:
+	if not observation_fixture:
+		return
+	_camera.force_update_scroll()
+	var bounds: Rect2 = Mountain.CAMERA_BRIDGE["bounds"]
+	var extent := _camera.get_viewport_rect().size / _camera.zoom
+	var view := Rect2(_camera.get_screen_center_position() - extent * 0.5, extent)
+	var projected := Rect2(bounds.position - Vector2(0, float(Mountain.CAMERA_BRIDGE["height"])), bounds.size)
+	var solid := Solidity.solid_for(Solidity.WHEN_UNOBSERVED, Solidity.CAMERA, {"player_camera": view.intersects(projected)})
+	if solid and not _surfaces.has(Mountain.CAMERA_BRIDGE):
+		_surfaces.append(Mountain.CAMERA_BRIDGE)
+	elif not solid:
+		_surfaces.erase(Mountain.CAMERA_BRIDGE)
+
+
+func _mountain_music_response() -> bool:
+	if not observation_fixture or actor.position.distance_to(Mountain.M07_SOURCE) > 160.0 or Mountain.SKY != _entity_location(actor.position) or not is_instance_valid(_am_audio):
+		return false
+	_mountain_echo = 3.0
+	_am_audio.position = Mountain.M07_SOURCE
+	_am_audio.stream = Music.tone("U")
+	_am_audio.play()
+	queue_redraw()
+	return true
+
+
+func _mountain_anchor_pull() -> bool:
+	if Mountain.SKY != _entity_location(actor.position):
+		return false
+	var point := Vector2(Mountain.ANCHOR.x, Mountain.ANCHOR.y)
+	var distance: float = actor.position.distance_to(point)
+	if distance > 190.0 or distance < 24.0 or not _am_line_clear(point):
+		return false
+	return actor.apply_impulse((point - actor.position).normalized() * 160.0, 215.0)
+
+
 func _setup_antimemetic() -> void:
 	for definition in AM.DEFINITIONS:
 		var body := spawn_entity(definition, definition["point"], 0.0)
@@ -2102,6 +2255,8 @@ func perform_music(phrase: String) -> bool:
 				return false
 			_music_original_scale = 0.0
 			return true
+		"M07":
+			return _mountain_music_response()
 		"M09":
 			return _am_music_response()
 		"M06":
@@ -2755,8 +2910,12 @@ func set_home_active(active: bool) -> void:
 	visible = active
 	$Interface.visible = active
 	_camera.enabled = active
+	if not active:
+		for body in actor.map_travelers():
+			body.environmental_wind = Vector3.ZERO
+			body.world_gravity_multiplier = 1.0
 	if active:
-		_camera.position = actor.position
+		_update_local_camera()
 		_camera.make_current()
 		_camera.reset_smoothing()
 
@@ -2770,6 +2929,18 @@ func can_return_traveler(point: Vector2, height: float) -> bool:
 # No address catalogue is exposed to the player, and a Feature ID is not a destination.
 func _ordinary_arrival_points(address: String) -> Array[Vector2]:
 	match address:
+		Mountain.MOUNTAIN:
+			if observation_fixture:
+				return [Mountain.ENTRY, Vector2(1590, 760)]
+		Mountain.UPDRAFT:
+			if observation_fixture:
+				return [Vector2(1500, 900)]
+		Mountain.SKY:
+			if observation_fixture:
+				return [Vector2(1840, 1080)]
+		Mountain.ORACLE:
+			if observation_fixture:
+				return [Vector2(2050, 960)]
 		City.CITY_ID:
 			if observation_fixture:
 				return [City.ARRIVAL, Vector2(4590, 410)]
@@ -2911,6 +3082,10 @@ func _physics_process(delta: float) -> void:
 		_tick_ori_helper()
 		_tick_leia()
 		_tick_antimemetic(world_clock.sim_delta(delta))
+		_sync_highland_forces()
+		if _mountain_echo > 0.0:
+			_mountain_echo = maxf(0.0, _mountain_echo - delta)
+			queue_redraw()
 		_tick_cafe(delta)
 		_observe_city_tools()
 		_tick_stamps(world_clock.sim_delta(delta))
@@ -2925,6 +3100,7 @@ func _physics_process(delta: float) -> void:
 		forest_bank_left.emit()
 	_was_at_bank = at_bank
 	_update_local_camera()
+	_sync_mountain_bridge()
 	var area: String = AREA_LABELS[_entity_location(actor.position)]
 	var local_phase: int = coast_house_phase if _entity_location(actor.position) == Coast.HOUSE_ID else world_clock.phase()
 	_world_light.color = PHASE_TINTS[local_phase]
@@ -2956,6 +3132,10 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Z: Тамагочи"
 	if antimemetic.stage > 0:
 		_status.text += "  ·  F3: Фонарь" + (" ✓" if antimemetic.active else "")
+	if highland.camera_owned:
+		_status.text += "  ·  F4: " + highland.camera_mode
+	if highland.compass_owned:
+		_status.text += "  ·  F6: g ×%.2f" % Mountain.STRENGTHS[highland.gravity_index]
 	if restriction_text.is_valid():
 		_status.text += restriction_text.call()
 	var action := _nearby_action()
@@ -2964,6 +3144,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_local_camera() -> void:
+	if highland.camera_owned and highland.camera_mode == "LOCKED":
+		_camera.position = highland.camera_lock
+		return
 	if observation_fixture:
 		for room in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP]:
 			if room.has_point(actor.position):
@@ -3127,6 +3310,9 @@ func _nearby_action() -> String:
 	var ori_action := _ori_action()
 	if not ori_action.is_empty():
 		return ori_action
+	var highland_action := _highland_action()
+	if not highland_action.is_empty():
+		return highland_action
 	var toffi_action := _toffi_secret_action()
 	if not toffi_action.is_empty():
 		return toffi_action
@@ -3267,6 +3453,8 @@ func interact() -> bool:
 		return _interact_yuki()
 	if not _ori_action().is_empty():
 		return _interact_ori()
+	if _interact_highland():
+		return true
 	if _interact_toffi_secret():
 		return true
 	if _interact_leia():
@@ -3476,6 +3664,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 		KEY_P:
 			if toggle_prism():
+				get_viewport().set_input_as_handled()
+		KEY_F4:
+			if toggle_camera_lock():
+				get_viewport().set_input_as_handled()
+		KEY_F6:
+			if cycle_compass():
 				get_viewport().set_input_as_handled()
 		KEY_F3:
 			if toggle_lantern():
@@ -3712,6 +3906,8 @@ func make_snapshot() -> Dictionary:
 		data["evening"] = _evening_snapshot()
 		data["am_layout"] = 1
 		data["antimemetic"] = antimemetic.snapshot()
+		data["highland_layout"] = 1
+		data["highland"] = highland.snapshot()
 		data["oni_route_index"] = oni_route_index
 		data["flute_owned"] = flute_owned
 		data["prism_active"] = prism_active
@@ -3728,7 +3924,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -3784,6 +3980,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 		if next_recalled and entry.get("attachment") is Dictionary and entry["attachment"].get("carrier_id") == TAMAGOTCHI_PET:
 			return false
 	if pet_count > 1 or (next_recalled and (pet_count != 1 or next_tools.stamped.has(TAMAGOTCHI_PET) or next_yuki.rules.any(func(rule): return rule["host"] == TAMAGOTCHI_PET))):
+		return false
+	var next_highland := Highland.new()
+	if not next_highland.restore(data.get("highland", next_highland.snapshot())):
+		return false
+	if not observation_fixture and (next_highland.camera_owned or next_highland.compass_owned):
 		return false
 	var next_am := AM.new()
 	if not next_am.restore(data.get("antimemetic", next_am.snapshot())):
@@ -4027,6 +4228,16 @@ func apply_snapshot(data: Dictionary) -> bool:
 					candidate["entities"].append(initial.duplicate(true))
 		elif candidate["am_layout"] != 1:
 			return false
+	if observation_fixture:
+		if not candidate.has("highland_layout"):
+			if _initial_highland_states.size() != 2:
+				return false
+			candidate = candidate.duplicate(true)
+			for initial in _initial_highland_states:
+				if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
+					candidate["entities"].append(initial.duplicate(true))
+		elif candidate["highland_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -4039,6 +4250,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var previous_door := _crystal_door_solid
 	var previous_bridge := _surfaces.has(Crystal.BRIDGE)
 	var previous_coast_bridge := _surfaces.has(CoastExtra.BRIDGE)
+	var previous_mountain_bridge := _surfaces.has(Mountain.CAMERA_BRIDGE)
+	if observation_fixture and not previous_mountain_bridge:
+		_surfaces.append(Mountain.CAMERA_BRIDGE)
 	if observation_fixture:
 		if not previous_coast_bridge:
 			_surfaces.append(CoastExtra.BRIDGE)
@@ -4061,6 +4275,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 				_surfaces.erase(Crystal.BRIDGE)
 			if not previous_coast_bridge:
 				_surfaces.erase(CoastExtra.BRIDGE)
+			if not previous_mountain_bridge:
+				_surfaces.erase(Mountain.CAMERA_BRIDGE)
 		return false
 	city_tools = next_tools
 	luna_door_session = next_door
@@ -4080,6 +4296,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 	city_ray_settled = next_ray
 	social = next_social
 	antimemetic = next_am
+	highland = next_highland
+	_mountain_echo = 0.0
+	_sync_highland_forces()
+	_update_local_camera()
+	_camera.reset_smoothing()
+	_sync_mountain_bridge()
 	_am_tracks.clear()
 	_am_echo_id = ""
 	_am_echo_remaining = 0.0
@@ -4211,6 +4433,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v11(point)
 	elif previous_schema == 12:
 		previous_location = _entity_location_v12(point)
+	elif previous_schema == 13:
+		previous_location = _entity_location_v13(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -4220,6 +4444,8 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	# Preserve the original stable ID, position, ownership and editable state.
 	if body != null and body.entity_id == Meadows.PLANK_ID and body.record.display_name == "Доска":
 		body.record.display_name = "Упавшая ветвь"
+	if body != null and not ecology_fixture and body.entity_id == Mountain.RAY_ID:
+		body.flight_enabled = true
 	if body != null and ecology_fixture and not body.record.set_components(state.get("components", {})):
 		body.free()
 		return null
@@ -4228,6 +4454,10 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		for id in [Mountain.ORACLE_ID, Mountain.RAY_ID]:
+			var highland_resident: EntityBody = candidates.get(id)
+			if highland_resident == null or highland_resident.record.category != ("oracle" if id == Mountain.ORACLE_ID else "ray"):
+				return false
 		for definition in AM.DEFINITIONS:
 			var hidden: EntityBody = candidates.get(definition["id"])
 			if hidden == null or hidden.record.category != definition["category"]:
@@ -4363,7 +4593,7 @@ func _draw() -> void:
 		draw_rect(deck.grow(5.0), Color("2b393d"))
 		draw_rect(deck, color)
 	for wall in _walls:
-		if wall["bounds"] not in [ForestBank.REST_SPOT, AncientConsole.CONSOLE_BODY, AM.MONUMENT["bounds"]]:
+		if wall["bounds"] not in [ForestBank.REST_SPOT, AncientConsole.CONSOLE_BODY, AM.MONUMENT["bounds"], Mountain.ANCHOR_WALL["bounds"]]:
 			draw_rect(wall["bounds"], Color("b5a0b0"))
 	draw_rect(Rect2(FRIDGE_SPOT - Vector2(55, 35), Vector2(110, 70)), Color("657572"))
 	draw_circle(RIFT_SPOT, 22.0, Color("3c3354"))
@@ -4388,6 +4618,7 @@ func _draw() -> void:
 		Visits.draw_on(self, flute_owned, prism_active)
 		City.draw_on(self)
 		_draw_antimemetic()
+		Mountain.draw_on(self, highland.compass_owned, highland.camera_owned, actor.position, prism_active, _mountain_echo)
 		if not luna_door_session.is_empty():
 			var source := Vector2(float(luna_door_session["x"]), float(luna_door_session["y"]))
 			draw_rect(Rect2(source + Vector2(-14, -38), Vector2(28, 38)), Color("f2cfff"), false, 3.0)

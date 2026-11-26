@@ -68,6 +68,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_tamagotchi.gd
       - name: Test Q10 and permanent antimemetic perception
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_antimemetic.gd
+      - name: Test highland geometry and independent camera and compass
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_highland.gd
       - name: Test the starter world clock, camp and timed effects
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_world_time.gd
       - name: Test the finite ability instance and bank access

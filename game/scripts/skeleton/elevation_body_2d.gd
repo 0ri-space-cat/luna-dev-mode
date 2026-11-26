@@ -33,6 +33,9 @@ var walls: Array[Dictionary] = []
 var water_volumes: Array[WaterVolume] = []
 var direction := Vector2.ZERO
 var gravity_scale := 1.0
+# Derived from current world compass and local wind, not a body edit.
+var world_gravity_multiplier := 1.0
+var environmental_wind := Vector3.ZERO
 var flight_enabled := false
 var thrust_requested := false
 var swim_intent := 0.0
@@ -474,7 +477,9 @@ func _physics_process(delta: float) -> void:
 	var total_mass := _total_mass()
 	var load_factor := _load_factor()
 	var drive_speed := WALK_SPEED
-	var acceleration := -GRAVITY * gravity_scale
+	var acceleration := -GRAVITY * gravity_scale * world_gravity_multiplier + environmental_wind.z / total_mass
+	if not environmental_wind.is_zero_approx():
+		_impulse_velocity = (_impulse_velocity + Vector2(environmental_wind.x, environmental_wind.y) * delta / total_mass).limit_length(MAX_IMPULSE_SPEED)
 	var water := _current_water()
 	if water == null and thrust_requested and can_fly():
 		acceleration += FLIGHT_ACCELERATION * load_factor
