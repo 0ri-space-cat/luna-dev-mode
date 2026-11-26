@@ -74,7 +74,10 @@ func _walk_to(scene: Node, point: Vector2) -> bool:
 			scene.apply_player_input(Vector2.ZERO)
 			await physics_frame
 			return scene.actor.motion.grounded
-		scene.apply_player_input(offset.normalized())
+		# At accelerated time a full input can step past the waypoint. Use
+		# proportional analog input for the final step, keeping real physics.
+		var step_length: float = scene.actor.WALK_SPEED * Engine.time_scale / Engine.physics_ticks_per_second
+		scene.apply_player_input((offset / step_length).limit_length())
 		await physics_frame
 	scene.apply_player_input(Vector2.ZERO)
 	push_error("Could not walk to %s at %s" % [point, scene.actor.position])
