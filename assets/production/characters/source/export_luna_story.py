@@ -35,8 +35,8 @@ DOOR_STEPS = (
 )
 
 
-def frame_on_canvas(name, divisor, source_anchor, size, anchor, *, source_dir=STUDIES):
-    image = load(source_dir / f"{name}.png")
+def frame_on_canvas(name, divisor, source_anchor, size, anchor):
+    image = load(STUDIES / f"{name}.png")
     alpha = image.getchannel("A").point(lambda value: 255 if value >= 144 else 0)
     image.putalpha(alpha)
     bounds = alpha.getbbox()
@@ -96,7 +96,7 @@ def door_frames():
     return frames
 
 
-def export(name, view, size, anchor, poses, sequence, *, preview_order=None, preview_stride=0, preview_lift=None, shared_preview_palette=False):
+def export(name, view, size, anchor, poses, sequence, *, preview_order=None, preview_stride=0, preview_lift=None):
     width, height = size
     sheet = Image.new("RGBA", (width * len(poses), height))
     frames, records = {}, []
@@ -127,12 +127,6 @@ def export(name, view, size, anchor, poses, sequence, *, preview_order=None, pre
         frame = frames[pose]
         panel.paste(frame, (0, headroom - elevation - index * preview_stride), frame.getchannel("A"))
         preview.append(panel)
-    if shared_preview_palette:
-        samples = Image.new("RGB", (width * len(preview), height + headroom))
-        for index, panel in enumerate(preview):
-            samples.paste(panel, (index * width, 0))
-        palette = samples.quantize(colors=256)
-        preview = [panel.quantize(palette=palette, dither=Image.Dither.NONE) for panel in preview]
     # Pause on the last drawing so the reset of the preview stays readable.
     if preview_stride:
         order = [*order[:-1], (order[-1][0], 500)]
