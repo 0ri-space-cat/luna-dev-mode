@@ -641,9 +641,15 @@ func _restore_profile(profile: Dictionary) -> bool:
 	_overlay_wand_mode(checkpoint, candidate)
 	if not source.is_empty() and (not _is_home_snapshot(checkpoint) or not home.apply_snapshot(checkpoint)):
 		return false
+	# Home has already validated and migrated the selected snapshot. Keep its
+	# canonical state for hosted returns and recovery, rather than restoring
+	# the stale coordinates or addresses from the pre-migration envelope.
+	# The independent manual rollback remains untouched until it is loaded.
+	if not source.is_empty():
+		checkpoint = home.make_snapshot()
 	_manual = profile["manual"]
-	_continuity = continuity
-	_interrupted = interrupted
+	_continuity = checkpoint if interrupted.is_empty() and not source.is_empty() else continuity
+	_interrupted = checkpoint if not interrupted.is_empty() else interrupted
 	_away = profile["away"]
 	journal = candidate
 	ecology = candidate_ecology

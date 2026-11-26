@@ -4,6 +4,7 @@ const AdventureScene = preload("res://scenes/skeleton/adventure.tscn")
 const Adventure = preload("res://scripts/skeleton/adventure.gd")
 const Access = preload("res://scripts/runtime2d/access_state_2d.gd")
 const Journal = preload("res://scripts/runtime2d/system_incident_journal_2d.gd")
+const SaveStore = preload("res://scripts/runtime2d/save_store_2d.gd")
 
 var game: Adventure
 var _profile := "user://luna_administrator_test_%d.json" % OS.get_process_id()
@@ -60,7 +61,19 @@ func _run() -> void:
 	assert(game.journal.pending["action"] == Journal.RESET_WAND)
 	assert(not game.demonstrate_overload())
 	var accepted := game.journal.serial
-	await _restart()
+	# A pending incident may also contain a pre-migration home checkpoint.
+	game.queue_free()
+	await process_frame
+	var store := SaveStore.new()
+	var old_profile := store.read_snapshot(_profile)
+	assert(not old_profile.is_empty() and not old_profile["interrupted"].is_empty())
+	old_profile["interrupted"]["address_schema"] = 3
+	assert(store.write_snapshot(old_profile, _profile))
+	paused = false
+	_open_playable_world()
+	assert(game._profile_valid and not game._interrupted.is_empty())
+	assert(game._interrupted["address_schema"] == game.home.ADDRESS_SCHEMA)
+	await physics_frame
 	assert(await _wait_for_recovery())
 	assert(game.journal.applied == 1 and game.journal.serial == accepted)
 	assert(game.journal.instability > 55.0 and game.journal.instability <= 60.0)

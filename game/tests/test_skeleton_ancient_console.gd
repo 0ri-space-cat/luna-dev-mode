@@ -7,6 +7,7 @@ const Console = preload("res://scripts/skeleton/ancient_console_2d.gd")
 const Routes = preload("res://scripts/skeleton/outer_routes_fixture.gd")
 const Access = preload("res://scripts/runtime2d/access_state_2d.gd")
 const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
+const SaveStore = preload("res://scripts/runtime2d/save_store_2d.gd")
 
 var game: Adventure
 var _path := "user://luna_ancient_console_%d.json" % OS.get_process_id()
@@ -92,11 +93,23 @@ func _run() -> void:
 	assert(await _walk_to(Vector2(764, 438)))
 	assert(game.load_game() and actor == game.outer.actor and actor.position.is_equal_approx(saved_position))
 
+	# Reopen a hosted visit written with the previous address schema. The
+	# validated home state must become the live return checkpoint immediately.
 	game.queue_free()
 	await process_frame
+	var store := SaveStore.new()
+	var old_profile := store.read_snapshot(_path)
+	assert(not old_profile.is_empty() and old_profile["away"])
+	old_profile["state"]["address_schema"] = 3
+	old_profile["manual"]["address_schema"] = 3
+	assert(store.write_snapshot(old_profile, _path))
 	_open_world()
 	await physics_frame
 	assert(game._profile_valid and game._away and game.outer.current_address == Routes.WHITE_ADDRESS)
+	assert(game._continuity["address_schema"] == Island.ADDRESS_SCHEMA)
+	assert(game._manual["address_schema"] == 3)
+	assert(game.save_game())
+	assert(store.read_snapshot(_path)["state"]["address_schema"] == Island.ADDRESS_SCHEMA)
 	assert(game.outer.actor.position.is_equal_approx(saved_position) and game.outer.access.wand_mode == Access.PLAYFUL)
 	assert(await _walk_to(game.outer._room.action_bounds.get_center()))
 	actor = game.outer.actor
