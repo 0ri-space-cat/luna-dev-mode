@@ -55,7 +55,7 @@ func has_active_ability(ability_id: String) -> bool:
 
 
 func _sync_ability_glow() -> void:
-	var enabled := has_active_ability("GLOW") and get_parameter("alive")
+	var enabled: bool = has_active_ability("GLOW") and bool(get_parameter("alive"))
 	if enabled and not is_instance_valid(_ability_glow):
 		_ability_glow = PointLight2D.new()
 		var gradient := Gradient.new()
