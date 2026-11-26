@@ -71,8 +71,8 @@ func _run() -> void:
 	assert(game.home.exchange_nearby_wand() and game.home.wand_pair.held == game.home.WandPair.ORIGINAL)
 	assert(not game.home.tick_wand_self_hack(4.0, true))
 
-	# Both routes remain physically open with an ordinary wand.
-	assert(await _walk(Vector2(2360, 605)) and await _walk(Vector2(1290, 605)))
+	# The forest-valley route remains physically open with an ordinary wand.
+	await _walk_from_lake()
 	assert(await _walk(Vector2(1290, 374)) and await _walk(Vector2(320, 374)))
 	assert(await _walk(Vector2(320, 480)))
 	assert(game.home.interact() and game.home.access.wand_mode == Access.PLAYFUL)
@@ -85,7 +85,7 @@ func _run() -> void:
 
 	# Bring a real carried prop into the second recovery. The exact recovered
 	# Entity and attachment move to the authored Void scene and back.
-	assert(await _walk(Vector2(2360, 605)) and await _walk(Vector2(1290, 605)))
+	await _walk_from_lake()
 	assert(await _walk(Vector2(1290, 374)) and await _walk(Vector2(1420, 396)))
 	var plank_id := game.home.Meadows.PLANK_ID
 	assert(game.home.interact_with_attachment(plank_id))
@@ -162,11 +162,31 @@ func _restart() -> void:
 	await physics_frame
 
 
+# Follow the authored dry forest-valley connection, never the temporary
+# direct meadows-to-lake deck. Exercise the same supports after a rollback.
+func _lake_route() -> Array[Vector2]:
+	return [Vector2(1290, 374), Vector2(1290, 605), Vector2(1885, 603),
+		Vector2(1888, 246), Vector2(1909, 109), Vector2(2140, 120),
+		Vector2(2140, 220), Vector2(2130, 305), Vector2(2240, 305),
+		Vector2(2240, 425), Vector2(2265, 425), Vector2(2340, 425), game.home.Lake.SHORE]
+
+
 func _walk_to_lake() -> void:
-	assert(await _walk(Vector2(1290, 605)))
-	assert(await _walk(Vector2(2360, 605)))
-	assert(await _walk(Vector2(2445, 426)))
-	assert(game.home.actor.motion.grounded and game.home.actor.location_id == game.home.Lake.LOCATION_ID)
+	var recoveries: int = game.home.actor.recoveries
+	for point in _lake_route():
+		assert(await _walk(point))
+		assert(game.home.actor.motion.grounded and game.home.actor.recoveries == recoveries)
+	assert(game.home.actor.location_id == game.home.Lake.LOCATION_ID)
+
+
+func _walk_from_lake() -> void:
+	var points := _lake_route()
+	points.reverse()
+	var recoveries: int = game.home.actor.recoveries
+	for point in points:
+		assert(await _walk(point))
+		assert(game.home.actor.motion.grounded and game.home.actor.recoveries == recoveries)
+	assert(game.home.actor.location_id == game.home.Meadows.LOCATION_ID)
 
 
 func _walk(target: Vector2) -> bool:
