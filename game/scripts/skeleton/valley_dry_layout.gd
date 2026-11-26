@@ -1,6 +1,7 @@
 extends RefCounted
 ## Reversible continuous graybox F5 -> W0 -> W2 -> W4 -> W6.
 ## W1 adds the ordinary lake and a dry loop between W0 and W2.
+## M3.82: W3 dry tower site, W0 invisible support, and W2 route to K0.
 ## Existing duplicate lake and legacy route remain unchanged.
 const LOCATION_ID := "ET_WATERFALL_VALLEY"
 const FOREST_ID := "ET_FAIRY_FOREST"
@@ -20,10 +21,25 @@ const W7_APPROACH := Rect2(2770, 375, 150, 88)
 const W7_NICHE := Rect2(2870, 300, 245, 200)
 const W7_ENTRY := Vector2(2945, 415)
 const W7_DECKS := [W7_APPROACH, W7_NICHE]
-const DECKS := [F5, W0, W2, W4, W1_NORTH, W1_WEST, W1_SOUTH, W1_EAST, W7_APPROACH, W7_NICHE]
+# Ordinary road remains independent of these optional branches.
+const W3_SITE := Rect2(1970, 330, 83, 79)
+const W3_VIEW := Vector2(2005, 370)
+const RAIN_BRIDGE_ID := "BRIDGE_I_RAINFALL"
+const RAIN_BRIDGE := Rect2(2250, 265, 95, 45)
+const RAIN_LANDING := Rect2(2330, 245, 95, 75)
+const RIVER_LINK := Rect2(2210, 445, 65, 300)
+const DECKS := [F5, W0, W2, W4, W1_NORTH, W1_WEST, W1_SOUTH, W1_EAST,
+	W7_APPROACH, W7_NICHE, W3_SITE, RAIN_LANDING, RIVER_LINK]
 const LAKE_SHORE_X := 2280.0
 
 static func location_at(point: Vector2) -> String:
+	if W3_SITE.has_point(point) or RAIN_BRIDGE.has_point(point) \
+			or RAIN_LANDING.has_point(point) or RIVER_LINK.has_point(point):
+		return LOCATION_ID
+	return location_at_v3(point)
+
+
+static func location_at_v3(point: Vector2) -> String:
 	if point.x >= 2803.0:
 		for deck in W7_DECKS:
 			if deck.has_point(point):
@@ -57,6 +73,14 @@ static func draw_on(canvas: Node2D) -> void:
 	canvas.draw_string(font, Vector2(2085, 280), "Каскады")
 	canvas.draw_string(font, Vector2(2038, 500), "Тихое озеро")
 	canvas.draw_string(font, Vector2(2205, 370), "Речная тропа")
+	# A dry site for the phase-dependent tower, not the tower interior yet.
+	canvas.draw_string(font, Vector2(1974, 351), "Уступ")
+	# Water spray reveals an otherwise unrendered support. Its collider is
+	# independent of this presentation and never changes with observation.
+	for x in range(2274, 2330, 8):
+		canvas.draw_line(Vector2(x, 252), Vector2(x + 4, 278), Color("8bbac2"), 1.3)
+		canvas.draw_circle(Vector2(x + 4, 280), 2.0, Color("c4e1df"))
+	canvas.draw_string(font, Vector2(2217, 690), "К морю ↓")
 	# Temporary silhouettes only: production crystal artwork will replace these.
 	for point in [Vector2(2910, 335), Vector2(3035, 342), Vector2(3065, 470)]:
 		canvas.draw_colored_polygon(PackedVector2Array([point + Vector2(-12, 7), point + Vector2(-8, -20), point + Vector2(3, -30), point + Vector2(14, -10), point + Vector2(12, 7)]), Color("7886aa"))

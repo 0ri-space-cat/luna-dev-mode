@@ -34,7 +34,8 @@ const FISH_POINTS := {
 }
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
-const ADDRESS_SCHEMA := 3
+const Coast = preload("res://scripts/skeleton/coast_layout.gd")
+const ADDRESS_SCHEMA := 4
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -45,7 +46,7 @@ const AREA_LABELS := {
 	ISLAND_ID: "Стартовый остров", Meadows.LOCATION_ID: "Большие луга",
 	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
-	Valley.CRYSTAL_ID: "Кристальные пещеры",
+	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -119,7 +120,18 @@ func _location_id() -> String:
 
 func _entity_location(point: Vector2) -> String:
 	if observation_fixture:
+		if Coast.contains(point):
+			return Coast.LOCATION_ID
 		var extension := Valley.location_at(point)
+		if not extension.is_empty():
+			return extension
+	return _legacy_entity_location(point)
+
+
+# M3.74d partition before the river and coast extension.
+func _entity_location_v3(point: Vector2) -> String:
+	if observation_fixture:
+		var extension := Valley.location_at_v3(point)
 		if not extension.is_empty():
 			return extension
 	return _legacy_entity_location(point)
@@ -171,7 +183,7 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
-		ground.append_array(Valley.DECKS)
+		ground.append_array(Valley.DECKS + Coast.DECKS)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
@@ -179,6 +191,9 @@ func _ready() -> void:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	_surfaces.assign(_decks)
 	if observation_fixture:
+		_surfaces.append({"bounds": Valley.RAIN_BRIDGE, "height": 0.0, "safe": false, "feature_id": Valley.RAIN_BRIDGE_ID})
+		_surfaces.append({"bounds": Coast.SEA, "height": Coast.SEA_BED, "safe": false})
+		_water_volumes.append(WaterVolume.new(Coast.SEA, Coast.SEA_BED, 0.0, Vector2(8, 0), 1.2))
 		_surfaces.append({"bounds": Valley.ORDINARY_POOL, "height": Valley.ORDINARY_BED, "safe": false})
 		_water_volumes.append(WaterVolume.new(Valley.ORDINARY_POOL, Valley.ORDINARY_BED, 0.0, Vector2.ZERO, 1.2))
 	_surfaces.append({"bounds": Lake.POOL, "height": Lake.BED_HEIGHT, "safe": false})
@@ -469,6 +484,9 @@ func _ordinary_arrival_points(address: String) -> Array[Vector2]:
 		Valley.CRYSTAL_ID:
 			if observation_fixture:
 				return [Valley.W7_ENTRY, Vector2(3000, 420)]
+		Coast.LOCATION_ID:
+			if observation_fixture:
+				return [Coast.ENTRY, Coast.BEACH_ENTRY]
 	return []
 
 
@@ -920,7 +938,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -1063,6 +1081,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v1(point)
 	elif previous_schema == 2:
 		previous_location = _entity_location_v2(point)
+	elif previous_schema == 3:
+		previous_location = _entity_location_v3(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -1154,6 +1174,7 @@ func _draw() -> void:
 	Lake.draw_on(self)
 	if observation_fixture:
 		Valley.draw_on(self)
+		Coast.draw_on(self)
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
 			var point: Vector2 = field.ground_position
