@@ -482,7 +482,10 @@ func _physics_process(delta: float) -> void:
 	if water != null:
 		var fraction := water.submerged_fraction(position, motion.elevation, body_height())
 		var drag_fraction := 1.0 - exp(-water.resistance * fraction * delta / total_mass)
-		_impulse_velocity = _impulse_velocity.lerp(water.flow, drag_fraction)
+		var current := water.flow
+		if motion.grounded and total_mass >= water.ground_hold_mass:
+			current = Vector2.ZERO
+		_impulse_velocity = _impulse_velocity.lerp(current, drag_fraction)
 		acceleration += minf(GRAVITY * (_buoyancy * fraction / total_mass), MAX_WATER_LIFT)
 		acceleration -= motion.vertical_speed * drag_fraction / delta
 		if can_swim():

@@ -97,6 +97,15 @@ func _run() -> void:
 	assert(not scene.interact())
 	assert(scene.world_clock.set_time_of_day(Clock.EVENING_MINUTE))
 	assert(scene.interact() and scene.actor.location_id == Coast.HOUSE_ID)
+	assert(await _walk_to(scene, scene.Life.HOURGLASS_POINT))
+	assert(scene.interact() and scene.hourglass_owned)
+	assert(scene.cycle_hourglass() and scene.world_clock.mode == Clock.FAST)
+	assert(scene.cycle_hourglass() and scene.world_clock.mode == Clock.SLOW)
+	assert(scene.cycle_hourglass() and scene.world_clock.mode == Clock.NORMAL)
+	var hourglass_save: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(hourglass_save) and scene.hourglass_owned)
+	assert(not scene._take_hourglass())
+	assert(await _walk_to(scene, Coast.HOUSE_INSIDE))
 	assert(scene.interact() and scene.actor.location_id == Coast.LOCATION_ID)
 	# No gated exit or change to outside world time. Return via the ordinary loop.
 	for point in [Vector2(2620, 740), Vector2(2620, 795), Coast.BEACH_ENTRY]:

@@ -44,6 +44,8 @@ const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
 const ADDRESS_SCHEMA := 11
+const Life = preload("res://scripts/skeleton/coastal_life_layout.gd")
+const LAB_ICE_SECONDS := 40.0
 const CoastExtra = preload("res://scripts/skeleton/coast_observation_layout.gd")
 const LAKE_CHIBI_PREFIX := "W6_CHIBI_"
 const LAKE_PROP_PREFIX := "W6_PROP_COPY_"
@@ -116,6 +118,14 @@ var _duplicate_elapsed := 0.0
 var _lake_elapsed := 0.0
 var _lake_entered := false
 var _initial_lake_stone: Dictionary = {}
+var hourglass_owned := false
+var flask_state := 0 # 0 Mia, 1 loan, 2 gift. One original.
+var flask_effect := ""
+var mia_experienced := false
+var mia_route_step := 0
+var _lab_ice := ActiveDuration.new(LAB_ICE_SECONDS)
+var _pool_water: WaterVolume
+var _initial_life_states: Array[Dictionary] = []
 var _fish_surfaces: Array[Dictionary] = []
 var wand_pair := WandPair.new()
 var wand_mode_requested: Callable
@@ -277,7 +287,7 @@ func _legacy_entity_location(point: Vector2) -> String:
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -288,6 +298,7 @@ func _ready() -> void:
 	wand_pair.original = projection
 	world_clock.minute_changed.connect(_update_world_light)
 	_ice_duration.active_changed.connect(_update_ice_support)
+	_lab_ice.active_changed.connect(_update_lab_ice)
 	_update_world_light()
 	_decks.assign(ISLAND_DECKS)
 	var ground := Meadows.DECKS + Lake.DECKS
@@ -317,6 +328,9 @@ func _ready() -> void:
 		_surfaces.append({"bounds": Coast.TIDAL_MOUTH, "height": 0.0, "safe": false})
 		_coast_tide = WaterVolume.new(Coast.TIDAL_MOUTH, 0.0, Coast.tide_height(world_clock.minute_of_day()), Vector2(-60, 0), 2.0)
 		_water_volumes.append(_coast_tide)
+		_pool_water = WaterVolume.new(Life.POOL, 0.0, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, Vector2(28, 0), 2.0)
+		_pool_water.ground_hold_mass = 4.0
+		_water_volumes.append(_pool_water)
 		_surfaces.append({"bounds": Valley.RAIN_BRIDGE, "height": 0.0, "safe": false, "feature_id": Valley.RAIN_BRIDGE_ID})
 		_surfaces.append({"bounds": Coast.SEA, "height": Coast.SEA_BED, "safe": false})
 		_water_volumes.append(WaterVolume.new(Coast.SEA, Coast.SEA_BED, 0.0, Vector2(8, 0), 1.2))
@@ -361,6 +375,7 @@ func _ready() -> void:
 		if ecology_fixture:
 			_spawn_mirror_snail()
 		_spawn_lake_stone()
+		_spawn_coastal_life()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -433,10 +448,125 @@ func _sync_crystal_observation() -> void:
 	_set_crystal_door(crystal_observer.luna_eyes_open and not _door_occupied())
 
 
+func _spawn_coastal_life() -> void:
+	var mia := spawn_entity({"id": Life.MIA_ID, "category": "mia", "label": "Мия", "material": "FABRIC"}, Life.MIA_START, 0.0)
+	if mia != null:
+		mia.set_parameter("behavior_mode", "IDLE")
+		mia.set_parameter("speed", 1.0)
+		mia.set_parameter("color", Color("8ed7bd"))
+	for identity in Life.FAUNA:
+		var category: String = Life.FAUNA_CATEGORY[identity]
+		var animal := spawn_entity({"id": identity, "category": category,
+			"label": "Краб" if category == "crab" else "Черепаха", "material": "FABRIC"}, Life.FAUNA[identity], 0.0)
+		if animal != null:
+			animal.set_parameter("size", 0.55 if category == "crab" else 0.7)
+			animal.set_parameter("speed", 0.45 if category == "crab" else 0.24)
+	# These are dry at low tide, wet at high tide. Spawn on real existing floor,
+	# before reapplying water to the shallow basin.
+	var water_level := _pool_water.surface
+	_pool_water.surface = 0.0
+	var shell := spawn_entity({"id": Life.SHELL_ID, "category": "prop", "label": "Пустая ракушка", "material": "STONE"}, Life.SHELL_START, 0.0)
+	var stone := spawn_entity({"id": Life.STONE_ID, "category": "prop", "label": "Морской камень", "material": "STONE"}, Life.STONE_START, 0.0)
+	_pool_water.surface = water_level
+	if shell != null:
+		shell.set_parameter("mass", 0.25)
+		shell.set_parameter("size", 0.55)
+		shell.set_parameter("pickable", true)
+		shell.configure_water(1.2, false)
+	if stone != null:
+		stone.set_parameter("mass", 5.0)
+		stone.set_parameter("size", 0.6)
+	for entry in make_snapshot()["entities"]:
+		if entry["id"] in [Life.MIA_ID, Life.SHELL_ID, Life.STONE_ID] or Life.FAUNA.has(entry["id"]):
+			_initial_life_states.append(entry)
+
+
+func _take_hourglass() -> bool:
+	if hourglass_owned or not observation_fixture or _entity_location(actor.position) != Coast.HOUSE_ID \
+			or not actor.motion.grounded or not _within_reach(Life.HOURGLASS_POINT):
+		return false
+	hourglass_owned = true
+	queue_redraw()
+	return true
+
+
+func cycle_hourglass() -> bool:
+	if not hourglass_owned or is_instance_valid(_debug_editor):
+		return false
+	var modes := [WorldClock.SLOW, WorldClock.NORMAL, WorldClock.FAST]
+	return world_clock.set_mode(modes[(modes.find(world_clock.mode) + 1) % modes.size()])
+
+
+func _borrow_flask() -> bool:
+	if flask_state != 0 or not mia_experienced or not _at_alchemy_station():
+		return false
+	flask_state = 1
+	mia_route_step = 0
+	$Interface/SaveNotice.text = "Мия: Сюда! Здесь просто чудесно. Как доберёшься, покажу."
+	queue_redraw()
+	return true
+
+
+func _mia_at_upper() -> bool:
+	var mia := entities.get_entity(Life.MIA_ID) as EntityBody
+	return flask_state == 1 and mia_route_step >= Life.MIA_ROUTE.size() and mia != null \
+		and actor.motion.grounded and actor.motion.elevation >= 18.0 \
+		and _within_reach(mia.position, mia.motion.elevation)
+
+
+func _tick_mia() -> void:
+	if flask_state != 1:
+		return
+	var mia := entities.get_entity(Life.MIA_ID) as EntityBody
+	if mia == null or mia_route_step >= Life.MIA_ROUTE.size():
+		return
+	var target: Vector2 = Life.MIA_ROUTE[mia_route_step]
+	if mia.position.distance_to(target) < 5.0 and mia.motion.grounded:
+		mia_route_step += 1
+		if mia_route_step >= Life.MIA_ROUTE.size():
+			mia.autonomous_destination = Vector2.INF
+			return
+		target = Life.MIA_ROUTE[mia_route_step]
+	mia.autonomous_destination = target
+
+
+func _gift_flask() -> bool:
+	if not _mia_at_upper():
+		return false
+	flask_state = 2
+	$Interface/SaveNotice.text = "Мия: Оставь склянку себе!"
+	return true
+
+
+func _fill_flask(effect_id: String) -> void:
+	if flask_state > 0 and effect_id in AlchemyPanel.IMPLEMENTED:
+		flask_effect = effect_id
+		_alchemy_panel.hide()
+		$Interface/SaveNotice.text = "Состав в склянке: " + AlchemyPanel.Recipes.NAMES[effect_id]
+
+
+func _update_lab_ice(active: bool) -> void:
+	for surface in Life.ICE:
+		if active and not _surfaces.has(surface):
+			_surfaces.append(surface)
+		elif not active:
+			_surfaces.erase(surface)
+	queue_redraw()
+
+
+func _freeze_lab_water() -> bool:
+	if not observation_fixture or actor.position.distance_to(MiaLab.SHALLOW.get_center()) > 115.0:
+		return false
+	_lab_ice.start()
+	return true
+
+
 func _setup_alchemy() -> void:
 	var panel := AlchemyPanel.new()
 	$Interface.add_child(panel)
 	panel.try_effect.connect(_apply_lab_effect)
+	panel.fill_effect.connect(_fill_flask)
+	panel.borrow_requested.connect(_borrow_flask)
 	_alchemy_panel = panel
 	_alchemy_light = PointLight2D.new()
 	var gradient := Gradient.new()
@@ -462,12 +592,23 @@ func _at_alchemy_station() -> bool:
 func _apply_lab_effect(effect_id: String) -> void:
 	if not _at_alchemy_station():
 		return
+	if _apply_alchemy(effect_id):
+		mia_experienced = true
+		_alchemy_panel.configure_access(false, flask_state > 0, flask_state == 0)
+		_alchemy_panel.hide()
+
+
+func _apply_alchemy(effect_id: String) -> bool:
 	match effect_id:
 		"ALC-R08":
 			_alchemy_glow.start()
 		"ALC-R09":
 			_alchemy_glow.restore(0.0)
 			_clear_bubble()
+			_lab_ice.restore(0.0)
+		"ALC-R20":
+			if not _freeze_lab_water():
+				return false
 		"ALC-R21":
 			_alchemy_bubble.start()
 			_bubble_started = false
@@ -475,9 +616,9 @@ func _apply_lab_effect(effect_id: String) -> void:
 		"ALC-R30":
 			world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
 		_:
-			return
-	_alchemy_panel.hide()
+			return false
 	_update_alchemy_light()
+	return true
 
 
 func _clear_bubble() -> void:
@@ -798,6 +939,11 @@ func request_install_duplicate(target_id: String) -> bool:
 
 
 func _create_entity_body(identity: String, category: String) -> EntityBody:
+	if observation_fixture and Life.FAUNA.has(identity) and category == Life.FAUNA_CATEGORY[identity]:
+		var animal := Fauna.new()
+		animal.birth_point = Life.FAUNA[identity]
+		animal.respawned.connect(fauna_respawned.emit)
+		return animal
 	if observation_fixture and ecology_fixture and identity == MIRROR_SNAIL and category == "mirror_snail":
 		var snail := Fauna.new()
 		snail.birth_point = MIRROR_BIRTH
@@ -1053,10 +1199,12 @@ func _physics_process(delta: float) -> void:
 		_tick_bubble(world_clock.sim_delta(delta))
 		_tick_duplicate(world_clock.sim_delta(delta))
 		_tick_lake(world_clock.sim_delta(delta))
+		_lab_ice.tick(world_clock.sim_delta(delta))
+		_tick_mia()
 		_update_yeti_route()
 		_refresh_plank_surface()
 	_update_alchemy_light()
-	if _alchemy_panel != null and _alchemy_panel.visible and not _at_alchemy_station():
+	if _alchemy_panel != null and _alchemy_panel.visible and not _at_alchemy_station() and flask_state == 0:
 		_alchemy_panel.hide()
 	var at_bank := _at_forest_bank()
 	if _was_at_bank and not at_bank:
@@ -1076,6 +1224,10 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Глаза закрыты"
 	if _alchemy_bubble.remaining > 0.0:
 		_status.text += "  ·  Пузырь %d" % ceili(_alchemy_bubble.remaining)
+	if hourglass_owned:
+		_status.text += "  ·  H " + world_clock.mode
+	if flask_state > 0:
+		_status.text += "  ·  Enter: склянка"
 	if restriction_text.is_valid():
 		_status.text += restriction_text.call()
 	var action := _nearby_action()
@@ -1102,6 +1254,8 @@ func _apply_keyboard_input() -> void:
 func _update_world_light(_minute: int = 0) -> void:
 	if _coast_tide != null:
 		_coast_tide.surface = Coast.tide_height(world_clock.minute_of_day())
+	if _pool_water != null:
+		_pool_water.surface = Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0
 	var phase: int = world_clock.phase()
 	if observation_fixture and is_instance_valid(actor) and Coast.HOUSE_ROOM.has_point(actor.position):
 		phase = coast_house_phase
@@ -1207,6 +1361,11 @@ func _nearby_action() -> String:
 	var tunnel_action := _tunnel_action()
 	if not tunnel_action.is_empty():
 		return tunnel_action
+	if observation_fixture and not hourglass_owned and actor.motion.grounded \
+			and _entity_location(actor.position) == Coast.HOUSE_ID and _within_reach(Life.HOURGLASS_POINT):
+		return "Взять Песочные часы"
+	if _mia_at_upper():
+		return "Поговорить с Мией"
 	if _at_alchemy_station():
 		return "Алхимическая установка"
 	if at_ancient_console():
@@ -1316,7 +1475,12 @@ func interact() -> bool:
 			return _use_tunnel(Tunnel.W1_RETURN, Valley.LOCATION_ID)
 		"К Озеру Дубликатов":
 			return _use_tunnel(Lake.SHORE, Lake.LOCATION_ID)
+		"Взять Песочные часы":
+			return _take_hourglass()
+		"Поговорить с Мией":
+			return _gift_flask()
 		"Алхимическая установка":
+			_alchemy_panel.configure_access(false, flask_state > 0, mia_experienced and flask_state == 0)
 			_alchemy_panel.show()
 			apply_player_input(Vector2.ZERO)
 			return true
@@ -1427,7 +1591,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				set_luna_eyes(not crystal_observer.luna_eyes_open)
 				get_viewport().set_input_as_handled()
 		KEY_E:
-			if interact():
+			if interact() or (flask_state > 0 and not flask_effect.is_empty() and not is_instance_valid(_debug_editor) and _apply_alchemy(flask_effect)):
+				get_viewport().set_input_as_handled()
+		KEY_H:
+			if cycle_hourglass():
 				get_viewport().set_input_as_handled()
 		KEY_TAB:
 			if not _can_hack_second_wand() or not get_wand_editor_tabs(Administrator.ID).is_empty():
@@ -1446,8 +1613,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_G:
 			exchange_nearby_wand()
 		KEY_ENTER:
-			if not is_instance_valid(_debug_editor) and _restore_nearby_swim():
-				get_viewport().set_input_as_handled()
+			if not is_instance_valid(_debug_editor):
+				if flask_state > 0 and _alchemy_panel != null:
+					_alchemy_panel.configure_access(true, true, false)
+					_alchemy_panel.show()
+					apply_player_input(Vector2.ZERO)
+					get_viewport().set_input_as_handled()
+				elif _restore_nearby_swim():
+					get_viewport().set_input_as_handled()
 		KEY_F5:
 			if not managed_save and _store.write_snapshot(make_snapshot(), SAVE_PATH):
 				$Interface/SaveNotice.text = "Сохранено"
@@ -1578,6 +1751,14 @@ func make_snapshot() -> Dictionary:
 		data["lake_layout"] = 1
 		data["lake_elapsed"] = _lake_elapsed
 		data["lake_entered"] = _lake_entered
+	if observation_fixture:
+		data["coastal_life_layout"] = 1
+		data["hourglass_owned"] = hourglass_owned
+		data["flask_state"] = flask_state
+		data["flask_effect"] = flask_effect
+		data["mia_experienced"] = mia_experienced
+		data["mia_route_step"] = mia_route_step
+		data["lab_ice"] = _lab_ice.remaining
 	data["luna_eyes_open"] = crystal_observer.luna_eyes_open
 	data["luna_facing"] = [crystal_observer.facing.x, crystal_observer.facing.y]
 	if observation_fixture and ecology_fixture:
@@ -1600,6 +1781,19 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_access := AccessState.new()
 	var next_projection := WandProjection.new()
 	var next_clock := WorldClock.new()
+	var next_hourglass: Variant = data.get("hourglass_owned", false)
+	var next_flask: Variant = data.get("flask_state", 0)
+	var next_recipe: Variant = data.get("flask_effect", "")
+	var next_experience: Variant = data.get("mia_experienced", false)
+	var next_mia_step: Variant = data.get("mia_route_step", 0)
+	var next_lab_ice := ActiveDuration.new(LAB_ICE_SECONDS)
+	if not next_hourglass is bool or not next_experience is bool or not next_recipe is String \
+			or typeof(next_flask) not in [TYPE_INT, TYPE_FLOAT] or float(next_flask) not in [0.0, 1.0, 2.0] \
+			or typeof(next_mia_step) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_mia_step)) \
+			or float(next_mia_step) != floorf(float(next_mia_step)) or int(next_mia_step) < 0 or int(next_mia_step) > Life.MIA_ROUTE.size() \
+			or (next_recipe != "" and (next_flask == 0 or next_recipe not in AlchemyPanel.IMPLEMENTED)) \
+			or (next_flask > 0 and not next_experience) or not next_lab_ice.restore(data.get("lab_ice", 0.0)):
+		return false
 	var next_eyes: Variant = data.get("luna_eyes_open", true)
 	var raw_facing: Variant = data.get("luna_facing", [0.0, 1.0])
 	if not next_eyes is bool or not raw_facing is Array or raw_facing.size() != 2:
@@ -1705,6 +1899,13 @@ func apply_snapshot(data: Dictionary) -> bool:
 			candidate["entities"].append(_initial_lake_stone.duplicate(true))
 		elif candidate["lake_layout"] != 1:
 			return false
+	if observation_fixture:
+		if not candidate.has("coastal_life_layout"):
+			candidate = candidate.duplicate(true)
+			for entry in _initial_life_states:
+				candidate["entities"].append(entry.duplicate(true))
+		elif candidate["coastal_life_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -1723,11 +1924,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 		_set_crystal_door(false)
 		if not previous_bridge:
 			_surfaces.append(Crystal.BRIDGE)
+	var previous_lab_ice := _lab_ice.remaining
+	_lab_ice.restore(next_lab_ice.remaining)
 	var previous_ice := ice_remaining
 	var previous_plank := _plank_surface
 	_ice_duration.restore(next_ice.remaining)
 	_set_plank_surface(_saved_plank_surface(plank))
 	if not super.apply_snapshot(candidate):
+		_lab_ice.restore(previous_lab_ice)
 		_ice_duration.restore(previous_ice)
 		_set_plank_surface(previous_plank)
 		if observation_fixture:
@@ -1737,6 +1941,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 			if not previous_coast_bridge:
 				_surfaces.erase(CoastExtra.BRIDGE)
 		return false
+	hourglass_owned = next_hourglass
+	flask_state = int(next_flask)
+	flask_effect = next_recipe
+	mia_experienced = next_experience
+	mia_route_step = int(next_mia_step)
 	_duplicate_elapsed = float(next_duplicate)
 	_lake_elapsed = float(next_lake_elapsed)
 	_lake_entered = next_lake_entered
@@ -1962,6 +2171,7 @@ func _draw() -> void:
 		CoastExtra.draw_on(self)
 		Lake.draw_shallow_on(self)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
+		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
 			var point: Vector2 = field.ground_position

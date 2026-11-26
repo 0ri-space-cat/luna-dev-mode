@@ -6,6 +6,8 @@ var bottom: float
 var surface: float
 var flow: Vector2
 var resistance: float
+# Optional physical resting-body threshold for shallow rough beds.
+var ground_hold_mass := INF
 
 
 func _init(footprint: Rect2, bottom_z: float, surface_z: float,
