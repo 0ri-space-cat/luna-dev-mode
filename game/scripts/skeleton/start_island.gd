@@ -1473,7 +1473,7 @@ func _move_home_travelers(point: Vector2, address: String, height: float = 0.0) 
 	for body in actor.map_travelers():
 		(body as EntityBody).location_id = address
 		body._sync_projection()
-	_camera.position = point
+	_update_local_camera()
 	_camera.reset_smoothing()
 	_update_world_light()
 
@@ -1537,7 +1537,7 @@ func _physics_process(delta: float) -> void:
 	if _was_at_bank and not at_bank:
 		forest_bank_left.emit()
 	_was_at_bank = at_bank
-	_camera.position = actor.position
+	_update_local_camera()
 	var area: String = AREA_LABELS[_entity_location(actor.position)]
 	var local_phase: int = coast_house_phase if _entity_location(actor.position) == Coast.HOUSE_ID else world_clock.phase()
 	_world_light.color = PHASE_TINTS[local_phase]
@@ -1566,6 +1566,17 @@ func _physics_process(delta: float) -> void:
 	var action := _nearby_action()
 	_prompt.text = "" if action.is_empty() or is_instance_valid(_debug_editor) \
 		or (ancient_console != null and ancient_console.is_open()) else "E  " + action
+
+
+func _update_local_camera() -> void:
+	if observation_fixture:
+		for room in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP]:
+			if room.has_point(actor.position):
+				_camera.position = room.get_center()
+				_camera.zoom = Vector2(2.25, 2.25)
+				return
+	_camera.position = actor.position
+	_camera.zoom = Vector2(1.25, 1.25)
 
 
 func _apply_keyboard_input() -> void:

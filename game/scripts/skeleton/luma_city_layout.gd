@@ -78,6 +78,9 @@ static func draw_on(canvas: Node2D) -> void:
 	canvas.draw_string(font, Vector2(5020, 400), "Площадь")
 	canvas.draw_rect(MAP, Color("778a9e"))
 	canvas.draw_string(font, Vector2(4740, 265), "Карты")
+	for wall in WALLS:
+		canvas.draw_rect(wall["bounds"], Color("776679"))
+		canvas.draw_rect(wall["bounds"], Color("bba8ba"), false, 1.5)
 	canvas.draw_rect(TABLE["bounds"], Color("977b75"))
 	canvas.draw_rect(TABLE["bounds"].grow(-4), Color("bfa299"))
 	for doorway in DOORS:

@@ -589,6 +589,9 @@ func save_game() -> bool:
 	if _away and outer.hosted_entry == OuterRoutes.WHITE_ADDRESS:
 		manual = checkpoint.duplicate(true)
 		manual["white_visit"] = guest
+	elif _away and outer.hosted_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA]:
+		manual = checkpoint.duplicate(true)
+		manual["public_visit"] = {"entry": outer.hosted_entry, "guest": guest}
 	if not _write_profile(journal, manual, checkpoint, {}, _away, guest):
 		return false
 	_guest_save = guest
@@ -609,9 +612,34 @@ func load_game() -> bool:
 	var checkpoint := _manual if not _manual.is_empty() else _store.read_snapshot(Island.SAVE_PATH)
 	if checkpoint.has("white_visit"):
 		return _load_saved_white_visit(checkpoint)
+	if checkpoint.has("public_visit"):
+		return _load_saved_public_visit(checkpoint)
 	if not apply_local_rollback(checkpoint):
 		return false
 	_queue_forest_report()
+	return true
+
+
+func _load_saved_public_visit(checkpoint: Dictionary) -> bool:
+	var visit: Variant = checkpoint.get("public_visit")
+	if not visit is Dictionary or visit.get("entry") not in [OuterRoutes.MEADOWS, OuterRoutes.LUMA] \
+			or not visit.get("guest") is Dictionary or visit["guest"].is_empty():
+		return false
+	var previous := home.make_snapshot()
+	if not _apply_home_snapshot(checkpoint):
+		return false
+	var source := home.make_snapshot()
+	if not _activate_guest(visit["entry"]):
+		_apply_home_snapshot(previous)
+		return false
+	if not outer.apply_snapshot(visit["guest"]) or not _write_profile(journal, _manual, source, {}, true, visit["guest"]):
+		_reactivate_home(source)
+		_apply_home_snapshot(previous)
+		mark_safe_state()
+		return false
+	_continuity = source
+	_guest_save = visit["guest"]
+	_away = true
 	return true
 
 
