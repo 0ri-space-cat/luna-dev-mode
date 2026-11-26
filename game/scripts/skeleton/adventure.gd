@@ -421,7 +421,12 @@ func _on_ancient_command(command: String, argument: String) -> void:
 	if not _away and not _simulation_suspended() and _interrupted.is_empty() and home.at_ancient_console():
 		match command:
 			"TELEPORT":
-				succeeded = argument == OuterRoutes.WHITE_ADDRESS and _visit_white_void()
+				if argument == OuterRoutes.WHITE_ADDRESS:
+					succeeded = _visit_white_void()
+				else:
+					succeeded = home.teleport_known_location(argument)
+					if succeeded:
+						mark_safe_state()
 			"TIME_OF_DAY":
 				var clock := home.world_clock
 				var minute: int = {

@@ -34,7 +34,7 @@ const FISH_POINTS := {
 }
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
-const ADDRESS_SCHEMA := 2
+const ADDRESS_SCHEMA := 3
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -45,6 +45,7 @@ const AREA_LABELS := {
 	ISLAND_ID: "Стартовый остров", Meadows.LOCATION_ID: "Большие луга",
 	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
+	Valley.CRYSTAL_ID: "Кристальные пещеры",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -119,6 +120,15 @@ func _location_id() -> String:
 func _entity_location(point: Vector2) -> String:
 	if observation_fixture:
 		var extension := Valley.location_at(point)
+		if not extension.is_empty():
+			return extension
+	return _legacy_entity_location(point)
+
+
+# M3.74b partition before the crystal approach.
+func _entity_location_v2(point: Vector2) -> String:
+	if observation_fixture:
+		var extension := Valley.location_at_v2(point)
 		if not extension.is_empty():
 			return extension
 	return _legacy_entity_location(point)
@@ -435,6 +445,73 @@ func set_home_active(active: bool) -> void:
 func can_return_traveler(point: Vector2, height: float) -> bool:
 	return actor.motion._has_support(point, height, _decks, true) \
 		and ElevationBody.clears_walls(point, height, actor.foot_radius(), _walls)
+
+
+# Only implemented ordinary locations have authored landing candidates.
+# No address catalogue is exposed to the player, and a Feature ID is not a destination.
+func _ordinary_arrival_points(address: String) -> Array[Vector2]:
+	match address:
+		ISLAND_ID:
+			return [SPAWN, Vector2(410, 374)]
+		Meadows.LOCATION_ID:
+			return [Vector2(1285, 375), Vector2(1320, 375)]
+		ForestBank.LOCATION_ID:
+			if observation_fixture:
+				return [Vector2(1950, 52), Vector2(2010, 90)]
+		AncientConsole.LOCATION_ID:
+			if ancient_console_enabled:
+				return [AncientConsole.RETURN_POINT, Vector2(2350, 110)]
+		Valley.LOCATION_ID:
+			if observation_fixture:
+				return [Vector2(2135, 300), Vector2(2210, 305)]
+		Lake.LOCATION_ID:
+			return [Lake.SHORE, Vector2(2360, 435)]
+		Valley.CRYSTAL_ID:
+			if observation_fixture:
+				return [Valley.W7_ENTRY, Vector2(3000, 420)]
+	return []
+
+
+func _ordinary_arrival_is_safe(address: String, point: Vector2) -> bool:
+	if _entity_location(point) != address or not can_return_traveler(point, 0.0) or not actor._is_dry(point, 0.0):
+		return false
+	var travelers := actor.map_travelers()
+	for identity in entities.list_ids():
+		var other := entities.get_entity(identity) as EntityBody
+		if other == null or other in travelers:
+			continue
+		for body in travelers:
+			if other.position.distance_to(point) < other.foot_radius() + body.foot_radius():
+				return false
+	if actor.has_passenger():
+		var rider := actor._rider
+		var feet: float = actor._attachment_height(rider._carried)
+		if not rider.fits_walls_at(point, feet, rider.foot_radius()):
+			return false
+	return true
+
+
+func teleport_known_location(address: String) -> bool:
+	if not at_ancient_console() or access.wand_mode == AccessState.ORDINARY:
+		return false
+	for point in _ordinary_arrival_points(address):
+		if not _ordinary_arrival_is_safe(address, point):
+			continue
+		actor.position = point
+		actor.motion.reset_on_surface(point, 0.0)
+		actor.direction = Vector2.ZERO
+		actor.velocity = Vector2.ZERO
+		actor._impulse_velocity = Vector2.ZERO
+		actor.thrust_requested = false
+		actor.swim_intent = 0.0
+		actor._update_rider_position()
+		for body in actor.map_travelers():
+			(body as EntityBody).location_id = address
+			body._sync_projection()
+		_camera.position = point
+		_camera.reset_smoothing()
+		return true
+	return false
 
 
 func return_traveler(point: Vector2, height: float) -> void:
@@ -843,7 +920,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -981,7 +1058,11 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
 			return
 	var point := Vector2(float(raw[0]), float(raw[1]))
-	var previous_location := _legacy_entity_location(point) if previous_schema == 0 else _entity_location_v1(point)
+	var previous_location := _legacy_entity_location(point)
+	if previous_schema == 1:
+		previous_location = _entity_location_v1(point)
+	elif previous_schema == 2:
+		previous_location = _entity_location_v2(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 

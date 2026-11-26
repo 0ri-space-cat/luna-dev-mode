@@ -120,6 +120,19 @@ func _run() -> void:
 	_open_world()
 	await physics_frame
 	assert(game._profile_valid and not game._away and game.home.actor.position.is_equal_approx(original_position))
+	# The same blank field can address implemented normal locations. Unknown
+	# destinations and Feature IDs cannot move the actor.
+	home = game.home
+	actor = home.actor
+	_key(KEY_E)
+	await process_frame
+	await _type_command("TELEPORT ET_DUPLICATE_LAKE")
+	assert(home.ancient_console.field.visible and actor.position.is_equal_approx(original_position))
+	await _type_command("TELEPORT ET_MEADOWS_MAIN")
+	assert(not home.ancient_console.field.visible and not game._away)
+	assert(home.actor == actor and actor.location_id == Island.Meadows.LOCATION_ID and actor.motion.grounded)
+	assert(game.save_game() and game.load_game())
+	assert(home.actor.location_id == Island.Meadows.LOCATION_ID and home.actor.motion.grounded)
 	game.queue_free()
 	await process_frame
 	for path in [_path, _path + ".bak"]:

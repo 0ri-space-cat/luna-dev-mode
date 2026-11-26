@@ -34,7 +34,10 @@ func _run() -> void:
 	assert(Lake.LOCATION_ID == "ET_DUPLICATE_LAKE_CAVERN" and Lake.FEATURE_ID == "ET_DUPLICATE_LAKE")
 	assert(scene.wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID))
 	var saved: Dictionary = scene.make_snapshot()
-	assert(saved["address_schema"] == 2)
+	assert(saved["address_schema"] == 3)
+	var previous_v2: Dictionary = saved.duplicate(true)
+	previous_v2["address_schema"] = 2
+	assert(scene.apply_snapshot(previous_v2))
 	var previous: Dictionary = saved.duplicate(true)
 	previous["address_schema"] = 1
 	assert(scene.apply_snapshot(previous))
@@ -58,6 +61,21 @@ func _run() -> void:
 			entry["location_id"] = Lake.LEGACY_LOCATION_ID
 	var body = scene.actor
 	assert(not scene.apply_snapshot(invalid) and scene.actor == body)
+	# Walk around the same duplicate lake to the independent crystal caves.
+	var crystal_path := [Vector2(2445, 550), Vector2(2735, 550),
+		Vector2(2735, 420), Vector2(2850, 420), Valley.W7_ENTRY]
+	for point in crystal_path:
+		assert(await _walk_to(scene, point))
+		assert(scene.actor.motion.grounded and scene.actor.recoveries == 0)
+	assert(scene.actor.location_id == Valley.CRYSTAL_ID)
+	var crystal_save: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(crystal_save))
+	assert(scene.actor.location_id == Valley.CRYSTAL_ID)
+	crystal_path.reverse()
+	for point in crystal_path:
+		assert(await _walk_to(scene, point))
+		assert(scene.actor.motion.grounded and scene.actor.recoveries == 0)
+	assert(await _walk_to(scene, Lake.SHORE))
 	points.reverse()
 	for point in points:
 		assert(await _walk_to(scene, point))
@@ -82,7 +100,7 @@ func _run() -> void:
 		assert(await _walk_to(scene, point))
 		assert(scene.actor.motion.grounded and scene.actor.recoveries == 0)
 	assert(scene.wand_pair.original.ground_location_id == Lake.LOCATION_ID)
-	print("M3.73: dry forest-valley route, canonical lake and legacy address migration passed")
+	print("M3.74d: dry forest-valley, ordinary lake, crystal approach and legacy address migration passed")
 	scene.queue_free()
 	await process_frame
 	quit()

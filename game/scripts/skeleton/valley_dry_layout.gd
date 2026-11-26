@@ -15,10 +15,23 @@ const W1_WEST := Rect2(2035, 365, 45, 110)
 const W1_SOUTH := Rect2(2035, 465, 190, 45)
 const W1_EAST := Rect2(2170, 365, 55, 110)
 const W1_DECKS := [W1_NORTH, W1_WEST, W1_SOUTH, W1_EAST]
-const DECKS := [F5, W0, W2, W4, W1_NORTH, W1_WEST, W1_SOUTH, W1_EAST]
+const CRYSTAL_ID := "ET_CRYSTAL_CAVES"
+const W7_APPROACH := Rect2(2770, 375, 150, 88)
+const W7_NICHE := Rect2(2870, 300, 245, 200)
+const W7_ENTRY := Vector2(2945, 415)
+const W7_DECKS := [W7_APPROACH, W7_NICHE]
+const DECKS := [F5, W0, W2, W4, W1_NORTH, W1_WEST, W1_SOUTH, W1_EAST, W7_APPROACH, W7_NICHE]
 const LAKE_SHORE_X := 2280.0
 
 static func location_at(point: Vector2) -> String:
+	if point.x >= 2803.0:
+		for deck in W7_DECKS:
+			if deck.has_point(point):
+				return CRYSTAL_ID
+	return location_at_v2(point)
+
+
+static func location_at_v2(point: Vector2) -> String:
 	for bank in W1_DECKS:
 		if bank.has_point(point):
 			return LOCATION_ID
@@ -44,3 +57,8 @@ static func draw_on(canvas: Node2D) -> void:
 	canvas.draw_string(font, Vector2(2085, 280), "Каскады")
 	canvas.draw_string(font, Vector2(2038, 500), "Тихое озеро")
 	canvas.draw_string(font, Vector2(2205, 370), "Речная тропа")
+	# Temporary silhouettes only: production crystal artwork will replace these.
+	for point in [Vector2(2910, 335), Vector2(3035, 342), Vector2(3065, 470)]:
+		canvas.draw_colored_polygon(PackedVector2Array([point + Vector2(-12, 7), point + Vector2(-8, -20), point + Vector2(3, -30), point + Vector2(14, -10), point + Vector2(12, 7)]), Color("7886aa"))
+		canvas.draw_line(point + Vector2(3, -30), point + Vector2(3, 7), Color("bac6df"), 2.0)
+	canvas.draw_string(font, Vector2(2895, 386), "Кристальные пещеры")
