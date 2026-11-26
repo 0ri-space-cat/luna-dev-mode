@@ -627,6 +627,7 @@ func _tick_yuki(delta: float) -> void:
 func _open_yuki() -> bool:
 	if yuki.ownership == 0 or not is_instance_valid(_yuki_panel) or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	_active_city_tool = "yuki"
 	_yuki_panel.open_for(self)
 	apply_player_input(Vector2.ZERO)
 	return true
@@ -644,6 +645,7 @@ const ORI_CREATED_PREFIX := "ORI_CREATED_"
 var ori := OriCatalog.new()
 var _ori_panel: PanelContainer
 var _initial_ori_states: Array[Dictionary] = []
+var _active_city_tool := ""
 
 
 func _setup_ori() -> void:
@@ -677,8 +679,6 @@ func _ori_action() -> String:
 		return ""
 	if ori.ownership == 0:
 		return "Одолжить Каталог Ори"
-	if ori.ownership == 1 and not ori.order_id.is_empty():
-		return "Обсудить помощников с Ори"
 	return ""
 
 
@@ -687,12 +687,6 @@ func _interact_ori() -> bool:
 		"Одолжить Каталог Ори":
 			ori.ownership = 1
 			_tick_ori()
-			return true
-		"Обсудить помощников с Ори":
-			# The first real order is enough for the café; the gift is reserved
-			# for the second authored exploration episode.
-			social.complete("ORI")
-			$Interface/SaveNotice.text = "Ори: А кого бы ты придумала для себя?"
 			return true
 	return false
 
@@ -718,6 +712,7 @@ func _tick_ori() -> void:
 		if ori.order_id.is_empty() and ori.ownership > 0 and customer != null and identity.begins_with(ORI_CREATED_PREFIX) and body.record.category == "cat" and body.get_parameter("luna_relation") == "FRIEND" and body.has_active_ability("GLOW") and City.SHOP.has_point(customer.position) and City.SHOP.has_point(body.position) and body.position.distance_to(customer.position) <= 50.0 and _within_reach(customer.position, customer.motion.elevation):
 			ori.order_id = identity
 			social.complete("ORI")
+			$Interface/SaveNotice.text = "Ори: А кого бы ты придумала для себя?"
 
 
 func _can_extract_ori(target: EntityBody) -> bool:
@@ -766,6 +761,7 @@ func catalog_repeat() -> String:
 func _open_ori() -> bool:
 	if ori.ownership == 0 or not is_instance_valid(_ori_panel) or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	_active_city_tool = "ori"
 	_ori_panel.open_for(self)
 	apply_player_input(Vector2.ZERO)
 	return true
@@ -1572,7 +1568,7 @@ func _spawn_on_support(body: EntityBody, point: Vector2, height: float) -> bool:
 
 func _holds_ecology_catalog() -> bool:
 	var item := entities.get_entity(ECOLOGY_CATALOG) as EntityBody
-	return ori.ownership > 0 or (item != null and item.is_carried_by(actor))
+	return item != null and item.is_carried_by(actor)
 
 
 func request_wand_parameter_edit(target_id: String, parameter_id: String, value: Variant) -> bool:
@@ -2308,8 +2304,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				set_luna_eyes(not crystal_observer.luna_eyes_open)
 				get_viewport().set_input_as_handled()
 		KEY_E:
-			if interact() or (flask_state > 0 and not flask_effect.is_empty() and not is_instance_valid(_debug_editor) and _apply_alchemy(flask_effect)):
+			if interact():
 				get_viewport().set_input_as_handled()
+			elif not is_instance_valid(_debug_editor):
+				if _active_city_tool == "ori" and ori.ownership > 0:
+					if not catalog_repeat().is_empty():
+						get_viewport().set_input_as_handled()
+				elif flask_state > 0 and not flask_effect.is_empty() and _apply_alchemy(flask_effect):
+					get_viewport().set_input_as_handled()
 		KEY_L:
 			if not is_instance_valid(_debug_editor) and not catalog_repeat().is_empty():
 				get_viewport().set_input_as_handled()
@@ -2334,11 +2336,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			exchange_nearby_wand()
 		KEY_ENTER:
 			if not is_instance_valid(_debug_editor):
-				if ori.ownership > 0 and _near_ori() and _open_ori():
+				if ori.ownership > 0 and (_near_ori() or _active_city_tool == "ori") and _open_ori():
 					get_viewport().set_input_as_handled()
-				elif yuki.ownership > 0 and (_near_yuki() or flask_state == 0) and _open_yuki():
+				elif yuki.ownership > 0 and (_near_yuki() or _active_city_tool == "yuki" or flask_state == 0) and _open_yuki():
 					get_viewport().set_input_as_handled()
 				elif flask_state > 0 and _alchemy_panel != null:
+					_active_city_tool = ""
 					_alchemy_panel.configure_access(true, true, false)
 					_alchemy_panel.show()
 					apply_player_input(Vector2.ZERO)
@@ -2790,6 +2793,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 				_surfaces.erase(CoastExtra.BRIDGE)
 		return false
 	ori = next_ori
+	_active_city_tool = ""
 	if is_instance_valid(_ori_panel):
 		_ori_panel.hide()
 	yuki = next_yuki
