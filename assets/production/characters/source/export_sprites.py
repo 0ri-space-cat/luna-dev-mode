@@ -98,11 +98,11 @@ def main():
             image = hair_tone(image, "sprite")
         if name == "ori":
             coarsen_detail(image, (437, 660, 581, 765))
+        frame = fitted(image, (128, 192), height, BASELINE)
         if name == "miya":
-            # The pocket rim stays in front of the glass.
-            coarsen_detail(image, (400, 809, 455, 899))
-            coarsen_detail(image, (563, 810, 620, 899))
-        save(fitted(image, (128, 192), height, BASELINE), CHARACTERS, f"{name}-idle-front")
+            # Draw the small vials at sprite resolution so the glass and pocket rim stay distinct.
+            frame.alpha_composite(load(CHARACTERS / "source/miya-pocket-vials.png"), (49, 103))
+        save(frame, CHARACTERS, f"{name}-idle-front")
     save(hair_tone(load(YUKI_PORTRAIT), "portrait"), CHARACTERS, "yuki-portrait")
 
     grass = fitted(load(FAUNA / "source/slime-front.png"), (64, 48), 30, 43)
