@@ -72,7 +72,7 @@ func _run() -> void:
 	assert(not game.home.tick_wand_self_hack(4.0, true))
 
 	# Both routes remain physically open with an ordinary wand.
-	assert(await _walk(Vector2(2360, 605)) and await _walk(Vector2(1290, 605)))
+	await _walk_lake_to_meadows()
 	assert(await _walk(Vector2(1290, 374)) and await _walk(Vector2(320, 374)))
 	assert(await _walk(Vector2(320, 480)))
 	assert(game.home.interact() and game.home.access.wand_mode == Access.PLAYFUL)
@@ -85,7 +85,7 @@ func _run() -> void:
 
 	# Bring a real carried prop into the second recovery. The exact recovered
 	# Entity and attachment move to the authored Void scene and back.
-	assert(await _walk(Vector2(2360, 605)) and await _walk(Vector2(1290, 605)))
+	await _walk_lake_to_meadows()
 	assert(await _walk(Vector2(1290, 374)) and await _walk(Vector2(1420, 396)))
 	var plank_id := game.home.Meadows.PLANK_ID
 	assert(game.home.interact_with_attachment(plank_id))
@@ -162,11 +162,23 @@ func _restart() -> void:
 	await physics_frame
 
 
+# Use the ordinary meadow bypass and actual forest-valley route in both directions.
+const LAKE_ROUTE := [Vector2(1290, 605), Vector2(1885, 605), Vector2(1888, 246),
+	Vector2(1909, 109), Vector2(2140, 120), Vector2(2140, 220), Vector2(2130, 305),
+	Vector2(2240, 305), Vector2(2240, 425), Vector2(2265, 425), Vector2(2340, 425),
+	Vector2(2445, 426)]
+
 func _walk_to_lake() -> void:
-	assert(await _walk(Vector2(1290, 605)))
-	assert(await _walk(Vector2(2360, 605)))
-	assert(await _walk(Vector2(2445, 426)))
+	for point in LAKE_ROUTE:
+		assert(await _walk(point))
 	assert(game.home.actor.motion.grounded and game.home.actor.location_id == game.home.Lake.LOCATION_ID)
+
+func _walk_lake_to_meadows() -> void:
+	var route := LAKE_ROUTE.duplicate()
+	route.reverse()
+	for point in route:
+		assert(await _walk(point))
+	assert(game.home.actor.motion.grounded and game.home.actor.location_id == game.home.Meadows.LOCATION_ID)
 
 
 func _walk(target: Vector2) -> bool:

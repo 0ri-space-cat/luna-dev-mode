@@ -34,7 +34,7 @@ func _run() -> void:
 	assert(Lake.LOCATION_ID == "ET_DUPLICATE_LAKE_CAVERN" and Lake.FEATURE_ID == "ET_DUPLICATE_LAKE")
 	assert(scene.wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID))
 	var saved: Dictionary = scene.make_snapshot()
-	assert(saved["address_schema"] == 1)
+	assert(saved["address_schema"] == 2)
 	# Restore the legacy name of the same cave and the duplicate wand.
 	var legacy: Dictionary = saved.duplicate(true)
 	legacy.erase("address_schema")
@@ -62,7 +62,51 @@ func _run() -> void:
 	assert(await _walk_to(scene, Vector2(2140, 120)))
 	assert(scene.actor.location_id == Valley.FOREST_ID)
 	assert(scene.wand_pair.original.ground_location_id == Lake.LOCATION_ID)
-	print("M3.73: dry forest-valley route, canonical lake and legacy address migration passed")
+	# The removed road really has no support in the integrated map. Restore
+	# a schema-1 save with Luna, a carried branch, both wands and recovery
+	# anchors on the former strip, without altering the source dictionary.
+	var old_point := Vector2(2140, 605)
+	assert(not scene.actor.motion._has_support(old_point, 0.0, scene._decks, false))
+	var old: Dictionary = scene.make_snapshot()
+	old["address_schema"] = 1
+	for entry in old["entities"]:
+		if entry["id"] in [scene.ENTITY_ID, scene.Meadows.PLANK_ID]:
+			entry["position"] = [old_point.x, old_point.y]
+			entry["location_id"] = scene.Meadows.LOCATION_ID
+			entry["motion"]["anchor"] = [old_point.x, old_point.y, 0.0]
+			if entry["id"] == scene.Meadows.PLANK_ID:
+				entry["attachment"]["carrier_id"] = scene.ENTITY_ID
+				entry["attachment"]["carried"] = true
+				entry["motion"]["elevation"] = scene.actor.body_height()
+				entry["motion"]["grounded"] = false
+	old["wand_pair"]["held"] = ""
+	for wand in [old["island"]["projection"], old["wand_pair"]["duplicate"]]:
+		wand["carried"] = false
+		wand["position"] = [old_point.x + 20.0, old_point.y]
+		wand["location_id"] = scene.Meadows.LOCATION_ID
+	old["island"]["projection"]["position"][0] += 10.0
+	var before := old.duplicate(true)
+	var corrupt := old.duplicate(true)
+	for entry in corrupt["entities"]:
+		if entry["id"] == scene.ENTITY_ID:
+			entry["location_id"] = Lake.LOCATION_ID
+	var previous_actor = scene.actor
+	assert(not scene.apply_snapshot(corrupt) and scene.actor == previous_actor)
+	assert(scene.apply_snapshot(old))
+	assert(old == before and scene.make_snapshot()["address_schema"] == 2)
+	assert(scene.actor.location_id == Valley.LOCATION_ID and scene.actor.motion.grounded)
+	assert(scene.actor.position != old_point and scene.actor.recoveries == 0)
+	assert(scene.actor.has_passenger() and scene.actor._rider.entity_id == scene.Meadows.PLANK_ID)
+	assert(scene.actor.position == scene.actor._rider.position)
+	assert(scene.wand_pair.original.ground_location_id == Valley.LOCATION_ID)
+	assert(scene.wand_pair.duplicate.ground_location_id == Valley.LOCATION_ID)
+	assert(scene.wand_pair.original.ground_position != scene.wand_pair.duplicate.ground_position)
+	assert(scene.exchange_nearby_wand())
+	var migrated: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(migrated))
+	assert(scene.actor.has_passenger() and scene.actor.motion.grounded)
+	assert(scene.actor.motion._has_support(scene.actor.position, 0.0, scene._decks, true))
+	print("M3.74: dry forest-valley route, canonical address and removed-road saves passed")
 	scene.queue_free()
 	await process_frame
 	quit()
