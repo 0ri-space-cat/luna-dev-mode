@@ -27,6 +27,14 @@ const FOX_START := Vector2(1684, 414)
 const ECOLOGY_CATALOG := "DEV_ECOLOGY_CATALOG"
 const CATALOG_SPOT := Vector2(2413, 486)
 const SWIM_MODULE := {"ability_id": "SWIM", "enabled": true, "protected": false}
+const MIRROR_SNAIL := "W7_MIRROR_SNAIL"
+const MIRROR_BIRTH := Vector2(3000, 465)
+const DUPLICATE_MODULE_ID := "DUPLICATE_W7_MIRROR_SNAIL"
+const DUPLICATE_MODULE := {"ability_id": "DUPLICATE", "enabled": true, "protected": false}
+const DUPLICATE_INTERVAL := 12.0
+const DUPLICATE_LIMIT := 4
+const DUPLICATE_PREFIX := "DUPLICATE_W7_COPY_"
+const DUPLICATE_CATEGORIES := ["mirror_snail", "fox", "trollik"]
 const FISH_POINTS := {
 	"DEV_POOL_FISH_A": Vector2(2532, 375),
 	"DEV_POOL_FISH_B": Vector2(2559, 424),
@@ -96,6 +104,8 @@ var _was_at_bank := false
 var _initial_observation_states: Array[Dictionary] = []
 var ability_bank := AbilityBank.new(entities, commands)
 var _initial_ecology_states: Array[Dictionary] = []
+var _initial_mirror_state: Dictionary = {}
+var _duplicate_elapsed := 0.0
 var _fish_surfaces: Array[Dictionary] = []
 var wand_pair := WandPair.new()
 var wand_mode_requested: Callable
@@ -248,7 +258,7 @@ func _legacy_entity_location(point: Vector2) -> String:
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -327,6 +337,8 @@ func _ready() -> void:
 		_spawn_observation_fixture()
 		_setup_alchemy()
 		_setup_crystal_observation()
+		if ecology_fixture:
+			_spawn_mirror_snail()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -570,7 +582,104 @@ func _spawn_ecology_fixture() -> void:
 			_initial_ecology_states.append(entry)
 
 
+func _spawn_mirror_snail() -> void:
+	var snail := spawn_entity({"id": MIRROR_SNAIL, "category": "mirror_snail",
+		"label": "Зеркальная улитка", "material": "FABRIC"}, MIRROR_BIRTH, 0.0)
+	if snail == null:
+		push_error("Could not place the mirror snail")
+		return
+	snail.set_parameter("size", 0.55)
+	snail.set_parameter("speed", 0.18)
+	snail.set_parameter("color", Color("99c1d9"))
+	snail.record.set_component("ABILITY_SET", {"instances": {DUPLICATE_MODULE_ID: DUPLICATE_MODULE}})
+	for entry in make_snapshot()["entities"]:
+		if entry["id"] == MIRROR_SNAIL:
+			_initial_mirror_state = entry
+
+
+func _duplicate_holder() -> EntityBody:
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		var module: Dictionary = body.record.get_component("ABILITY_SET").get("instances", {}).get(DUPLICATE_MODULE_ID, {})
+		if module.get("enabled") == true and module.get("ability_id") == "DUPLICATE":
+			return body
+	return null
+
+
+func _tick_duplicate(delta: float) -> void:
+	if not ecology_fixture or not observation_fixture:
+		return
+	var source := _duplicate_holder()
+	if source == null or not source.get_parameter("alive") or not source.visible \
+			or not source.motion.grounded or source.is_attached() or source.has_passenger():
+		_duplicate_elapsed = 0.0
+		return
+	# Budget the nearby living world; an unseen region is not populated to its
+	# cap before its first visit. The timer is independent of gaze and camera.
+	if source.location_id != _entity_location(actor.position) or source.position.distance_to(actor.position) > Gaze.EYE_RANGE:
+		return
+	_duplicate_elapsed = minf(DUPLICATE_INTERVAL, _duplicate_elapsed + delta)
+	if _duplicate_elapsed >= DUPLICATE_INTERVAL and _duplicate_self(source):
+		_duplicate_elapsed = 0.0
+
+
+func _duplicate_self(source: EntityBody) -> bool:
+	if source == null or source != _duplicate_holder() or not source.get_parameter("alive") \
+			or source.record.category not in DUPLICATE_CATEGORIES or not source.motion.grounded \
+			or source.is_attached() or source.has_passenger():
+		return false
+	var new_id := ""
+	for index in range(1, DUPLICATE_LIMIT + 1):
+		var candidate_id := DUPLICATE_PREFIX + str(index)
+		if entities.get_entity(candidate_id) == null:
+			new_id = candidate_id
+			break
+	if new_id.is_empty():
+		return false
+	for offset in [Vector2(36, 0), Vector2(-36, 0), Vector2(0, 36), Vector2(0, -36),
+			Vector2(30, 30), Vector2(-30, -30)]:
+		var point: Vector2 = source.position + offset
+		if _entity_location(point) != source.location_id:
+			continue
+		var copy := spawn_entity({"id": new_id, "category": source.record.category,
+			"label": source.record.display_name, "material": source.get_parameter("material")},
+			point, source.motion.elevation)
+		if copy == null:
+			continue
+		# Copy ordinary body appearance and movement. No rare module, bank,
+		# ownership, attachment, control assignment or death timer is copied.
+		for parameter in ["size", "speed", "color", "behavior_mode", "luna_relation"]:
+			copy.set_parameter(parameter, source.get_parameter(parameter))
+		return true
+	return false
+
+
+func _can_transfer_duplicate(target: EntityBody) -> bool:
+	if not ecology_fixture or not observation_fixture or target == null or not _holds_ecology_catalog() \
+			or target.record.category not in DUPLICATE_CATEGORIES or not target.get_parameter("alive") \
+			or not target.visible or target.location_id != _entity_location(actor.position):
+		return false
+	return wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, "mass")
+
+
+func request_extract_duplicate(target_id: String) -> bool:
+	var target := entities.get_entity(target_id) as EntityBody
+	return _can_transfer_duplicate(target) \
+		and ability_bank.move_instance(ENTITY_ID, target_id, DUPLICATE_MODULE_ID, true)
+
+
+func request_install_duplicate(target_id: String) -> bool:
+	var target := entities.get_entity(target_id) as EntityBody
+	return _can_transfer_duplicate(target) \
+		and ability_bank.move_instance(ENTITY_ID, target_id, DUPLICATE_MODULE_ID, false)
+
+
 func _create_entity_body(identity: String, category: String) -> EntityBody:
+	if observation_fixture and ecology_fixture and identity == MIRROR_SNAIL and category == "mirror_snail":
+		var snail := Fauna.new()
+		snail.birth_point = MIRROR_BIRTH
+		snail.respawned.connect(fauna_respawned.emit)
+		return snail
 	if identity == Meadows.FOX_ID and category == "fox":
 		var fox := Fauna.new()
 		fox.birth_point = FOX_START
@@ -819,6 +928,7 @@ func _physics_process(delta: float) -> void:
 		_ice_duration.tick(delta)
 		_alchemy_glow.tick(delta)
 		_tick_bubble(world_clock.sim_delta(delta))
+		_tick_duplicate(world_clock.sim_delta(delta))
 		_update_yeti_route()
 		_refresh_plank_surface()
 	_update_alchemy_light()
@@ -1284,6 +1394,16 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 					{"id": module_id, "label": "SWIM", "kind": "action", "value": "В банк",
 						"action": func(): return request_extract_swim(target_id)},
 				]
+	if not tabs.is_empty() and _can_transfer_duplicate(entities.get_entity(target_id) as EntityBody):
+		var target := entities.get_entity(target_id) as EntityBody
+		var installed: Dictionary = target.record.get_component("ABILITY_SET").get("instances", {})
+		var bank: Dictionary = actor.record.get_component("ABILITY_BANK").get("instances", {})
+		if installed.has(DUPLICATE_MODULE_ID):
+			tabs["Способности"] = [{"id": DUPLICATE_MODULE_ID, "label": "DUPLICATE", "kind": "action",
+				"value": "В банк", "action": func(): return request_extract_duplicate(target_id)}]
+		elif bank.has(DUPLICATE_MODULE_ID):
+			tabs["Способности"] = [{"id": DUPLICATE_MODULE_ID, "label": "DUPLICATE", "kind": "action",
+				"value": "Установить", "action": func(): return request_install_duplicate(target_id)}]
 	return tabs
 
 
@@ -1327,6 +1447,9 @@ func make_snapshot() -> Dictionary:
 	data["bubble_started"] = _bubble_started
 	data["luna_eyes_open"] = crystal_observer.luna_eyes_open
 	data["luna_facing"] = [crystal_observer.facing.x, crystal_observer.facing.y]
+	if observation_fixture and ecology_fixture:
+		data["crystal_fauna_layout"] = 1
+		data["duplicate_elapsed"] = _duplicate_elapsed
 	data["wand_pair"] = wand_pair.snapshot()
 	return data
 
@@ -1353,6 +1476,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 			return false
 	var next_facing := Vector2(float(raw_facing[0]), float(raw_facing[1]))
 	if not is_equal_approx(next_facing.length(), 1.0):
+		return false
+	var next_duplicate: Variant = data.get("duplicate_elapsed", 0.0)
+	if typeof(next_duplicate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_duplicate)) \
+			or float(next_duplicate) < 0.0 or float(next_duplicate) > DUPLICATE_INTERVAL:
 		return false
 	var next_glow := ActiveDuration.new(GLOW_SECONDS)
 	var next_bubble := ActiveDuration.new(BUBBLE_SECONDS)
@@ -1423,6 +1550,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 			candidate["entities"].append(entry)
 	elif observation_fixture and candidate["observation_layout"] != 1:
 		return false
+	if observation_fixture and ecology_fixture:
+		if not candidate.has("crystal_fauna_layout"):
+			if _initial_mirror_state.is_empty():
+				return false
+			candidate = candidate.duplicate(true)
+			candidate["entities"].append(_initial_mirror_state.duplicate(true))
+		elif candidate["crystal_fauna_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -1450,6 +1585,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 			if not previous_bridge:
 				_surfaces.erase(Crystal.BRIDGE)
 		return false
+	_duplicate_elapsed = float(next_duplicate)
 	crystal_observer.luna_eyes_open = next_eyes
 	crystal_observer.facing = next_facing
 	_sync_crystal_observation()
@@ -1559,6 +1695,21 @@ func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if not ecology_fixture:
 		return super._validate_saved_entities(candidates)
 	var counts := {}
+	if observation_fixture:
+		var snail: EntityBody = candidates.get(MIRROR_SNAIL)
+		if snail == null or not snail is Fauna or snail.record.category != "mirror_snail":
+			return false
+		var copies := 0
+		for identity in candidates:
+			if identity.begins_with(DUPLICATE_PREFIX):
+				var suffix: String = identity.trim_prefix(DUPLICATE_PREFIX)
+				if not suffix.is_valid_int() or int(suffix) < 1 or int(suffix) > DUPLICATE_LIMIT \
+						or candidates[identity].record.category not in DUPLICATE_CATEGORIES:
+					return false
+				copies += 1
+		if copies > DUPLICATE_LIMIT:
+			return false
+		counts[DUPLICATE_MODULE_ID] = 0
 	var catalog: EntityBody = candidates.get(ECOLOGY_CATALOG)
 	if catalog == null or catalog.record.category != "prop":
 		return false
@@ -1571,6 +1722,13 @@ func _validate_saved_entities(candidates: Dictionary) -> bool:
 			var items := AbilityBank.instances(candidates[identity].record.get_components(), component)
 			for module in items:
 				if not counts.has(module):
+					continue
+				if module == DUPLICATE_MODULE_ID:
+					if items[module]["ability_id"] != "DUPLICATE" or items[module]["protected"] \
+							or (component == "ABILITY_BANK" and identity != ENTITY_ID) \
+							or (component == "ABILITY_SET" and candidates[identity].record.category not in DUPLICATE_CATEGORIES):
+						return false
+					counts[module] += 1
 					continue
 				if items[module]["ability_id"] != "SWIM" or items[module]["protected"] \
 						or (component == "ABILITY_BANK" and identity != ENTITY_ID) \

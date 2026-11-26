@@ -228,9 +228,36 @@ func _run() -> void:
 	assert(scene.actor.position.distance_to(Lake.SHORE) < 3.0)
 	scene._clear_bubble()
 	assert(not scene.actor.can_swim())
-	print("M3.87: physical W5 and temporary bubble passed")
+	# The integrated ecology fixture has an original and unique DUPLICATE.
 	scene.queue_free()
 	await process_frame
+	var ecology = Start.instantiate()
+	ecology.keyboard = false
+	ecology.observation_fixture = true
+	ecology.ecology_fixture = true
+	root.add_child(ecology)
+	await physics_frame
+	var snail = ecology.entities.get_entity(ecology.MIRROR_SNAIL)
+	assert(snail != null and ecology._duplicate_holder() == snail)
+	ecology.actor.position = Vector2(2945, 415)
+	ecology.actor.motion.reset_on_surface(ecology.actor.position, 0.0)
+	await physics_frame
+	assert(ecology._duplicate_self(snail))
+	var child = ecology.entities.get_entity(ecology.DUPLICATE_PREFIX + "1")
+	assert(child != null and child != snail and child.record.category == "mirror_snail")
+	assert(child.record.get_component("ABILITY_SET").get("instances", {}).is_empty())
+	assert(ecology.ability_bank.move_instance(ecology.ENTITY_ID, snail.entity_id, ecology.DUPLICATE_MODULE_ID, true))
+	assert(ecology._duplicate_holder() == null and not ecology._duplicate_self(snail))
+	assert(ecology.ability_bank.move_instance(ecology.ENTITY_ID, child.entity_id, ecology.DUPLICATE_MODULE_ID, false))
+	assert(ecology._duplicate_holder() == child)
+	var child_id: String = child.entity_id
+	var duplicate_save: Dictionary = ecology.make_snapshot()
+	assert(ecology.apply_snapshot(duplicate_save))
+	assert(ecology._duplicate_holder().entity_id == child_id)
+	assert(ecology.entities.get_entity(ecology.MIRROR_SNAIL) != null)
+	ecology.queue_free()
+	await process_frame
+	print("M3.89: unique DUPLICATE module and independent mirror offspring passed")
 	quit()
 
 func _walk_to(scene: Node, point: Vector2) -> bool:
