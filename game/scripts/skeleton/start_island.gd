@@ -324,7 +324,7 @@ func _entity_limit() -> int:
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -418,6 +418,7 @@ func _ready() -> void:
 		_spawn_oni()
 		_spawn_city()
 		_setup_city_tools()
+		_setup_friend_extra()
 		_setup_yuki()
 		if ecology_fixture:
 			_setup_ori()
@@ -1005,7 +1006,7 @@ func _select_stamp(ability: String) -> void:
 
 
 func _bank_open() -> bool:
-	return ori.ownership > 0 or "REALITY_STAMP" in city_tools.owned or _holds_ecology_catalog()
+	return ori.ownership > 0 or tamagotchi_owned or "REALITY_STAMP" in city_tools.owned or _holds_ecology_catalog()
 
 
 func _stamp_target_allowed(target: EntityBody) -> bool:
@@ -1127,6 +1128,8 @@ func _cleanup_yuki_cats(delta: float) -> void:
 
 
 func _tick_ori_helper() -> void:
+	if _friend_at_cafe(City.ORI):
+		return
 	if ori.ownership != 1 or city_tools.ori_stage == 0 or city_tools.ori_stage == 3:
 		return
 	var friend_body := entities.get_entity(City.ORI) as EntityBody
@@ -1153,6 +1156,299 @@ func _tick_ori_helper() -> void:
 			ori.ownership = 2
 			social.complete("ORI")
 			$Interface/SaveNotice.text = "Ори: Он правда умеет летать! Каталог теперь твой."
+
+
+const LEIA_ID := "F1_LEIA"
+const LEIA_START := Vector2(1955, -28)
+const LEIA_EXIT := Vector2(2058, -28)
+const LEIA_TURTLE := "F1_TURTLE"
+const LEIA_SEAT := Vector2(1910, -28)
+const FRIEND_EXTRA := [
+	{"id": LEIA_ID, "category": "leia", "label": "Лея", "material": "FABRIC", "point": LEIA_START},
+	{"id": LEIA_TURTLE, "category": "turtle", "label": "Черепашка", "material": "FABRIC", "point": Vector2(1855, -28)},
+	{"id": "F1_FOX", "category": "fox", "label": "Лисёнок", "material": "FABRIC", "point": Vector2(1990, -28)},
+	{"id": "F1_TROLLIK", "category": "trollik", "label": "Троллик", "material": "FABRIC", "point": Vector2(2026, -28)},
+]
+const CAFE_TALK := Vector2(5620, 365)
+const CAFE_SEATS := [Vector2(5645, 280), Vector2(5645, 330), Vector2(5690, 370), Vector2(5750, 370), Vector2(5795, 330), Vector2(5795, 280), Vector2(5690, 255), Vector2(5750, 255)]
+var leia_turtle_seen := false
+var leia_free := false
+var tamagotchi_owned := false
+var evening_stage := 0
+var evening_origins: Dictionary = {}
+var _evening_delay := 0.0
+var _evening_panel: PanelContainer
+var _initial_friend_extra: Array[Dictionary] = []
+
+
+func _friend_ids() -> Array[String]:
+	return [City.YUKI, City.ORI, Life.MIA_ID, LEIA_ID, City.TOFFI, Visits.ONI_ID]
+
+
+func _setup_friend_extra() -> void:
+	for definition in FRIEND_EXTRA:
+		var body := spawn_entity(definition, definition["point"], 0.0)
+		if body == null:
+			push_error("Could not place " + definition["id"])
+			continue
+		body.set_parameter("behavior_mode", "IDLE")
+		body.set_parameter("speed", 1.0)
+		if definition["id"] != LEIA_ID:
+			body.set_parameter("size", 0.65)
+	for state in make_snapshot()["entities"]:
+		if FRIEND_EXTRA.any(func(definition): return definition["id"] == state["id"]):
+			_initial_friend_extra.append(state.duplicate(true))
+	_evening_panel = PanelContainer.new()
+	_evening_panel.position = Vector2(40, 80)
+	$Interface.add_child(_evening_panel)
+	_evening_panel.hide()
+
+
+func _tick_leia() -> void:
+	if not observation_fixture or _friend_at_cafe(LEIA_ID):
+		return
+	var leia := entities.get_entity(LEIA_ID) as EntityBody
+	var turtle := entities.get_entity(LEIA_TURTLE) as EntityBody
+	if leia == null or turtle == null:
+		return
+	if not leia_turtle_seen and _attraction.remaining <= 0.0 and turtle.get_parameter("ai_enabled") and turtle.get_parameter("alive"):
+		turtle.autonomous_destination = LEIA_SEAT
+		if turtle.position.distance_to(LEIA_SEAT) < 8.0:
+			turtle.autonomous_destination = Vector2.INF
+			if actor.position.distance_to(leia.position) < 90.0 and actor.position.distance_to(turtle.position) < 110.0:
+				leia_turtle_seen = true
+	else:
+		turtle.autonomous_destination = Vector2.INF
+	if leia_free or not leia.get_parameter("ai_enabled") or leia.is_attached() or leia.has_passenger():
+		return
+	var blocked := false
+	for id in ["F1_FOX", "F1_TROLLIK"]:
+		var animal := entities.get_entity(id) as EntityBody
+		if animal != null and animal.get_parameter("alive") and Geometry2D.get_closest_point_to_segment(animal.position, leia.position, LEIA_EXIT).distance_to(animal.position) < leia.foot_radius() + animal.foot_radius() + 5.0:
+			blocked = true
+	leia.autonomous_destination = Vector2.INF if blocked else LEIA_EXIT
+	if leia.position.distance_to(LEIA_EXIT) < 8.0 and leia.motion.grounded:
+		leia_free = true
+		leia.autonomous_destination = Vector2.INF
+
+
+func _leia_action() -> String:
+	if not observation_fixture or not actor.motion.grounded:
+		return ""
+	var leia := entities.get_entity(LEIA_ID) as EntityBody
+	if leia == null or not _within_reach(leia.position, leia.motion.elevation) or _friend_at_cafe(LEIA_ID):
+		return ""
+	if leia_free and not tamagotchi_owned:
+		return "Помочь Лее"
+	if leia_turtle_seen and not social.meetings.has("LEIA"):
+		return "Посмотреть на черепашку с Леей"
+	return ""
+
+
+func _interact_leia() -> bool:
+	var action := _leia_action()
+	if action.is_empty():
+		return false
+	social.complete("LEIA")
+	if leia_free:
+		tamagotchi_owned = true
+		$Interface/SaveNotice.text = "Лея: Спасибо! Теперь мы можем пройти. Получено: Тамагочи."
+	else:
+		$Interface/SaveNotice.text = "Лея: Смотри, черепашка добралась!"
+	return true
+
+
+func _friend_at_cafe(id: String) -> bool:
+	return evening_stage in [2, 3] or (evening_stage == 4 and evening_origins.has(id))
+
+
+func _friend_available(body: EntityBody) -> bool:
+	return body != null and body.visible and body.get_parameter("alive") and body.get_parameter("ai_enabled") and not body.is_attached() and not body.has_passenger() and body.motion.grounded
+
+
+func _friend_safe(body: EntityBody, point: Vector2, height: float, ignore: Array = []) -> bool:
+	if not body.motion._has_support(point, height, body.surfaces, true) or not body.fits_walls_at(point, height, body.foot_radius()) or not body._is_dry(point, height):
+		return false
+	for id in entities.list_ids():
+		if id == body.entity_id or id in ignore:
+			continue
+		var other := entities.get_entity(id) as EntityBody
+		if other != null and absf(other.motion.elevation - height) < 1.0 and other.position.distance_to(point) < other.foot_radius() + body.foot_radius():
+			return false
+	return true
+
+
+func _cafe_plan() -> Dictionary:
+	var result: Dictionary = {}
+	var ids := _friend_ids()
+	for id in ids:
+		var body := entities.get_entity(id) as EntityBody
+		if not _friend_available(body):
+			return {}
+		for point in CAFE_SEATS:
+			if not _friend_safe(body, point, 0.0, ids):
+				continue
+			var occupied := false
+			for other_id in result:
+				var other := entities.get_entity(other_id) as EntityBody
+				var other_point: Vector2 = result[other_id]
+				if other_point.distance_to(point) < other.foot_radius() + body.foot_radius():
+					occupied = true
+			if not occupied:
+				result[id] = point
+				break
+		if not result.has(id):
+			return {}
+	return result
+
+
+func _place_friend(body: EntityBody, point: Vector2, height: float) -> void:
+	body.position = point
+	body.motion.reset_on_surface(point, height)
+	body.location_id = _entity_location(point)
+	body.autonomous_destination = Vector2.INF
+	body.music_interest = Vector2.INF
+	body.velocity = Vector2.ZERO
+	body._sync_projection()
+
+
+func _cafe_near() -> bool:
+	return observation_fixture and _entity_location(actor.position) == City.CAFE_ID and actor.motion.grounded and not actor.is_attached() and _within_reach(CAFE_TALK)
+
+
+func _cafe_action() -> String:
+	if not _cafe_near():
+		return ""
+	match evening_stage:
+		0: return "Предложить встретиться вечером" if social.can_gather() else ""
+		1: return "Друзья собираются"
+		2: return "Посидеть вместе"
+		3: return "Продолжить вечер"
+	return ""
+
+
+func begin_cafe_evening() -> bool:
+	if evening_stage != 0 or not _cafe_near() or not social.can_gather() or _cafe_plan().size() != 6:
+		return false
+	evening_stage = 1
+	_evening_delay = 1.8
+	world_clock.set_time_of_day(WorldClock.EVENING_MINUTE + 30)
+	_show_evening_panel()
+	return true
+
+
+func _tick_cafe(delta: float) -> void:
+	if not observation_fixture:
+		return
+	if evening_stage == 1:
+		_evening_delay -= delta
+		if _evening_delay > 0.0:
+			return
+		var plan := _cafe_plan()
+		if plan.size() != 6:
+			evening_stage = 0
+			_evening_panel.hide()
+			$Interface/SaveNotice.text = "Пока не все могут прийти. Попробуй позже."
+			return
+		for id in plan:
+			var body := entities.get_entity(id) as EntityBody
+			evening_origins[id] = [body.position.x, body.position.y, body.motion.elevation]
+			_place_friend(body, plan[id], 0.0)
+		evening_stage = 2
+		_evening_panel.hide()
+	elif evening_stage == 4:
+		for id in evening_origins.keys():
+			var body := entities.get_entity(id) as EntityBody
+			var origin: Array = evening_origins[id]
+			var point := Vector2(origin[0], origin[1])
+			if _friend_available(body) and _friend_safe(body, point, float(origin[2])):
+				_place_friend(body, point, float(origin[2]))
+				evening_origins.erase(id)
+
+
+func finish_cafe_evening() -> bool:
+	if evening_stage != 2 or not _cafe_near():
+		return false
+	for id in _friend_ids():
+		var body := entities.get_entity(id) as EntityBody
+		if body == null or _entity_location(body.position) != City.CAFE_ID:
+			return false
+	evening_stage = 3
+	_show_evening_panel()
+	return true
+
+
+func _finish_ordinary_credits() -> void:
+	if evening_stage == 3:
+		evening_stage = 4
+		_show_evening_panel()
+
+
+func _show_evening_panel() -> void:
+	for child in _evening_panel.get_children():
+		_evening_panel.remove_child(child)
+		child.queue_free()
+	var box := VBoxContainer.new()
+	_evening_panel.add_child(box)
+	var label := Label.new()
+	label.custom_minimum_size.x = 420.0
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(label)
+	var button := Button.new()
+	box.add_child(button)
+	match evening_stage:
+		0:
+			label.text = "Давно мы все вместе не собирались. Может, сегодня?"
+			button.text = "Пригласить друзей"
+			button.pressed.connect(func(): begin_cafe_evening())
+			var later := Button.new()
+			later.text = "Позже"
+			later.pressed.connect(_evening_panel.hide)
+			box.add_child(later)
+		1:
+			label.text = "Лиловеет небо. Друзья собираются в кафе…"
+			button.hide()
+		2:
+			label.text = "Юки, Ори, Мия, Лея, Тоффи, Они и Луна.\n\n— Завтра опять куда-нибудь?\n— Ага. Но сейчас давайте посидим."
+			button.text = "Завершить вечер"
+			button.pressed.connect(func(): finish_cafe_evening())
+		3:
+			label.text = "На мгновение всё замирает.\n\n…Луна… Помоги мне…\n\nГолос исчезает."
+			button.text = "Далее"
+			button.pressed.connect(_finish_ordinary_credits)
+		4:
+			label.text = "LUNA: Dev Mode\n\nОбычная история Этернии\n\nПутешествие продолжается."
+			button.text = "Продолжить игру"
+			button.pressed.connect(_evening_panel.hide)
+	_evening_panel.show()
+	apply_player_input(Vector2.ZERO)
+
+
+func _evening_snapshot() -> Dictionary:
+	return {"turtle_seen": leia_turtle_seen, "leia_free": leia_free, "tamagotchi": tamagotchi_owned, "stage": evening_stage, "origins": evening_origins.duplicate(true)}
+
+
+func _valid_evening(data: Variant) -> bool:
+	if not data is Dictionary:
+		return false
+	for key in ["turtle_seen", "leia_free", "tamagotchi"]:
+		if not data.get(key) is bool:
+			return false
+	if data["tamagotchi"] and not data["leia_free"]:
+		return false
+	var stage: Variant = data.get("stage")
+	if typeof(stage) not in [TYPE_INT, TYPE_FLOAT] or stage not in [0, 1, 2, 3, 4]:
+		return false
+	var origins: Variant = data.get("origins")
+	if not origins is Dictionary or origins.size() > 6 or (stage < 2 and not origins.is_empty()) or (stage in [2, 3] and origins.size() != 6):
+		return false
+	for id in origins:
+		if id not in _friend_ids() or not origins[id] is Array or origins[id].size() != 3:
+			return false
+		for value in origins[id]:
+			if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or absf(float(value)) > 10000.0:
+				return false
+	return true
 
 
 func _spawn_city() -> void:
@@ -1290,6 +1586,8 @@ func _spawn_oni() -> void:
 
 
 func _tick_oni() -> void:
+	if _friend_at_cafe(Visits.ONI_ID):
+		return
 	var oni := entities.get_entity(Visits.ONI_ID) as EntityBody
 	if oni == null or not oni.get_parameter("ai_enabled") or oni.is_attached() or oni.has_passenger():
 		return
@@ -1493,7 +1791,7 @@ func _mia_at_upper() -> bool:
 
 
 func _tick_mia() -> void:
-	if flask_state != 1:
+	if _friend_at_cafe(Life.MIA_ID) or flask_state != 1:
 		return
 	var mia := entities.get_entity(Life.MIA_ID) as EntityBody
 	if mia == null or mia_route_step >= Life.MIA_ROUTE.size():
@@ -2049,6 +2347,8 @@ func set_home_active(active: bool) -> void:
 		_ori_panel.hide()
 	if not active and is_instance_valid(_city_tool_panel):
 		_city_tool_panel.hide()
+	if not active and is_instance_valid(_evening_panel):
+		_evening_panel.hide()
 	process_mode = Node.PROCESS_MODE_PAUSABLE if active else Node.PROCESS_MODE_DISABLED
 	visible = active
 	$Interface.visible = active
@@ -2203,6 +2503,8 @@ func _physics_process(delta: float) -> void:
 		_tick_yuki(world_clock.sim_delta(delta))
 		_tick_ori()
 		_tick_ori_helper()
+		_tick_leia()
+		_tick_cafe(delta)
 		_observe_city_tools()
 		_tick_stamps(world_clock.sim_delta(delta))
 		_tick_music(world_clock.sim_delta(delta))
@@ -2262,6 +2564,9 @@ func _update_local_camera() -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if is_instance_valid(_evening_panel) and _evening_panel.visible:
+		apply_player_input(Vector2.ZERO)
+		return
 	if is_instance_valid(_city_tool_panel) and _city_tool_panel.visible:
 		apply_player_input(Vector2.ZERO)
 		return
@@ -2408,6 +2713,12 @@ func _nearby_action() -> String:
 	var ori_action := _ori_action()
 	if not ori_action.is_empty():
 		return ori_action
+	var leia_action := _leia_action()
+	if not leia_action.is_empty():
+		return leia_action
+	var cafe_action := _cafe_action()
+	if not cafe_action.is_empty():
+		return cafe_action
 	var tool := _city_tool_action()
 	if not tool.is_empty():
 		return "Взять " + TOOL_NAMES[tool]
@@ -2539,6 +2850,11 @@ func interact() -> bool:
 		return _interact_yuki()
 	if not _ori_action().is_empty():
 		return _interact_ori()
+	if _interact_leia():
+		return true
+	if not _cafe_action().is_empty():
+		_show_evening_panel()
+		return true
 	var city_tool := _city_tool_action()
 	if not city_tool.is_empty():
 		return _take_city_tool(city_tool)
@@ -2653,6 +2969,11 @@ func _set_wand_mode(mode: String) -> bool:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if is_instance_valid(_evening_panel) and _evening_panel.visible:
+		if event.keycode == KEY_ESCAPE and evening_stage != 1:
+			_evening_panel.hide()
+		get_viewport().set_input_as_handled()
 		return
 	if is_instance_valid(_city_tool_panel) and _city_tool_panel.visible:
 		if event.keycode == KEY_ESCAPE:
@@ -2948,6 +3269,8 @@ func make_snapshot() -> Dictionary:
 		data["city_ray_settled"] = city_ray_settled
 		data["friend_layout"] = 1
 		data["social"] = social.snapshot()
+		data["friend_extra_layout"] = 1
+		data["evening"] = _evening_snapshot()
 		data["oni_route_index"] = oni_route_index
 		data["flute_owned"] = flute_owned
 		data["prism_active"] = prism_active
@@ -2999,6 +3322,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_yuki := YukiProgram.new()
 	if not next_yuki.restore(data.get("yuki", next_yuki.snapshot())):
 		return false
+	var next_evening: Variant = data.get("evening", {"turtle_seen": false, "leia_free": false, "tamagotchi": false, "stage": 0, "origins": {}})
+	if not _valid_evening(next_evening):
+		return false
 	var next_social := Social.new()
 	var next_oni: Variant = data.get("oni_route_index", 0)
 	var next_flute: Variant = data.get("flute_owned", false)
@@ -3013,6 +3339,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 			or typeof(next_music_scale) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_music_scale)) \
 			or (float(next_music_scale) != 0.0 and (not next_flute or float(next_music_scale) < 0.5 or float(next_music_scale) > 2.0)) \
 			or not next_attraction.restore(data.get("music_attraction", 0.0)) or (not next_flute and next_attraction.remaining > 0.0):
+		return false
+	if (next_evening["stage"] > 0 and not next_social.can_gather()) or (next_evening["tamagotchi"] and not next_social.meetings.has("LEIA")):
 		return false
 	var next_hourglass: Variant = data.get("hourglass_owned", false)
 	var next_flask: Variant = data.get("flask_state", 0)
@@ -3212,6 +3540,16 @@ func apply_snapshot(data: Dictionary) -> bool:
 			return false
 		if not next_ori.order_id.is_empty() and not candidate["entities"].any(func(entry): return entry.get("id") == next_ori.order_id and entry.get("category") in OriCatalog.FORMS):
 			return false
+	if observation_fixture:
+		if not candidate.has("friend_extra_layout"):
+			if _initial_friend_extra.size() != FRIEND_EXTRA.size():
+				return false
+			candidate = candidate.duplicate(true)
+			for initial in _initial_friend_extra:
+				if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
+					candidate["entities"].append(initial.duplicate(true))
+		elif candidate["friend_extra_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -3264,6 +3602,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 	city_bench_observed = next_bench_seen
 	city_ray_settled = next_ray
 	social = next_social
+	leia_turtle_seen = next_evening["turtle_seen"]
+	leia_free = next_evening["leia_free"]
+	tamagotchi_owned = next_evening["tamagotchi"]
+	evening_stage = int(next_evening["stage"])
+	evening_origins = next_evening["origins"].duplicate(true)
+	_evening_delay = 1.8
+	if is_instance_valid(_evening_panel):
+		_evening_panel.hide()
 	oni_route_index = int(next_oni)
 	flute_owned = next_flute
 	prism_active = next_prism
@@ -3385,6 +3731,10 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		for definition in FRIEND_EXTRA:
+			var friend_body: EntityBody = candidates.get(definition["id"])
+			if friend_body == null or friend_body.record.category != definition["category"]:
+				return false
 		var passerby: EntityBody = candidates.get(PASSERBY)
 		if passerby == null or passerby.record.category not in ["resident", "mouse"]:
 			return false
