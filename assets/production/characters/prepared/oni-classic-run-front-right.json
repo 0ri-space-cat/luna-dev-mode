@@ -1,0 +1,69 @@
+{
+  "texture": "oni-classic-run-front-right.png",
+  "view": "front_right",
+  "cell_size": [
+    128,
+    192
+  ],
+  "anchor": [
+    64,
+    184
+  ],
+  "frames": [
+    {
+      "id": "contact-near",
+      "region": [
+        0,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "pass-far",
+      "region": [
+        128,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "contact-far",
+      "region": [
+        256,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "pass-near",
+      "region": [
+        384,
+        0,
+        128,
+        192
+      ]
+    }
+  ],
+  "run": [
+    {
+      "frame": "contact-near",
+      "duration_ms": 90
+    },
+    {
+      "frame": "pass-far",
+      "duration_ms": 80
+    },
+    {
+      "frame": "contact-far",
+      "duration_ms": 90
+    },
+    {
+      "frame": "pass-near",
+      "duration_ms": 80
+    }
+  ],
+  "loop": true
+}
