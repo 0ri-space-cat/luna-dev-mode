@@ -126,7 +126,7 @@ func _run() -> void:
 	assert(scene._coast_tide.surface == 30.0)
 	# Natural treads rise above the mouth, ending with a one-way ordinary drop.
 	for point in [Vector2(2980, 875), Vector2(2980, 820), Vector2(2980, 765),
-			Vector2(2980, 710), Vector2(2860, 710), Vector2(2750, 710)]:
+			Vector2(2980, 710), Vector2(2860, 710), Vector2(2730, 710)]:
 		assert(await _walk_to(scene, point), "upper grotto escape %s" % point)
 		assert(scene.actor.recoveries == 0)
 	assert(scene.actor.location_id == Coast.LOCATION_ID and is_zero_approx(scene.actor.motion.elevation))
