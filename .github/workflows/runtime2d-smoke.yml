@@ -64,6 +64,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_city_tools.gd
       - name: Test Leia encounter and voluntary cafe ending
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_friend_evening.gd
+      - name: Test Tamagotchi companion identity and module conservation
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_tamagotchi.gd
       - name: Test the starter world clock, camp and timed effects
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_world_time.gd
       - name: Test the finite ability instance and bank access

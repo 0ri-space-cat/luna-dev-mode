@@ -1174,6 +1174,12 @@ const CAFE_SEATS := [Vector2(5645, 280), Vector2(5645, 330), Vector2(5690, 370),
 var leia_turtle_seen := false
 var leia_free := false
 var tamagotchi_owned := false
+const TAMAGOTCHI_PET := "TAMAGOTCHI_PET"
+const TAMAGOTCHI_FORMS := {"cat": "Котик", "fox": "Лисичка"}
+const TamagotchiPanel = preload("res://scripts/skeleton/tamagotchi_panel_2d.gd")
+var _tamagotchi_panel: PanelContainer
+# A recalled entity is absent from the live registry; its complete record travels in saves.
+var _recalled_pet: Dictionary = {}
 var evening_stage := 0
 var evening_origins: Dictionary = {}
 var _evening_delay := 0.0
@@ -1202,6 +1208,8 @@ func _setup_friend_extra() -> void:
 	_evening_panel.position = Vector2(40, 80)
 	$Interface.add_child(_evening_panel)
 	_evening_panel.hide()
+	_tamagotchi_panel = TamagotchiPanel.new()
+	$Interface.add_child(_tamagotchi_panel)
 
 
 func _tick_leia() -> void:
@@ -1252,9 +1260,149 @@ func _interact_leia() -> bool:
 	social.complete("LEIA")
 	if leia_free:
 		tamagotchi_owned = true
+		_active_city_tool = "tamagotchi"
 		$Interface/SaveNotice.text = "Лея: Спасибо! Теперь мы можем пройти. Получено: Тамагочи."
 	else:
 		$Interface/SaveNotice.text = "Лея: Смотри, черепашка добралась!"
+	return true
+
+
+
+func spawn_entity(definition: Dictionary, point: Vector2, height: float) -> EntityBody:
+	# Keep one capacity slot for the dormant record included in snapshots.
+	if definition.get("id") == TAMAGOTCHI_PET or (not _recalled_pet.is_empty() and entities.count_live() >= _entity_limit() - 1):
+		return null
+	return super.spawn_entity(definition, point, height)
+
+
+func pet_configuration() -> Dictionary:
+	var pet := entities.get_entity(TAMAGOTCHI_PET) as EntityBody
+	if pet != null:
+		return {"form": pet.record.category, "color": pet.get_parameter("color"), "size": pet.get_parameter("size")}
+	if not _recalled_pet.is_empty():
+		return {"form": _recalled_pet["category"], "color": Color.html(_recalled_pet["editor"]["color"]), "size": _recalled_pet["movement"]["size"]}
+	return {"form": "cat", "color": Color("b790dd"), "size": 0.8}
+
+
+func _pet_tool_available() -> bool:
+	return observation_fixture and ecology_fixture and tamagotchi_owned and (actor as EntityBody).accepts_player_input() and not is_instance_valid(_debug_editor)
+
+
+func _pet_spawn_point(body: EntityBody) -> Vector2:
+	var height: float = actor.motion.elevation
+	for offset in [Vector2(42, 0), Vector2(-42, 0), Vector2(0, 42), Vector2(0, -42), Vector2(58, 48), Vector2(-58, 48), Vector2(58, -48), Vector2(-58, -48)]:
+		var point: Vector2 = actor.position + offset
+		if _entity_location(point) != _entity_location(actor.position) or not _friend_safe(body, point, height):
+			continue
+		var clear := true
+		for id in entities.list_ids():
+			var other := entities.get_entity(id) as EntityBody
+			if other == null or height >= other.motion.elevation + other.body_height() or other.motion.elevation >= height + body.body_height():
+				continue
+			if point.distance_to(other.position) < body.foot_radius() + other.foot_radius():
+				clear = false
+				break
+		if clear:
+			return point
+	return Vector2.INF
+
+
+func tamagotchi_configure(form: String, color: Color, size: float) -> bool:
+	if not _pet_tool_available() or not TAMAGOTCHI_FORMS.has(form) or not parameters.normalize(form, "color", color)["ok"] or not parameters.normalize(form, "size", size)["ok"]:
+		return false
+	var pet := entities.get_entity(TAMAGOTCHI_PET) as EntityBody
+	if pet != null:
+		if not pet.get_parameter("alive") or pet.is_attached() or pet.has_passenger() or not pet.motion.grounded or pet.location_id != _entity_location(actor.position) or not _within_reach(pet.position, pet.motion.elevation):
+			return false
+		# Resize first: geometry rejection must leave the original form and color intact.
+		if not pet.set_parameter("size", size):
+			return false
+		pet.record.category = form
+		pet.set_parameter("color", color)
+		entities.unregister_entity(TAMAGOTCHI_PET)
+		entities.register_entity(TAMAGOTCHI_PET, pet, _target_group(pet))
+		pet.refresh_form_marker()
+		return true
+	if not actor.motion.grounded or actor.is_attached() or entities.count_live() >= _entity_limit():
+		return false
+	if _recalled_pet.is_empty():
+		pet = _build_entity({"id": TAMAGOTCHI_PET, "category": form, "label": "Питомец Луны", "material": "FABRIC"})
+		if pet == null:
+			return false
+		pet.set_parameter("luna_relation", "FRIEND")
+		pet.set_parameter("behavior_mode", "FOLLOW")
+		pet.set_parameter("target_group", "LUNA")
+		pet.set_parameter("follow_distance", 1.0)
+	else:
+		pet = _build_saved_entity(_recalled_pet, 6)
+		if pet == null:
+			return false
+		pet.record.category = form
+	if not pet.restore_movement({"size": size, "speed": pet.get_parameter("speed")}) or not pet.set_parameter("color", color):
+		pet.free()
+		return false
+	var point := _pet_spawn_point(pet)
+	if not point.is_finite() or not pet.motion.start_on_safe_support(point, actor.motion.elevation, pet.surfaces):
+		pet.free()
+		return false
+	pet.position = point
+	pet.location_id = _entity_location(point)
+	if not entities.register_entity(TAMAGOTCHI_PET, pet, _target_group(pet)):
+		pet.free()
+		return false
+	_recalled_pet.clear()
+	add_child(pet)
+	return true
+
+
+func tamagotchi_install(ability: String) -> bool:
+	if not _pet_tool_available() or ability not in ["GLOW", "FLY"]:
+		return false
+	var pet := entities.get_entity(TAMAGOTCHI_PET) as EntityBody
+	if pet == null or not pet.get_parameter("alive") or not _within_reach(pet.position, pet.motion.elevation) or pet.location_id != _entity_location(actor.position):
+		return false
+	for instance_id in actor.record.get_component("ABILITY_BANK").get("instances", {}):
+		if ORI_MODULES.get(instance_id, "") == ability and ability_bank.move_instance(ENTITY_ID, TAMAGOTCHI_PET, instance_id, false):
+			if ability == "FLY":
+				pet.set_parameter("rideable", true)
+			return true
+	return false
+
+
+func toggle_tamagotchi() -> bool:
+	if not _pet_tool_available():
+		return false
+	var pet := entities.get_entity(TAMAGOTCHI_PET) as EntityBody
+	if pet == null:
+		var setup := pet_configuration()
+		return tamagotchi_configure(setup["form"], setup["color"], float(setup["size"]))
+	# Never remove a carrier, a carried body, a temporary stamp, or a live program host.
+	if not pet.motion.grounded or pet.is_attached() or pet.has_passenger() or not pet.get_parameter("alive") or city_tools.stamped.has(TAMAGOTCHI_PET) or yuki.rules.any(func(rule): return rule["host"] == TAMAGOTCHI_PET):
+		return false
+	if not pet.motion._has_support(SPAWN, 0.0, pet.surfaces, true) or not pet.fits_walls_at(SPAWN, 0.0, pet.foot_radius()) or not pet._is_dry(SPAWN, 0.0):
+		return false
+	# The inactive snapshot uses a stable dry anchor, not a conditional bridge.
+	# No active body is left there: the move, record and unregister are synchronous.
+	_place_friend(pet, SPAWN, 0.0)
+	for state in make_snapshot()["entities"]:
+		if state["id"] == TAMAGOTCHI_PET:
+			_recalled_pet = state.duplicate(true)
+			break
+	if _recalled_pet.is_empty():
+		return false
+	entities.unregister_entity(TAMAGOTCHI_PET)
+	# History may reference the removed Node; the saved Entity ID and components survive.
+	commands.clear_history()
+	pet.free()
+	return true
+
+
+func _open_tamagotchi() -> bool:
+	if not _pet_tool_available() or not is_instance_valid(_tamagotchi_panel):
+		return false
+	_active_city_tool = "tamagotchi"
+	_tamagotchi_panel.open_for(self)
+	apply_player_input(Vector2.ZERO)
 	return true
 
 
@@ -2349,6 +2497,8 @@ func set_home_active(active: bool) -> void:
 		_city_tool_panel.hide()
 	if not active and is_instance_valid(_evening_panel):
 		_evening_panel.hide()
+	if not active and is_instance_valid(_tamagotchi_panel):
+		_tamagotchi_panel.hide()
 	process_mode = Node.PROCESS_MODE_PAUSABLE if active else Node.PROCESS_MODE_DISABLED
 	visible = active
 	$Interface.visible = active
@@ -2545,6 +2695,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  J: ноутбук"
 	if ori.ownership > 0:
 		_status.text += "  ·  K: Каталог, L: повтор"
+	if tamagotchi_owned:
+		_status.text += "  ·  Z: Тамагочи"
 	if restriction_text.is_valid():
 		_status.text += restriction_text.call()
 	var action := _nearby_action()
@@ -2564,6 +2716,9 @@ func _update_local_camera() -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if is_instance_valid(_tamagotchi_panel) and _tamagotchi_panel.visible:
+		apply_player_input(Vector2.ZERO)
+		return
 	if is_instance_valid(_evening_panel) and _evening_panel.visible:
 		apply_player_input(Vector2.ZERO)
 		return
@@ -2970,6 +3125,11 @@ func _set_wand_mode(mode: String) -> bool:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
 		return
+	if is_instance_valid(_tamagotchi_panel) and _tamagotchi_panel.visible:
+		if event.keycode == KEY_ESCAPE:
+			_tamagotchi_panel.hide()
+		get_viewport().set_input_as_handled()
+		return
 	if is_instance_valid(_evening_panel) and _evening_panel.visible:
 		if event.keycode == KEY_ESCAPE and evening_stage != 1:
 			_evening_panel.hide()
@@ -3038,6 +3198,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_U:
 			if gravity_pull():
 				get_viewport().set_input_as_handled()
+		KEY_Z:
+			if _open_tamagotchi():
+				get_viewport().set_input_as_handled()
 		KEY_K:
 			if _open_ori():
 				get_viewport().set_input_as_handled()
@@ -3058,7 +3221,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if interact():
 				get_viewport().set_input_as_handled()
 			elif not is_instance_valid(_debug_editor):
-				if _active_city_tool == "ori" and ori.ownership > 0:
+				if _active_city_tool == "tamagotchi" and tamagotchi_owned:
+					if toggle_tamagotchi():
+						get_viewport().set_input_as_handled()
+				elif _active_city_tool == "ori" and ori.ownership > 0:
 					if not catalog_repeat().is_empty():
 						get_viewport().set_input_as_handled()
 				elif flask_state > 0 and not flask_effect.is_empty() and _apply_alchemy(flask_effect):
@@ -3087,7 +3253,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			exchange_nearby_wand()
 		KEY_ENTER:
 			if not is_instance_valid(_debug_editor):
-				if ori.ownership > 0 and (_near_ori() or _active_city_tool == "ori") and _open_ori():
+				if _active_city_tool == "tamagotchi" and _open_tamagotchi():
+					get_viewport().set_input_as_handled()
+				elif ori.ownership > 0 and (_near_ori() or _active_city_tool == "ori") and _open_ori():
 					get_viewport().set_input_as_handled()
 				elif yuki.ownership > 0 and (_near_yuki() or _active_city_tool == "yuki" or flask_state == 0) and _open_yuki():
 					get_viewport().set_input_as_handled()
@@ -3233,6 +3401,10 @@ func make_snapshot() -> Dictionary:
 		data["ecology_layout"] = 1
 		for entry in data["entities"]:
 			entry["components"] = entities.get_entity(entry["id"]).record.get_components()
+		if observation_fixture:
+			data["tamagotchi_recalled"] = not _recalled_pet.is_empty()
+			if not _recalled_pet.is_empty():
+				data["entities"].append(_recalled_pet.duplicate(true))
 	data["island"] = {
 		"access": access.snapshot(), "projection": wand_pair.original.snapshot(), "has_donut": has_donut,
 		"donut_refill": donut_refill, "retreat_step": retreat_step,
@@ -3324,6 +3496,25 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	var next_evening: Variant = data.get("evening", {"turtle_seen": false, "leia_free": false, "tamagotchi": false, "stage": 0, "origins": {}})
 	if not _valid_evening(next_evening):
+		return false
+	var next_recalled: Variant = data.get("tamagotchi_recalled", false)
+	if not next_recalled is bool:
+		return false
+	var pet_count := 0
+	for entry in states:
+		if not entry is Dictionary:
+			continue
+		if entry.get("id") == TAMAGOTCHI_PET:
+			pet_count += 1
+			if not observation_fixture or not ecology_fixture or not next_evening["tamagotchi"] or not TAMAGOTCHI_FORMS.has(entry.get("category")):
+				return false
+			if next_recalled:
+				var attachment: Variant = entry.get("attachment")
+				if not attachment is Dictionary or attachment.get("carrier_id") != "" or entry.get("position") != [SPAWN.x, SPAWN.y]:
+					return false
+		if next_recalled and entry.get("attachment") is Dictionary and entry["attachment"].get("carrier_id") == TAMAGOTCHI_PET:
+			return false
+	if pet_count > 1 or (next_recalled and (pet_count != 1 or next_tools.stamped.has(TAMAGOTCHI_PET) or next_yuki.rules.any(func(rule): return rule["host"] == TAMAGOTCHI_PET))):
 		return false
 	var next_social := Social.new()
 	var next_oni: Variant = data.get("oni_route_index", 0)
@@ -3605,6 +3796,17 @@ func apply_snapshot(data: Dictionary) -> bool:
 	leia_turtle_seen = next_evening["turtle_seen"]
 	leia_free = next_evening["leia_free"]
 	tamagotchi_owned = next_evening["tamagotchi"]
+	_recalled_pet.clear()
+	if next_recalled:
+		var recalled := entities.get_entity(TAMAGOTCHI_PET) as EntityBody
+		for entry in candidate["entities"]:
+			if entry["id"] == TAMAGOTCHI_PET:
+				_recalled_pet = entry.duplicate(true)
+				break
+		entities.unregister_entity(TAMAGOTCHI_PET)
+		recalled.free()
+	if is_instance_valid(_tamagotchi_panel):
+		_tamagotchi_panel.hide()
 	evening_stage = int(next_evening["stage"])
 	evening_origins = next_evening["origins"].duplicate(true)
 	_evening_delay = 1.8
