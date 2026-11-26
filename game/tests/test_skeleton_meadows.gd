@@ -25,6 +25,7 @@ func _run() -> void:
 	var trollik = scene.entities.get_entity(Meadows.TROLLIK_ID)
 	assert(fox != null and fox.get_parameter("alive") and fox.location_id == Meadows.LOCATION_ID)
 	assert(trollik != null and trollik.get_parameter("behavior_mode") == "CHASE")
+	assert(scene.entities.get_entity(Meadows.PLANK_ID).record.display_name == "Упавшая ветвь")
 
 	# Walk from the junction to the east bank via the dry lookout route.
 	assert(await _walk_to(scene, Vector2(1300, 374)))
@@ -63,7 +64,7 @@ func _run() -> void:
 	assert(await _walk_to(scene, Vector2(1370, 374)))
 	assert(await _walk_to(scene, Vector2(1145, 374)))
 	assert(scene.actor.location_id == scene.ISLAND_ID)
-	print("P9-03: linked meadows, dry loop, jump, ice, portable plank and bank recovery passed")
+	print("P9-03: linked meadows, dry loop, jump, ice, portable branch, legacy label migration and bank recovery passed")
 	scene.queue_free()
 	await process_frame
 	quit()
@@ -83,7 +84,12 @@ func _check_plank(scene: Node) -> bool:
 	assert(scene.actor.motion.grounded)
 
 	var saved: Dictionary = JSON.parse_string(JSON.stringify(scene.make_snapshot()))
+	# Simulate an M3.60 save of the same physical object on the creek.
+	for entry in saved["entities"]:
+		if entry["id"] == Meadows.PLANK_ID:
+			entry["label"] = "Доска"
 	assert(scene.apply_snapshot(saved))
+	assert(scene.entities.get_entity(Meadows.PLANK_ID).record.display_name == "Упавшая ветвь")
 	assert(await _walk_to(scene, Vector2(1650, 408)))
 	assert(await _walk_to(scene, Vector2(1488, 408)))
 	assert(scene.actor.recoveries == 0)

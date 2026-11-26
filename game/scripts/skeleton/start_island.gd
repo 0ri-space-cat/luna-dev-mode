@@ -195,7 +195,7 @@ func _spawn_meadow_entities() -> void:
 		"id": Meadows.TROLLIK_ID, "category": "trollik", "label": "Троллик", "material": "FABRIC",
 	}, Vector2(1870, 325), 0.0)
 	var plank := spawn_entity({
-		"id": Meadows.PLANK_ID, "category": "prop", "label": "Доска", "material": "WOOD",
+		"id": Meadows.PLANK_ID, "category": "prop", "label": "Упавшая ветвь", "material": "WOOD",
 	}, Meadows.PLANK_START, 0.0)
 	if fox == null or trollik == null or plank == null:
 		push_error("Could not place the meadow entities")
@@ -377,7 +377,12 @@ func _swim_id(identity: String) -> String:
 func _configure_plank_marker(plank: EntityBody) -> void:
 	var edge := Meadows.PLANK_SIZE / 2.0
 	plank._marker.polygon = PackedVector2Array([
-		-edge, Vector2(edge.x, -edge.y), edge, Vector2(-edge.x, edge.y),
+		# Reversible branch silhouette for graybox, not the final mossy sprite.
+		Vector2(-edge.x, -edge.y * 0.8), Vector2(-edge.x * 0.35, -edge.y),
+		Vector2(edge.x * 0.15, -edge.y * 0.85), Vector2(edge.x * 0.65, -edge.y),
+		Vector2(edge.x, -edge.y * 0.85), Vector2(edge.x, edge.y * 0.9),
+		Vector2(edge.x * 0.15, edge.y), Vector2(-edge.x * 0.4, edge.y * 0.85),
+		Vector2(-edge.x, edge.y),
 	])
 	actor.z_index = 1
 
@@ -518,12 +523,12 @@ func _nearby_action() -> String:
 	if plank != null:
 		if actor.has_passenger():
 			if _plank_placement(plank).is_finite():
-				return "Положить доску поперёк ручья"
+				return "Положить ветвь поперёк ручья"
 			return "Отпустить"
 		if not plank.is_attached() and plank.get_parameter("pickable") \
 				and actor.position.distance_squared_to(plank.position) <= ElevationBody.BOARD_RADIUS * ElevationBody.BOARD_RADIUS \
 				and absf(actor.motion.elevation - plank.motion.elevation) <= ElevationBody.BOARD_HEIGHT:
-			return "Взять доску"
+			return "Взять ветвь"
 	if actor.motion.grounded and not actor.is_attached() \
 			and actor.position.distance_squared_to(Meadows.CAMP_SPOT) <= CAMP_REACH * CAMP_REACH:
 		return "Отдохнуть до утра" if _rest_until_morning() else "Отдохнуть до ночи"
@@ -615,13 +620,13 @@ func interact() -> bool:
 			return world_clock.set_time_of_day(WorldClock.MORNING_MINUTE)
 		"Отдохнуть до ночи":
 			return world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
-		"Положить доску поперёк ручья":
+		"Положить ветвь поперёк ручья":
 			var plank := entities.get_entity(Meadows.PLANK_ID) as EntityBody
 			if not actor.try_place_carried(_plank_placement(plank), 0.0):
 				return false
 			_refresh_plank_surface()
 			return true
-		"Взять доску":
+		"Взять ветвь":
 			if not interact_with_attachment(Meadows.PLANK_ID):
 				return false
 			_refresh_plank_surface()
@@ -912,6 +917,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	var body := super._build_saved_entity(state, version)
+	# Preserve the original stable ID, position, ownership and editable state.
+	if body != null and body.entity_id == Meadows.PLANK_ID and body.record.display_name == "Доска":
+		body.record.display_name = "Упавшая ветвь"
 	if body != null and ecology_fixture and not body.record.set_components(state.get("components", {})):
 		body.free()
 		return null
