@@ -18,6 +18,7 @@ var step_obstacle: SkeletonElevationBody2D
 var autonomous_destination := Vector2.INF
 # Transient musical interest; never overwrites autonomous scripts or saved relationships.
 var music_interest := Vector2.INF
+var _ability_glow: PointLight2D
 
 
 func get_world_location_id() -> String:
@@ -43,6 +44,34 @@ func can_edit_parameter(key: String) -> bool:
 func _ready() -> void:
 	super._ready()
 	_marker.color = get_parameter("color")
+	_sync_ability_glow()
+
+
+func has_active_ability(ability_id: String) -> bool:
+	for module in record.get_component("ABILITY_SET").get("instances", {}).values():
+		if module["enabled"] and module["ability_id"] == ability_id:
+			return true
+	return false
+
+
+func _sync_ability_glow() -> void:
+	var enabled := has_active_ability("GLOW") and get_parameter("alive")
+	if enabled and not is_instance_valid(_ability_glow):
+		_ability_glow = PointLight2D.new()
+		var gradient := Gradient.new()
+		gradient.colors = PackedColorArray([Color(1.0, 0.9, 0.6, 1.0), Color(1.0, 0.9, 0.6, 0.0)])
+		var texture := GradientTexture2D.new()
+		texture.gradient = gradient
+		texture.width = 160
+		texture.height = 160
+		texture.fill = GradientTexture2D.FILL_RADIAL
+		texture.fill_from = Vector2(0.5, 0.5)
+		texture.fill_to = Vector2(1.0, 0.5)
+		_ability_glow.texture = texture
+		_ability_glow.energy = 0.9
+		_marker.add_child(_ability_glow)
+	if is_instance_valid(_ability_glow):
+		_ability_glow.enabled = enabled
 
 
 func set_parameter(key: String, value: Variant) -> bool:
@@ -197,8 +226,12 @@ func jump() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_sync_ability_glow()
 	if not _can_act():
 		_stop_active_motion()
+	elif can_fly() and is_instance_valid(_rider) and not _rider.is_carried() and _rider.has_method("accepts_player_input") and _rider.accepts_player_input():
+		direction = _rider.direction
+		thrust_requested = _rider.swim_intent > 0.0
 	elif get_parameter("ai_enabled"):
 		direction = _wander_on_support(delta)
 	elif not accepts_player_input():

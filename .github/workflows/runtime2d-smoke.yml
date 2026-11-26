@@ -58,6 +58,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_luma_city.gd
       - name: Test Yuki notebook, physical program carriers and durable scripts
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_yuki.gd
+      - name: Test Ori catalog, physical creation and finite light transfer
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_ori.gd
       - name: Test the starter world clock, camp and timed effects
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_world_time.gd
       - name: Test the finite ability instance and bank access

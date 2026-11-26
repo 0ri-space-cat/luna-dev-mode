@@ -324,7 +324,7 @@ func _entity_limit() -> int:
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -418,6 +418,8 @@ func _ready() -> void:
 		_spawn_oni()
 		_spawn_city()
 		_setup_yuki()
+		if ecology_fixture:
+			_setup_ori()
 		_setup_flute()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
@@ -630,6 +632,145 @@ func _open_yuki() -> bool:
 	return true
 
 
+const OriCatalog = preload("res://scripts/runtime2d/ori_catalog_2d.gd")
+const OriPanel = preload("res://scripts/skeleton/ori_panel_2d.gd")
+const ORI_GLOW_DONOR := "C3_GLOW_LIZARD"
+const ORI_FLY_DONOR := "C3_FLY_RAY"
+const ORI_CUSTOMER := "C3_CUSTOMER"
+const ORI_GLOW_INSTANCE := "GLOW_C3_LIZARD"
+const ORI_FLY_INSTANCE := "FLY_C3_RAY"
+const ORI_MODULES := {ORI_GLOW_INSTANCE: "GLOW", ORI_FLY_INSTANCE: "FLY"}
+const ORI_CREATED_PREFIX := "ORI_CREATED_"
+var ori := OriCatalog.new()
+var _ori_panel: PanelContainer
+var _initial_ori_states: Array[Dictionary] = []
+
+
+func _setup_ori() -> void:
+	for definition in [
+		{"id": ORI_GLOW_DONOR, "category": "lizard", "label": "Неоновая ящерка", "material": "FABRIC", "point": Vector2(5950, 590), "module": ORI_GLOW_INSTANCE},
+		{"id": ORI_FLY_DONOR, "category": "ray", "label": "Скат", "material": "FABRIC", "point": Vector2(6125, 595), "module": ORI_FLY_INSTANCE},
+		{"id": ORI_CUSTOMER, "category": "resident", "label": "Посетитель", "material": "FABRIC", "point": Vector2(6110, 675), "module": ""}
+	]:
+		var resident := spawn_entity(definition, definition["point"], 0.0)
+		if resident == null:
+			push_error("Could not place Ori shop resident " + definition["id"])
+			continue
+		resident.set_parameter("behavior_mode", "IDLE")
+		if not definition["module"].is_empty():
+			resident.record.set_component("ABILITY_SET", {"instances": {definition["module"]: {"ability_id": ORI_MODULES[definition["module"]], "enabled": true, "protected": false}}})
+	for state in make_snapshot()["entities"]:
+		if state["id"] in [ORI_GLOW_DONOR, ORI_FLY_DONOR, ORI_CUSTOMER]:
+			_initial_ori_states.append(state)
+	var panel := OriPanel.new()
+	$Interface.add_child(panel)
+	_ori_panel = panel
+
+
+func _near_ori() -> bool:
+	var friend_body := entities.get_entity(City.ORI) as EntityBody
+	return observation_fixture and ecology_fixture and friend_body != null and City.SHOP.has_point(actor.position) and City.SHOP.has_point(friend_body.position) and friend_body.get_parameter("alive") and _within_reach(friend_body.position, friend_body.motion.elevation) and (actor as EntityBody).accepts_player_input()
+
+
+func _ori_action() -> String:
+	if not _near_ori():
+		return ""
+	if ori.ownership == 0:
+		return "Одолжить Каталог Ори"
+	if ori.ownership == 1 and not ori.order_id.is_empty():
+		return "Обсудить помощников с Ори"
+	return ""
+
+
+func _interact_ori() -> bool:
+	match _ori_action():
+		"Одолжить Каталог Ори":
+			ori.ownership = 1
+			_tick_ori()
+			return true
+		"Обсудить помощников с Ори":
+			# The first real order is enough for the café; the gift is reserved
+			# for the second authored exploration episode.
+			social.complete("ORI")
+			$Interface/SaveNotice.text = "Ори: А кого бы ты придумала для себя?"
+			return true
+	return false
+
+
+func return_ori_loan() -> bool:
+	if ori.ownership != 1 or not _near_ori():
+		return false
+	ori.ownership = 0
+	return true
+
+
+func _tick_ori() -> void:
+	if not observation_fixture or not ecology_fixture:
+		return
+	var location := _entity_location(actor.position)
+	var customer := entities.get_entity(ORI_CUSTOMER) as EntityBody
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		if body == null or body.location_id != location or not body.visible or not body.get_parameter("alive"):
+			continue
+		if _within_reach(body.position, body.motion.elevation):
+			ori.discover(body.record.category)
+		if ori.order_id.is_empty() and ori.ownership > 0 and customer != null and identity.begins_with(ORI_CREATED_PREFIX) and body.record.category == "cat" and body.get_parameter("luna_relation") == "FRIEND" and body.has_active_ability("GLOW") and City.SHOP.has_point(customer.position) and City.SHOP.has_point(body.position) and body.position.distance_to(customer.position) <= 50.0 and _within_reach(customer.position, customer.motion.elevation):
+			ori.order_id = identity
+			social.complete("ORI")
+
+
+func _can_extract_ori(target: EntityBody) -> bool:
+	return ori.ownership > 0 and target != null and target != actor and target.get_parameter("alive") and target.visible and target.location_id == _entity_location(actor.position) and _within_reach(target.position, target.motion.elevation) and wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, "mass")
+
+
+func request_extract_ori(target_id: String, instance_id: String) -> bool:
+	var target := entities.get_entity(target_id) as EntityBody
+	return ORI_MODULES.has(instance_id) and _can_extract_ori(target) and ability_bank.move_instance(ENTITY_ID, target_id, instance_id, true)
+
+
+func catalog_create(data: Dictionary) -> String:
+	if ori.ownership == 0 or not ecology_fixture or not (actor as EntityBody).accepts_player_input() or not actor.motion.grounded or not ori.valid_template(data) or ori.serial >= OriCatalog.MAX_CREATIONS:
+		return ""
+	var identity := ORI_CREATED_PREFIX + str(ori.serial + 1)
+	var form: String = data["form"]
+	var location := _entity_location(actor.position)
+	for offset in [Vector2(42, 0), Vector2(-42, 0), Vector2(0, 42), Vector2(0, -42), Vector2(50, 45), Vector2(-50, 45)]:
+		var point: Vector2 = actor.position + offset
+		# The four ordinary city interiors share the city ID but not geometry.
+		if _entity_location(point) != location:
+			continue
+		var creature := spawn_entity({"id": identity, "category": form, "label": OriCatalog.FORMS[form], "material": "FABRIC"}, point, actor.motion.elevation)
+		if creature == null:
+			continue
+		ori.serial += 1
+		ori.template = data.duplicate(true)
+		creature.set_parameter("size", float(data["size"]))
+		creature.set_parameter("luna_relation", data["relation"])
+		if data["relation"] == "FRIEND":
+			creature.set_parameter("behavior_mode", "FOLLOW")
+		var bank: Dictionary = actor.record.get_component("ABILITY_BANK").get("instances", {})
+		for instance_id in bank:
+			if ORI_MODULES.get(instance_id, "") == data["ability"] and not str(data["ability"]).is_empty():
+				if ability_bank.move_instance(ENTITY_ID, identity, instance_id, false) and data["ability"] == "FLY":
+					creature.set_parameter("rideable", true)
+				break
+		return identity
+	return ""
+
+
+func catalog_repeat() -> String:
+	return catalog_create(ori.template)
+
+
+func _open_ori() -> bool:
+	if ori.ownership == 0 or not is_instance_valid(_ori_panel) or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
+		return false
+	_ori_panel.open_for(self)
+	apply_player_input(Vector2.ZERO)
+	return true
+
+
 func _spawn_city() -> void:
 	for definition in City.DEFINITIONS:
 		var body := spawn_entity(definition, definition["point"], definition["height"])
@@ -724,9 +865,9 @@ func _city_friend_action() -> String:
 			and toffi.get_parameter("alive") and _within_reach(toffi.position, toffi.motion.elevation) \
 			and city_ray_settled and ray.position.distance_to(City.RAY_REST) <= 15.0:
 		return "Посмотреть на ската с Тоффи"
-	var yuki := entities.get_entity(City.YUKI) as EntityBody
-	if yuki != null and City.WORKSHOP.has_point(actor.position) and City.WORKSHOP.has_point(yuki.position) \
-			and yuki.get_parameter("alive") and _within_reach(yuki.position, yuki.motion.elevation) and city_bench_observed:
+	var yuki_body := entities.get_entity(City.YUKI) as EntityBody
+	if yuki_body != null and City.WORKSHOP.has_point(actor.position) and City.WORKSHOP.has_point(yuki_body.position) \
+			and yuki_body.get_parameter("alive") and _within_reach(yuki_body.position, yuki_body.motion.elevation) and city_bench_observed and city_bench_active:
 		return "Обсудить скамейку с Юки"
 	return ""
 
@@ -1431,7 +1572,7 @@ func _spawn_on_support(body: EntityBody, point: Vector2, height: float) -> bool:
 
 func _holds_ecology_catalog() -> bool:
 	var item := entities.get_entity(ECOLOGY_CATALOG) as EntityBody
-	return item != null and item.is_carried_by(actor)
+	return ori.ownership > 0 or (item != null and item.is_carried_by(actor))
 
 
 func request_wand_parameter_edit(target_id: String, parameter_id: String, value: Variant) -> bool:
@@ -1518,6 +1659,8 @@ func set_home_active(active: bool) -> void:
 		ancient_console.close()
 	if not active and is_instance_valid(_yuki_panel):
 		_yuki_panel.hide()
+	if not active and is_instance_valid(_ori_panel):
+		_ori_panel.hide()
 	process_mode = Node.PROCESS_MODE_PAUSABLE if active else Node.PROCESS_MODE_DISABLED
 	visible = active
 	$Interface.visible = active
@@ -1670,6 +1813,7 @@ func _physics_process(delta: float) -> void:
 		_tick_oni()
 		_tick_city()
 		_tick_yuki(world_clock.sim_delta(delta))
+		_tick_ori()
 		_tick_music(world_clock.sim_delta(delta))
 		_update_yeti_route()
 		_refresh_plank_surface()
@@ -1706,6 +1850,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Enter: склянка"
 	if yuki.ownership > 0:
 		_status.text += "  ·  J: ноутбук"
+	if ori.ownership > 0:
+		_status.text += "  ·  K: Каталог, L: повтор"
 	if restriction_text.is_valid():
 		_status.text += restriction_text.call()
 	var action := _nearby_action()
@@ -1725,7 +1871,7 @@ func _update_local_camera() -> void:
 
 
 func _apply_keyboard_input() -> void:
-	if is_instance_valid(_yuki_panel) and _yuki_panel.visible:
+	if (is_instance_valid(_yuki_panel) and _yuki_panel.visible) or (is_instance_valid(_ori_panel) and _ori_panel.visible):
 		apply_player_input(Vector2.ZERO)
 		return
 	if music_focus:
@@ -1865,6 +2011,9 @@ func _nearby_action() -> String:
 	var yuki_action := _yuki_action()
 	if not yuki_action.is_empty():
 		return yuki_action
+	var ori_action := _ori_action()
+	if not ori_action.is_empty():
+		return ori_action
 	var tunnel_action := _tunnel_action()
 	if not tunnel_action.is_empty():
 		return tunnel_action
@@ -1991,6 +2140,8 @@ func interact() -> bool:
 		return _city_friend_interact(friend_action)
 	if not _yuki_action().is_empty():
 		return _interact_yuki()
+	if not _ori_action().is_empty():
+		return _interact_ori()
 	match _nearby_action():
 		"Нырнуть в тоннель":
 			return _use_tunnel(Tunnel.WEST_EXIT, Tunnel.LOCATION_ID)
@@ -2103,6 +2254,11 @@ func _set_wand_mode(mode: String) -> bool:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
 		return
+	if is_instance_valid(_ori_panel) and _ori_panel.visible:
+		if event.keycode == KEY_ESCAPE:
+			_ori_panel.hide()
+		get_viewport().set_input_as_handled()
+		return
 	if is_instance_valid(_yuki_panel) and _yuki_panel.visible:
 		if event.keycode == KEY_ESCAPE:
 			_yuki_panel.hide()
@@ -2135,6 +2291,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	match event.keycode:
+		KEY_K:
+			if _open_ori():
+				get_viewport().set_input_as_handled()
 		KEY_J:
 			if _open_yuki():
 				get_viewport().set_input_as_handled()
@@ -2150,6 +2309,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 		KEY_E:
 			if interact() or (flask_state > 0 and not flask_effect.is_empty() and not is_instance_valid(_debug_editor) and _apply_alchemy(flask_effect)):
+				get_viewport().set_input_as_handled()
+		KEY_L:
+			if not is_instance_valid(_debug_editor) and not catalog_repeat().is_empty():
 				get_viewport().set_input_as_handled()
 		KEY_H:
 			if cycle_hourglass():
@@ -2172,12 +2334,16 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			exchange_nearby_wand()
 		KEY_ENTER:
 			if not is_instance_valid(_debug_editor):
-				if yuki.ownership > 0 and (_near_yuki() or flask_state == 0) and _open_yuki():
+				if ori.ownership > 0 and _near_ori() and _open_ori():
+					get_viewport().set_input_as_handled()
+				elif yuki.ownership > 0 and (_near_yuki() or flask_state == 0) and _open_yuki():
 					get_viewport().set_input_as_handled()
 				elif flask_state > 0 and _alchemy_panel != null:
 					_alchemy_panel.configure_access(true, true, false)
 					_alchemy_panel.show()
 					apply_player_input(Vector2.ZERO)
+					get_viewport().set_input_as_handled()
+				elif ori.ownership > 0 and _open_ori():
 					get_viewport().set_input_as_handled()
 				elif _restore_nearby_swim():
 					get_viewport().set_input_as_handled()
@@ -2272,6 +2438,16 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 		elif bank.has(DUPLICATE_MODULE_ID):
 			tabs["Способности"] = [{"id": DUPLICATE_MODULE_ID, "label": "DUPLICATE", "kind": "action",
 				"value": "Установить", "action": func(): return request_install_duplicate(target_id)}]
+	if not tabs.is_empty() and ori.ownership > 0:
+		var target := entities.get_entity(target_id) as EntityBody
+		if _can_extract_ori(target):
+			var installed: Dictionary = target.record.get_component("ABILITY_SET").get("instances", {})
+			for module_id in ORI_MODULES:
+				if installed.has(module_id):
+					var id: String = module_id
+					if not tabs.has("Способности"):
+						tabs["Способности"] = []
+					tabs["Способности"].append({"id": id, "label": ORI_MODULES[id], "kind": "action", "value": "В банк", "action": func(): return request_extract_ori(target_id, id)})
 	return tabs
 
 
@@ -2328,6 +2504,9 @@ func make_snapshot() -> Dictionary:
 		data["city_layout"] = 1
 		data["yuki_layout"] = 1
 		data["yuki"] = yuki.snapshot()
+		if ecology_fixture:
+			data["ori_layout"] = 1
+			data["ori"] = ori.snapshot()
 		data["city_bench_active"] = city_bench_active
 		data["city_bench_step"] = city_bench_step
 		data["city_bench_observed"] = city_bench_observed
@@ -2369,6 +2548,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 			or typeof(next_bench_step) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_bench_step)) \
 			or float(next_bench_step) != floorf(float(next_bench_step)) or int(next_bench_step) < 0 \
 			or int(next_bench_step) >= City.BENCH_ROUTE.size():
+		return false
+	var next_ori := OriCatalog.new()
+	if not next_ori.restore(data.get("ori", next_ori.snapshot())):
 		return false
 	var next_yuki := YukiProgram.new()
 	if not next_yuki.restore(data.get("yuki", next_yuki.snapshot())):
@@ -2551,6 +2733,27 @@ func apply_snapshot(data: Dictionary) -> bool:
 				cats += 1
 		if cats != next_yuki.spawn_serial:
 			return false
+	if observation_fixture and ecology_fixture:
+		if not candidate.has("ori_layout"):
+			if _initial_ori_states.size() != 3:
+				return false
+			candidate = candidate.duplicate(true)
+			for initial in _initial_ori_states:
+				if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
+					candidate["entities"].append(initial.duplicate(true))
+		elif candidate["ori_layout"] != 1:
+			return false
+		var created := 0
+		for entry in candidate["entities"]:
+			if str(entry.get("id", "")).begins_with(ORI_CREATED_PREFIX):
+				var suffix: String = str(entry["id"]).trim_prefix(ORI_CREATED_PREFIX)
+				if not suffix.is_valid_int() or int(suffix) < 1 or int(suffix) > next_ori.serial or entry.get("category") not in next_ori.known:
+					return false
+				created += 1
+		if created != next_ori.serial:
+			return false
+		if not next_ori.order_id.is_empty() and not candidate["entities"].any(func(entry): return entry.get("id") == next_ori.order_id and entry.get("category") == "cat"):
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -2586,6 +2789,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 			if not previous_coast_bridge:
 				_surfaces.erase(CoastExtra.BRIDGE)
 		return false
+	ori = next_ori
+	if is_instance_valid(_ori_panel):
+		_ori_panel.hide()
 	yuki = next_yuki
 	if is_instance_valid(_yuki_panel):
 		_yuki_panel.hide()
@@ -2763,6 +2969,13 @@ func _validate_saved_entities(candidates: Dictionary) -> bool:
 		if copies > DUPLICATE_LIMIT:
 			return false
 		counts[DUPLICATE_MODULE_ID] = 0
+		for resident_id in [ORI_GLOW_DONOR, ORI_FLY_DONOR, ORI_CUSTOMER]:
+			var resident: EntityBody = candidates.get(resident_id)
+			var expected: String = {ORI_GLOW_DONOR: "lizard", ORI_FLY_DONOR: "ray", ORI_CUSTOMER: "resident"}[resident_id]
+			if resident == null or resident.record.category != expected:
+				return false
+		for module_id in ORI_MODULES:
+			counts[module_id] = 0
 	var catalog: EntityBody = candidates.get(ECOLOGY_CATALOG)
 	if catalog == null or catalog.record.category != "prop":
 		return false
@@ -2775,6 +2988,11 @@ func _validate_saved_entities(candidates: Dictionary) -> bool:
 			var items := AbilityBank.instances(candidates[identity].record.get_components(), component)
 			for module in items:
 				if not counts.has(module):
+					continue
+				if ORI_MODULES.has(module):
+					if items[module]["ability_id"] != ORI_MODULES[module] or items[module]["protected"] or (component == "ABILITY_BANK" and identity != ENTITY_ID) or (component == "ABILITY_SET" and candidates[identity].record.category not in OriCatalog.FORMS):
+						return false
+					counts[module] += 1
 					continue
 				if module == DUPLICATE_MODULE_ID:
 					if items[module]["ability_id"] != "DUPLICATE" or items[module]["protected"] \
