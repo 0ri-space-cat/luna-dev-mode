@@ -193,6 +193,9 @@ func _has_support(point: Vector2, height: float, surfaces: Array[Dictionary],
 		if require_safe_anchor:
 			if not surface.get("safe", true):
 				continue
+			# Narrow ledges remain walkable but cannot be a safe recovery anchor.
+			if bounds.size.x <= safe_margin * 2.0 or bounds.size.y <= safe_margin * 2.0:
+				continue
 			bounds = bounds.grow(-safe_margin)
 		if bounds.has_point(point) and is_equal_approx(float(surface["height"]), height):
 			return true

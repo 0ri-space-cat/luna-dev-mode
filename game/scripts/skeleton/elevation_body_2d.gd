@@ -328,7 +328,11 @@ func _dry_landing_height(point: Vector2, feet: float) -> float:
 	for surface in surfaces:
 		var height: float = surface["height"]
 		var bounds: Rect2 = surface["bounds"]
-		if not surface.get("safe", true) or not bounds.grow(-motion.safe_margin).has_point(point):
+		if not surface.get("safe", true):
+			continue
+		if bounds.size.x <= motion.safe_margin * 2.0 or bounds.size.y <= motion.safe_margin * 2.0:
+			continue
+		if not bounds.grow(-motion.safe_margin).has_point(point):
 			continue
 		if height > feet + ElevationMotion.EPSILON or feet - height > MAX_SAFE_DROP:
 			continue

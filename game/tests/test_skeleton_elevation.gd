@@ -135,6 +135,14 @@ func _check_solver() -> void:
 		body.step(point, point, 0.2, -600.0, ground)
 		assert(body.grounded and is_equal_approx(body.elevation, 72.0))
 
+	# Large bodies can stand on a narrow ledge but must never use it as a
+	# safe recovery anchor when their footprint cannot fit.
+	var narrow: Array[Dictionary] = [{"height": 0.0, "bounds": Rect2(0, 0, 10, 80)}]
+	var large := Motion.new()
+	large.safe_margin = 12.0
+	assert(large._has_support(Vector2(5, 40), 0.0, narrow, false))
+	assert(not large._has_support(Vector2(5, 40), 0.0, narrow, true))
+
 	# Stepping off halfway through a tick falls for the remaining time.
 	var edge_body := Motion.new()
 	edge_body.reset_on_surface(Vector2(70, 50), 72.0)
