@@ -14,6 +14,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	_check_instability_contract()
 	Engine.time_scale = 3.0
 	_open_playable_world()
 	await physics_frame
@@ -47,6 +48,7 @@ func _run() -> void:
 	assert(game.report_system_incident("DEV_SINGLE_FAULT"))
 	assert(await _wait_for_recovery())
 	assert(game.journal.applied == 0 and not game.journal.history[-1]["overload"])
+	assert(is_zero_approx(game.journal.instability))
 	for repeat in 2:
 		assert(game.demonstrate_overload())
 		assert(await _wait_for_recovery())
@@ -61,9 +63,12 @@ func _run() -> void:
 	await _restart()
 	assert(await _wait_for_recovery())
 	assert(game.journal.applied == 1 and game.journal.serial == accepted)
+	assert(game.journal.instability > 55.0 and game.journal.instability <= 60.0)
 	assert(game.home.access.wand_mode == Access.ORDINARY)
 	assert(game.home.wand_pair.held == game.home.WandPair.DUPLICATE)
+	var pressure_before := game.journal.instability
 	assert(game.apply_local_rollback(known_world))
+	assert(is_equal_approx(game.journal.instability, pressure_before))
 	assert(game.home.wand_pair.original.ground_location_id == game.home.Lake.LOCATION_ID)
 	assert(known_world["island"]["projection"]["location_id"] == game.home.Lake.LEGACY_LOCATION_ID)
 	assert(game.load_game() and game.journal.applied == 1)
@@ -145,6 +150,38 @@ func _run() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_profile + ".bak"))
 	print("ADMIN: playable island, W6, overload, durable reset and physical Void round trip passed")
 	quit()
+
+
+func _check_instability_contract() -> void:
+	var value := Journal.new()
+	assert(value.accept("FAULT", false))
+	value.acknowledge()
+	assert(is_zero_approx(value.instability))
+	assert(value.accept("OVERFLOW", true))
+	assert(not value.accept("DUPLICATE", true))
+	assert(is_zero_approx(value.instability))
+	var restored := Journal.new()
+	assert(restored.restore(value.snapshot()))
+	restored.acknowledge()
+	restored.acknowledge()
+	assert(is_equal_approx(restored.instability, 20.0))
+	restored.advance(300.0)
+	assert(is_equal_approx(restored.instability, 18.5))
+	var legacy := restored.snapshot()
+	legacy.erase("instability")
+	var migrated := Journal.new()
+	assert(migrated.restore(legacy))
+	assert(is_equal_approx(migrated.instability, restored.instability))
+	var invalid := restored.snapshot()
+	invalid["instability"] = 101.0
+	assert(not migrated.restore(invalid))
+	assert(is_equal_approx(migrated.instability, 18.5))
+	for index in range(10):
+		assert(restored.accept("OVERFLOW", true))
+		restored.acknowledge()
+	assert(is_equal_approx(restored.instability, Journal.INSTABILITY_MAX))
+	restored.advance(30000.0)
+	assert(is_zero_approx(restored.instability))
 
 
 func _open_playable_world() -> void:

@@ -143,6 +143,30 @@ func _check_solver() -> void:
 	assert(large._has_support(Vector2(5, 40), 0.0, narrow, false))
 	assert(not large._has_support(Vector2(5, 40), 0.0, narrow, true))
 
+	# Same-height seams are walkable in both directions, even across many tiles.
+	var tiled: Array[Dictionary] = [
+		{"height": 0.0, "bounds": Rect2(200, 0, 100, 100)},
+		{"height": 0.0, "bounds": Rect2(0, 0, 100, 100)},
+		{"height": 0.0, "bounds": Rect2(100, 0, 100, 100)},
+	]
+	var seam := Motion.new()
+	for endpoints in [[Vector2(50, 50), Vector2(250, 50)], [Vector2(250, 50), Vector2(50, 50)],
+			[Vector2(104, 50), Vector2(96, 50)], [Vector2(96, 50), Vector2(104, 50)]]:
+		seam.reset_on_surface(endpoints[0], 0.0)
+		seam.step(endpoints[0], endpoints[1], 0.05, -600.0, tiled)
+		assert(seam.grounded and is_zero_approx(seam.elevation))
+	var gap: Array[Dictionary] = [
+		{"height": 0.0, "bounds": Rect2(0, 0, 100, 100)},
+		{"height": 0.0, "bounds": Rect2(110, 0, 100, 100)},
+	]
+	seam.reset_on_surface(Vector2(90, 50), 0.0)
+	seam.step(Vector2(90, 50), Vector2(120, 50), 0.15, -600.0, gap)
+	assert(not seam.grounded and seam.elevation < 0.0)
+	gap[1] = {"height": -32.0, "bounds": Rect2(100, 0, 100, 100)}
+	seam.reset_on_surface(Vector2(90, 50), 0.0)
+	seam.step(Vector2(90, 50), Vector2(120, 50), 0.15, -600.0, gap)
+	assert(not seam.grounded and seam.elevation < 0.0)
+
 	# Stepping off halfway through a tick falls for the remaining time.
 	var edge_body := Motion.new()
 	edge_body.reset_on_surface(Vector2(70, 50), 72.0)

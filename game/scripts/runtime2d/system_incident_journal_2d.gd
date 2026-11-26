@@ -19,7 +19,12 @@ const WINDOW_SECONDS := 900.0
 const FIRST_THRESHOLD := 3
 const NEXT_THRESHOLD := 2
 const MAX_SERIAL := 2147483647
+# M3.80 working balance. This is world pressure, never a court trigger.
+const INSTABILITY_MAX := 100.0
+const INSTABILITY_OVERLOAD := 20.0
+const INSTABILITY_DECAY := 1.5 / 300.0
 
+var instability := 0.0
 var serial := 0
 var applied := 0
 var active_seconds := 0.0
@@ -37,6 +42,7 @@ var frost_ready_at := 0.0
 func advance(delta: float) -> void:
 	if delta > 0.0 and is_finite(delta):
 		active_seconds += delta
+		instability = maxf(0.0, instability - delta * INSTABILITY_DECAY)
 
 
 func accept(reason: String, overload: bool) -> bool:
@@ -82,6 +88,9 @@ func acknowledge(wall_time: float = 0.0) -> void:
 				if restriction_remaining() <= 0.0:
 					restriction_until = active_seconds + RESTRICTION_SECONDS
 					frost_ready_at = 0.0
+	# Commit the pressure once, only when the accepted incident is acknowledged.
+	if pending["overload"]:
+		instability = minf(INSTABILITY_MAX, instability + INSTABILITY_OVERLOAD)
 	history.append(pending)
 	pending = {}
 
@@ -119,6 +128,7 @@ func surrender() -> bool:
 
 func snapshot() -> Dictionary:
 	return {"serial": serial, "applied": applied, "active_seconds": active_seconds,
+		"instability": instability,
 		"wand_mode": wand_mode, "history": history.duplicate(true), "pending": pending.duplicate(true),
 		"administrator": {"attitude": attitude, "encounter": encounter, "encounter_until": encounter_until,
 			"stasis_deadline": stasis_deadline, "restriction_until": restriction_until, "frost_ready_at": frost_ready_at}}
@@ -158,8 +168,14 @@ func restore(value: Variant) -> bool:
 	if not next_pending.is_empty() and (not _valid_incident(next_pending, latest, previous_time, end_time) \
 			or (_stage(next_pending["action"]) > 0 and _stage(next_pending["action"]) != mini(stage + 1, ACTIONS.size() - 1))):
 		return false
+	var pressure: Variant = value.get("instability", 0.0)
+	if not _number(pressure) or float(pressure) > INSTABILITY_MAX:
+		return false
+	if not value.has("instability"):
+		pressure = _legacy_instability(entries, end_time)
 	if not _restore_administrator(value.get("administrator", {}), stage, end_time, next_pending):
 		return false
+	instability = float(pressure)
 	serial = latest
 	applied = stage
 	active_seconds = end_time
@@ -167,6 +183,18 @@ func restore(value: Variant) -> bool:
 	history.assign(entries.duplicate(true))
 	pending = next_pending.duplicate(true)
 	return true
+
+
+func _legacy_instability(entries: Array, end_time: float) -> float:
+	var pressure := 0.0
+	var last := 0.0
+	for entry in entries:
+		var at := float(entry["time"])
+		pressure = maxf(0.0, pressure - (at - last) * INSTABILITY_DECAY)
+		if entry["overload"]:
+			pressure = minf(INSTABILITY_MAX, pressure + INSTABILITY_OVERLOAD)
+		last = at
+	return maxf(0.0, pressure - (end_time - last) * INSTABILITY_DECAY)
 
 
 func _restore_administrator(data: Variant, stage: int, time: float, next_pending: Dictionary) -> bool:

@@ -159,25 +159,50 @@ func _entered_tread_height(from: Vector2, to: Vector2, surfaces: Array[Dictionar
 
 
 func _support_exit(from: Vector2, to: Vector2, surfaces: Array[Dictionary]) -> float:
+	# Walk across a continuous union of same-height floors in either direction.
+	if not _has_support(from, elevation, surfaces, false):
+		return 0.0
 	var delta := to - from
-	var exit_fraction := 0.0
+	var intervals: Array[Vector2] = []
 	for surface in surfaces:
 		if not is_equal_approx(float(surface["height"]), elevation):
 			continue
 		var bounds: Rect2 = surface["bounds"]
-		if not bounds.has_point(from):
-			continue
-		if bounds.has_point(to):
+		var interval := _support_interval(from, delta, bounds)
+		if interval.x <= interval.y:
+			intervals.append(interval)
+	intervals.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.x < b.x)
+	var covered := 0.0
+	for interval in intervals:
+		if interval.x > covered + EPSILON:
+			break
+		covered = maxf(covered, interval.y)
+		if covered >= 1.0:
 			return 1.0
-		var limit := 1.0
-		if absf(delta.x) > EPSILON:
-			var edge := bounds.end.x if delta.x > 0.0 else bounds.position.x
-			limit = minf(limit, (edge - from.x) / delta.x)
-		if absf(delta.y) > EPSILON:
-			var edge := bounds.end.y if delta.y > 0.0 else bounds.position.y
-			limit = minf(limit, (edge - from.y) / delta.y)
-		exit_fraction = maxf(exit_fraction, limit)
-	return exit_fraction
+	return covered
+
+
+func _support_interval(from: Vector2, delta: Vector2, bounds: Rect2) -> Vector2:
+	var entry := 0.0
+	var exit := 1.0
+	for axis in range(2):
+		var origin: float = from[axis]
+		var travel: float = delta[axis]
+		var low: float = bounds.position[axis]
+		var high: float = bounds.end[axis]
+		if high <= low:
+			return Vector2(1.0, 0.0)
+		if absf(travel) <= EPSILON:
+			if origin < low or origin >= high:
+				return Vector2(1.0, 0.0)
+			continue
+		var first := (low - origin) / travel
+		var last := (high - origin) / travel
+		entry = maxf(entry, minf(first, last))
+		exit = minf(exit, maxf(first, last))
+		if entry > exit:
+			return Vector2(1.0, 0.0)
+	return Vector2(entry, exit)
 
 
 func _update_anchor(point: Vector2, surfaces: Array[Dictionary]) -> void:
