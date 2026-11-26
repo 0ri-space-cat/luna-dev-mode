@@ -43,7 +43,14 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 10
+const ADDRESS_SCHEMA := 11
+const CoastExtra = preload("res://scripts/skeleton/coast_observation_layout.gd")
+const LAKE_CHIBI_PREFIX := "W6_CHIBI_"
+const LAKE_PROP_PREFIX := "W6_PROP_COPY_"
+const LAKE_CHIBI_LIMIT := 3
+const LAKE_PROP_LIMIT := 3
+const LAKE_INTERVAL := 5.0
+const LAKE_STONE_ID := "W6_SHORE_STONE"
 const Crystal = preload("res://scripts/skeleton/crystal_observation_layout.gd")
 const Gaze = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const Solidity = preload("res://scripts/runtime2d/observation_body_2d.gd")
@@ -106,6 +113,9 @@ var ability_bank := AbilityBank.new(entities, commands)
 var _initial_ecology_states: Array[Dictionary] = []
 var _initial_mirror_state: Dictionary = {}
 var _duplicate_elapsed := 0.0
+var _lake_elapsed := 0.0
+var _lake_entered := false
+var _initial_lake_stone: Dictionary = {}
 var _fish_surfaces: Array[Dictionary] = []
 var wand_pair := WandPair.new()
 var wand_mode_requested: Callable
@@ -149,6 +159,15 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture:
+		if CoastExtra.grotto_contains(point):
+			return Coast.GROTTO_ID
+		if CoastExtra.shelf_contains(point):
+			return Coast.LOCATION_ID
+	return _entity_location_v10(point)
+
+
+func _entity_location_v10(point: Vector2) -> String:
 	if observation_fixture and Crystal.contains(point):
 		return Valley.CRYSTAL_ID
 	return _entity_location_v9(point)
@@ -258,7 +277,7 @@ func _legacy_entity_location(point: Vector2) -> String:
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -274,18 +293,20 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
-		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS)
+		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING])
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
-		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED:
+		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
 		_surfaces.append(Crystal.LOWER)
+		_surfaces.append(CoastExtra.LOWER)
+		_surfaces.append(Lake.SHALLOW_SURFACE)
 		for surface in Tunnel.WATER_SURFACES:
 			_surfaces.append(surface.duplicate())
 		_water_volumes.append(WaterVolume.new(Tunnel.WATER, Tunnel.BED, 0.0, Vector2.ZERO, 1.2))
@@ -339,6 +360,7 @@ func _ready() -> void:
 		_setup_crystal_observation()
 		if ecology_fixture:
 			_spawn_mirror_snail()
+		_spawn_lake_stone()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -400,6 +422,13 @@ func _sync_crystal_observation() -> void:
 		_surfaces.append(Crystal.BRIDGE)
 	elif not solid:
 		_surfaces.erase(Crystal.BRIDGE)
+	var coast_bounds: Rect2 = CoastExtra.BRIDGE["bounds"]
+	var coast_state := crystal_observer.evaluate(actor, null, coast_bounds.get_center())
+	var coast_solid := Solidity.solid_for(Solidity.WHEN_UNOBSERVED, Solidity.LUNA, coast_state)
+	if coast_solid and not _surfaces.has(CoastExtra.BRIDGE):
+		_surfaces.append(CoastExtra.BRIDGE)
+	elif not coast_solid:
+		_surfaces.erase(CoastExtra.BRIDGE)
 	# Reclose only after the actual body clears the doorway, never crush it.
 	_set_crystal_door(crystal_observer.luna_eyes_open and not _door_occupied())
 
@@ -580,6 +609,100 @@ func _spawn_ecology_fixture() -> void:
 	for entry in make_snapshot()["entities"]:
 		if entry["id"] == ECOLOGY_CATALOG or FISH_POINTS.has(entry["id"]):
 			_initial_ecology_states.append(entry)
+
+
+func _spawn_lake_stone() -> void:
+	var stone := spawn_entity({"id": LAKE_STONE_ID, "category": "prop", "label": "Гладкий камень", "material": "STONE"},
+		Lake.STONE_START, 0.0)
+	if stone == null:
+		return
+	stone.set_parameter("pickable", true)
+	stone.set_parameter("size", 0.55)
+	stone.set_parameter("mass", 0.7)
+	for entry in make_snapshot()["entities"]:
+		if entry["id"] == LAKE_STONE_ID:
+			_initial_lake_stone = entry
+
+
+func _lake_wet(body: EntityBody) -> bool:
+	return Lake.POOL.has_point(body.position) and not body._is_dry(body.position, body.motion.elevation)
+
+
+func _lake_place_point() -> Vector2:
+	if not observation_fixture or not actor.has_passenger() or not actor.motion.grounded:
+		return Vector2.INF
+	var item := actor._rider as EntityBody
+	if item == null or not item.is_carried() or item.record.category != "prop" or item.entity_id == ECOLOGY_CATALOG:
+		return Vector2.INF
+	var point := Vector2(2507, clampf(actor.position.y, 405.0, 445.0))
+	if point.distance_to(actor.position) > 58.0 or not Lake.SHALLOW_SURFACE["bounds"].has_point(point):
+		return Vector2.INF
+	return point
+
+
+func _lake_spawn(identity: String, category: String, label_text: String, material: String) -> EntityBody:
+	for point in Lake.BIRTH_POINTS:
+		var body := spawn_entity({"id": identity, "category": category, "label": label_text, "material": material}, point, 0.0)
+		if body != null:
+			return body
+	return null
+
+
+func _spawn_lake_chibi() -> bool:
+	for index in range(1, LAKE_CHIBI_LIMIT + 1):
+		var identity := LAKE_CHIBI_PREFIX + str(index)
+		if entities.get_entity(identity) != null:
+			continue
+		var chibi := _lake_spawn(identity, "chibi_luna", "Чиби-Луна", "FABRIC")
+		if chibi == null:
+			return false
+		chibi.set_parameter("size", 0.5)
+		chibi.set_parameter("speed", 0.65)
+		chibi.set_parameter("color", actor.get_parameter("color"))
+		return true
+	return false
+
+
+func _copy_lake_prop(source: EntityBody) -> bool:
+	if source == null or source.record.category != "prop" or source.entity_id == ECOLOGY_CATALOG \
+			or source.entity_id.begins_with(LAKE_PROP_PREFIX) or source.is_attached() or not _lake_wet(source):
+		return false
+	var identity := LAKE_PROP_PREFIX + source.entity_id
+	if identity.length() > 96 or entities.get_entity(identity) != null:
+		return false
+	var count := 0
+	for existing in entities.list_ids():
+		if existing.begins_with(LAKE_PROP_PREFIX):
+			count += 1
+	if count >= LAKE_PROP_LIMIT:
+		return false
+	var copy := _lake_spawn(identity, "prop", source.record.display_name, source.get_parameter("material"))
+	if copy == null:
+		return false
+	for parameter in ["size", "mass", "color", "pickable"]:
+		copy.set_parameter(parameter, source.get_parameter(parameter))
+	return true
+
+
+func _tick_lake(delta: float) -> void:
+	if not observation_fixture:
+		return
+	if _lake_wet(actor):
+		if not _lake_entered:
+			if _spawn_lake_chibi():
+				_lake_entered = true
+			_lake_elapsed = 0.0
+		else:
+			_lake_elapsed = minf(LAKE_INTERVAL, _lake_elapsed + delta)
+			if _lake_elapsed >= LAKE_INTERVAL and _spawn_lake_chibi():
+				_lake_elapsed = 0.0
+	else:
+		_lake_entered = false
+		_lake_elapsed = 0.0
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		if body.record.category == "prop" and _lake_wet(body):
+			_copy_lake_prop(body)
 
 
 func _spawn_mirror_snail() -> void:
@@ -929,6 +1052,7 @@ func _physics_process(delta: float) -> void:
 		_alchemy_glow.tick(delta)
 		_tick_bubble(world_clock.sim_delta(delta))
 		_tick_duplicate(world_clock.sim_delta(delta))
+		_tick_lake(world_clock.sim_delta(delta))
 		_update_yeti_route()
 		_refresh_plank_surface()
 	_update_alchemy_light()
@@ -1105,6 +1229,8 @@ func _nearby_action() -> String:
 	if has_donut and not yeti.get_parameter("asleep") and _within_reach(yeti.position, yeti.motion.elevation):
 		return "Предложить пончик"
 	var plank := entities.get_entity(Meadows.PLANK_ID) as EntityBody
+	if actor.has_passenger() and _lake_place_point().is_finite():
+		return "Опустить предмет в озеро"
 	if plank != null:
 		if actor.has_passenger():
 			if _plank_placement(plank).is_finite():
@@ -1229,6 +1355,9 @@ func interact() -> bool:
 			return world_clock.set_time_of_day(WorldClock.MORNING_MINUTE)
 		"Отдохнуть до ночи":
 			return world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
+		"Опустить предмет в озеро":
+			var point := _lake_place_point()
+			return point.is_finite() and actor.try_place_carried(point, Lake.SHALLOW_SURFACE["height"])
 		"Положить ветвь поперёк ручья":
 			var plank := entities.get_entity(Meadows.PLANK_ID) as EntityBody
 			if not actor.try_place_carried(_plank_placement(plank), 0.0):
@@ -1445,6 +1574,10 @@ func make_snapshot() -> Dictionary:
 	data["alchemy_glow"] = _alchemy_glow.remaining
 	data["alchemy_bubble"] = _alchemy_bubble.remaining
 	data["bubble_started"] = _bubble_started
+	if observation_fixture:
+		data["lake_layout"] = 1
+		data["lake_elapsed"] = _lake_elapsed
+		data["lake_entered"] = _lake_entered
 	data["luna_eyes_open"] = crystal_observer.luna_eyes_open
 	data["luna_facing"] = [crystal_observer.facing.x, crystal_observer.facing.y]
 	if observation_fixture and ecology_fixture:
@@ -1456,7 +1589,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -1476,6 +1609,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 			return false
 	var next_facing := Vector2(float(raw_facing[0]), float(raw_facing[1]))
 	if not is_equal_approx(next_facing.length(), 1.0):
+		return false
+	var next_lake_elapsed: Variant = data.get("lake_elapsed", 0.0)
+	var next_lake_entered: Variant = data.get("lake_entered", false)
+	if not next_lake_entered is bool or typeof(next_lake_elapsed) not in [TYPE_INT, TYPE_FLOAT] \
+			or not is_finite(float(next_lake_elapsed)) or float(next_lake_elapsed) < 0.0 \
+			or float(next_lake_elapsed) > LAKE_INTERVAL:
 		return false
 	var next_duplicate: Variant = data.get("duplicate_elapsed", 0.0)
 	if typeof(next_duplicate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_duplicate)) \
@@ -1558,6 +1697,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 			candidate["entities"].append(_initial_mirror_state.duplicate(true))
 		elif candidate["crystal_fauna_layout"] != 1:
 			return false
+	if observation_fixture:
+		if not candidate.has("lake_layout"):
+			if _initial_lake_stone.is_empty():
+				return false
+			candidate = candidate.duplicate(true)
+			candidate["entities"].append(_initial_lake_stone.duplicate(true))
+		elif candidate["lake_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -1569,7 +1716,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 	# Temporarily permit the physical span and open doorway for candidate validation.
 	var previous_door := _crystal_door_solid
 	var previous_bridge := _surfaces.has(Crystal.BRIDGE)
+	var previous_coast_bridge := _surfaces.has(CoastExtra.BRIDGE)
 	if observation_fixture:
+		if not previous_coast_bridge:
+			_surfaces.append(CoastExtra.BRIDGE)
 		_set_crystal_door(false)
 		if not previous_bridge:
 			_surfaces.append(Crystal.BRIDGE)
@@ -1584,8 +1734,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 			_set_crystal_door(previous_door)
 			if not previous_bridge:
 				_surfaces.erase(Crystal.BRIDGE)
+			if not previous_coast_bridge:
+				_surfaces.erase(CoastExtra.BRIDGE)
 		return false
 	_duplicate_elapsed = float(next_duplicate)
+	_lake_elapsed = float(next_lake_elapsed)
+	_lake_entered = next_lake_entered
 	crystal_observer.luna_eyes_open = next_eyes
 	crystal_observer.facing = next_facing
 	_sync_crystal_observation()
@@ -1671,6 +1825,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v8(point)
 	elif previous_schema == 9:
 		previous_location = _entity_location_v9(point)
+	elif previous_schema == 10:
+		previous_location = _entity_location_v10(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -1688,6 +1844,22 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		var stone: EntityBody = candidates.get(LAKE_STONE_ID)
+		if stone == null or stone.record.category != "prop":
+			return false
+		var prop_count := 0
+		for identity in candidates:
+			if identity.begins_with(LAKE_CHIBI_PREFIX):
+				var suffix: String = identity.trim_prefix(LAKE_CHIBI_PREFIX)
+				if not suffix.is_valid_int() or int(suffix) < 1 or int(suffix) > LAKE_CHIBI_LIMIT \
+						or candidates[identity].record.category != "chibi_luna":
+					return false
+			elif identity.begins_with(LAKE_PROP_PREFIX):
+				prop_count += 1
+				if candidates[identity].record.category != "prop":
+					return false
+		if prop_count > LAKE_PROP_LIMIT:
+			return false
 		for identity in COURT_FRIDGES:
 			var fridge: EntityBody = candidates.get(identity)
 			if fridge == null or fridge.record.category != "fridge":
@@ -1787,6 +1959,8 @@ func _draw() -> void:
 		MiaLab.draw_on(self)
 		Tunnel.draw_on(self)
 		Crystal.draw_on(self, _crystal_door_solid)
+		CoastExtra.draw_on(self)
+		Lake.draw_shallow_on(self)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:

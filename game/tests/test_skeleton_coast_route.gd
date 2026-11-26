@@ -3,6 +3,7 @@ extends SceneTree
 const Start = preload("res://scenes/skeleton/start_island.tscn")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
+const CoastExtra = preload("res://scripts/skeleton/coast_observation_layout.gd")
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
 const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
 
@@ -117,6 +118,16 @@ func _run() -> void:
 	for point in [Vector2(2740, 880), Vector2(2810, 880), Coast.GROTTO_ENTRY]:
 		assert(await _walk_to(scene, point), "low-tide grotto %s" % point)
 	assert(scene.actor.location_id == Coast.GROTTO_ID)
+	assert(await _walk_to(scene, Vector2(3010, 895)))
+	scene.crystal_observer.facing = Vector2.RIGHT
+	scene._sync_crystal_observation()
+	assert(not scene._surfaces.has(CoastExtra.BRIDGE))
+	scene.set_luna_eyes(false)
+	assert(scene._surfaces.has(CoastExtra.BRIDGE))
+	assert(await _walk_to(scene, CoastExtra.VIEW))
+	assert(await _walk_to(scene, Vector2(3010, 895)))
+	scene.set_luna_eyes(true)
+	assert(await _walk_to(scene, Coast.GROTTO_ENTRY))
 	# High tide floods the actual walking surface; the inner room stays dry.
 	assert(scene.world_clock.set_time_of_day(Clock.START_MINUTE + 60))
 	assert(scene._coast_tide.submerged_fraction(Vector2(2810, 880), 0.0, scene.actor.body_height()) > 0.9)

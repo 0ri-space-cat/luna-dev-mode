@@ -39,7 +39,10 @@ func _run() -> void:
 	assert(Lake.LOCATION_ID == "ET_DUPLICATE_LAKE_CAVERN" and Lake.FEATURE_ID == "ET_DUPLICATE_LAKE")
 	assert(scene.wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID))
 	var saved: Dictionary = scene.make_snapshot()
-	assert(saved["address_schema"] == 10)
+	assert(saved["address_schema"] == 11)
+	var previous_v10: Dictionary = saved.duplicate(true)
+	previous_v10["address_schema"] = 10
+	assert(scene.apply_snapshot(previous_v10))
 	var previous_v9: Dictionary = saved.duplicate(true)
 	previous_v9["address_schema"] = 9
 	assert(scene.apply_snapshot(previous_v9))
@@ -255,6 +258,23 @@ func _run() -> void:
 	assert(ecology.apply_snapshot(duplicate_save))
 	assert(ecology._duplicate_holder().entity_id == child_id)
 	assert(ecology.entities.get_entity(ecology.MIRROR_SNAIL) != null)
+	# Real contact at the shallow shelf, distinct from the snail module.
+	ecology.actor.position = Vector2(2505, 420)
+	ecology.actor.motion.elevation = -4.0
+	ecology.actor.motion.grounded = true
+	ecology._tick_lake(0.1)
+	assert(ecology.entities.get_entity(ecology.LAKE_CHIBI_PREFIX + "1") != null)
+	ecology._tick_lake(ecology.LAKE_INTERVAL)
+	assert(ecology.entities.get_entity(ecology.LAKE_CHIBI_PREFIX + "2") != null)
+	var stone = ecology.entities.get_entity(ecology.LAKE_STONE_ID)
+	stone.position = Vector2(2508, 442)
+	stone.motion.elevation = -4.0
+	stone.motion.grounded = true
+	ecology._tick_lake(0.0)
+	var copy_id: String = ecology.LAKE_PROP_PREFIX + ecology.LAKE_STONE_ID
+	assert(ecology.entities.get_entity(copy_id) != null)
+	assert(not ecology._copy_lake_prop(stone))
+	assert(ecology.entities.get_entity(copy_id).record.get_component("ABILITY_SET").get("instances", {}).is_empty())
 	ecology.queue_free()
 	await process_frame
 	print("M3.89: unique DUPLICATE module and independent mirror offspring passed")

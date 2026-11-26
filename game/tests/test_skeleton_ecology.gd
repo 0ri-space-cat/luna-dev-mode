@@ -25,8 +25,12 @@ func _run() -> void:
 	assert(game.ecology.episodes.is_empty())
 	var legacy := game.home.make_snapshot()
 	legacy.erase("ecology_layout")
+	legacy.erase("crystal_fauna_layout")
+	legacy.erase("duplicate_elapsed")
+	legacy.erase("lake_layout")
 	legacy["entities"] = legacy["entities"].filter(func(state):
-		return not Island.FISH_POINTS.has(state["id"]) and state["id"] != Island.ECOLOGY_CATALOG)
+		return not Island.FISH_POINTS.has(state["id"]) and state["id"] != Island.ECOLOGY_CATALOG \
+			and state["id"] != Island.MIRROR_SNAIL and state["id"] != Island.LAKE_STONE_ID)
 	for state in legacy["entities"]:
 		state.erase("components")
 		state["life"].erase("respawn_remaining")
