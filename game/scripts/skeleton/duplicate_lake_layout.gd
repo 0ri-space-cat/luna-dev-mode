@@ -1,5 +1,5 @@
 extends RefCounted
-## Dry approach from the high edge to a small test section of W6.
+## W6 lake and shore. The former direct approach is retained only for legacy migration and isolated fixtures.
 
 const LOCATION_ID := "ET_DUPLICATE_LAKE_CAVERN"
 const LEGACY_LOCATION_ID := "ET_WATERFALL_DUPLICATE_LAKE"
@@ -9,7 +9,8 @@ const SHORE := Vector2(2445, 426)
 const CONTACT := Vector2(2490, 426)
 const BED_HEIGHT := -32.0
 const POOL := Rect2(2490, 345, 203, 160)
-const DECKS := [Rect2(1942, 561, 425, 83), Rect2(2280, 326, 210, 302),
+const LEGACY_DRY_ROAD := Rect2(1942, 561, 425, 83)
+const DECKS := [Rect2(2280, 326, 210, 302),
 	Rect2(2490, 505, 270, 93), Rect2(2490, 282, 270, 63), Rect2(2693, 330, 110, 188)]
 
 

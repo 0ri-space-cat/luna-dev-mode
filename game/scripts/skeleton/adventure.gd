@@ -494,7 +494,10 @@ func _return_to_home() -> bool:
 
 
 func _reactivate_home(checkpoint: Dictionary) -> void:
-	for entity in checkpoint["entities"]:
+	# A guest save can retain a pre-migration home checkpoint while the
+	# physical traveler is away. Return to the same migrated home position.
+	var normalized := home.normalize_home_snapshot(checkpoint)
+	for entity in normalized["entities"]:
 		if entity["id"] != Island.ENTITY_ID:
 			continue
 		var point := Vector2(entity["position"][0], entity["position"][1])

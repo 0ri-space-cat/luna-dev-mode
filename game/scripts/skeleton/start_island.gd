@@ -34,7 +34,7 @@ const FISH_POINTS := {
 }
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
-const ADDRESS_SCHEMA := 1
+const ADDRESS_SCHEMA := 2
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -150,6 +150,10 @@ func _ready() -> void:
 	_update_world_light()
 	_decks.assign(ISLAND_DECKS)
 	var ground := Meadows.DECKS + Lake.DECKS
+	# The standalone fixture has no forest. Adventure uses only the actual
+	# forest/valley connector, never the former shortcut from the meadows.
+	if not observation_fixture:
+		ground.append(Lake.LEGACY_DRY_ROAD)
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
 		ground.append_array(Valley.DECKS)
@@ -812,7 +816,7 @@ func _toggle_debug_editor() -> void:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
-	data["address_schema"] = ADDRESS_SCHEMA
+	data["address_schema"] = ADDRESS_SCHEMA if observation_fixture else 1
 	if observation_fixture:
 		data["observation_layout"] = 1
 	if ecology_fixture:
@@ -831,10 +835,9 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, float(ADDRESS_SCHEMA)]:
 		return false
-	if float(schema) == 0.0:
-		data = _migrate_home_addresses(data)
+	data = normalize_home_snapshot(data)
 	var island: Variant = data.get("island")
 	var states: Variant = data.get("entities")
 	if not island is Dictionary or not states is Array:
@@ -858,7 +861,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var wand_data: Variant = data.get("wand_pair", {"held": legacy_held, "retained": WandPair.ORIGINAL, "duplicate": {}})
 	if not pair.restore(next_projection, wand_data):
 		return false
-	if pair.duplicate != null and (not _valid_ground_wand(pair.original) or not _valid_ground_wand(pair.duplicate)):
+	if not _valid_ground_wand(pair.original) or (pair.duplicate != null and not _valid_ground_wand(pair.duplicate)):
 		return false
 	if typeof(refill) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(refill)) \
 			or float(refill) < 0.0 or float(refill) > DONUT_REFILL_SECONDS:
@@ -949,7 +952,7 @@ func _migrate_home_addresses(source: Dictionary) -> Dictionary:
 	var pair: Variant = result.get("wand_pair")
 	if pair is Dictionary and pair.get("duplicate") is Dictionary:
 		_migrate_address_entry(pair["duplicate"], true)
-	result["address_schema"] = ADDRESS_SCHEMA
+	result["address_schema"] = 1
 	return result
 
 
@@ -971,6 +974,74 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool) -> void:
 	var point := Vector2(float(raw[0]), float(raw[1]))
 	if canonical == _legacy_entity_location(point):
 		entry["location_id"] = _entity_location(point)
+
+
+# Schema 2 removes the temporary M3-to-W6 road in Adventure. Transform a
+# copy, not the original rollback/save, and allow the usual validator to
+# reject malformed records. Old support anchors and both physical wands
+# migrate by the same deterministic geometry rule as bodies.
+func normalize_home_snapshot(source: Dictionary) -> Dictionary:
+	var schema: Variant = source.get("address_schema", 0)
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0]:
+		return source
+	var result := _migrate_home_addresses(source) if float(schema) == 0.0 else source.duplicate(true)
+	if observation_fixture:
+		var states: Variant = result.get("entities")
+		if states is Array:
+			for state in states:
+				if state is Dictionary:
+					_migrate_removed_road_entry(state)
+					var motion: Variant = state.get("motion")
+					if motion is Dictionary:
+						var anchor: Variant = motion.get("anchor")
+						if anchor is Array and anchor.size() == 3 and _finite_coordinate(anchor[2]) \
+								and float(anchor[2]) == 0.0:
+							var point := _road_point([anchor[0], anchor[1]])
+							if point.is_finite():
+								var moved := _relocate_removed_road(point)
+								motion["anchor"] = [moved.x, moved.y, anchor[2]]
+		var island: Variant = result.get("island")
+		if island is Dictionary and island.get("projection") is Dictionary:
+			_migrate_removed_road_entry(island["projection"])
+		var pair: Variant = result.get("wand_pair")
+		if pair is Dictionary and pair.get("duplicate") is Dictionary:
+			_migrate_removed_road_entry(pair["duplicate"])
+	result["address_schema"] = ADDRESS_SCHEMA
+	return result
+
+
+func _finite_coordinate(value: Variant) -> bool:
+	return typeof(value) in [TYPE_INT, TYPE_FLOAT] and is_finite(float(value))
+
+
+func _road_point(raw: Variant) -> Vector2:
+	if not raw is Array or raw.size() != 2 or not _finite_coordinate(raw[0]) or not _finite_coordinate(raw[1]):
+		return Vector2.INF
+	return Vector2(float(raw[0]), float(raw[1]))
+
+
+func _migrate_removed_road_entry(entry: Dictionary) -> void:
+	var point := _road_point(entry.get("position"))
+	if not point.is_finite() or entry.get("location_id") != _entity_location(point):
+		return
+	var moved := _relocate_removed_road(point)
+	if moved != point:
+		entry["position"] = [moved.x, moved.y]
+		entry["location_id"] = _entity_location(moved)
+
+
+func _relocate_removed_road(point: Vector2) -> Vector2:
+	if not Lake.LEGACY_DRY_ROAD.has_point(point) or actor.motion._has_support(point, 0.0, _decks, true):
+		return point
+	# Keep points on the old meadows and cave ends in their own regions.
+	# The removed middle strip maps into the dry W0 interior, preserving
+	# ordering and co-located attachment bodies without a runtime teleport.
+	if point.x <= Meadows.M3.end.x:
+		return Vector2(Meadows.M3.end.x - 18.0, minf(point.y, Meadows.M3.end.y - 18.0))
+	if point.x >= Lake.BOUNDARY:
+		return Vector2(2298.0 + (point.x - Lake.BOUNDARY) * 0.5, clampf(point.y, 345.0, 608.0))
+	return Vector2(remap(point.x, Meadows.M3.end.x, Lake.BOUNDARY, 2090.0, 2248.0),
+		remap(point.y, Lake.LEGACY_DRY_ROAD.position.y, Lake.LEGACY_DRY_ROAD.end.y, 269.0, 343.0))
 
 
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:
