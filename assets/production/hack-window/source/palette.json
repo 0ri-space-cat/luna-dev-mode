@@ -1,0 +1,9 @@
+{
+  "luna": {"active": ["FD82F0", "C1A5ED"], "save": ["A9D4B1", "DBF2D9", "608F79"], "copy": ["C6AAE7", "EADBF8", "947CB2"], "delete": ["CB8D92", "F4C5C1", "945D70"]},
+  "miya": {"save": ["A8D5BE", "DCF3DD", "618F87"], "copy": ["A4D8D9", "D5F0F1", "639DAE"], "delete": ["CB9093", "F3C8BB", "915C71"]},
+  "oni": {"save": ["92D0B4", "C5F2DC", "548983"], "copy": ["8AC9D4", "C4EBF1", "508DA8"], "delete": ["CC8E90", "F2C3B7", "925B6F"]},
+  "ori": {"active": ["FDC7EC", "A6CDE8"], "save": ["B0D8C3", "E0F3E5", "69998D"], "copy": ["ADD9E1", "E0F5F9", "73A7B7"], "delete": ["D09A9B", "F4D0C3", "986775"]},
+  "leya": {"active": ["FDA3E3", "A0D6B0"], "save": ["A9D8A8", "E1F3D3", "669669"], "copy": ["A8D6C3", "D9F1E0", "639A8B"], "delete": ["CF9790", "F0CABB", "98666D"]},
+  "toffi": {"save": ["C4D4A4", "ECF2CF", "85976D"], "copy": ["B0D1BD", "E3EFDA", "7C9C8A"], "delete": ["D39A84", "F5CDB0", "A16A58"]},
+  "yuki": {"save": ["BEDBB4", "E5F1D8", "799474"], "copy": ["B4D4D0", "DDF0EB", "799AA3"], "delete": ["D38F94", "F6C5C3", "9B607A"]}
+}
