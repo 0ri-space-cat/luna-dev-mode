@@ -149,6 +149,15 @@ func can_fly() -> bool:
 	return false
 
 
+func can_swim() -> bool:
+	if super.can_swim():
+		return true
+	for entry in record.get_component("ABILITY_SET").get("instances", {}).values():
+		if entry["enabled"] and entry["ability_id"] == "SWIM":
+			return true
+	return false
+
+
 func _allows_pickup() -> bool:
 	return can_edit_parameter("pickable") and get_parameter("pickable") == true
 

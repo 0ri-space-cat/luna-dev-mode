@@ -42,6 +42,8 @@ var emergency_anchor := Vector3.ZERO
 var _mass := 1.0
 var _buoyancy := 0.0
 var _swim_enabled := false
+# Transient overlay, never written into the permanent water/ability snapshot.
+var temporary_swim := false
 var _bounciness := 0.0
 var _impulse_velocity := Vector2.ZERO
 var _marker: Polygon2D
@@ -460,6 +462,10 @@ func can_fly() -> bool:
 	return flight_enabled
 
 
+func can_swim() -> bool:
+	return _swim_enabled or temporary_swim
+
+
 func _physics_process(delta: float) -> void:
 	if is_attached():
 		return
@@ -479,7 +485,7 @@ func _physics_process(delta: float) -> void:
 		_impulse_velocity = _impulse_velocity.lerp(water.flow, drag_fraction)
 		acceleration += minf(GRAVITY * (_buoyancy * fraction / total_mass), MAX_WATER_LIFT)
 		acceleration -= motion.vertical_speed * drag_fraction / delta
-		if _swim_enabled:
+		if can_swim():
 			drive_speed = lerpf(WALK_SPEED, SWIM_SPEED, fraction)
 			acceleration += clampf(swim_intent, -1.0, 1.0) * SWIM_ACCELERATION * load_factor
 		else:

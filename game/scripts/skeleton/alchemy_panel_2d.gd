@@ -2,7 +2,7 @@ extends PanelContainer
 ## Shared mixer model; effects are dispatched by the world, not by the UI.
 signal try_effect(effect_id: String)
 const Recipes = preload("res://scripts/runtime2d/alchemy_recipes_2d.gd")
-const IMPLEMENTED := ["ALC-R08", "ALC-R09", "ALC-R30"]
+const IMPLEMENTED := ["ALC-R08", "ALC-R09", "ALC-R21", "ALC-R30"]
 var selected: Array[String] = []
 var _buttons: Dictionary = {}
 var _result: Label

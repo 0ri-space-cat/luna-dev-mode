@@ -6,6 +6,7 @@ const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
 const Mia = preload("res://scripts/skeleton/mia_lab_layout.gd")
 const Recipes = preload("res://scripts/runtime2d/alchemy_recipes_2d.gd")
+const Tunnel = preload("res://scripts/skeleton/waterfall_tunnel_layout.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -37,7 +38,10 @@ func _run() -> void:
 	assert(Lake.LOCATION_ID == "ET_DUPLICATE_LAKE_CAVERN" and Lake.FEATURE_ID == "ET_DUPLICATE_LAKE")
 	assert(scene.wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID))
 	var saved: Dictionary = scene.make_snapshot()
-	assert(saved["address_schema"] == 8)
+	assert(saved["address_schema"] == 9)
+	var previous_v8: Dictionary = saved.duplicate(true)
+	previous_v8["address_schema"] = 8
+	assert(scene.apply_snapshot(previous_v8))
 	var previous_v7: Dictionary = saved.duplicate(true)
 	previous_v7["address_schema"] = 7
 	assert(scene.apply_snapshot(previous_v7))
@@ -163,7 +167,44 @@ func _run() -> void:
 		assert(await _walk_to(scene, point), "Mia cave %s" % point)
 	assert(scene.actor.motion.elevation == 0.0 and scene.actor.recoveries == 0)
 	assert(not scene.actor._is_dry(Vector2(1820, 870), -24.0))
-	print("M3.86: valley, tower, alchemy station and two-height cave passed")
+	# Bubble is a temporary overlay, with no permanent SWIM or water mutation.
+	for point in [Vector2(1725, 950), Vector2(1725, 1010), Vector2(1725, 1080),
+			Vector2(2075, 1080), Vector2(2075, 1010), Vector2(2075, 950),
+			Vector2(2075, 875), Mia.STATION]:
+		assert(await _walk_to(scene, point))
+	assert(not scene.actor.can_swim())
+	scene._apply_lab_effect("ALC-R21")
+	assert(scene.actor.can_swim() and not scene._bubble_started)
+	var bubble_save: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(bubble_save) and scene.actor.can_swim())
+	for point in [Vector2(2140, 730), Vector2(2140, 525), Vector2(2240, 525),
+			Vector2(2240, 351), Vector2(2125, 351)]:
+		assert(await _walk_to(scene, point))
+	# Descend into actual W1 water. Enter only when immersed.
+	scene.actor.direction = Vector2.DOWN
+	for tick in range(180):
+		await physics_frame
+		if scene._tunnel_action() == "Нырнуть в тоннель":
+			break
+	scene.actor.direction = Vector2.ZERO
+	assert(scene._bubble_started and scene.interact())
+	assert(scene.actor.location_id == Tunnel.LOCATION_ID)
+	var wet_base: Dictionary = scene.actor.water_snapshot()
+	assert(not wet_base["swim_enabled"])
+	# Reach the opposite shelf through real water with the same temporary skill.
+	scene.actor.direction = Vector2.RIGHT
+	for tick in range(400):
+		await physics_frame
+		if scene.actor.position.x >= Tunnel.EAST_EXIT.x - 8.0:
+			break
+	scene.actor.direction = Vector2.ZERO
+	assert(Tunnel.EAST.has_point(scene.actor.position), str(scene.actor.position))
+	assert(scene.actor.motion.grounded)
+	assert(scene.interact() and scene.actor.location_id == Lake.LOCATION_ID)
+	assert(scene.actor.position.distance_to(Lake.SHORE) < 3.0)
+	scene._clear_bubble()
+	assert(not scene.actor.can_swim())
+	print("M3.87: physical W5 and temporary bubble passed")
 	scene.queue_free()
 	await process_frame
 	quit()

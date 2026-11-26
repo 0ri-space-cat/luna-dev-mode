@@ -35,7 +35,9 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 8
+const ADDRESS_SCHEMA := 9
+const Tunnel = preload("res://scripts/skeleton/waterfall_tunnel_layout.gd")
+const BUBBLE_SECONDS := 30.0
 const MiaLab = preload("res://scripts/skeleton/mia_lab_layout.gd")
 const AlchemyPanel = preload("res://scripts/skeleton/alchemy_panel_2d.gd")
 const GLOW_SECONDS := 35.0
@@ -51,7 +53,7 @@ const AREA_LABELS := {
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
 	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
 	Coast.HOUSE_ID: "Дом вечерних окон", Coast.GROTTO_ID: "Морской грот",
-	Valley.TOWER_ID: "Башня отражений",
+	Valley.TOWER_ID: "Башня отражений", Tunnel.LOCATION_ID: "Подводный тоннель",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -107,6 +109,8 @@ var world_clock := WorldClock.new()
 var coast_house_phase: int = WorldClock.Phase.EVENING
 var _alchemy_panel: PanelContainer
 var _alchemy_glow := ActiveDuration.new(GLOW_SECONDS)
+var _alchemy_bubble := ActiveDuration.new(BUBBLE_SECONDS)
+var _bubble_started := false
 var _alchemy_light: PointLight2D
 var _coast_tide: WaterVolume
 var _ice_duration := ActiveDuration.new(Meadows.ICE_SECONDS)
@@ -129,6 +133,12 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture and Tunnel.contains(point):
+		return Tunnel.LOCATION_ID
+	return _entity_location_v8(point)
+
+
+func _entity_location_v8(point: Vector2) -> String:
 	if observation_fixture and MiaLab.contains(point):
 		return Valley.LOCATION_ID
 	return _entity_location_v7(point)
@@ -242,7 +252,7 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
-		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS)
+		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
@@ -253,6 +263,9 @@ func _ready() -> void:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
+		for surface in Tunnel.WATER_SURFACES:
+			_surfaces.append(surface.duplicate())
+		_water_volumes.append(WaterVolume.new(Tunnel.WATER, Tunnel.BED, 0.0, Vector2.ZERO, 1.2))
 		for water in MiaLab.WATER:
 			_surfaces.append(water.duplicate())
 			_water_volumes.append(WaterVolume.new(water["bounds"], water["height"], 0.0, Vector2.ZERO, 1.2))
@@ -341,12 +354,44 @@ func _apply_lab_effect(effect_id: String) -> void:
 			_alchemy_glow.start()
 		"ALC-R09":
 			_alchemy_glow.restore(0.0)
+			_clear_bubble()
+		"ALC-R21":
+			_alchemy_bubble.start()
+			_bubble_started = false
+			actor.temporary_swim = true
 		"ALC-R30":
 			world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
 		_:
 			return
 	_alchemy_panel.hide()
 	_update_alchemy_light()
+
+
+func _clear_bubble() -> void:
+	var was_active := _alchemy_bubble.remaining > 0.0 or actor.temporary_swim
+	_alchemy_bubble.restore(0.0)
+	_bubble_started = false
+	actor.temporary_swim = false
+	if was_active and not actor.is_attached() and not actor.can_swim() \
+			and not actor._is_dry(actor.position, actor.motion.elevation):
+		# The same previously reached dry anchor, never the far side of W5.
+		actor._recover_after_carrier_loss()
+		actor._update_rider_position()
+		actor._sync_projection()
+		for body in actor.map_travelers():
+			body.location_id = _entity_location(body.position)
+
+
+func _tick_bubble(delta: float) -> void:
+	if _alchemy_bubble.remaining <= 0.0:
+		return
+	actor.temporary_swim = true
+	if not actor._is_dry(actor.position, actor.motion.elevation):
+		_bubble_started = true
+	if _bubble_started:
+		_alchemy_bubble.tick(delta)
+		if _alchemy_bubble.remaining <= 0.0:
+			_clear_bubble()
 
 
 func _update_alchemy_light() -> void:
@@ -698,6 +743,7 @@ func _physics_process(delta: float) -> void:
 		donut_refill = maxf(0.0, donut_refill - delta)
 		_ice_duration.tick(delta)
 		_alchemy_glow.tick(delta)
+		_tick_bubble(world_clock.sim_delta(delta))
 		_update_yeti_route()
 		_refresh_plank_surface()
 	_update_alchemy_light()
@@ -717,6 +763,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Пончик"
 	if freeze_selected:
 		_status.text += "  ·  Заморозка"
+	if _alchemy_bubble.remaining > 0.0:
+		_status.text += "  ·  Пузырь %d" % ceili(_alchemy_bubble.remaining)
 	if restriction_text.is_valid():
 		_status.text += restriction_text.call()
 	var action := _nearby_action()
@@ -734,6 +782,10 @@ func _apply_keyboard_input() -> void:
 			return
 		ancient_console.close()
 	super._apply_keyboard_input()
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		if body.accepts_player_input():
+			body.swim_intent = float(Input.is_physical_key_pressed(KEY_SPACE)) - float(Input.is_physical_key_pressed(KEY_SHIFT))
 
 
 func _update_world_light(_minute: int = 0) -> void:
@@ -817,7 +869,33 @@ func _within_reach(point: Vector2, height: float = 0.0) -> bool:
 	return Vector3(offset.x, offset.y, height - actor.motion.elevation).length_squared() <= INTERACT_REACH * INTERACT_REACH
 
 
+func _tunnel_action() -> String:
+	if not observation_fixture or actor.is_attached() or actor.has_passenger():
+		return ""
+	if Tunnel.WEST.has_point(actor.position) and _within_reach(Tunnel.WEST_EXIT):
+		return "К тихому озеру"
+	if Tunnel.EAST.has_point(actor.position) and _within_reach(Tunnel.EAST_EXIT):
+		return "К Озеру Дубликатов"
+	if not actor.can_swim() or actor.motion.elevation > -12.0:
+		return ""
+	if Valley.ORDINARY_POOL.has_point(actor.position) and _within_reach(Tunnel.W1_MOUTH, -24.0):
+		return "Нырнуть в тоннель"
+	if Lake.POOL.has_point(actor.position) and _within_reach(Tunnel.W6_MOUTH, -24.0):
+		return "Нырнуть в обратный тоннель"
+	return ""
+
+
+func _use_tunnel(point: Vector2, address: String) -> bool:
+	if not _ordinary_arrival_is_safe(address, point):
+		return false
+	_move_home_travelers(point, address)
+	return true
+
+
 func _nearby_action() -> String:
+	var tunnel_action := _tunnel_action()
+	if not tunnel_action.is_empty():
+		return tunnel_action
 	if _at_alchemy_station():
 		return "Алхимическая установка"
 	if at_ancient_console():
@@ -917,6 +995,14 @@ func interact() -> bool:
 		forest_bank_interacted.emit()
 		return true
 	match _nearby_action():
+		"Нырнуть в тоннель":
+			return _use_tunnel(Tunnel.WEST_EXIT, Tunnel.LOCATION_ID)
+		"Нырнуть в обратный тоннель":
+			return _use_tunnel(Tunnel.EAST_EXIT, Tunnel.LOCATION_ID)
+		"К тихому озеру":
+			return _use_tunnel(Tunnel.W1_RETURN, Valley.LOCATION_ID)
+		"К Озеру Дубликатов":
+			return _use_tunnel(Lake.SHORE, Lake.LOCATION_ID)
 		"Алхимическая установка":
 			_alchemy_panel.show()
 			apply_player_input(Vector2.ZERO)
@@ -1156,13 +1242,15 @@ func make_snapshot() -> Dictionary:
 	data["world_clock"] = world_clock.snapshot()
 	data["coast_house_phase"] = coast_house_phase
 	data["alchemy_glow"] = _alchemy_glow.remaining
+	data["alchemy_bubble"] = _alchemy_bubble.remaining
+	data["bubble_started"] = _bubble_started
 	data["wand_pair"] = wand_pair.snapshot()
 	return data
 
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -1174,6 +1262,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_projection := WandProjection.new()
 	var next_clock := WorldClock.new()
 	var next_glow := ActiveDuration.new(GLOW_SECONDS)
+	var next_bubble := ActiveDuration.new(BUBBLE_SECONDS)
+	var next_started: Variant = data.get("bubble_started", false)
+	if not next_started is bool or not next_bubble.restore(data.get("alchemy_bubble", 0.0)) \
+			or (next_started and next_bubble.remaining <= 0.0):
+		return false
 	if not next_glow.restore(data.get("alchemy_glow", 0.0)):
 		return false
 	var next_house_phase: Variant = data.get("coast_house_phase", WorldClock.Phase.EVENING)
@@ -1259,6 +1352,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	queue_redraw()
 	coast_house_phase = int(next_house_phase)
 	_alchemy_glow.restore(next_glow.remaining)
+	_alchemy_bubble.restore(next_bubble.remaining)
+	_bubble_started = next_started
+	actor.temporary_swim = next_bubble.remaining > 0.0
 	if _alchemy_panel != null:
 		_alchemy_panel.hide()
 	_update_alchemy_light()
@@ -1327,6 +1423,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v6(point)
 	elif previous_schema == 7:
 		previous_location = _entity_location_v7(point)
+	elif previous_schema == 8:
+		previous_location = _entity_location_v8(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -1419,6 +1517,7 @@ func _draw() -> void:
 	if observation_fixture:
 		Valley.draw_on(self, world_clock.phase() == WorldClock.Phase.EVENING)
 		MiaLab.draw_on(self)
+		Tunnel.draw_on(self)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
