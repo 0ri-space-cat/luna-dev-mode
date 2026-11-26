@@ -54,7 +54,13 @@ func refresh_form_marker() -> void:
 		return
 	if record.category == "mouse":
 		_marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-12, -11), Vector2(-7, -23), Vector2(-2, -15), Vector2(4, -15), Vector2(9, -23), Vector2(12, -9), Vector2(12, 0)])
-	elif record.category == "resident":
+	elif record.category in ["cat", "fox"]:
+		_marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-13, -17), Vector2(-11, -29), Vector2(-3, -22), Vector2(3, -22), Vector2(11, -29), Vector2(13, -17), Vector2(12, 0)])
+	elif record.category == "ray":
+		_marker.polygon = PackedVector2Array([Vector2(-20, -10), Vector2(-10, -21), Vector2(0, -17), Vector2(10, -21), Vector2(20, -10), Vector2(0, 0)])
+	elif record.category == "lizard":
+		_marker.polygon = PackedVector2Array([Vector2(-16, -4), Vector2(-8, -17), Vector2(7, -17), Vector2(13, -9), Vector2(20, -2), Vector2(8, 0), Vector2(-8, 0)])
+	elif record.category in ["resident", "trollik"]:
 		_marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-9, -19), Vector2(0, -BODY_HEIGHT), Vector2(9, -19), Vector2(12, 0)])
 
 

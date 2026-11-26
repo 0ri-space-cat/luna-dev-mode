@@ -1,7 +1,7 @@
 extends RefCounted
 ## Ordinary discoveries, experiment provenance and temporary grants. No rare
 ## module is copied into ABILITY_SET; the stamp only creates a timed adapter.
-const TOOLS := ["BESTIARY", "REALITY_STAMP", "GRAVITY_GUN", "PIXEL_GLOBE"]
+const TOOLS := ["BESTIARY", "REALITY_STAMP", "GRAVITY_GUN", "PIXEL_GLOBE", "LUNA_ROOM_DOOR"]
 const SPECIES := {"cat": "Коты", "fox": "Лисы", "ray": "Скаты", "lizard": "Ящерицы", "trollik": "Троллики", "fish": "Рыбы", "mirror_snail": "Зеркальные улитки", "crab": "Крабы", "turtle": "Черепахи", "yeti": "Йетти", "mouse": "Мыши"}
 const STAMP_SECONDS := 8.0
 var owned: Array[String] = []

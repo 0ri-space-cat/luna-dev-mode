@@ -67,6 +67,15 @@ func _run() -> void:
 	assert(person.record.category == "resident")
 	assert(home.entities.get_entity(Island.YUKI_CAT_PREFIX + "1") == null)
 	assert(home.apply_snapshot(home.make_snapshot()))
+	# Same original door, reversible session and restored ordinary exit.
+	_place(home, Vector2(5100, 370))
+	assert(home.use_luna_door())
+	assert(home._entity_location(home.actor.position) == Island.City.HOME_ID)
+	assert(home.apply_snapshot(home.make_snapshot()))
+	assert(home.use_luna_door())
+	assert(home.actor.position.distance_to(Vector2(5100, 370)) < 35.0)
+	assert(home.close_luna_door())
+	assert(home.luna_door_session.is_empty())
 	game.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PROFILE))

@@ -7,6 +7,7 @@ var _ability: OptionButton
 var _size: HSlider
 var _message: Label
 var _bank: Label
+var _targets: OptionButton
 
 
 func _ready() -> void:
@@ -43,6 +44,16 @@ func _ready() -> void:
 	create.text = "Создать настоящее существо"
 	create.pressed.connect(_create)
 	layout.add_child(create)
+	_targets = OptionButton.new()
+	layout.add_child(_targets)
+	var change := Button.new()
+	change.text = "Изменить форму выбранной особи"
+	change.pressed.connect(_change_form)
+	layout.add_child(change)
+	var install := Button.new()
+	install.text = "Установить выбранный модуль особи"
+	install.pressed.connect(_install_existing)
+	layout.add_child(install)
 	var repeat := Button.new()
 	repeat.text = "Повторить последний шаблон"
 	repeat.pressed.connect(_repeat)
@@ -75,8 +86,30 @@ func open_for(owner_world: Node) -> void:
 		_ability.select(Catalog.MODULES.find(saved["ability"]))
 		_size.value = float(saved["size"])
 	_message.text = ""
+	_refresh_targets()
 	_refresh_bank()
 	show()
+
+
+func _refresh_targets() -> void:
+	_targets.clear()
+	for item in world.catalog_editable_targets():
+		_targets.add_item(item["label"])
+		_targets.set_item_metadata(_targets.item_count - 1, item["id"])
+
+
+func _change_form() -> void:
+	if _targets.selected < 0 or _forms.selected < 0:
+		return
+	_message.text = "Форма изменена, личность сохранена" if world.catalog_change_form(str(_targets.get_item_metadata(_targets.selected)), str(_forms.get_item_metadata(_forms.selected))) else "Нельзя изменить сейчас"
+	_refresh_targets()
+
+
+func _install_existing() -> void:
+	if _targets.selected < 0:
+		return
+	_message.text = "Модуль установлен" if world.catalog_install_existing(str(_targets.get_item_metadata(_targets.selected)), Catalog.MODULES[_ability.selected]) else "Нет доступного экземпляра или форма несовместима"
+	_refresh_bank()
 
 
 func _refresh_bank() -> void:
@@ -89,6 +122,7 @@ func _create() -> void:
 		return
 	var data := {"form": _forms.get_item_metadata(_forms.selected), "relation": Catalog.RELATIONS[_relations.selected], "size": _size.value, "ability": Catalog.MODULES[_ability.selected]}
 	_message.text = "Создано" if not world.catalog_create(data).is_empty() else "Нет свободной опоры или достигнут предел"
+	_refresh_targets()
 	_refresh_bank()
 
 
