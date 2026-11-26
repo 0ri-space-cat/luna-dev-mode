@@ -60,6 +60,7 @@ func _ready() -> void:
 	home.frost_cast.connect(_on_frost_cast)
 	home.wand_mode_requested = _commit_wand_mode
 	home.public_ride_requested = _start_public_ride
+	home.ghost_ride_requested = _start_ghost_ride
 	home.commands.parameter_changed.connect(_on_parameter_changed)
 	home.commands.component_changed.connect(_on_component_changed)
 	home.fauna_respawned.connect(_on_fauna_respawned)
@@ -481,14 +482,36 @@ func _start_public_ride(destination: String) -> bool:
 	return true
 
 
+func _start_ghost_ride() -> bool:
+	if _away or _simulation_suspended() or not _interrupted.is_empty() or not home._ghost_action():
+		return false
+	var source := home.make_snapshot()
+	if not _activate_guest(OuterRoutes.GHOST_ENTRY):
+		return false
+	var guest := outer.make_snapshot()
+	if not _write_profile(journal, _manual, source, {}, true, guest):
+		_reactivate_home(source)
+		return false
+	_continuity = source
+	_guest_save = guest
+	_away = true
+	home.ghost_offer = ""
+	return true
+
+
 func _finish_public_ride(destination: String) -> bool:
-	if not _away or not is_instance_valid(outer) or outer.hosted_entry not in [OuterRoutes.MEADOWS, OuterRoutes.LUMA]:
+	if not _away or not is_instance_valid(outer) or outer.hosted_entry not in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
 		return false
-	var address := Island.City.CITY_ID if destination == OuterRoutes.LUMA else Island.Meadows.LOCATION_ID
-	if destination not in [OuterRoutes.LUMA, OuterRoutes.MEADOWS]:
+	if destination not in [OuterRoutes.LUMA, OuterRoutes.MEADOWS, OuterRoutes.EDGE]:
 		return false
+	if outer.hosted_entry == OuterRoutes.GHOST_ENTRY and destination != OuterRoutes.LUMA:
+		return false
+	var address := Island.Edge.ID if destination == OuterRoutes.EDGE else (Island.City.CITY_ID if destination == OuterRoutes.LUMA else Island.Meadows.LOCATION_ID)
 	var arrivals: Array[Vector2] = []
-	if destination == OuterRoutes.LUMA:
+	if destination == OuterRoutes.EDGE:
+		arrivals.append(Island.Edge.FALL_ENTRY)
+		arrivals.append(Island.Edge.ENTRY)
+	elif destination == OuterRoutes.LUMA:
 		arrivals.append(Island.City.ARRIVAL)
 		arrivals.append(Vector2(4590, 410))
 	else:
@@ -520,7 +543,7 @@ func _activate_guest(address: String) -> bool:
 	guest.process_mode = Node.PROCESS_MODE_PAUSABLE
 	guest.hosted_entry = address
 	guest.return_to_host = _return_to_home
-	if address in [OuterRoutes.MEADOWS, OuterRoutes.LUMA]:
+	if address in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
 		guest.public_arrival = _finish_public_ride
 	add_child(guest)
 	var player := home.actor as Island.EntityBody
@@ -528,6 +551,7 @@ func _activate_guest(address: String) -> bool:
 		guest.free()
 		return false
 	player.step_obstacle = null
+	player.secondary_step_obstacle = null
 	home.set_home_active(false)
 	var camera := Camera2D.new()
 	camera.position = Vector2(640, 400)
@@ -594,7 +618,7 @@ func save_game() -> bool:
 	if _away and outer.hosted_entry == OuterRoutes.WHITE_ADDRESS:
 		manual = checkpoint.duplicate(true)
 		manual["white_visit"] = guest
-	elif _away and outer.hosted_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA]:
+	elif _away and outer.hosted_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
 		manual = checkpoint.duplicate(true)
 		manual["public_visit"] = {"entry": outer.hosted_entry, "guest": guest}
 	if not _write_profile(journal, manual, checkpoint, {}, _away, guest):
@@ -627,7 +651,7 @@ func load_game() -> bool:
 
 func _load_saved_public_visit(checkpoint: Dictionary) -> bool:
 	var visit: Variant = checkpoint.get("public_visit")
-	if not visit is Dictionary or visit.get("entry") not in [OuterRoutes.MEADOWS, OuterRoutes.LUMA] \
+	if not visit is Dictionary or visit.get("entry") not in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY] \
 			or not visit.get("guest") is Dictionary or visit["guest"].is_empty():
 		return false
 	var previous := home.make_snapshot()
@@ -712,7 +736,7 @@ func _restore_profile(profile: Dictionary) -> bool:
 	var guest_entry: Variant = profile.get("guest_entry", OuterRoutes.BLACK_VOID if away else "")
 	if interrupted.is_empty() != candidate.pending.is_empty() \
 			or (away and (not interrupted.is_empty() or continuity.is_empty() \
-				or guest_entry not in [OuterRoutes.BLACK_VOID, OuterRoutes.WHITE_ADDRESS, OuterRoutes.MEADOWS, OuterRoutes.LUMA])) \
+				or guest_entry not in [OuterRoutes.BLACK_VOID, OuterRoutes.WHITE_ADDRESS, OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY])) \
 			or (guest_entry == OuterRoutes.BLACK_VOID and candidate.applied != 2) \
 			or (not away and guest_entry != ""):
 		return false
@@ -744,10 +768,10 @@ func _restore_profile(profile: Dictionary) -> bool:
 			if outer.apply_snapshot(guest_save):
 				_guest_save = guest_save
 			else:
-				if guest_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA]:
+				if guest_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
 					return _return_to_home()
 				_notice("Восстановлена безопасная точка прибытия")
-		elif guest_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA]:
+		elif guest_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
 			return _return_to_home()
 		return true
 	if not _interrupted.is_empty():

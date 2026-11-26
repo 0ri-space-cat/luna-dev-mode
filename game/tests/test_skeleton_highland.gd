@@ -1,5 +1,6 @@
 extends SceneTree
 const Scene = preload("res://scenes/skeleton/adventure.tscn")
+const Island = preload("res://scripts/skeleton/start_island.gd")
 const Mountain = preload("res://scripts/skeleton/mountain_layout.gd")
 
 

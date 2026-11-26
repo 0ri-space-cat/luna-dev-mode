@@ -43,7 +43,12 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 15
+const ADDRESS_SCHEMA := 16
+const Edge = preload("res://scripts/skeleton/forgotten_edge_layout.gd")
+const EdgeState = preload("res://scripts/runtime2d/forgotten_edge_state.gd")
+var edge := EdgeState.new()
+var ghost_ride_requested: Callable
+var ghost_offer := ""
 const Mountain = preload("res://scripts/skeleton/mountain_layout.gd")
 const Highland = preload("res://scripts/runtime2d/highland_artifacts_2d.gd")
 var highland := Highland.new()
@@ -94,6 +99,7 @@ const AREA_LABELS := {
 	Valley.TOWER_ID: "Башня отражений", Tunnel.LOCATION_ID: "Подводный тоннель",
 	City.CITY_ID: "Люма", City.CAFE_ID: "Кафе", City.HOME_ID: "Комната Луны",
 	Mountain.MOUNTAIN: "Горы", Mountain.UPDRAFT: "Долина восходящего ветра", Mountain.SKY: "Небесные острова", Mountain.ORACLE: "Обзор Оракула",
+	Edge.ID: "Забытый край", Edge.SERVICE: "Служебный карман", Edge.BANK: "Скрытый берег", Edge.REFUGE: "Убежище",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -206,6 +212,14 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture:
+		var edge_address := Edge.address(point)
+		if not edge_address.is_empty():
+			return edge_address
+	return _entity_location_v15(point)
+
+
+func _entity_location_v15(point: Vector2) -> String:
 	if observation_fixture:
 		var mountain_address := Mountain.address(point)
 		if not mountain_address.is_empty():
@@ -371,17 +385,20 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
-		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS + Mountain.GROUND)
+		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS + Mountain.GROUND + Edge.GROUND)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
-		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS:
+		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS + Edge.LOWER_STEPS + [Edge.LOWER]:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
+		_surfaces.append({"bounds": Edge.WATER, "height": -48.0, "safe": false})
+		_water_volumes.append(WaterVolume.new(Edge.WATER, -48.0, -5.0, Vector2(0, -230), 3.0))
+		_surfaces.append(Edge.CYCLE_SPAN)
 		_surfaces.append(Crystal.LOWER)
 		_surfaces.append(CoastExtra.LOWER)
 		_surfaces.append(Lake.SHALLOW_SURFACE)
@@ -1648,6 +1665,121 @@ func _valid_evening(data: Variant) -> bool:
 
 
 
+
+func _tick_edge(delta: float) -> void:
+	if not observation_fixture:
+		return
+	var was_intact := edge.elapsed < Edge.INTACT_SECONDS
+	edge.elapsed = fposmod(edge.elapsed + world_clock.sim_delta(delta), Edge.CYCLE_SECONDS)
+	var intact := edge.elapsed < Edge.INTACT_SECONDS
+	if intact and not _surfaces.has(Edge.CYCLE_SPAN):
+		_surfaces.append(Edge.CYCLE_SPAN)
+	elif not intact:
+		_surfaces.erase(Edge.CYCLE_SPAN)
+	if was_intact != intact:
+		queue_redraw()
+	if not ghost_offer.is_empty() and (world_clock.phase() != WorldClock.Phase.NIGHT or actor.position.distance_to(_ghost_point()) > 180.0):
+		ghost_offer = ""
+		queue_redraw()
+
+
+func _ghost_point() -> Vector2:
+	if ghost_offer == Meadows.LOCATION_ID:
+		return City.MEADOWS_STATION + Vector2(42, 0)
+	if ghost_offer == City.CITY_ID:
+		return City.BOARD + Vector2(42, 0)
+	return Vector2.INF
+
+
+func _ghost_action() -> bool:
+	return observation_fixture and ghost_ride_requested.is_valid() and not ghost_offer.is_empty() and world_clock.phase() == WorldClock.Phase.NIGHT and actor.motion.grounded and not actor.is_attached() and actor.position.distance_to(_ghost_point()) <= 20.0
+
+
+func _edge_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return ""
+	var address := _entity_location(actor.position)
+	if address == Edge.ID and _within_reach(Edge.RETURN):
+		return "Вернуться на побережье"
+	if address == Edge.REFUGE and _within_reach(Edge.NOTE):
+		return "Прочесть личную запись"
+	if address == Edge.SERVICE and _within_reach(Edge.DESK) and Edge.D4_DESK.has_point(actor.position) and not edge.time_owned:
+		return "Взять Кнопку времени"
+	if Edge.D8.has_point(actor.position):
+		if actor.position.distance_to(Edge.PORTAL_A) <= 24.0 or actor.position.distance_to(Edge.PORTAL_B) <= 24.0:
+			return "Пройти через стационарный портал"
+		if not edge.portal_owned and _within_reach(Vector2(3460, 1445)):
+			return "Взять Портал-ган"
+	if edge.portal_owned and edge.portal_a.size() == 2 and edge.portal_b.size() == 2 and (actor.position.distance_to(Vector2(edge.portal_a[0], edge.portal_a[1])) <= 22.0 or actor.position.distance_to(Vector2(edge.portal_b[0], edge.portal_b[1])) <= 22.0):
+		return "Пройти через переносной портал"
+	return ""
+
+
+func _portal_transfer(destination: Vector2, turn: float) -> bool:
+	var address := _entity_location(destination)
+	if not _ordinary_arrival_is_safe(address, destination):
+		return false
+	var planar: Vector2 = actor._impulse_velocity.rotated(turn)
+	var drive: Vector2 = actor.direction.rotated(turn)
+	_move_home_travelers(destination, address)
+	actor._impulse_velocity = planar
+	actor.direction = drive
+	return true
+
+
+func _interact_edge() -> bool:
+	match _edge_action():
+		"Вернуться на побережье":
+			if not _ordinary_arrival_is_safe(Coast.LOCATION_ID, Edge.COAST_RETURN):
+				return false
+			_move_home_travelers(Edge.COAST_RETURN, Coast.LOCATION_ID)
+			return true
+		"Прочесть личную запись":
+			$Interface/SaveNotice.text = "На листе прямоугольник, след шагов продолжается за его границей. Рядом незаконченный рисунок комнаты."
+			return true
+		"Взять Кнопку времени":
+			edge.time_owned = true
+			queue_redraw()
+			$Interface/SaveNotice.text = "Получена Кнопка времени."
+			return true
+		"Взять Портал-ган":
+			edge.portal_owned = true
+			queue_redraw()
+			$Interface/SaveNotice.text = "Портал-ган · F10 / F11: установить концы на устойчивой поверхности"
+			return true
+		"Пройти через стационарный портал":
+			return _portal_transfer(Edge.PORTAL_B_EXIT, PI / 2.0) if actor.position.distance_to(Edge.PORTAL_A) <= 24.0 else _portal_transfer(Edge.PORTAL_A_EXIT, -PI / 2.0)
+		"Пройти через переносной портал":
+			var a := Vector2(edge.portal_a[0], edge.portal_a[1])
+			var b := Vector2(edge.portal_b[0], edge.portal_b[1])
+			return _portal_transfer(b, 0.0) if actor.position.distance_to(a) <= 22.0 else _portal_transfer(a, 0.0)
+	return false
+
+
+func place_portal(which: int) -> bool:
+	if not edge.portal_owned or which not in [0, 1] or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor) or actor.is_attached() or not actor.motion.grounded or not is_zero_approx(actor.motion.elevation):
+		return false
+	var point: Vector2 = actor.position
+	if not can_return_traveler(point, 0.0) or not actor._is_dry(point, 0.0):
+		return false
+	var other: Array = edge.portal_b if which == 0 else edge.portal_a
+	if other.size() == 2 and point.distance_to(Vector2(other[0], other[1])) < 64.0:
+		return false
+	if which == 0:
+		edge.portal_a = [point.x, point.y]
+	else:
+		edge.portal_b = [point.x, point.y]
+	queue_redraw()
+	return true
+
+
+func _valid_edge_anchor(anchor: Array) -> bool:
+	if anchor.is_empty():
+		return true
+	var point := Vector2(anchor[0], anchor[1])
+	return actor.motion._has_support(point, 0.0, _decks, true) and actor.fits_walls_at(point, 0.0, actor.foot_radius()) and actor._is_dry(point, 0.0)
+
+
 func _setup_highland() -> void:
 	var oracle := spawn_entity({"id": Mountain.ORACLE_ID, "category": "oracle", "label": "Оракул", "material": "FABRIC"}, Mountain.ORACLE_POINT, 18.0)
 	var ray := spawn_entity({"id": Mountain.RAY_ID, "category": "ray", "label": "Свободный скат", "material": "FABRIC"}, Mountain.RAY_POINT, 0.0)
@@ -1751,15 +1883,16 @@ func _sync_mountain_bridge() -> void:
 	if not observation_fixture:
 		return
 	_camera.force_update_scroll()
-	var bounds: Rect2 = Mountain.CAMERA_BRIDGE["bounds"]
 	var extent := _camera.get_viewport_rect().size / _camera.zoom
 	var view := Rect2(_camera.get_screen_center_position() - extent * 0.5, extent)
-	var projected := Rect2(bounds.position - Vector2(0, float(Mountain.CAMERA_BRIDGE["height"])), bounds.size)
-	var solid := Solidity.solid_for(Solidity.WHEN_UNOBSERVED, Solidity.CAMERA, {"player_camera": view.intersects(projected)})
-	if solid and not _surfaces.has(Mountain.CAMERA_BRIDGE):
-		_surfaces.append(Mountain.CAMERA_BRIDGE)
-	elif not solid:
-		_surfaces.erase(Mountain.CAMERA_BRIDGE)
+	for surface in [Mountain.CAMERA_BRIDGE, Edge.R07, Edge.BRIDGE]:
+		var bounds: Rect2 = surface["bounds"]
+		var projected := Rect2(bounds.position - Vector2(0, float(surface["height"])), bounds.size)
+		var solid := Solidity.solid_for(Solidity.WHEN_UNOBSERVED, Solidity.CAMERA, {"player_camera": view.intersects(projected)})
+		if solid and not _surfaces.has(surface):
+			_surfaces.append(surface)
+		elif not solid:
+			_surfaces.erase(surface)
 
 
 func _mountain_music_response() -> bool:
@@ -2241,6 +2374,9 @@ func perform_music(phrase: String) -> bool:
 	match Music.resolve(phrase):
 		"M02":
 			_attraction.start()
+			if world_clock.phase() == WorldClock.Phase.NIGHT and ghost_ride_requested.is_valid() and not _city_station_destination().is_empty():
+				ghost_offer = _entity_location(actor.position)
+				queue_redraw()
 			return true
 		"M03":
 			if _music_original_scale > 0.0:
@@ -2929,6 +3065,9 @@ func can_return_traveler(point: Vector2, height: float) -> bool:
 # No address catalogue is exposed to the player, and a Feature ID is not a destination.
 func _ordinary_arrival_points(address: String) -> Array[Vector2]:
 	match address:
+		Edge.ID:
+			if observation_fixture:
+				return [Edge.ENTRY, Edge.FALL_ENTRY]
 		Mountain.MOUNTAIN:
 			if observation_fixture:
 				return [Mountain.ENTRY, Vector2(1590, 1460)]
@@ -3083,6 +3222,7 @@ func _physics_process(delta: float) -> void:
 		_tick_leia()
 		_tick_antimemetic(world_clock.sim_delta(delta))
 		_sync_highland_forces()
+		_tick_edge(delta)
 		if _mountain_echo > 0.0:
 			_mountain_echo = maxf(0.0, _mountain_echo - delta)
 			queue_redraw()
@@ -3295,6 +3435,11 @@ func _use_tunnel(point: Vector2, address: String) -> bool:
 
 
 func _nearby_action() -> String:
+	if _ghost_action():
+		return "Сесть на призрачного ската"
+	var edge_action := _edge_action()
+	if not edge_action.is_empty():
+		return edge_action
 	var city_door := _city_door_action()
 	if not city_door.is_empty():
 		return city_door["label"]
@@ -3428,6 +3573,10 @@ func _update_ice_support(active: bool) -> void:
 func interact() -> bool:
 	if not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	if _ghost_action():
+		return ghost_ride_requested.call()
+	if not _edge_action().is_empty():
+		return _interact_edge()
 	if at_ancient_console():
 		ancient_console.open()
 		apply_player_input(Vector2.ZERO)
@@ -3664,6 +3813,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 		KEY_P:
 			if toggle_prism():
+				get_viewport().set_input_as_handled()
+		KEY_F10:
+			if place_portal(0):
+				get_viewport().set_input_as_handled()
+		KEY_F11:
+			if place_portal(1):
 				get_viewport().set_input_as_handled()
 		KEY_F4:
 			if toggle_camera_lock():
@@ -3908,6 +4063,7 @@ func make_snapshot() -> Dictionary:
 		data["antimemetic"] = antimemetic.snapshot()
 		data["highland_layout"] = 1
 		data["highland"] = highland.snapshot()
+		data["edge"] = edge.snapshot()
 		data["oni_route_index"] = oni_route_index
 		data["flute_owned"] = flute_owned
 		data["prism_active"] = prism_active
@@ -3924,7 +4080,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -3980,6 +4136,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 		if next_recalled and entry.get("attachment") is Dictionary and entry["attachment"].get("carrier_id") == TAMAGOTCHI_PET:
 			return false
 	if pet_count > 1 or (next_recalled and (pet_count != 1 or next_tools.stamped.has(TAMAGOTCHI_PET) or next_yuki.rules.any(func(rule): return rule["host"] == TAMAGOTCHI_PET))):
+		return false
+	var next_edge := EdgeState.new()
+	if not next_edge.restore(data.get("edge", next_edge.snapshot())) or not _valid_edge_anchor(next_edge.portal_a) or not _valid_edge_anchor(next_edge.portal_b):
 		return false
 	var next_highland := Highland.new()
 	if not next_highland.restore(data.get("highland", next_highland.snapshot())):
@@ -4250,6 +4409,13 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var previous_door := _crystal_door_solid
 	var previous_bridge := _surfaces.has(Crystal.BRIDGE)
 	var previous_coast_bridge := _surfaces.has(CoastExtra.BRIDGE)
+	var previous_edge_surfaces: Array[Dictionary] = []
+	if observation_fixture:
+		for surface in [Edge.R07, Edge.BRIDGE, Edge.CYCLE_SPAN]:
+			if _surfaces.has(surface):
+				previous_edge_surfaces.append(surface)
+			else:
+				_surfaces.append(surface)
 	var previous_mountain_bridge := _surfaces.has(Mountain.CAMERA_BRIDGE)
 	if observation_fixture and not previous_mountain_bridge:
 		_surfaces.append(Mountain.CAMERA_BRIDGE)
@@ -4277,6 +4443,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 				_surfaces.erase(CoastExtra.BRIDGE)
 			if not previous_mountain_bridge:
 				_surfaces.erase(Mountain.CAMERA_BRIDGE)
+			for surface in [Edge.R07, Edge.BRIDGE, Edge.CYCLE_SPAN]:
+				if not previous_edge_surfaces.has(surface):
+					_surfaces.erase(surface)
 		return false
 	city_tools = next_tools
 	luna_door_session = next_door
@@ -4297,6 +4466,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	social = next_social
 	antimemetic = next_am
 	highland = next_highland
+	edge = next_edge
+	ghost_offer = ""
+	_tick_edge(0.0)
 	_mountain_echo = 0.0
 	_sync_highland_forces()
 	_update_local_camera()
@@ -4447,6 +4619,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v13(point)
 	elif previous_schema == 14:
 		previous_location = _entity_location_v13(point)
+	elif previous_schema == 15:
+		previous_location = _entity_location_v15(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -4631,6 +4805,13 @@ func _draw() -> void:
 		City.draw_on(self)
 		_draw_antimemetic()
 		Mountain.draw_on(self, highland.compass_owned, highland.camera_owned, actor.position, prism_active, _mountain_echo)
+		Edge.draw_on(self, edge.elapsed, edge.time_owned, edge.portal_owned)
+		for endpoint in [edge.portal_a, edge.portal_b]:
+			if endpoint.size() == 2:
+				draw_arc(Vector2(endpoint[0], endpoint[1]) - Vector2(0, 15), 18.0, 0, TAU, 32, Color("dfa5f7"), 3.0)
+		if not ghost_offer.is_empty():
+			var p := _ghost_point()
+			draw_colored_polygon(PackedVector2Array([p + Vector2(-25, -7), p + Vector2(0, -22), p + Vector2(25, -7), p + Vector2(0, 8)]), Color(0.68, 0.87, 0.98, 0.72))
 		if not luna_door_session.is_empty():
 			var source := Vector2(float(luna_door_session["x"]), float(luna_door_session["y"]))
 			draw_rect(Rect2(source + Vector2(-14, -38), Vector2(28, 38)), Color("f2cfff"), false, 3.0)
