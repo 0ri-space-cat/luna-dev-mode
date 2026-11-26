@@ -11,7 +11,7 @@
   ],
   "frames": [
     {
-      "id": "door-step",
+      "id": "ready",
       "region": [
         0,
         0,
@@ -20,7 +20,7 @@
       ]
     },
     {
-      "id": "door-pass",
+      "id": "right-lift",
       "region": [
         128,
         0,
@@ -29,9 +29,63 @@
       ]
     },
     {
-      "id": "door-step-opposite",
+      "id": "right-swing",
       "region": [
         256,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "right-contact",
+      "region": [
+        384,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "transfer",
+      "region": [
+        512,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "left-lift",
+      "region": [
+        640,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "left-swing",
+      "region": [
+        768,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "left-contact",
+      "region": [
+        896,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "settle",
+      "region": [
+        1024,
         0,
         128,
         192
@@ -40,16 +94,44 @@
   ],
   "enter": [
     {
-      "frame": "door-step",
-      "duration_ms": 130
-    },
-    {
-      "frame": "door-pass",
+      "frame": "ready",
       "duration_ms": 90
     },
     {
-      "frame": "door-step-opposite",
-      "duration_ms": 130
+      "frame": "right-lift",
+      "duration_ms": 70
+    },
+    {
+      "frame": "right-swing",
+      "duration_ms": 70
+    },
+    {
+      "frame": "right-contact",
+      "duration_ms": 90
+    },
+    {
+      "frame": "transfer",
+      "duration_ms": 70
+    },
+    {
+      "frame": "left-lift",
+      "duration_ms": 70
+    },
+    {
+      "frame": "left-swing",
+      "duration_ms": 70
+    },
+    {
+      "frame": "left-contact",
+      "duration_ms": 90
+    },
+    {
+      "frame": "settle",
+      "duration_ms": 100
+    },
+    {
+      "frame": "ready",
+      "duration_ms": 90
     }
   ],
   "loop": false
