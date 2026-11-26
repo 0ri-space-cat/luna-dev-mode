@@ -35,7 +35,7 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 4
+const ADDRESS_SCHEMA := 5
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -47,6 +47,7 @@ const AREA_LABELS := {
 	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
 	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
+	Coast.HOUSE_ID: "Дом вечерних окон",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -99,6 +100,7 @@ var has_donut := false
 var donut_refill := 0.0
 var retreat_step := -1
 var world_clock := WorldClock.new()
+var coast_house_phase: int = WorldClock.Phase.EVENING
 var _ice_duration := ActiveDuration.new(Meadows.ICE_SECONDS)
 var ice_remaining: float:
 	get:
@@ -120,7 +122,20 @@ func _location_id() -> String:
 
 func _entity_location(point: Vector2) -> String:
 	if observation_fixture:
+		if Coast.HOUSE_ROOM.has_point(point):
+			return Coast.HOUSE_ID
 		if Coast.contains(point):
+			return Coast.LOCATION_ID
+		var extension := Valley.location_at(point)
+		if not extension.is_empty():
+			return extension
+	return _legacy_entity_location(point)
+
+
+# M3.82 partition before the veranda and separate house interior.
+func _entity_location_v4(point: Vector2) -> String:
+	if observation_fixture:
+		if Coast.contains_v4(point):
 			return Coast.LOCATION_ID
 		var extension := Valley.location_at(point)
 		if not extension.is_empty():
@@ -204,6 +219,7 @@ func _ready() -> void:
 	_walls.assign(BRIDGE_RAILS)
 	if observation_fixture:
 		_walls.append({"bounds": ForestBank.REST_SPOT, "height": 96.0, "layer": 2})
+		_walls.append({"bounds": Coast.HOUSE_SHELL, "height": 96.0, "layer": 2})
 	if ancient_console_enabled:
 		_walls.append({"bounds": AncientConsole.CONSOLE_BODY, "height": 92.0, "layer": 2})
 	for wall in _walls:
@@ -515,21 +531,26 @@ func teleport_known_location(address: String) -> bool:
 	for point in _ordinary_arrival_points(address):
 		if not _ordinary_arrival_is_safe(address, point):
 			continue
-		actor.position = point
-		actor.motion.reset_on_surface(point, 0.0)
-		actor.direction = Vector2.ZERO
-		actor.velocity = Vector2.ZERO
-		actor._impulse_velocity = Vector2.ZERO
-		actor.thrust_requested = false
-		actor.swim_intent = 0.0
-		actor._update_rider_position()
-		for body in actor.map_travelers():
-			(body as EntityBody).location_id = address
-			body._sync_projection()
-		_camera.position = point
-		_camera.reset_smoothing()
+		_move_home_travelers(point, address)
 		return true
 	return false
+
+
+func _move_home_travelers(point: Vector2, address: String) -> void:
+	actor.position = point
+	actor.motion.reset_on_surface(point, 0.0)
+	actor.direction = Vector2.ZERO
+	actor.velocity = Vector2.ZERO
+	actor._impulse_velocity = Vector2.ZERO
+	actor.thrust_requested = false
+	actor.swim_intent = 0.0
+	actor._update_rider_position()
+	for body in actor.map_travelers():
+		(body as EntityBody).location_id = address
+		body._sync_projection()
+	_camera.position = point
+	_camera.reset_smoothing()
+	_update_world_light()
 
 
 func return_traveler(point: Vector2, height: float) -> void:
@@ -578,8 +599,10 @@ func _physics_process(delta: float) -> void:
 	_was_at_bank = at_bank
 	_camera.position = actor.position
 	var area: String = AREA_LABELS[_entity_location(actor.position)]
+	var local_phase: int = coast_house_phase if _entity_location(actor.position) == Coast.HOUSE_ID else world_clock.phase()
+	_world_light.color = PHASE_TINTS[local_phase]
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
-	_status.text = "%s  ·  %s  ·  %s" % [area, PHASE_LABELS[world_clock.phase()], wand]
+	_status.text = "%s  ·  %s  ·  %s" % [area, PHASE_LABELS[local_phase], wand]
 	if has_donut:
 		_status.text += "  ·  Пончик"
 	if freeze_selected:
@@ -601,7 +624,39 @@ func _apply_keyboard_input() -> void:
 
 
 func _update_world_light(_minute: int = 0) -> void:
-	_world_light.color = PHASE_TINTS[world_clock.phase()]
+	var phase: int = world_clock.phase()
+	if observation_fixture and is_instance_valid(actor) and Coast.HOUSE_ROOM.has_point(actor.position):
+		phase = coast_house_phase
+	_world_light.color = PHASE_TINTS[phase]
+	queue_redraw()
+
+
+func _coast_house_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return ""
+	var inside := Coast.HOUSE_ROOM.has_point(actor.position)
+	if inside:
+		if _within_reach(Coast.DIAL_INSIDE):
+			return "Повернуть циферблат"
+		if _within_reach(Coast.HOUSE_INSIDE):
+			return "Выйти из дома"
+	elif Coast.HOUSE_VERANDA.has_point(actor.position):
+		if _within_reach(Coast.DIAL_OUTSIDE):
+			return "Повернуть циферблат"
+		if _within_reach(Coast.HOUSE_OUTSIDE):
+			return "Войти в дом" if coast_house_phase == world_clock.phase() else ""
+	return ""
+
+
+func _use_coast_house_door(entering: bool) -> bool:
+	if entering and coast_house_phase != world_clock.phase():
+		return false
+	var point := Coast.HOUSE_INSIDE if entering else Coast.HOUSE_OUTSIDE
+	var address := Coast.HOUSE_ID if entering else Coast.LOCATION_ID
+	if not _ordinary_arrival_is_safe(address, point):
+		return false
+	_move_home_travelers(point, address)
+	return true
 
 
 func _update_yeti_route() -> void:
@@ -627,6 +682,9 @@ func _within_reach(point: Vector2, height: float = 0.0) -> bool:
 func _nearby_action() -> String:
 	if at_ancient_console():
 		return "Осмотреть Древнюю Консоль"
+	var house_action := _coast_house_action()
+	if not house_action.is_empty():
+		return house_action
 	if access.wand_mode == AccessState.ORDINARY and projection.carried and _within_reach(RIFT_SPOT):
 		return "Поднести палочку"
 	if wand_pair.duplicate == null and projection.carried and actor.motion.grounded \
@@ -716,6 +774,14 @@ func interact() -> bool:
 		forest_bank_interacted.emit()
 		return true
 	match _nearby_action():
+		"Повернуть циферблат":
+			coast_house_phase = (coast_house_phase + 1) % 4
+			_update_world_light()
+			return true
+		"Войти в дом":
+			return _use_coast_house_door(true)
+		"Выйти из дома":
+			return _use_coast_house_door(false)
 		"Поднести палочку":
 			return _set_wand_mode(AccessState.PLAYFUL)
 		"Коснуться воды палочкой":
@@ -932,13 +998,14 @@ func make_snapshot() -> Dictionary:
 	}
 	data["meadows"] = {"ice_remaining": ice_remaining, "layout_version": 2}
 	data["world_clock"] = world_clock.snapshot()
+	data["coast_house_phase"] = coast_house_phase
 	data["wand_pair"] = wand_pair.snapshot()
 	return data
 
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -949,6 +1016,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_access := AccessState.new()
 	var next_projection := WandProjection.new()
 	var next_clock := WorldClock.new()
+	var next_house_phase: Variant = data.get("coast_house_phase", WorldClock.Phase.EVENING)
+	if typeof(next_house_phase) not in [TYPE_INT, TYPE_FLOAT] or float(next_house_phase) not in [0.0, 1.0, 2.0, 3.0]:
+		return false
 	if data.has("world_clock") and not next_clock.restore(data["world_clock"]):
 		return false
 	var access_data: Variant = island.get("access")
@@ -1027,7 +1097,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	projection = wand_pair.active()
 	_wand_hold = 0.0
 	queue_redraw()
+	coast_house_phase = int(next_house_phase)
 	world_clock.restore(next_clock.snapshot())
+	_update_world_light()
 	has_donut = food
 	donut_refill = float(refill)
 	retreat_step = int(step)
@@ -1083,6 +1155,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v2(point)
 	elif previous_schema == 3:
 		previous_location = _entity_location_v3(point)
+	elif previous_schema == 4:
+		previous_location = _entity_location_v4(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -1174,7 +1248,7 @@ func _draw() -> void:
 	Lake.draw_on(self)
 	if observation_fixture:
 		Valley.draw_on(self)
-		Coast.draw_on(self)
+		Coast.draw_on(self, coast_house_phase, world_clock.phase())
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
 			var point: Vector2 = field.ground_position

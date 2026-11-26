@@ -4,6 +4,7 @@ const Start = preload("res://scenes/skeleton/start_island.tscn")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
+const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
 
 
 func _initialize() -> void:
@@ -68,6 +69,37 @@ func _run() -> void:
 	assert(scene.actor.position.distance_to(Coast.BEACH_ENTRY) < 3.0)
 	assert(scene.actor.motion._has_support(Vector2(2600, 990), Coast.SEA_BED, scene.actor.surfaces, false))
 	assert(not scene.actor.motion._has_support(Vector2(2600, 990), 0.0, scene.actor.surfaces, false))
+	# Ordinary K2 access and phase puzzle: the external path is always open.
+	for point in [Vector2(2620, 795), Vector2(2620, 740), Coast.HOUSE_OUTSIDE]:
+		assert(await _walk_to(scene, point), "house veranda %s" % point)
+	assert(scene.world_clock.set_time_of_day(Clock.START_MINUTE))
+	assert(scene.coast_house_phase == Clock.Phase.EVENING)
+	assert(not scene.interact())
+	assert(scene.actor.location_id == Coast.LOCATION_ID)
+	assert(await _walk_to(scene, Coast.DIAL_OUTSIDE))
+	for step in range(3):
+		assert(scene.interact())
+	assert(scene.coast_house_phase == Clock.Phase.DAY and scene.world_clock.phase() == Clock.Phase.DAY)
+	assert(await _walk_to(scene, Coast.HOUSE_OUTSIDE))
+	assert(scene.interact() and scene.actor.location_id == Coast.HOUSE_ID)
+	assert(await _walk_to(scene, Coast.DIAL_INSIDE))
+	assert(scene.interact() and scene.coast_house_phase == Clock.Phase.EVENING)
+	assert(scene.world_clock.phase() == Clock.Phase.DAY)
+	var house_save: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(house_save) and scene.actor.location_id == Coast.HOUSE_ID)
+	assert(scene.coast_house_phase == Clock.Phase.EVENING)
+	var bad_phase := house_save.duplicate(true)
+	bad_phase["coast_house_phase"] = 9
+	assert(not scene.apply_snapshot(bad_phase) and scene.coast_house_phase == Clock.Phase.EVENING)
+	assert(await _walk_to(scene, Coast.HOUSE_INSIDE))
+	assert(scene.interact() and scene.actor.location_id == Coast.LOCATION_ID)
+	assert(not scene.interact())
+	assert(scene.world_clock.set_time_of_day(Clock.EVENING_MINUTE))
+	assert(scene.interact() and scene.actor.location_id == Coast.HOUSE_ID)
+	assert(scene.interact() and scene.actor.location_id == Coast.LOCATION_ID)
+	# No gated exit or change to outside world time. Return via the ordinary loop.
+	for point in [Vector2(2620, 740), Vector2(2620, 795), Coast.BEACH_ENTRY]:
+		assert(await _walk_to(scene, point))
 	shore_path.reverse()
 	for point in shore_path:
 		assert(await _walk_to(scene, point), "coast retreat %s" % point)
