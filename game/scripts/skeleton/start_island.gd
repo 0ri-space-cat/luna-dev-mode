@@ -35,7 +35,10 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 9
+const ADDRESS_SCHEMA := 10
+const Crystal = preload("res://scripts/skeleton/crystal_observation_layout.gd")
+const Gaze = preload("res://scripts/runtime2d/observer_query_2d.gd")
+const Solidity = preload("res://scripts/runtime2d/observation_body_2d.gd")
 const Tunnel = preload("res://scripts/skeleton/waterfall_tunnel_layout.gd")
 const BUBBLE_SECONDS := 30.0
 const MiaLab = preload("res://scripts/skeleton/mia_lab_layout.gd")
@@ -111,6 +114,9 @@ var _alchemy_panel: PanelContainer
 var _alchemy_glow := ActiveDuration.new(GLOW_SECONDS)
 var _alchemy_bubble := ActiveDuration.new(BUBBLE_SECONDS)
 var _bubble_started := false
+var crystal_observer := Gaze.new()
+var _crystal_door: StaticBody2D
+var _crystal_door_solid := false
 var _alchemy_light: PointLight2D
 var _coast_tide: WaterVolume
 var _ice_duration := ActiveDuration.new(Meadows.ICE_SECONDS)
@@ -133,6 +139,12 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture and Crystal.contains(point):
+		return Valley.CRYSTAL_ID
+	return _entity_location_v9(point)
+
+
+func _entity_location_v9(point: Vector2) -> String:
 	if observation_fixture and Tunnel.contains(point):
 		return Tunnel.LOCATION_ID
 	return _entity_location_v8(point)
@@ -252,7 +264,7 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
-		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS)
+		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
@@ -263,6 +275,7 @@ func _ready() -> void:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
+		_surfaces.append(Crystal.LOWER)
 		for surface in Tunnel.WATER_SURFACES:
 			_surfaces.append(surface.duplicate())
 		_water_volumes.append(WaterVolume.new(Tunnel.WATER, Tunnel.BED, 0.0, Vector2.ZERO, 1.2))
@@ -313,11 +326,70 @@ func _ready() -> void:
 	if observation_fixture:
 		_spawn_observation_fixture()
 		_setup_alchemy()
+		_setup_crystal_observation()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
 		ancient_console.attach_interface($Interface)
 	_camera.position = actor.position
+
+
+func _setup_crystal_observation() -> void:
+	_crystal_door = StaticBody2D.new()
+	_crystal_door.collision_mask = 0
+	_crystal_door.collision_layer = 0
+	_crystal_door.disable_mode = CollisionObject2D.DISABLE_MODE_KEEP_ACTIVE
+	var bounds: Rect2 = Crystal.DOOR["bounds"]
+	_crystal_door.position = bounds.get_center()
+	var collider := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = bounds.size
+	collider.shape = shape
+	_crystal_door.add_child(collider)
+	add_child(_crystal_door)
+	_sync_crystal_observation()
+
+
+func set_luna_eyes(open: bool) -> void:
+	crystal_observer.luna_eyes_open = open
+	_sync_crystal_observation()
+
+
+func _set_crystal_door(solid: bool) -> void:
+	if _crystal_door == null or _crystal_door_solid == solid:
+		return
+	_crystal_door_solid = solid
+	if solid:
+		_walls.append(Crystal.DOOR)
+	else:
+		_walls.erase(Crystal.DOOR)
+	_crystal_door.collision_layer = int(Crystal.DOOR["layer"]) if solid else 0
+	queue_redraw()
+
+
+func _door_occupied() -> bool:
+	var bounds: Rect2 = Crystal.DOOR["bounds"]
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		if body.motion.elevation < float(Crystal.DOOR["height"]) \
+				and bounds.grow(body.foot_radius()).has_point(body.position):
+			return true
+	return false
+
+
+func _sync_crystal_observation() -> void:
+	if _crystal_door == null:
+		return
+	var bridge_bounds: Rect2 = Crystal.BRIDGE["bounds"]
+	var state := crystal_observer.evaluate(actor, null, bridge_bounds.get_center())
+	# The same observer law as the standalone fixture. No camera dependency.
+	var solid := Solidity.solid_for(Solidity.WHEN_UNOBSERVED, Solidity.LUNA, state)
+	if solid and not _surfaces.has(Crystal.BRIDGE):
+		_surfaces.append(Crystal.BRIDGE)
+	elif not solid:
+		_surfaces.erase(Crystal.BRIDGE)
+	# Reclose only after the actual body clears the doorway, never crush it.
+	_set_crystal_door(crystal_observer.luna_eyes_open and not _door_occupied())
 
 
 func _setup_alchemy() -> void:
@@ -738,6 +810,9 @@ func _physics_process(delta: float) -> void:
 	if keyboard:
 		_apply_keyboard_input()
 		tick_wand_self_hack(delta, Input.is_physical_key_pressed(KEY_TAB))
+	if not actor.direction.is_zero_approx():
+		crystal_observer.facing = actor.direction.normalized()
+	_sync_crystal_observation()
 	if not is_instance_valid(_debug_editor):
 		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
@@ -763,6 +838,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Пончик"
 	if freeze_selected:
 		_status.text += "  ·  Заморозка"
+	if not crystal_observer.luna_eyes_open:
+		_status.text += "  ·  Глаза закрыты"
 	if _alchemy_bubble.remaining > 0.0:
 		_status.text += "  ·  Пузырь %d" % ceili(_alchemy_bubble.remaining)
 	if restriction_text.is_valid():
@@ -1106,6 +1183,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	match event.keycode:
+		KEY_F2:
+			if observation_fixture and not is_instance_valid(_debug_editor):
+				set_luna_eyes(not crystal_observer.luna_eyes_open)
+				get_viewport().set_input_as_handled()
 		KEY_E:
 			if interact():
 				get_viewport().set_input_as_handled()
@@ -1244,13 +1325,15 @@ func make_snapshot() -> Dictionary:
 	data["alchemy_glow"] = _alchemy_glow.remaining
 	data["alchemy_bubble"] = _alchemy_bubble.remaining
 	data["bubble_started"] = _bubble_started
+	data["luna_eyes_open"] = crystal_observer.luna_eyes_open
+	data["luna_facing"] = [crystal_observer.facing.x, crystal_observer.facing.y]
 	data["wand_pair"] = wand_pair.snapshot()
 	return data
 
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -1261,6 +1344,16 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_access := AccessState.new()
 	var next_projection := WandProjection.new()
 	var next_clock := WorldClock.new()
+	var next_eyes: Variant = data.get("luna_eyes_open", true)
+	var raw_facing: Variant = data.get("luna_facing", [0.0, 1.0])
+	if not next_eyes is bool or not raw_facing is Array or raw_facing.size() != 2:
+		return false
+	for coordinate in raw_facing:
+		if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
+			return false
+	var next_facing := Vector2(float(raw_facing[0]), float(raw_facing[1]))
+	if not is_equal_approx(next_facing.length(), 1.0):
+		return false
 	var next_glow := ActiveDuration.new(GLOW_SECONDS)
 	var next_bubble := ActiveDuration.new(BUBBLE_SECONDS)
 	var next_started: Variant = data.get("bubble_started", false)
@@ -1337,6 +1430,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 			break
 	if plank.is_empty():
 		return false
+	# A saved conditional contact is re-evaluated with the restored observer.
+	# Temporarily permit the physical span and open doorway for candidate validation.
+	var previous_door := _crystal_door_solid
+	var previous_bridge := _surfaces.has(Crystal.BRIDGE)
+	if observation_fixture:
+		_set_crystal_door(false)
+		if not previous_bridge:
+			_surfaces.append(Crystal.BRIDGE)
 	var previous_ice := ice_remaining
 	var previous_plank := _plank_surface
 	_ice_duration.restore(next_ice.remaining)
@@ -1344,7 +1445,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not super.apply_snapshot(candidate):
 		_ice_duration.restore(previous_ice)
 		_set_plank_surface(previous_plank)
+		if observation_fixture:
+			_set_crystal_door(previous_door)
+			if not previous_bridge:
+				_surfaces.erase(Crystal.BRIDGE)
 		return false
+	crystal_observer.luna_eyes_open = next_eyes
+	crystal_observer.facing = next_facing
+	_sync_crystal_observation()
 	access = next_access
 	wand_pair = pair
 	projection = wand_pair.active()
@@ -1425,6 +1533,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v7(point)
 	elif previous_schema == 8:
 		previous_location = _entity_location_v8(point)
+	elif previous_schema == 9:
+		previous_location = _entity_location_v9(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -1518,6 +1628,7 @@ func _draw() -> void:
 		Valley.draw_on(self, world_clock.phase() == WorldClock.Phase.EVENING)
 		MiaLab.draw_on(self)
 		Tunnel.draw_on(self)
+		Crystal.draw_on(self, _crystal_door_solid)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
