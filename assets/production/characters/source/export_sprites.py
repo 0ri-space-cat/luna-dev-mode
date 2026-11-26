@@ -100,6 +100,19 @@ def save(image, root, name):
     image.save(folder / f"{name}.png", optimize=True)
 
 
+def save_slime_jump(image, form):
+    body = image.crop(image.getchannel("A").getbbox())
+    for pose, size in (
+        ("squash", (48, 26)),
+        ("launch", (38, 33)),
+        ("air", (40, 31)),
+        ("land", (50, 25)),
+    ):
+        frame = Image.new("RGBA", image.size)
+        frame.paste(body.resize(size, NEAREST), (32 - size[0] // 2, 43 - size[1]))
+        save(frame, FAUNA, f"slime-{form}-jump-{pose}")
+
+
 def main():
     for name, height in CLASSIC_HEIGHTS.items():
         diagonal = load(CHARACTERS / "source" / f"{name}-front-right.png")
@@ -107,6 +120,12 @@ def main():
         if name == "oni":
             frame.alpha_composite(load(CHARACTERS / "source/oni-knee-seams-front-right.png"))
         save(frame, CHARACTERS, f"{name}-idle-front-right")
+
+        for direction in ("side-right", "back-right", "back"):
+            source = CHARACTERS / "source" / f"{name}-{direction}.png"
+            if source.exists():
+                view = fitted(load(source), (128, 192), height, BASELINE, align_feet=True)
+                save(view, CHARACTERS, f"{name}-idle-{direction}")
 
         if name == "oni":
             front = load(ASSETS / "approved/characters/oni/idle_front.png")
@@ -138,6 +157,8 @@ def main():
         pixels.append((*color, alpha))
     neutral.putdata(pixels)
     save(neutral, FAUNA, "slime-neutral-idle")
+    save_slime_jump(grass, "grass")
+    save_slime_jump(neutral, "neutral")
 
 
 if __name__ == "__main__":
