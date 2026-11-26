@@ -487,8 +487,13 @@ func _finish_public_ride(destination: String) -> bool:
 	var address := Island.City.CITY_ID if destination == OuterRoutes.LUMA else Island.Meadows.LOCATION_ID
 	if destination not in [OuterRoutes.LUMA, OuterRoutes.MEADOWS]:
 		return false
-	var arrivals: Array[Vector2] = [Island.City.ARRIVAL, Vector2(4590, 410)] if destination == OuterRoutes.LUMA \
-		else [Island.City.MEADOWS_STATION + Vector2(0, 28), Vector2(1900, 600)]
+	var arrivals: Array[Vector2] = []
+	if destination == OuterRoutes.LUMA:
+		arrivals.append(Island.City.ARRIVAL)
+		arrivals.append(Vector2(4590, 410))
+	else:
+		arrivals.append(Island.City.MEADOWS_STATION + Vector2(0, 28))
+		arrivals.append(Vector2(1900, 600))
 	var arrival := Vector2.INF
 	for point in arrivals:
 		if home._ordinary_arrival_is_safe(address, point):
