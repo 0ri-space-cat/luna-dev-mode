@@ -24,15 +24,36 @@ const W7_DECKS := [W7_APPROACH, W7_NICHE]
 # Ordinary road remains independent of these optional branches.
 const W3_SITE := Rect2(1970, 330, 83, 79)
 const W3_VIEW := Vector2(2005, 370)
+const TOWER_ID := "ET_REFLECTION_TOWER"
+const TOWER_FACADE := Rect2(1978, 280, 60, 60)
+const TOWER_ROOM := Rect2(3500, 300, 230, 190)
+const TOWER_ENTRY := Vector2(3540, 435)
+const TOWER_STAIR_1 := Rect2(3640, 265, 70, 70)
+const TOWER_STAIR_2 := Rect2(3640, 210, 70, 70)
+const TOWER_UPPER := Rect2(3500, 150, 210, 75)
+const TOWER_DECKS := [
+	{"bounds": TOWER_STAIR_1, "height": 6.0, "walk_up": true},
+	{"bounds": TOWER_STAIR_2, "height": 12.0, "walk_up": true},
+	{"bounds": TOWER_UPPER, "height": 18.0, "walk_up": true},
+]
+const TOWER_UPPER_VIEW := Vector2(3560, 185)
+const TOWER_MAP := Vector2(3570, 355)
 const RAIN_BRIDGE_ID := "BRIDGE_I_RAINFALL"
 const RAIN_BRIDGE := Rect2(2250, 265, 95, 45)
 const RAIN_LANDING := Rect2(2330, 245, 95, 75)
 const RIVER_LINK := Rect2(2210, 445, 65, 300)
 const DECKS := [F5, W0, W2, W4, W1_NORTH, W1_WEST, W1_SOUTH, W1_EAST,
-	W7_APPROACH, W7_NICHE, W3_SITE, RAIN_LANDING, RIVER_LINK]
+	W7_APPROACH, W7_NICHE, W3_SITE, RAIN_LANDING, RIVER_LINK, TOWER_ROOM]
 const LAKE_SHORE_X := 2280.0
 
 static func location_at(point: Vector2) -> String:
+	if TOWER_ROOM.has_point(point) or TOWER_STAIR_1.has_point(point) \
+		or TOWER_STAIR_2.has_point(point) or TOWER_UPPER.has_point(point):
+		return TOWER_ID
+	return location_at_v6(point)
+
+
+static func location_at_v6(point: Vector2) -> String:
 	if W3_SITE.has_point(point) or RAIN_BRIDGE.has_point(point) \
 			or RAIN_LANDING.has_point(point) or RIVER_LINK.has_point(point):
 		return LOCATION_ID
@@ -64,7 +85,7 @@ static func location_at_v1(point: Vector2) -> String:
 	return ""
 
 
-static func draw_on(canvas: Node2D) -> void:
+static func draw_on(canvas: Node2D, tower_visible: bool) -> void:
 	canvas.draw_rect(ORDINARY_POOL, Color("527f86"))
 	canvas.draw_rect(ORDINARY_POOL.grow(-5), Color("7baba9"), false, 2.0)
 	for y in range(385, 460, 18):
@@ -73,8 +94,26 @@ static func draw_on(canvas: Node2D) -> void:
 	canvas.draw_string(font, Vector2(2085, 280), "Каскады")
 	canvas.draw_string(font, Vector2(2038, 500), "Тихое озеро")
 	canvas.draw_string(font, Vector2(2205, 370), "Речная тропа")
-	# A dry site for the phase-dependent tower, not the tower interior yet.
-	canvas.draw_string(font, Vector2(1974, 351), "Уступ")
+	# The persistent reflection is clipped to the lake footprint; the
+	# ordinary exterior silhouette exists only in the evening.
+	var reflection := PackedVector2Array([Vector2(2110, 393), Vector2(2140, 393),
+		Vector2(2140, 434), Vector2(2125, 449), Vector2(2110, 434)])
+	canvas.draw_colored_polygon(reflection, Color("a2a1be"))
+	canvas.draw_line(Vector2(2106, 417), Vector2(2144, 417), Color("c6c6d7"), 1.0)
+	if tower_visible:
+		canvas.draw_rect(TOWER_FACADE, Color("9491a7"))
+		canvas.draw_colored_polygon(PackedVector2Array([Vector2(1974, 280),
+			Vector2(2008, 254), Vector2(2042, 280)]), Color("77778d"))
+		canvas.draw_rect(Rect2(1996, 309, 20, 31), Color("dbc3a6"))
+	canvas.draw_rect(TOWER_ROOM, Color("89838e"))
+	canvas.draw_rect(Rect2(3515, 310, 190, 21), Color("527f86"))
+	canvas.draw_rect(Rect2(3545, 340, 50, 25), Color("737d95"))
+	canvas.draw_circle(Vector2(3670, 360), 18.0, Color("b7c4d2"))
+	for tread in [TOWER_STAIR_1, TOWER_STAIR_2, TOWER_UPPER]:
+		canvas.draw_rect(tread, Color("a6a0ae"))
+		canvas.draw_rect(tread, Color("716c80"), false, 2.0)
+	canvas.draw_string(font, Vector2(3520, 470), "Мастерская Башни")
+	canvas.draw_string(font, Vector2(3515, 180), "Верхняя площадка")
 	# Water spray reveals an otherwise unrendered support. Its collider is
 	# independent of this presentation and never changes with observation.
 	for x in range(2274, 2330, 8):

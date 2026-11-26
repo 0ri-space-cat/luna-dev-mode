@@ -35,7 +35,7 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 6
+const ADDRESS_SCHEMA := 7
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -48,6 +48,7 @@ const AREA_LABELS := {
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
 	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
 	Coast.HOUSE_ID: "Дом вечерних окон", Coast.GROTTO_ID: "Морской грот",
+	Valley.TOWER_ID: "Башня отражений",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -135,6 +136,21 @@ func _entity_location(point: Vector2) -> String:
 	return _legacy_entity_location(point)
 
 
+# M3.84 partition before the reflection tower.
+func _entity_location_v6(point: Vector2) -> String:
+	if observation_fixture:
+		if Coast.HOUSE_ROOM.has_point(point):
+			return Coast.HOUSE_ID
+		if Coast.grotto_contains(point):
+			return Coast.GROTTO_ID
+		if Coast.contains(point):
+			return Coast.LOCATION_ID
+		var extension := Valley.location_at_v6(point)
+		if not extension.is_empty():
+			return extension
+	return _legacy_entity_location(point)
+
+
 # M3.83b partition before the grotto and headland.
 func _entity_location_v5(point: Vector2) -> String:
 	if observation_fixture:
@@ -142,7 +158,7 @@ func _entity_location_v5(point: Vector2) -> String:
 			return Coast.HOUSE_ID
 		if Coast.contains_v5(point):
 			return Coast.LOCATION_ID
-		var extension := Valley.location_at(point)
+		var extension := Valley.location_at_v6(point)
 		if not extension.is_empty():
 			return extension
 	return _legacy_entity_location(point)
@@ -153,7 +169,7 @@ func _entity_location_v4(point: Vector2) -> String:
 	if observation_fixture:
 		if Coast.contains_v4(point):
 			return Coast.LOCATION_ID
-		var extension := Valley.location_at(point)
+		var extension := Valley.location_at_v6(point)
 		if not extension.is_empty():
 			return extension
 	return _legacy_entity_location(point)
@@ -221,7 +237,7 @@ func _ready() -> void:
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
-		for tread in Coast.ESCAPE_DECKS:
+		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
@@ -659,6 +675,29 @@ func _update_world_light(_minute: int = 0) -> void:
 	queue_redraw()
 
 
+func _tower_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return ""
+	if _entity_location(actor.position) == Valley.TOWER_ID:
+		if _within_reach(Valley.TOWER_ENTRY):
+			return "Выйти из Башни"
+	elif Valley.W3_SITE.has_point(actor.position) and _within_reach(Valley.W3_VIEW) \
+			and world_clock.phase() == WorldClock.Phase.EVENING:
+		return "Войти в Башню"
+	return ""
+
+
+func _use_tower_door(entering: bool) -> bool:
+	if entering and world_clock.phase() != WorldClock.Phase.EVENING:
+		return false
+	var point := Valley.TOWER_ENTRY if entering else Valley.W3_VIEW
+	var address := Valley.TOWER_ID if entering else Valley.LOCATION_ID
+	if not _ordinary_arrival_is_safe(address, point):
+		return false
+	_move_home_travelers(point, address)
+	return true
+
+
 func _coast_house_action() -> String:
 	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
 		return ""
@@ -710,6 +749,9 @@ func _within_reach(point: Vector2, height: float = 0.0) -> bool:
 func _nearby_action() -> String:
 	if at_ancient_console():
 		return "Осмотреть Древнюю Консоль"
+	var tower_action := _tower_action()
+	if not tower_action.is_empty():
+		return tower_action
 	var house_action := _coast_house_action()
 	if not house_action.is_empty():
 		return house_action
@@ -802,6 +844,10 @@ func interact() -> bool:
 		forest_bank_interacted.emit()
 		return true
 	match _nearby_action():
+		"Войти в Башню":
+			return _use_tower_door(true)
+		"Выйти из Башни":
+			return _use_tower_door(false)
 		"Повернуть циферблат":
 			coast_house_phase = (coast_house_phase + 1) % 4
 			_update_world_light()
@@ -1033,7 +1079,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -1187,6 +1233,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v4(point)
 	elif previous_schema == 5:
 		previous_location = _entity_location_v5(point)
+	elif previous_schema == 6:
+		previous_location = _entity_location_v6(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -1277,7 +1325,7 @@ func _draw() -> void:
 	Meadows.draw_on(self, ice_remaining > 0.0)
 	Lake.draw_on(self)
 	if observation_fixture:
-		Valley.draw_on(self)
+		Valley.draw_on(self, world_clock.phase() == WorldClock.Phase.EVENING)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:

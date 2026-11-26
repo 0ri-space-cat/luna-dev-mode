@@ -3,6 +3,7 @@ extends SceneTree
 const Start = preload("res://scenes/skeleton/start_island.tscn")
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
+const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -34,7 +35,10 @@ func _run() -> void:
 	assert(Lake.LOCATION_ID == "ET_DUPLICATE_LAKE_CAVERN" and Lake.FEATURE_ID == "ET_DUPLICATE_LAKE")
 	assert(scene.wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID))
 	var saved: Dictionary = scene.make_snapshot()
-	assert(saved["address_schema"] == 6)
+	assert(saved["address_schema"] == 7)
+	var previous_v6: Dictionary = saved.duplicate(true)
+	previous_v6["address_schema"] = 6
+	assert(scene.apply_snapshot(previous_v6))
 	var previous_v5: Dictionary = saved.duplicate(true)
 	previous_v5["address_schema"] = 5
 	assert(scene.apply_snapshot(previous_v5))
@@ -109,7 +113,28 @@ func _run() -> void:
 		assert(await _walk_to(scene, point))
 		assert(scene.actor.motion.grounded and scene.actor.recoveries == 0)
 	assert(scene.wand_pair.original.ground_location_id == Lake.LOCATION_ID)
-	print("M3.74d: dry forest-valley, ordinary lake, crystal approach and legacy address migration passed")
+	# W3 appears in the evening and is a separate persistent interior.
+	for point in [Vector2(2140, 220), Vector2(2130, 305), Vector2(2130, 351),
+			Vector2(2055, 351), Vector2(2005, 351), Valley.W3_VIEW]:
+		assert(await _walk_to(scene, point), "tower approach %s" % point)
+	assert(scene.world_clock.set_time_of_day(Clock.START_MINUTE))
+	assert(not scene.interact())
+	assert(scene.world_clock.set_time_of_day(Clock.EVENING_MINUTE))
+	assert(scene.interact() and scene.actor.location_id == Valley.TOWER_ID)
+	for point in [Vector2(3675, 435), Vector2(3675, 320), Vector2(3675, 245),
+			Vector2(3675, 185), Valley.TOWER_UPPER_VIEW]:
+		assert(await _walk_to(scene, point), "tower stair %s" % point)
+	assert(scene.actor.motion.elevation == 18.0)
+	assert(scene.world_clock.set_time_of_day(Clock.NIGHT_MINUTE))
+	var tower_save: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(tower_save) and scene.actor.location_id == Valley.TOWER_ID)
+	for point in [Vector2(3675, 185), Vector2(3675, 245), Vector2(3675, 320),
+			Vector2(3675, 400), Valley.TOWER_ENTRY]:
+		assert(await _walk_to(scene, point), "tower descent %s" % point)
+	assert(scene.interact() and scene.actor.location_id == Valley.LOCATION_ID)
+	assert(not scene.interact())
+	assert(scene.actor.recoveries == 0)
+	print("M3.85: dry valley, crystals, tower phase and physical stairs passed")
 	scene.queue_free()
 	await process_frame
 	quit()
