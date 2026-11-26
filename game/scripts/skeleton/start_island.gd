@@ -379,7 +379,7 @@ func _clear_bubble() -> void:
 		actor._update_rider_position()
 		actor._sync_projection()
 		for body in actor.map_travelers():
-			body.location_id = _entity_location(body.position)
+			(body as EntityBody).location_id = _entity_location(body.position)
 
 
 func _tick_bubble(delta: float) -> void:

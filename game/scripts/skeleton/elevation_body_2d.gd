@@ -566,6 +566,11 @@ func _sync_projection() -> void:
 
 
 func _draw() -> void:
+	if temporary_swim and _current_water() != null:
+		var center := Vector2(0.0, -motion.elevation - body_height() * 0.5)
+		var radius := maxf(body_height() * 0.8, foot_radius() * 1.5)
+		draw_circle(center, radius, Color(0.5, 0.84, 0.94, 0.16))
+		draw_arc(center, radius, 0.0, TAU, 32, Color(0.65, 0.9, 1.0, 0.9), 1.5, true)
 	var shadow_height := -INF
 	for surface in surfaces:
 		var bounds: Rect2 = surface["bounds"]
