@@ -324,7 +324,7 @@ func _entity_limit() -> int:
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -417,6 +417,7 @@ func _ready() -> void:
 		_spawn_coastal_life()
 		_spawn_oni()
 		_spawn_city()
+		_setup_city_tools()
 		_setup_yuki()
 		if ecology_fixture:
 			_setup_ori()
@@ -596,7 +597,11 @@ func _execute_yuki_rule(rule: Dictionary) -> bool:
 
 
 func _yuki_spawn_cat() -> bool:
-	if yuki.spawn_serial >= YukiProgram.MAX_CATS:
+	var live_cats := 0
+	for identity in entities.list_ids():
+		if identity.begins_with(YUKI_CAT_PREFIX):
+			live_cats += 1
+	if live_cats >= YukiProgram.MAX_CATS or yuki.spawn_serial >= 999999:
 		return false
 	var id := YUKI_CAT_PREFIX + str(yuki.spawn_serial + 1)
 	for index in YUKI_CAT_POINTS.size():
@@ -605,7 +610,8 @@ func _yuki_spawn_cat() -> bool:
 		if cat != null:
 			yuki.spawn_serial += 1
 			# New bodies use the ordinary size parameter and physical checks.
-			cat.set_parameter("size", [0.5, 0.8, 1.2, 1.6][(yuki.spawn_serial - 1) % 4])
+			cat.set_parameter("size", [0.5, 0.8, 1.2, 1.6][randi_range(0, 3)])
+			city_tools.cat_sizes[id] = cat.get_parameter("size")
 			return true
 	return false
 
@@ -614,6 +620,8 @@ func _tick_yuki(delta: float) -> void:
 	if not observation_fixture:
 		return
 	yuki.advance(delta * WorldClock.MINUTES_PER_SIM_SECOND, _execute_yuki_rule)
+	_tick_mouse(delta)
+	_cleanup_yuki_cats(delta)
 	if yuki.ownership != 1 or yuki.observed:
 		return
 	for identity in entities.list_ids():
@@ -679,6 +687,8 @@ func _ori_action() -> String:
 		return ""
 	if ori.ownership == 0:
 		return "Одолжить Каталог Ори"
+	if ori.ownership == 1 and not ori.order_id.is_empty() and city_tools.ori_stage == 0:
+		return "Показать Ори летающего помощника на площади"
 	return ""
 
 
@@ -687,6 +697,9 @@ func _interact_ori() -> bool:
 		"Одолжить Каталог Ори":
 			ori.ownership = 1
 			_tick_ori()
+			return true
+		"Показать Ори летающего помощника на площади":
+			city_tools.ori_stage = 1
 			return true
 	return false
 
@@ -716,7 +729,7 @@ func _tick_ori() -> void:
 
 
 func _can_extract_ori(target: EntityBody) -> bool:
-	return ori.ownership > 0 and target != null and target != actor and target.get_parameter("alive") and target.visible and target.location_id == _entity_location(actor.position) and _within_reach(target.position, target.motion.elevation) and wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, "mass")
+	return _bank_open() and target != null and target != actor and target.get_parameter("alive") and target.visible and target.location_id == _entity_location(actor.position) and _within_reach(target.position, target.motion.elevation) and wand_policy.authorize(actor, target, _entity_location(actor.position), projection, access, parameters, "mass")
 
 
 func request_extract_ori(target_id: String, instance_id: String) -> bool:
@@ -765,6 +778,273 @@ func _open_ori() -> bool:
 	_ori_panel.open_for(self)
 	apply_player_input(Vector2.ZERO)
 	return true
+
+
+const CityTools = preload("res://scripts/runtime2d/city_tools_2d.gd")
+const PASSERBY := "C1_PASSERBY"
+const TOOL_POINTS := {"BESTIARY": Vector2(5960, 650), "REALITY_STAMP": Vector2(6160, 660), "GRAVITY_GUN": Vector2(4550, 515), "PIXEL_GLOBE": Vector2(4780, 285)}
+const TOOL_NAMES := {"BESTIARY": "Бестиарий", "REALITY_STAMP": "Штамп реальности", "GRAVITY_GUN": "Гравипушка", "PIXEL_GLOBE": "Глобус"}
+const ORI_PLAZA := Vector2(5170, 525)
+const ORI_EXIT := Vector2(5930, 685)
+var city_tools := CityTools.new()
+var _initial_passerby: Dictionary = {}
+var _city_tool_panel: PanelContainer
+var _stamp_choice := "GLOW"
+
+
+func _setup_city_tools() -> void:
+	var passerby := spawn_entity({"id": PASSERBY, "category": "resident", "label": "Прохожий", "material": "FABRIC"}, Vector2(5260, 375), 0.0)
+	if passerby != null:
+		passerby.set_parameter("behavior_mode", "IDLE")
+		for entry in make_snapshot()["entities"]:
+			if entry["id"] == PASSERBY:
+				_initial_passerby = entry
+	var panel := PanelContainer.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.offset_left = -220
+	panel.offset_right = 220
+	panel.offset_top = -160
+	panel.offset_bottom = 160
+	$Interface.add_child(panel)
+	panel.hide()
+	_city_tool_panel = panel
+
+
+func _city_tool_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return ""
+	for key in TOOL_POINTS:
+		if key not in city_tools.owned and _entity_location(TOOL_POINTS[key]) == _entity_location(actor.position) and _within_reach(TOOL_POINTS[key]):
+			return key
+	return ""
+
+
+func _take_city_tool(key: String) -> bool:
+	if key != _city_tool_action() or not city_tools.acquire(key):
+		return false
+	$Interface/SaveNotice.text = "Получено: " + TOOL_NAMES[key]
+	queue_redraw()
+	return true
+
+
+func _ordinary_public_addresses() -> Array[String]:
+	return [ISLAND_ID, Meadows.LOCATION_ID, ForestBank.LOCATION_ID, Valley.LOCATION_ID, Lake.LOCATION_ID, Valley.CRYSTAL_ID, Coast.LOCATION_ID, City.CITY_ID, City.CAFE_ID, City.HOME_ID]
+
+
+func _observe_city_tools() -> void:
+	if not observation_fixture:
+		return
+	var address := _entity_location(actor.position)
+	if address in _ordinary_public_addresses() and address not in city_tools.visited:
+		city_tools.visited.append(address)
+	for identity in entities.list_ids():
+		var target := entities.get_entity(identity) as EntityBody
+		if target != null and target.visible and target.get_parameter("alive") and target.location_id == address and _within_reach(target.position, target.motion.elevation):
+			city_tools.observe(target.record.category)
+
+
+func _show_city_tool(key: String) -> bool:
+	if key not in city_tools.owned or not is_instance_valid(_city_tool_panel) or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
+		return false
+	for child in _city_tool_panel.get_children():
+		_city_tool_panel.remove_child(child)
+		child.queue_free()
+	var content := VBoxContainer.new()
+	_city_tool_panel.add_child(content)
+	var heading := Label.new()
+	heading.text = TOOL_NAMES[key]
+	content.add_child(heading)
+	match key:
+		"BESTIARY":
+			var discoveries := Label.new()
+			var lines: PackedStringArray = []
+			for species in city_tools.seen:
+				lines.append(CityTools.SPECIES[species])
+			discoveries.text = "\n".join(lines) if not lines.is_empty() else "Пока нет встреченных видов"
+			content.add_child(discoveries)
+		"PIXEL_GLOBE":
+			var map := Label.new()
+			var lines: PackedStringArray = []
+			for address in city_tools.visited:
+				lines.append(AREA_LABELS.get(address, "Посещённое место"))
+			map.text = "\n".join(lines)
+			content.add_child(map)
+		"REALITY_STAMP":
+			for ability in ["GLOW", "FLY"]:
+				var button := Button.new()
+				button.text = ability + " · доступно %d" % ability_bank.amount(ENTITY_ID, ability)
+				button.pressed.connect(_select_stamp.bind(ability))
+				content.add_child(button)
+			var hint := Label.new()
+			hint.text = "T: нанести выбранный временный эффект на ближайшее существо."
+			content.add_child(hint)
+		"GRAVITY_GUN":
+			var hint := Label.new()
+			hint.text = "U: притянуть ближайший груз или подтянуться к тяжёлой опоре."
+			content.add_child(hint)
+	var close := Button.new()
+	close.text = "Закрыть"
+	close.pressed.connect(_city_tool_panel.hide)
+	content.add_child(close)
+	_city_tool_panel.show()
+	apply_player_input(Vector2.ZERO)
+	return true
+
+
+func _select_stamp(ability: String) -> void:
+	_stamp_choice = ability
+	_city_tool_panel.hide()
+
+
+func _bank_open() -> bool:
+	return ori.ownership > 0 or "REALITY_STAMP" in city_tools.owned or _holds_ecology_catalog()
+
+
+func _stamp_target_allowed(target: EntityBody) -> bool:
+	return target != null and target.record.category in OriCatalog.FORMS and target.get_parameter("alive") and target.visible and not target.is_carried() and target.location_id == _entity_location(actor.position) and _within_reach(target.position, target.motion.elevation)
+
+
+func stamp_ability(target_id: String, ability: String) -> bool:
+	if "REALITY_STAMP" not in city_tools.owned or ability not in ["GLOW", "FLY"] or ability_bank.amount(ENTITY_ID, ability) < 1 or not (actor as EntityBody).accepts_player_input():
+		return false
+	var target := entities.get_entity(target_id) as EntityBody
+	if not _stamp_target_allowed(target) or (not city_tools.stamped.has(target_id) and city_tools.stamped.size() >= 12):
+		return false
+	city_tools.stamped[target_id] = {"ability": ability, "remaining": CityTools.STAMP_SECONDS}
+	target.temporary_ability = ability
+	return true
+
+
+func _stamp_nearest() -> bool:
+	for id in entities.list_ids():
+		if stamp_ability(id, _stamp_choice):
+			return true
+	return false
+
+
+func _tick_stamps(delta: float) -> void:
+	for id in city_tools.stamped.keys():
+		var target := entities.get_entity(id) as EntityBody
+		var grant: Dictionary = city_tools.stamped[id]
+		grant["remaining"] = maxf(0.0, float(grant["remaining"]) - delta)
+		if target == null or grant["remaining"] <= 0.0:
+			if target != null:
+				target.temporary_ability = ""
+			city_tools.stamped.erase(id)
+		else:
+			target.temporary_ability = grant["ability"]
+
+
+func gravity_pull(target_id: String = "") -> bool:
+	if "GRAVITY_GUN" not in city_tools.owned or not (actor as EntityBody).accepts_player_input() or actor.is_attached():
+		return false
+	var closest: EntityBody
+	var distance := 190.0
+	for id in entities.list_ids():
+		var target := entities.get_entity(id) as EntityBody
+		if target == null or target == actor or target.is_attached() or target.has_passenger() or target.location_id != _entity_location(actor.position) or target.record.category not in ["prop", "fridge"] or (not target_id.is_empty() and target_id != id):
+			continue
+		if id in [ECOLOGY_CATALOG, Meadows.PLANK_ID, City.BENCH, LAKE_STONE_ID, BRIDGE_YETI_ID]:
+			continue
+		var gap: float = target.position.distance_to(actor.position)
+		if gap < distance and gap > target.foot_radius() + actor.foot_radius() + 3.0 and absf(target.motion.elevation - actor.motion.elevation) <= 35.0:
+			closest = target
+			distance = gap
+	if closest == null:
+		return false
+	var direction_to_actor: Vector2 = (actor.position - closest.position).normalized()
+	if float(closest.get_parameter("mass")) > 3.0:
+		return actor.apply_impulse(-direction_to_actor * 145.0, 18.0)
+	return closest.apply_impulse(direction_to_actor * 115.0 * float(closest.get_parameter("mass")), 20.0)
+
+
+func _machine_on_plaza() -> bool:
+	var fridge := entities.get_entity(YUKI_FRIDGE) as EntityBody
+	if fridge == null or fridge.is_attached() or not City.PLAZA.has_point(fridge.position) or not yuki.running:
+		return false
+	for rule in yuki.rules:
+		if rule["enabled"] and rule["action"] == "SPAWN_CAT" and rule["host"] == YUKI_FRIDGE:
+			return true
+	return false
+
+
+func _tick_mouse(delta: float) -> void:
+	var person := entities.get_entity(PASSERBY) as EntityBody
+	if person == null:
+		return
+	if _machine_on_plaza() and City.PLAZA.has_point(person.position) and person.record.category == "resident" and not person.is_attached() and not person.has_passenger() and person.get_parameter("alive"):
+		var size: float = person.get_parameter("size")
+		if person.set_parameter("size", 0.55):
+			city_tools.mouse_size = size
+			city_tools.mouse_time = 0.0
+			person.record.category = "mouse"
+			person.refresh_form_marker()
+	if person.record.category != "mouse":
+		return
+	if _machine_on_plaza():
+		city_tools.mouse_time = 0.0
+		return
+	city_tools.mouse_time = minf(10.0, city_tools.mouse_time + delta)
+	if city_tools.mouse_time < 5.0 or person.is_attached() or person.has_passenger():
+		return
+	if is_equal_approx(float(person.get_parameter("size")), 0.55) and not person.set_parameter("size", city_tools.mouse_size):
+		return
+	person.record.category = "resident"
+	person.refresh_form_marker()
+	city_tools.mouse_size = 0.0
+	city_tools.mouse_time = 0.0
+
+
+func _cleanup_yuki_cats(delta: float) -> void:
+	if yuki.has_active_cat_rule():
+		city_tools.cleanup = 0.0
+		return
+	city_tools.cleanup = minf(10.0, city_tools.cleanup + delta)
+	if city_tools.cleanup < 1.0:
+		return
+	city_tools.cleanup = 0.0
+	for id in city_tools.cat_sizes.keys():
+		var cat := entities.get_entity(id) as EntityBody
+		if cat == null:
+			city_tools.cat_sizes.erase(id)
+			continue
+		# Deliberate edits, installed scripts, attachments or permanent modules
+		# protect this individual from mass normalization.
+		var untouched: bool = cat.record.category == "cat" and is_equal_approx(float(cat.get_parameter("size")), float(city_tools.cat_sizes[id])) and cat.get_parameter("speed") == 2.0 and cat.get_parameter("luna_relation") == "NEUTRAL" and cat.get_parameter("behavior_mode") == "WANDER" and cat.get_parameter("ai_enabled") and cat.get_parameter("control_source") == "NONE" and cat.get_parameter("color") == Color("b790dd") and is_equal_approx(float(cat.get_parameter("mass")), 1.0) and is_zero_approx(float(cat.get_parameter("bounciness"))) and is_equal_approx(float(cat.get_parameter("gravity_scale")), 1.0) and not cat.get_parameter("pickable") and not cat.get_parameter("rideable") and cat.record.get_components().is_empty() and not city_tools.stamped.has(id) and not cat.is_attached() and not cat.has_passenger() and not yuki.rules.any(func(rule): return rule["host"] == id)
+		city_tools.cat_sizes.erase(id)
+		if untouched:
+			entities.unregister_entity(id)
+			cat.queue_free()
+		return
+
+
+func _tick_ori_helper() -> void:
+	if city_tools.ori_stage == 0 or city_tools.ori_stage == 3:
+		return
+	var friend_body := entities.get_entity(City.ORI) as EntityBody
+	if friend_body == null or friend_body.is_attached() or friend_body.has_passenger() or not friend_body.get_parameter("ai_enabled") or not friend_body.get_parameter("alive"):
+		return
+	if city_tools.ori_stage == 1:
+		if City.SHOP.has_point(friend_body.position):
+			friend_body.autonomous_destination = ORI_EXIT
+			if friend_body.position.distance_to(ORI_EXIT) < 8.0 and not _spawn_is_occupied(Vector2(5165, 630), 0.0):
+				friend_body.position = Vector2(5165, 630)
+				friend_body.motion.reset_on_surface(friend_body.position, 0.0)
+				friend_body.location_id = City.CITY_ID
+		elif City.SOUTH.has_point(friend_body.position) or City.PLAZA.has_point(friend_body.position):
+			friend_body.autonomous_destination = ORI_PLAZA
+			if friend_body.position.distance_to(ORI_PLAZA) < 8.0:
+				friend_body.autonomous_destination = Vector2.INF
+				city_tools.ori_stage = 2
+	if city_tools.ori_stage != 2 or not City.PLAZA.has_point(friend_body.position):
+		return
+	if actor.is_riding() and City.PLAZA.has_point(actor.position) and actor.position.distance_to(friend_body.position) < 160.0:
+		var carrier := actor._carrier as EntityBody
+		if carrier != null and carrier.entity_id.begins_with(ORI_CREATED_PREFIX) and carrier.has_active_ability("FLY") and carrier.motion.elevation > 18.0:
+			city_tools.ori_stage = 3
+			ori.ownership = 2
+			social.complete("ORI")
+			$Interface/SaveNotice.text = "Ори: Он правда умеет летать! Каталог теперь твой."
 
 
 func _spawn_city() -> void:
@@ -1657,6 +1937,8 @@ func set_home_active(active: bool) -> void:
 		_yuki_panel.hide()
 	if not active and is_instance_valid(_ori_panel):
 		_ori_panel.hide()
+	if not active and is_instance_valid(_city_tool_panel):
+		_city_tool_panel.hide()
 	process_mode = Node.PROCESS_MODE_PAUSABLE if active else Node.PROCESS_MODE_DISABLED
 	visible = active
 	$Interface.visible = active
@@ -1810,6 +2092,9 @@ func _physics_process(delta: float) -> void:
 		_tick_city()
 		_tick_yuki(world_clock.sim_delta(delta))
 		_tick_ori()
+		_tick_ori_helper()
+		_observe_city_tools()
+		_tick_stamps(world_clock.sim_delta(delta))
 		_tick_music(world_clock.sim_delta(delta))
 		_update_yeti_route()
 		_refresh_plank_surface()
@@ -1867,6 +2152,9 @@ func _update_local_camera() -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if is_instance_valid(_city_tool_panel) and _city_tool_panel.visible:
+		apply_player_input(Vector2.ZERO)
+		return
 	if (is_instance_valid(_yuki_panel) and _yuki_panel.visible) or (is_instance_valid(_ori_panel) and _ori_panel.visible):
 		apply_player_input(Vector2.ZERO)
 		return
@@ -2010,6 +2298,9 @@ func _nearby_action() -> String:
 	var ori_action := _ori_action()
 	if not ori_action.is_empty():
 		return ori_action
+	var tool := _city_tool_action()
+	if not tool.is_empty():
+		return "Взять " + TOOL_NAMES[tool]
 	var tunnel_action := _tunnel_action()
 	if not tunnel_action.is_empty():
 		return tunnel_action
@@ -2138,6 +2429,9 @@ func interact() -> bool:
 		return _interact_yuki()
 	if not _ori_action().is_empty():
 		return _interact_ori()
+	var city_tool := _city_tool_action()
+	if not city_tool.is_empty():
+		return _take_city_tool(city_tool)
 	match _nearby_action():
 		"Нырнуть в тоннель":
 			return _use_tunnel(Tunnel.WEST_EXIT, Tunnel.LOCATION_ID)
@@ -2250,6 +2544,11 @@ func _set_wand_mode(mode: String) -> bool:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
 		return
+	if is_instance_valid(_city_tool_panel) and _city_tool_panel.visible:
+		if event.keycode == KEY_ESCAPE:
+			_city_tool_panel.hide()
+		get_viewport().set_input_as_handled()
+		return
 	if is_instance_valid(_ori_panel) and _ori_panel.visible:
 		if event.keycode == KEY_ESCAPE:
 			_ori_panel.hide()
@@ -2287,6 +2586,21 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	match event.keycode:
+		KEY_B:
+			if _show_city_tool("BESTIARY"):
+				get_viewport().set_input_as_handled()
+		KEY_V:
+			if _show_city_tool("PIXEL_GLOBE"):
+				get_viewport().set_input_as_handled()
+		KEY_N:
+			if _show_city_tool("REALITY_STAMP"):
+				get_viewport().set_input_as_handled()
+		KEY_T:
+			if _stamp_nearest():
+				get_viewport().set_input_as_handled()
+		KEY_U:
+			if gravity_pull():
+				get_viewport().set_input_as_handled()
 		KEY_K:
 			if _open_ori():
 				get_viewport().set_input_as_handled()
@@ -2441,7 +2755,7 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 		elif bank.has(DUPLICATE_MODULE_ID):
 			tabs["Способности"] = [{"id": DUPLICATE_MODULE_ID, "label": "DUPLICATE", "kind": "action",
 				"value": "Установить", "action": func(): return request_install_duplicate(target_id)}]
-	if not tabs.is_empty() and ori.ownership > 0:
+	if not tabs.is_empty() and _bank_open():
 		var target := entities.get_entity(target_id) as EntityBody
 		if _can_extract_ori(target):
 			var installed: Dictionary = target.record.get_component("ABILITY_SET").get("instances", {})
@@ -2507,6 +2821,7 @@ func make_snapshot() -> Dictionary:
 		data["city_layout"] = 1
 		data["yuki_layout"] = 1
 		data["yuki"] = yuki.snapshot()
+		data["city_tools"] = city_tools.snapshot()
 		if ecology_fixture:
 			data["ori_layout"] = 1
 			data["ori"] = ori.snapshot()
@@ -2551,6 +2866,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 			or typeof(next_bench_step) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_bench_step)) \
 			or float(next_bench_step) != floorf(float(next_bench_step)) or int(next_bench_step) < 0 \
 			or int(next_bench_step) >= City.BENCH_ROUTE.size():
+		return false
+	var next_tools := CityTools.new()
+	if not next_tools.restore(data.get("city_tools", next_tools.snapshot())):
 		return false
 	var next_ori := OriCatalog.new()
 	if not next_ori.restore(data.get("ori", next_ori.snapshot())):
@@ -2734,8 +3052,22 @@ func apply_snapshot(data: Dictionary) -> bool:
 				if not suffix.is_valid_int() or int(suffix) < 1 or int(suffix) > next_yuki.spawn_serial or entry.get("category") != "cat":
 					return false
 				cats += 1
-		if cats != next_yuki.spawn_serial:
+		if cats > YukiProgram.MAX_CATS or cats > next_yuki.spawn_serial:
 			return false
+		if not candidate["entities"].any(func(entry): return entry.get("id") == PASSERBY):
+			if candidate.has("city_tools") or _initial_passerby.is_empty():
+				return false
+			candidate = candidate.duplicate(true)
+			candidate["entities"].append(_initial_passerby.duplicate(true))
+		for entry in candidate["entities"]:
+			if entry.get("id") == PASSERBY and entry.get("category") != ("mouse" if next_tools.mouse_size > 0.0 else "resident"):
+				return false
+		for id in next_tools.cat_sizes:
+			if not candidate["entities"].any(func(entry): return entry.get("id") == id and entry.get("category") == "cat"):
+				return false
+		for id in next_tools.stamped:
+			if "REALITY_STAMP" not in next_tools.owned or not candidate["entities"].any(func(entry): return entry.get("id") == id and entry.get("category") in OriCatalog.FORMS):
+				return false
 	if observation_fixture and ecology_fixture:
 		if not candidate.has("ori_layout"):
 			if _initial_ori_states.size() != 3:
@@ -2792,6 +3124,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 			if not previous_coast_bridge:
 				_surfaces.erase(CoastExtra.BRIDGE)
 		return false
+	city_tools = next_tools
+	_tick_stamps(0.0)
+	if is_instance_valid(_city_tool_panel):
+		_city_tool_panel.hide()
 	ori = next_ori
 	_active_city_tool = ""
 	if is_instance_valid(_ori_panel):
@@ -2925,6 +3261,9 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		var passerby: EntityBody = candidates.get(PASSERBY)
+		if passerby == null or passerby.record.category not in ["resident", "mouse"]:
+			return false
 		var machine: EntityBody = candidates.get(YUKI_FRIDGE)
 		if machine == null or machine.record.category != "fridge":
 			return false
@@ -3068,6 +3407,11 @@ func _draw() -> void:
 		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
 		Visits.draw_on(self, flute_owned, prism_active)
 		City.draw_on(self)
+		for key in TOOL_POINTS:
+			if key not in city_tools.owned:
+				var point: Vector2 = TOOL_POINTS[key]
+				draw_circle(point, 9.0, Color("f4d6a4"))
+				draw_string(font, point + Vector2(-30, -13), TOOL_NAMES[key])
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
 			var point: Vector2 = field.ground_position

@@ -19,6 +19,7 @@ var autonomous_destination := Vector2.INF
 # Transient musical interest; never overwrites autonomous scripts or saved relationships.
 var music_interest := Vector2.INF
 var _ability_glow: PointLight2D
+var temporary_ability := ""
 
 
 func get_world_location_id() -> String:
@@ -45,6 +46,16 @@ func _ready() -> void:
 	super._ready()
 	_marker.color = get_parameter("color")
 	_sync_ability_glow()
+	refresh_form_marker()
+
+
+func refresh_form_marker() -> void:
+	if not is_instance_valid(_marker):
+		return
+	if record.category == "mouse":
+		_marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-12, -11), Vector2(-7, -23), Vector2(-2, -15), Vector2(4, -15), Vector2(9, -23), Vector2(12, -9), Vector2(12, 0)])
+	elif record.category == "resident":
+		_marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-9, -19), Vector2(0, -BODY_HEIGHT), Vector2(9, -19), Vector2(12, 0)])
 
 
 func has_active_ability(ability_id: String) -> bool:
@@ -55,7 +66,7 @@ func has_active_ability(ability_id: String) -> bool:
 
 
 func _sync_ability_glow() -> void:
-	var enabled: bool = has_active_ability("GLOW") and bool(get_parameter("alive"))
+	var enabled: bool = (has_active_ability("GLOW") or temporary_ability == "GLOW") and bool(get_parameter("alive"))
 	if enabled and not is_instance_valid(_ability_glow):
 		_ability_glow = PointLight2D.new()
 		var gradient := Gradient.new()
@@ -172,7 +183,7 @@ func _allows_ride() -> bool:
 
 
 func can_fly() -> bool:
-	if super.can_fly():
+	if temporary_ability == "FLY" or super.can_fly():
 		return true
 	for entry in record.get_component("ABILITY_SET").get("instances", {}).values():
 		if entry["enabled"] and entry["ability_id"] == "FLY":
@@ -242,6 +253,24 @@ func _physics_process(delta: float) -> void:
 func _wander_on_support(delta: float) -> Vector2:
 	if not motion.grounded or is_attached():
 		return Vector2.ZERO
+	if record.category == "mouse":
+		var nearest := 180.0
+		var flee := Vector2.ZERO
+		for id in world_registry.list_ids():
+			var cat = world_registry.get_entity(id)
+			if cat == self or cat.record.category != "cat" or cat.location_id != location_id:
+				continue
+			var gap: float = cat.position.distance_to(position)
+			if gap < nearest:
+				nearest = gap
+				flee = (position - cat.position).normalized()
+		if not flee.is_zero_approx():
+			for angle in [0.0, 0.8, -0.8, 1.6, -1.6]:
+				var heading: Vector2 = flee.rotated(angle)
+				var ahead := position + heading * 22.0
+				if is_equal_approx(_dry_landing_height(ahead, motion.elevation), motion.elevation) and _clear_step(ahead, motion.elevation):
+					return heading
+			return Vector2.ZERO
 	if autonomous_destination.is_finite():
 		var offset := autonomous_destination - position
 		var step_length := WALK_SPEED * delta * drive_multiplier

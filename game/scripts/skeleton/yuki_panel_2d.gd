@@ -26,7 +26,7 @@ func _ready() -> void:
 	var cards := VBoxContainer.new()
 	cards.name = "Карточки"
 	tabs.add_child(cards)
-	for pair in [["CAT_DENSITY", "EVERY 60 SPAWN CAT"], ["Скорость", "EVERY 5 SET SELF SPEED 0.6"], ["Остановить автономию", "EVERY 5 SET SELF AUTONOMY OFF"], ["Оживить предмет", "EVERY 5 SET SELF IS_ALIVE ON"]]:
+	for pair in [["CAT_DENSITY", "EVERY 1 SPAWN CAT"], ["Скорость", "EVERY 5 SET SELF SPEED 0.6"], ["Остановить автономию", "EVERY 5 SET SELF AUTONOMY OFF"], ["Оживить предмет", "EVERY 5 SET SELF IS_ALIVE ON"]]:
 		var button := Button.new()
 		button.text = pair[0]
 		button.pressed.connect(_install.bind(pair[1]))
@@ -45,7 +45,7 @@ func _ready() -> void:
 	code.name = "Код"
 	tabs.add_child(code)
 	_code = LineEdit.new()
-	_code.placeholder_text = "EVERY 60 SPAWN CAT"
+	_code.placeholder_text = "EVERY 1 SPAWN CAT"
 	code.add_child(_code)
 	var add := Button.new()
 	add.text = "Установить независимую копию"

@@ -105,7 +105,7 @@ func restore(data: Variant) -> bool:
 		return false
 	if not _whole(data.get("ownership"), 0, 2) or not data.get("running") is bool or not data.get("observed") is bool:
 		return false
-	if not _whole(data.get("next_id"), 1, 1000000) or not _whole(data.get("spawn_serial"), 0, MAX_CATS):
+	if not _whole(data.get("next_id"), 1, 1000000) or not _whole(data.get("spawn_serial"), 0, 999999):
 		return false
 	var input: Variant = data.get("rules")
 	if not input is Array or input.size() > MAX_RULES:

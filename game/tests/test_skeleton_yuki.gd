@@ -37,6 +37,8 @@ func _run() -> void:
 	home.actor.motion.reset_on_surface(home.actor.position, 0.0)
 	home._tick_yuki(0.0)
 	assert(home.yuki.observed)
+	# A deliberate individual edit protects this cat from mass cleanup.
+	assert(cat.set_parameter("luna_relation", "FRIEND"))
 	assert(home.set_yuki_running(false))
 	home._tick_yuki(120.0)
 	assert(home.yuki.spawn_serial == 1)
