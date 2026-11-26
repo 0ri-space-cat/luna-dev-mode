@@ -19,6 +19,13 @@ POSES = (
     ("pass", "cast-pass-near", (485, 1489), (76, 84), -22, (70, 77, 82, 90)),
     ("release", "cast-release-near", (485, 1489), (101, 94), -56, (96, 89, 108, 100)),
 )
+# The profile reuses the same bent-arm drawing for idle and the passing stage.
+PROFILE_POSES = (
+    ("hold", "cast-side-pass", (512, 1494), (82, 97), 3, (76, 91, 88, 103)),
+    ("windup", "cast-side-windup", (512, 1494), (51, 110), 106, (46, 105, 58, 116)),
+    ("pass", "cast-side-pass", (512, 1494), (82, 97), -26, (76, 91, 88, 103)),
+    ("release", "cast-side-release", (512, 1494), (106, 81), -56, (99, 77, 112, 89)),
+)
 ORDER = (("hold", 250), ("windup", 150), ("pass", 80), ("release", 120), ("pass", 90), ("hold", 310))
 
 
@@ -44,7 +51,7 @@ def write_atlas(name, frames, size):
     atlas.save(PREPARED / name, optimize=True)
 
 
-def make_preview(records, bodies, wands, fingers):
+def make_preview(stem, records, bodies, wands, fingers):
     previews = {}
     for record, body, wand, finger in zip(records, bodies, wands, fingers):
         panel = Image.new("RGBA", (224, 192), "#374156")
@@ -56,22 +63,27 @@ def make_preview(records, bodies, wands, fingers):
         previews[record["id"]] = panel.convert("RGB")
     panels = [previews[pose] for pose, _ in ORDER]
     duration = [ms for _, ms in ORDER]
-    panels[0].save(PREVIEWS / "luna-classic-wand-cast.gif", save_all=True,
+    panels[0].save(PREVIEWS / f"{stem}.gif", save_all=True,
                    append_images=panels[1:], duration=duration, loop=0, disposal=2)
 
 
-def main():
+def export_cast(stem, view, poses, *, locked_rows=()):
     bodies = pixel_palette([
         frame_on_canvas(source, 8, anchor, BODY_SIZE, BODY_ANCHOR)
-        for _, source, anchor, _, _, _ in POSES
+        for _, source, anchor, _, _, _ in poses
     ], 48)
+    reference = bodies[0].copy()
+    for top, bottom in locked_rows:
+        fixed = reference.crop((0, top, BODY_SIZE[0], bottom))
+        for body in bodies[1:]:
+            body.paste(fixed, (0, top))
     master = wand_source()
     wands = pixel_palette([
         master.rotate(angle, resample=NEAREST).resize(WAND_SIZE, NEAREST)
-        for _, _, _, _, angle, _ in POSES
+        for _, _, _, _, angle, _ in poses
     ], 32)
     fingers, records = [], []
-    for index, ((pose, _, _, grip, _, bounds), body) in enumerate(zip(POSES, bodies)):
+    for index, ((pose, _, _, grip, _, bounds), body) in enumerate(zip(poses, bodies)):
         front = Image.new("RGBA", BODY_SIZE)
         front.paste(body.crop(bounds), bounds[:2])
         fingers.append(front)
@@ -83,14 +95,14 @@ def main():
             "grip": grip,
         })
 
-    body_file = "luna-classic-wand-cast-body.png"
-    wand_file = "luna-classic-wand-cast-wand.png"
-    fingers_file = "luna-classic-wand-cast-fingers.png"
+    body_file = f"{stem}-body.png"
+    wand_file = f"{stem}-wand.png"
+    fingers_file = f"{stem}-fingers.png"
     write_atlas(body_file, bodies, BODY_SIZE)
     write_atlas(wand_file, wands, WAND_SIZE)
     write_atlas(fingers_file, fingers, BODY_SIZE)
     data = {
-        "view": "front_right",
+        "view": view,
         "body_anchor": BODY_ANCHOR,
         "wand_grip": WAND_GRIP,
         "layers": {"body": body_file, "wand": wand_file, "fingers": fingers_file},
@@ -100,9 +112,11 @@ def main():
         "release_frame": "release",
         "loop": False,
     }
-    (PREPARED / "luna-classic-wand-cast.json").write_text(json.dumps(data, indent=2) + "\n")
-    make_preview(records, bodies, wands, fingers)
+    (PREPARED / f"{stem}.json").write_text(json.dumps(data, indent=2) + "\n")
+    make_preview(stem, records, bodies, wands, fingers)
 
 
 if __name__ == "__main__":
-    main()
+    export_cast("luna-classic-wand-cast", "front_right", POSES)
+    export_cast("luna-classic-wand-cast-side-right", "side_right", PROFILE_POSES,
+                locked_rows=((0, 72), (134, BODY_SIZE[1])))

@@ -1,0 +1,143 @@
+{
+  "view": "side_right",
+  "body_anchor": [
+    64,
+    184
+  ],
+  "wand_grip": [
+    48,
+    48
+  ],
+  "layers": {
+    "body": "luna-classic-wand-cast-side-right-body.png",
+    "wand": "luna-classic-wand-cast-side-right-wand.png",
+    "fingers": "luna-classic-wand-cast-side-right-fingers.png"
+  },
+  "frames": [
+    {
+      "id": "hold",
+      "body_region": [
+        0,
+        0,
+        128,
+        192
+      ],
+      "fingers_region": [
+        0,
+        0,
+        128,
+        192
+      ],
+      "wand_region": [
+        0,
+        0,
+        96,
+        96
+      ],
+      "grip": [
+        82,
+        97
+      ]
+    },
+    {
+      "id": "windup",
+      "body_region": [
+        128,
+        0,
+        128,
+        192
+      ],
+      "fingers_region": [
+        128,
+        0,
+        128,
+        192
+      ],
+      "wand_region": [
+        96,
+        0,
+        96,
+        96
+      ],
+      "grip": [
+        51,
+        110
+      ]
+    },
+    {
+      "id": "pass",
+      "body_region": [
+        256,
+        0,
+        128,
+        192
+      ],
+      "fingers_region": [
+        256,
+        0,
+        128,
+        192
+      ],
+      "wand_region": [
+        192,
+        0,
+        96,
+        96
+      ],
+      "grip": [
+        82,
+        97
+      ]
+    },
+    {
+      "id": "release",
+      "body_region": [
+        384,
+        0,
+        128,
+        192
+      ],
+      "fingers_region": [
+        384,
+        0,
+        128,
+        192
+      ],
+      "wand_region": [
+        288,
+        0,
+        96,
+        96
+      ],
+      "grip": [
+        106,
+        81
+      ]
+    }
+  ],
+  "hold_frame": "hold",
+  "cast": [
+    {
+      "frame": "windup",
+      "duration_ms": 150
+    },
+    {
+      "frame": "pass",
+      "duration_ms": 80
+    },
+    {
+      "frame": "release",
+      "duration_ms": 120
+    },
+    {
+      "frame": "pass",
+      "duration_ms": 90
+    },
+    {
+      "frame": "hold",
+      "duration_ms": 310
+    }
+  ],
+  "release_frame": "release",
+  "loop": false
+}
