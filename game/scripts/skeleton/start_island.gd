@@ -286,6 +286,12 @@ func _legacy_entity_location(point: Vector2) -> String:
 	return Meadows.LOCATION_ID if point.x >= Meadows.WEST_BOUNDARY else ISLAND_ID
 
 
+func _entity_limit() -> int:
+	# The adventure now contains multiple authored regions; small fixtures
+	# keep their original limit. Individual copy systems remain capped.
+	return 48 if observation_fixture else super._entity_limit()
+
+
 func _starts_alive(category: String) -> bool:
 	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle"] or super._starts_alive(category)
 
@@ -483,7 +489,7 @@ func _spawn_coastal_life() -> void:
 
 func _take_hourglass() -> bool:
 	if hourglass_owned or not observation_fixture or _entity_location(actor.position) != Coast.HOUSE_ID \
-			or not actor.motion.grounded or not _within_reach(Life.HOURGLASS_POINT):
+			or not actor.motion.grounded or actor.position.distance_to(Life.HOURGLASS_POINT) > 20.0:
 		return false
 	hourglass_owned = true
 	queue_redraw()
@@ -1362,7 +1368,7 @@ func _nearby_action() -> String:
 	if not tunnel_action.is_empty():
 		return tunnel_action
 	if observation_fixture and not hourglass_owned and actor.motion.grounded \
-			and _entity_location(actor.position) == Coast.HOUSE_ID and _within_reach(Life.HOURGLASS_POINT):
+			and _entity_location(actor.position) == Coast.HOUSE_ID and actor.position.distance_to(Life.HOURGLASS_POINT) <= 20.0:
 		return "Взять Песочные часы"
 	if _mia_at_upper():
 		return "Поговорить с Мией"

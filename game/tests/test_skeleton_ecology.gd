@@ -28,9 +28,12 @@ func _run() -> void:
 	legacy.erase("crystal_fauna_layout")
 	legacy.erase("duplicate_elapsed")
 	legacy.erase("lake_layout")
+	legacy.erase("coastal_life_layout")
 	legacy["entities"] = legacy["entities"].filter(func(state):
 		return not Island.FISH_POINTS.has(state["id"]) and state["id"] != Island.ECOLOGY_CATALOG \
-			and state["id"] != Island.MIRROR_SNAIL and state["id"] != Island.LAKE_STONE_ID)
+			and state["id"] != Island.MIRROR_SNAIL and state["id"] != Island.LAKE_STONE_ID \
+			and state["id"] not in [Island.Life.MIA_ID, Island.Life.SHELL_ID, Island.Life.STONE_ID] \
+			and not Island.Life.FAUNA.has(state["id"]))
 	for state in legacy["entities"]:
 		state.erase("components")
 		state["life"].erase("respawn_remaining")

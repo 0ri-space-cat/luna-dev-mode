@@ -58,10 +58,14 @@ func _ready() -> void:
 		push_error("Could not place the P9-02 fixture actors on the starting platform")
 
 
+func _entity_limit() -> int:
+	return MAX_ENTITIES
+
+
 func spawn_entity(definition: Dictionary, point: Vector2, height: float) -> EntityBody:
 	if not point.is_finite() or not is_finite(height):
 		return null
-	if entities.count_live() >= MAX_ENTITIES:
+	if entities.count_live() >= _entity_limit():
 		return null
 	var identity: Variant = definition.get("id")
 	if not identity is String or entities.get_entity(identity) != null:
@@ -159,7 +163,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var states: Variant = data.get("entities")
 	if data.get("format") != SaveStore.FORMAT or data.get("fixture") != _location_id():
 		return false
-	if not states is Array or states.is_empty() or states.size() > MAX_ENTITIES:
+	if not states is Array or states.is_empty() or states.size() > _entity_limit():
 		return false
 	var version: Variant = data.get("entity_state_version", 0)
 	if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or float(version) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
