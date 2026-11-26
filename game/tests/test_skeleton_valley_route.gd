@@ -4,6 +4,8 @@ const Start = preload("res://scenes/skeleton/start_island.tscn")
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
+const Mia = preload("res://scripts/skeleton/mia_lab_layout.gd")
+const Recipes = preload("res://scripts/runtime2d/alchemy_recipes_2d.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -35,7 +37,10 @@ func _run() -> void:
 	assert(Lake.LOCATION_ID == "ET_DUPLICATE_LAKE_CAVERN" and Lake.FEATURE_ID == "ET_DUPLICATE_LAKE")
 	assert(scene.wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID))
 	var saved: Dictionary = scene.make_snapshot()
-	assert(saved["address_schema"] == 7)
+	assert(saved["address_schema"] == 8)
+	var previous_v7: Dictionary = saved.duplicate(true)
+	previous_v7["address_schema"] = 7
+	assert(scene.apply_snapshot(previous_v7))
 	var previous_v6: Dictionary = saved.duplicate(true)
 	previous_v6["address_schema"] = 6
 	assert(scene.apply_snapshot(previous_v6))
@@ -134,7 +139,31 @@ func _run() -> void:
 	assert(scene.interact() and scene.actor.location_id == Valley.LOCATION_ID)
 	assert(not scene.interact())
 	assert(scene.actor.recoveries == 0)
-	print("M3.85: dry valley, crystals, tower phase and physical stairs passed")
+	# Visit the laboratory along the existing valley road, no quest gates.
+	for point in [Vector2(2055, 351), Vector2(2130, 351), Vector2(2240, 351),
+			Vector2(2240, 525), Vector2(2140, 525), Vector2(2140, 730), Mia.STATION]:
+		assert(await _walk_to(scene, point), "Mia approach %s" % point)
+	assert(Recipes.RECIPES.size() == 56 and Recipes.NAMES.size() == 44)
+	assert(Recipes.resolve(["Limbo", "Lumo"]) == "ALC-R30")
+	assert(Recipes.resolve(["Pyro", "Lumo"]) == "ALC-R08")
+	assert(Recipes.resolve(["Lumo", "Lumo"]).is_empty())
+	assert(scene.interact() and scene._alchemy_panel.visible)
+	scene._apply_lab_effect("ALC-R08")
+	assert(scene._alchemy_light.enabled and not scene._alchemy_panel.visible)
+	var glow_save: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(glow_save) and scene._alchemy_light.enabled)
+	scene._apply_lab_effect("ALC-R09")
+	assert(not scene._alchemy_light.enabled)
+	scene._apply_lab_effect("ALC-R30")
+	assert(scene.world_clock.phase() == Clock.Phase.NIGHT)
+	# The second cave approach is a walkable elevated route, not a puzzle flag.
+	for point in [Vector2(2075, 875), Vector2(2075, 950), Vector2(2075, 1010),
+			Vector2(2075, 1080), Mia.UPPER_VIEW, Vector2(1725, 1080),
+			Vector2(1725, 1010), Vector2(1725, 950), Vector2(1725, 880)]:
+		assert(await _walk_to(scene, point), "Mia cave %s" % point)
+	assert(scene.actor.motion.elevation == 0.0 and scene.actor.recoveries == 0)
+	assert(not scene.actor._is_dry(Vector2(1820, 870), -24.0))
+	print("M3.86: valley, tower, alchemy station and two-height cave passed")
 	scene.queue_free()
 	await process_frame
 	quit()

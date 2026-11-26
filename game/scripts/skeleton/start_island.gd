@@ -35,7 +35,10 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 7
+const ADDRESS_SCHEMA := 8
+const MiaLab = preload("res://scripts/skeleton/mia_lab_layout.gd")
+const AlchemyPanel = preload("res://scripts/skeleton/alchemy_panel_2d.gd")
+const GLOW_SECONDS := 35.0
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -102,6 +105,9 @@ var donut_refill := 0.0
 var retreat_step := -1
 var world_clock := WorldClock.new()
 var coast_house_phase: int = WorldClock.Phase.EVENING
+var _alchemy_panel: PanelContainer
+var _alchemy_glow := ActiveDuration.new(GLOW_SECONDS)
+var _alchemy_light: PointLight2D
 var _coast_tide: WaterVolume
 var _ice_duration := ActiveDuration.new(Meadows.ICE_SECONDS)
 var ice_remaining: float:
@@ -123,6 +129,12 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture and MiaLab.contains(point):
+		return Valley.LOCATION_ID
+	return _entity_location_v7(point)
+
+
+func _entity_location_v7(point: Vector2) -> String:
 	if observation_fixture:
 		if Coast.HOUSE_ROOM.has_point(point):
 			return Coast.HOUSE_ID
@@ -230,17 +242,20 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
-		ground.append_array(Valley.DECKS + Coast.DECKS)
+		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
-		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS:
+		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
+		for water in MiaLab.WATER:
+			_surfaces.append(water.duplicate())
+			_water_volumes.append(WaterVolume.new(water["bounds"], water["height"], 0.0, Vector2.ZERO, 1.2))
 		_surfaces.append({"bounds": Coast.FOAM_BRIDGE, "height": 0.0, "safe": false, "feature_id": Coast.FOAM_BRIDGE_ID})
 		_surfaces.append({"bounds": Coast.TIDAL_MOUTH, "height": 0.0, "safe": false})
 		_coast_tide = WaterVolume.new(Coast.TIDAL_MOUTH, 0.0, Coast.tide_height(world_clock.minute_of_day()), Vector2(-60, 0), 2.0)
@@ -284,11 +299,60 @@ func _ready() -> void:
 		_spawn_ecology_fixture()
 	if observation_fixture:
 		_spawn_observation_fixture()
+		_setup_alchemy()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
 		ancient_console.attach_interface($Interface)
 	_camera.position = actor.position
+
+
+func _setup_alchemy() -> void:
+	var panel := AlchemyPanel.new()
+	$Interface.add_child(panel)
+	panel.try_effect.connect(_apply_lab_effect)
+	_alchemy_panel = panel
+	_alchemy_light = PointLight2D.new()
+	var gradient := Gradient.new()
+	gradient.colors = PackedColorArray([Color(1.0, 0.92, 0.65, 1.0), Color(1.0, 0.92, 0.65, 0.0)])
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.width = 256
+	texture.height = 256
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.0, 0.5)
+	_alchemy_light.texture = texture
+	_alchemy_light.energy = 1.1
+	_alchemy_light.enabled = false
+	add_child(_alchemy_light)
+
+
+func _at_alchemy_station() -> bool:
+	return observation_fixture and actor.motion.grounded and not actor.is_attached() \
+		and MiaLab.LAB.has_point(actor.position) and _within_reach(MiaLab.STATION)
+
+
+func _apply_lab_effect(effect_id: String) -> void:
+	if not _at_alchemy_station():
+		return
+	match effect_id:
+		"ALC-R08":
+			_alchemy_glow.start()
+		"ALC-R09":
+			_alchemy_glow.restore(0.0)
+		"ALC-R30":
+			world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
+		_:
+			return
+	_alchemy_panel.hide()
+	_update_alchemy_light()
+
+
+func _update_alchemy_light() -> void:
+	if _alchemy_light != null:
+		_alchemy_light.position = actor.position - Vector2(0, actor.motion.elevation + 12.0)
+		_alchemy_light.enabled = _alchemy_glow.remaining > 0.0
 
 
 func _spawn_meadow_entities() -> void:
@@ -633,8 +697,12 @@ func _physics_process(delta: float) -> void:
 		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
 		_ice_duration.tick(delta)
+		_alchemy_glow.tick(delta)
 		_update_yeti_route()
 		_refresh_plank_surface()
+	_update_alchemy_light()
+	if _alchemy_panel != null and _alchemy_panel.visible and not _at_alchemy_station():
+		_alchemy_panel.hide()
 	var at_bank := _at_forest_bank()
 	if _was_at_bank and not at_bank:
 		forest_bank_left.emit()
@@ -657,6 +725,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if _alchemy_panel != null and _alchemy_panel.visible:
+		apply_player_input(Vector2.ZERO)
+		return
 	if ancient_console != null and ancient_console.is_open():
 		if at_ancient_console():
 			apply_player_input(Vector2.ZERO)
@@ -747,6 +818,8 @@ func _within_reach(point: Vector2, height: float = 0.0) -> bool:
 
 
 func _nearby_action() -> String:
+	if _at_alchemy_station():
+		return "Алхимическая установка"
 	if at_ancient_console():
 		return "Осмотреть Древнюю Консоль"
 	var tower_action := _tower_action()
@@ -844,6 +917,10 @@ func interact() -> bool:
 		forest_bank_interacted.emit()
 		return true
 	match _nearby_action():
+		"Алхимическая установка":
+			_alchemy_panel.show()
+			apply_player_input(Vector2.ZERO)
+			return true
 		"Войти в Башню":
 			return _use_tower_door(true)
 		"Выйти из Башни":
@@ -930,6 +1007,11 @@ func _set_wand_mode(mode: String) -> bool:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if _alchemy_panel != null and _alchemy_panel.visible:
+		if event.keycode == KEY_ESCAPE:
+			_alchemy_panel.hide()
+		get_viewport().set_input_as_handled()
 		return
 	if ancient_console != null and ancient_console.is_open():
 		if event.keycode == KEY_ESCAPE:
@@ -1073,13 +1155,14 @@ func make_snapshot() -> Dictionary:
 	data["meadows"] = {"ice_remaining": ice_remaining, "layout_version": 2}
 	data["world_clock"] = world_clock.snapshot()
 	data["coast_house_phase"] = coast_house_phase
+	data["alchemy_glow"] = _alchemy_glow.remaining
 	data["wand_pair"] = wand_pair.snapshot()
 	return data
 
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -1090,6 +1173,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_access := AccessState.new()
 	var next_projection := WandProjection.new()
 	var next_clock := WorldClock.new()
+	var next_glow := ActiveDuration.new(GLOW_SECONDS)
+	if not next_glow.restore(data.get("alchemy_glow", 0.0)):
+		return false
 	var next_house_phase: Variant = data.get("coast_house_phase", WorldClock.Phase.EVENING)
 	if typeof(next_house_phase) not in [TYPE_INT, TYPE_FLOAT] or float(next_house_phase) not in [0.0, 1.0, 2.0, 3.0]:
 		return false
@@ -1172,6 +1258,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 	_wand_hold = 0.0
 	queue_redraw()
 	coast_house_phase = int(next_house_phase)
+	_alchemy_glow.restore(next_glow.remaining)
+	if _alchemy_panel != null:
+		_alchemy_panel.hide()
+	_update_alchemy_light()
 	world_clock.restore(next_clock.snapshot())
 	_update_world_light()
 	has_donut = food
@@ -1235,6 +1325,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v5(point)
 	elif previous_schema == 6:
 		previous_location = _entity_location_v6(point)
+	elif previous_schema == 7:
+		previous_location = _entity_location_v7(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -1326,6 +1418,7 @@ func _draw() -> void:
 	Lake.draw_on(self)
 	if observation_fixture:
 		Valley.draw_on(self, world_clock.phase() == WorldClock.Phase.EVENING)
+		MiaLab.draw_on(self)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
