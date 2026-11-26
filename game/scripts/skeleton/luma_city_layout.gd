@@ -17,7 +17,10 @@ const WORKSHOP := Rect2(5550, 515, 280, 205)
 const SHOP := Rect2(5890, 515, 280, 205)
 const MAP := Rect2(4735, 240, 110, 90)
 const TABLE := {"bounds": Rect2(5680, 270, 92, 60), "height": 6.0, "walk_up": true}
-const DECKS := [STATION, STREET, PLAZA, NORTH, SOUTH, CAFE, ROOM, WORKSHOP, SHOP]
+const HIDDEN_STREET := Rect2(5100, 85, 295, 210)
+const HIDDEN_NICHE := Rect2(5040, 95, 110, 105)
+const LEGACY_DECKS := [STATION, STREET, PLAZA, NORTH, SOUTH, CAFE, ROOM, WORKSHOP, SHOP]
+const DECKS := [STATION, STREET, PLAZA, NORTH, SOUTH, CAFE, ROOM, WORKSHOP, SHOP, HIDDEN_STREET, HIDDEN_NICHE]
 const DOORS := [
 	{"id": "cafe", "name": "Кафе", "outside": Vector2(5130, 315), "inside": Vector2(5590, 390), "address": CAFE_ID},
 	{"id": "room", "name": "Комната Луны", "outside": Vector2(5295, 550), "inside": Vector2(5930, 390), "address": HOME_ID},
@@ -52,12 +55,12 @@ const DEFINITIONS := [
 ]
 
 
-static func location_at(point: Vector2) -> String:
+static func location_at(point: Vector2, include_hidden: bool = true) -> String:
 	if CAFE.has_point(point):
 		return CAFE_ID
 	if ROOM.has_point(point):
 		return HOME_ID
-	for deck in DECKS:
+	for deck in (DECKS if include_hidden else LEGACY_DECKS):
 		if deck.has_point(point):
 			return CITY_ID
 	return ""
@@ -68,6 +71,8 @@ static func draw_on(canvas: Node2D) -> void:
 	for deck in DECKS:
 		canvas.draw_rect(deck, Color("8984a2") if deck in [CAFE, ROOM, WORKSHOP, SHOP] else Color("a6a0b5"))
 		canvas.draw_rect(deck.grow(-4.0), Color("bdb2c8"), false, 1.0)
+	canvas.draw_rect(Rect2(5108, 92, 54, 22), Color("756b94"))
+	canvas.draw_rect(Rect2(5048, 103, 48, 13), Color("80738f"))
 	canvas.draw_rect(Rect2(4510, 335, 225, 35), Color("756b94"))
 	for x in range(4530, 4730, 43):
 		canvas.draw_rect(Rect2(x, 341, 22, 20), Color("e5d7a7"))

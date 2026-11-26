@@ -15,6 +15,7 @@ var navigation = null
 var record: EntityRecord
 var location_id := ""
 var step_obstacle: SkeletonElevationBody2D
+var secondary_step_obstacle: SkeletonElevationBody2D
 var autonomous_destination := Vector2.INF
 # Transient musical interest; never overwrites autonomous scripts or saved relationships.
 var music_interest := Vector2.INF
@@ -60,6 +61,10 @@ func refresh_form_marker() -> void:
 		_marker.polygon = PackedVector2Array([Vector2(-20, -10), Vector2(-10, -21), Vector2(0, -17), Vector2(10, -21), Vector2(20, -10), Vector2(0, 0)])
 	elif record.category == "lizard":
 		_marker.polygon = PackedVector2Array([Vector2(-16, -4), Vector2(-8, -17), Vector2(7, -17), Vector2(13, -9), Vector2(20, -2), Vector2(8, 0), Vector2(-8, 0)])
+	elif record.category == "emot":
+		_marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-16, -12), Vector2(-10, -26), Vector2(0, -30), Vector2(10, -26), Vector2(16, -12), Vector2(12, 0)])
+	elif record.category == "emot_giant":
+		_marker.polygon = PackedVector2Array([Vector2(-10, 0), Vector2(-15, -17), Vector2(-17, -38), Vector2(0, -46), Vector2(17, -38), Vector2(15, -17), Vector2(10, 0), Vector2(0, -10)])
 	elif record.category in ["resident", "trollik"]:
 		_marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-9, -19), Vector2(0, -BODY_HEIGHT), Vector2(9, -19), Vector2(12, 0)])
 
@@ -304,11 +309,12 @@ func _wander_on_support(delta: float) -> Vector2:
 
 func _update_wall_mask(feet: float) -> void:
 	super._update_wall_mask(feet)
-	if not is_instance_valid(step_obstacle) or step_obstacle.is_attached() or _carrier == step_obstacle:
-		return
-	var bottom := step_obstacle.motion.elevation
-	if feet < bottom + step_obstacle.body_height() and feet + body_height() > bottom:
-		collision_mask |= BODY_OBSTACLE_LAYER
+	for obstacle in [step_obstacle, secondary_step_obstacle]:
+		if not is_instance_valid(obstacle) or obstacle.is_attached() or _carrier == obstacle:
+			continue
+		var bottom: float = obstacle.motion.elevation
+		if feet < bottom + obstacle.body_height() and feet + body_height() > bottom:
+			collision_mask |= BODY_OBSTACLE_LAYER
 
 
 func accepts_player_input() -> bool:

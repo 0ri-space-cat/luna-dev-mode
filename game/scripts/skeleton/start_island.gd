@@ -43,7 +43,15 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 12
+const ADDRESS_SCHEMA := 13
+const AM = preload("res://scripts/runtime2d/antimemetic_2d.gd")
+var antimemetic := AM.new()
+var _initial_am_states: Array[Dictionary] = []
+var _am_tracks: Dictionary = {}
+var _am_audio: AudioStreamPlayer2D
+var _am_stomp: AudioStreamWAV
+var _am_echo_id := ""
+var _am_echo_remaining := 0.0
 const City = preload("res://scripts/skeleton/luma_city_layout.gd")
 const Social = preload("res://scripts/runtime2d/friend_progress_2d.gd")
 const Music = preload("res://scripts/runtime2d/flute_2d.gd")
@@ -199,6 +207,14 @@ func _entity_location(point: Vector2) -> String:
 	return _entity_location_v11(point)
 
 
+func _entity_location_v12(point: Vector2) -> String:
+	if observation_fixture:
+		var city_address := City.location_at(point, false)
+		if not city_address.is_empty():
+			return city_address
+	return _entity_location_v11(point)
+
+
 func _entity_location_v11(point: Vector2) -> String:
 	if observation_fixture:
 		if CoastExtra.grotto_contains(point):
@@ -320,11 +336,11 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 64 if observation_fixture else super._entity_limit()
+	return 67 if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -384,6 +400,7 @@ func _ready() -> void:
 		_walls.append({"bounds": Coast.HOUSE_SHELL, "height": 96.0, "layer": 2})
 		for wall in City.WALLS:
 			_walls.append(wall)
+		_walls.append(AM.MONUMENT)
 	if ancient_console_enabled:
 		_walls.append({"bounds": AncientConsole.CONSOLE_BODY, "height": 92.0, "layer": 2})
 	for wall in _walls:
@@ -423,6 +440,7 @@ func _ready() -> void:
 		if ecology_fixture:
 			_setup_ori()
 		_setup_flute()
+		_setup_antimemetic()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -971,6 +989,16 @@ func _show_city_tool(key: String) -> bool:
 				lines.append(CityTools.SPECIES[species])
 			discoveries.text = "\n".join(lines) if not lines.is_empty() else "Пока нет встреченных видов"
 			content.add_child(discoveries)
+			if not antimemetic.seen.is_empty():
+				var hidden_heading := Label.new()
+				hidden_heading.text = "Эмоты"
+				content.add_child(hidden_heading)
+				var hidden_entries := Label.new()
+				var names: PackedStringArray = []
+				for species in antimemetic.seen:
+					names.append(AM.SPECIES[species])
+				hidden_entries.text = "\n".join(names)
+				content.add_child(hidden_entries)
 		"PIXEL_GLOBE":
 			var map := Label.new()
 			var lines: PackedStringArray = []
@@ -1601,6 +1629,232 @@ func _valid_evening(data: Variant) -> bool:
 	return true
 
 
+
+func _setup_antimemetic() -> void:
+	for definition in AM.DEFINITIONS:
+		var body := spawn_entity(definition, definition["point"], 0.0)
+		if body == null:
+			push_error("Could not place permanent L1 entity " + definition["id"])
+			continue
+		body.set_parameter("size", definition["size"])
+		body.set_parameter("speed", definition["speed"])
+		body.set_parameter("behavior_mode", "IDLE" if definition["id"] == AM.GIANT else "WANDER")
+		body.set_parameter("color", Color("87bfe8") if definition["id"] == AM.GIANT else Color("f49fc9"))
+		body.hide()
+	for state in make_snapshot()["entities"]:
+		if AM.DEFINITIONS.any(func(definition): return definition["id"] == state["id"]):
+			_initial_am_states.append(state.duplicate(true))
+	_am_audio = AudioStreamPlayer2D.new()
+	_am_audio.max_distance = 400.0
+	_am_audio.volume_db = -10.0
+	add_child(_am_audio)
+	_am_stomp = AM.footfall()
+	_connect_bridge_body()
+
+
+func _am_is_hidden(body: EntityBody) -> bool:
+	return body != null and AM.SPECIES.has(body.record.category)
+
+
+func _wand_target(target_id: String) -> EntityBody:
+	var target := super._wand_target(target_id)
+	if _am_is_hidden(target) and not _am_revealed(target):
+		return null
+	return target
+
+
+func _am_line_clear(point: Vector2) -> bool:
+	# Same physical authored walls as movement; avoid a reveal through room walls.
+	var origin: Vector2 = actor.position
+	for wall in _walls:
+		if actor.motion.elevation >= float(wall["height"]):
+			continue
+		var bounds: Rect2 = wall["bounds"]
+		if bounds.has_point(point):
+			continue # A monument's own face is the observed surface.
+		var corners := [bounds.position, Vector2(bounds.end.x, bounds.position.y), bounds.end, Vector2(bounds.position.x, bounds.end.y)]
+		for index in range(4):
+			if Geometry2D.segment_intersects_segment(origin, point, corners[index], corners[(index + 1) % 4]) != null:
+				return false
+	return true
+
+
+func _am_revealed(body: EntityBody) -> bool:
+	return antimemetic.stage > 0 and antimemetic.active and body != null and body.get_parameter("alive") and body.location_id == _entity_location(actor.position) and actor.position.distance_to(body.position) <= AM.REVEAL_RANGE and _am_line_clear(body.position)
+
+
+func _am_gaze(body: EntityBody) -> bool:
+	return body != null and body.location_id == _entity_location(actor.position) and bool(crystal_observer.evaluate(actor, null, body.global_position)["luna_eyes"]) and _am_line_clear(body.position)
+
+
+func _sync_antimemetic_visibility(record_observations: bool = false) -> void:
+	if not observation_fixture:
+		return
+	for definition in AM.DEFINITIONS:
+		var body := entities.get_entity(definition["id"]) as EntityBody
+		if body == null:
+			continue
+		body.visible = _am_revealed(body)
+		if record_observations and body.visible and _am_gaze(body):
+			antimemetic.observe(body.record.category)
+			if body.entity_id == AM.GIANT and (City.HIDDEN_STREET.has_point(actor.position) or AM.NICHE.has_point(actor.position)):
+				antimemetic.seen_giant = true
+
+
+func toggle_lantern() -> bool:
+	if antimemetic.stage == 0 or not observation_fixture or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
+		return false
+	antimemetic.active = not antimemetic.active
+	_sync_antimemetic_visibility()
+	queue_redraw()
+	return true
+
+
+func _tick_toffi_route() -> void:
+	var toffi := entities.get_entity(City.TOFFI) as EntityBody
+	if not _friend_available(toffi) or _friend_at_cafe(City.TOFFI):
+		return
+	if toffi.get_parameter("behavior_mode") != "IDLE":
+		toffi.autonomous_destination = Vector2.INF
+		return
+	# One existing friend, physically walking either way along the same public route.
+	var desired := AM.TOFFI_ROUTE.size() - 1 if City.HIDDEN_STREET.has_point(actor.position) or AM.NICHE.has_point(actor.position) else 0
+	var current: Vector2 = AM.TOFFI_ROUTE[antimemetic.route_index]
+	if toffi.position.distance_to(current) <= 8.0:
+		if antimemetic.route_index == desired:
+			toffi.autonomous_destination = Vector2.INF
+			return
+		antimemetic.route_index += 1 if desired > antimemetic.route_index else -1
+		current = AM.TOFFI_ROUTE[antimemetic.route_index]
+	toffi.autonomous_destination = current
+
+
+func _toffi_secret_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached() or not AM.NICHE.has_point(actor.position):
+		return ""
+	var toffi := entities.get_entity(City.TOFFI) as EntityBody
+	var giant := entities.get_entity(AM.GIANT) as EntityBody
+	if not _friend_available(toffi) or giant == null or not AM.NICHE.has_point(toffi.position) or not _within_reach(toffi.position, toffi.motion.elevation):
+		return ""
+	if antimemetic.stage == 0:
+		return "Взять Фонарь у Тоффи"
+	if antimemetic.stage == 1 and antimemetic.seen_giant and actor.position.distance_to(giant.position) >= 115.0 and not _am_gaze(giant):
+		return "Вернуться к Тоффи"
+	return ""
+
+
+func _interact_toffi_secret() -> bool:
+	match _toffi_secret_action():
+		"Взять Фонарь у Тоффи":
+			antimemetic.stage = 1
+			antimemetic.active = true
+			_sync_antimemetic_visibility()
+			$Interface/SaveNotice.text = "Тоффи: Сюда! Только не стой посреди дороги!"
+			return true
+		"Вернуться к Тоффи":
+			antimemetic.stage = 2
+			social.complete("TOFFI")
+			$Interface/SaveNotice.text = "Тоффи: Они же никуда не исчезали. Ты просто забывала, на что смотрела. Получено: Фонарь."
+			return true
+	return false
+
+
+func _tick_antimemetic(delta: float) -> void:
+	if not observation_fixture:
+		return
+	_tick_toffi_route()
+	var giant := entities.get_entity(AM.GIANT) as EntityBody
+	if giant != null and giant.get_parameter("ai_enabled") and giant.get_parameter("behavior_mode") == "IDLE" and not giant.is_attached() and not giant.has_passenger():
+		# The personal gaze is a stimulus even before the player can perceive the body.
+		if (City.HIDDEN_STREET.has_point(actor.position) or AM.NICHE.has_point(actor.position)) and _am_gaze(giant):
+			var point: Vector2 = actor.position.clamp(AM.GIANT_RANGE.position + Vector2(6, 6), AM.GIANT_RANGE.end - Vector2(6, 6))
+			giant.autonomous_destination = point if giant.position.distance_to(point) > 5.0 else Vector2.INF
+		else:
+			giant.autonomous_destination = AM.DEFINITIONS[0]["point"] if giant.position.distance_to(AM.DEFINITIONS[0]["point"]) > 8.0 else Vector2.INF
+	elif giant != null:
+		giant.autonomous_destination = Vector2.INF
+	var joy := entities.get_entity(AM.JOY) as EntityBody
+	var fox := entities.get_entity(Meadows.FOX_ID) as EntityBody
+	if joy != null:
+		joy.autonomous_destination = Vector2.INF
+		if fox != null and joy.get_parameter("ai_enabled") and joy.get_parameter("behavior_mode") == "WANDER" and Meadows.M2.has_point(fox.position) and Meadows.M2.has_point(joy.position) and joy.position.distance_to(fox.position) > 40.0 and joy.position.distance_to(fox.position) < 130.0:
+			joy.autonomous_destination = fox.position + Vector2(26, 0)
+	_sync_antimemetic_visibility(true)
+	var redraw := antimemetic.visit(AM.MONUMENT_ZONE.has_point(actor.position))
+	_am_echo_remaining = maxf(0.0, _am_echo_remaining - delta)
+	for definition in AM.DEFINITIONS:
+		var body := entities.get_entity(definition["id"]) as EntityBody
+		if body == null or body.location_id != _entity_location(actor.position) or body.position.distance_to(actor.position) > 330.0:
+			continue
+		var tracks: Array = _am_tracks.get(body.entity_id, [])
+		if tracks.is_empty() or body.position.distance_to(tracks[-1]) > (22.0 if body.entity_id == AM.GIANT else 17.0):
+			if not tracks.is_empty() and body.entity_id == AM.GIANT and is_instance_valid(_am_audio):
+				_am_audio.position = body.position
+				_am_audio.stream = _am_stomp
+				_am_audio.play()
+			tracks.append(body.position)
+			if tracks.size() > 4:
+				tracks.pop_front()
+			_am_tracks[body.entity_id] = tracks
+		redraw = true
+	if redraw or _am_echo_remaining > 0.0:
+		queue_redraw()
+
+
+func _monument_visible() -> bool:
+	return observation_fixture and antimemetic.stage > 0 and antimemetic.active and _entity_location(actor.position) == ForestBank.LOCATION_ID and actor.position.distance_to(AM.MONUMENT_POINT) <= AM.REVEAL_RANGE and _am_line_clear(AM.MONUMENT_POINT)
+
+
+func monument_read() -> String:
+	if not _monument_visible() or not prism_active or not crystal_observer.luna_eyes_open or not _within_reach(AM.MONUMENT_POINT):
+		return ""
+	return AM.COMMANDS[antimemetic.monument_index]
+
+
+func _am_music_response() -> bool:
+	var nearest: EntityBody
+	var distance := 175.0
+	for id in [AM.JOY, AM.CURIOUS]:
+		var body := entities.get_entity(id) as EntityBody
+		if body == null or not body.get_parameter("alive") or body.location_id != _entity_location(actor.position) or not _am_line_clear(body.position):
+			continue
+		var gap: float = body.position.distance_to(actor.position)
+		if gap < distance:
+			distance = gap
+			nearest = body
+	if nearest == null or not is_instance_valid(_am_audio):
+		return false
+	_am_echo_id = nearest.entity_id
+	_am_echo_remaining = 3.0
+	_am_audio.position = nearest.position
+	_am_audio.stream = Music.tone("L")
+	_am_audio.play()
+	queue_redraw()
+	return true
+
+
+func _draw_antimemetic() -> void:
+	for id in _am_tracks:
+		var body := entities.get_entity(id) as EntityBody
+		if body == null or body.location_id != _entity_location(actor.position):
+			continue
+		for point in _am_tracks[id]:
+			draw_circle(point, 7.0 if id == AM.GIANT else 3.0, Color(0.31, 0.30, 0.40, 0.55))
+	if _am_echo_remaining > 0.0:
+		var body := entities.get_entity(_am_echo_id) as EntityBody
+		if body != null and body.location_id == _entity_location(actor.position):
+			draw_arc(body.position, 18.0 + (3.0 - _am_echo_remaining) * 7.0, 0.0, TAU, 24, Color(0.72, 0.82, 0.88, _am_echo_remaining / 3.0), 1.0)
+	if _monument_visible():
+		var bounds: Rect2 = AM.MONUMENT["bounds"]
+		draw_rect(Rect2(bounds.position - Vector2(0, 58), bounds.size + Vector2(0, 58)), Color("606678"))
+		draw_rect(Rect2(bounds.position - Vector2(-5, 53), Vector2(22, 42)), Color("8795a0"), false, 2.0)
+		draw_string(ThemeDB.fallback_font, bounds.position + Vector2(-8, -25), "◊ ᚱ ◊", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("c7e5d6"))
+		var reading := monument_read()
+		if not reading.is_empty():
+			draw_string(ThemeDB.fallback_font, AM.MONUMENT_POINT + Vector2(-75, -65), reading, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("f4d99d"))
+	draw_string(ThemeDB.fallback_font, Vector2(2110, 93), "↑ ↓ → ↓ ← ↑", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("c8c2d2"))
+
+
 func _spawn_city() -> void:
 	for definition in City.DEFINITIONS:
 		var body := spawn_entity(definition, definition["point"], definition["height"])
@@ -1695,7 +1949,7 @@ func _city_friend_action() -> String:
 	var ray := entities.get_entity(City.RAY) as EntityBody
 	if toffi != null and ray != null and City.STATION.has_point(actor.position) and City.STATION.has_point(toffi.position) \
 			and toffi.get_parameter("alive") and _within_reach(toffi.position, toffi.motion.elevation) \
-			and city_ray_settled and ray.position.distance_to(City.RAY_REST) <= 15.0:
+			and city_ray_settled and ray.position.distance_to(City.RAY_REST) <= 15.0 and not antimemetic.station_seen:
 		return "Посмотреть на ската с Тоффи"
 	var yuki_body := entities.get_entity(City.YUKI) as EntityBody
 	if yuki_body != null and City.WORKSHOP.has_point(actor.position) and City.WORKSHOP.has_point(yuki_body.position) \
@@ -1708,6 +1962,7 @@ func _city_friend_interact(action: String) -> bool:
 	if action != _city_friend_action():
 		return false
 	if action == "Посмотреть на ската с Тоффи":
+		antimemetic.station_seen = true
 		social.complete("TOFFI")
 		$Interface/SaveNotice.text = "Тоффи: Ну всё, теперь у них собрание."
 		return true
@@ -1854,6 +2109,8 @@ func perform_music(phrase: String) -> bool:
 				return false
 			_music_original_scale = 0.0
 			return true
+		"M09":
+			return _am_music_response()
 		"M06":
 			for point in [CoastExtra.HIGH_VIEW, Vector2(2410, 818), Vector2(2430, 818)]:
 				if _ordinary_arrival_is_safe(Coast.LOCATION_ID, point, 18.0):
@@ -2628,6 +2885,10 @@ func _connect_bridge_body() -> void:
 	var yeti := entities.get_entity(BRIDGE_YETI_ID) as EntityBody
 	yeti.collision_layer = EntityBody.BODY_OBSTACLE_LAYER
 	(actor as EntityBody).step_obstacle = yeti
+	var giant := entities.get_entity(AM.GIANT) as EntityBody
+	if giant != null:
+		giant.collision_layer = EntityBody.BODY_OBSTACLE_LAYER
+	(actor as EntityBody).secondary_step_obstacle = giant
 
 
 func _physics_process(delta: float) -> void:
@@ -2656,6 +2917,7 @@ func _physics_process(delta: float) -> void:
 		_tick_ori()
 		_tick_ori_helper()
 		_tick_leia()
+		_tick_antimemetic(world_clock.sim_delta(delta))
 		_tick_cafe(delta)
 		_observe_city_tools()
 		_tick_stamps(world_clock.sim_delta(delta))
@@ -2699,6 +2961,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  K: Каталог, L: повтор"
 	if tamagotchi_owned:
 		_status.text += "  ·  Z: Тамагочи"
+	if antimemetic.stage > 0:
+		_status.text += "  ·  F3: Фонарь" + (" ✓" if antimemetic.active else "")
 	if restriction_text.is_valid():
 		_status.text += restriction_text.call()
 	var action := _nearby_action()
@@ -2870,6 +3134,9 @@ func _nearby_action() -> String:
 	var ori_action := _ori_action()
 	if not ori_action.is_empty():
 		return ori_action
+	var toffi_action := _toffi_secret_action()
+	if not toffi_action.is_empty():
+		return toffi_action
 	var leia_action := _leia_action()
 	if not leia_action.is_empty():
 		return leia_action
@@ -3007,6 +3274,8 @@ func interact() -> bool:
 		return _interact_yuki()
 	if not _ori_action().is_empty():
 		return _interact_ori()
+	if _interact_toffi_secret():
+		return true
 	if _interact_leia():
 		return true
 	if not _cafe_action().is_empty():
@@ -3214,6 +3483,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 		KEY_P:
 			if toggle_prism():
+				get_viewport().set_input_as_handled()
+		KEY_F3:
+			if toggle_lantern():
 				get_viewport().set_input_as_handled()
 		KEY_F2:
 			if observation_fixture and not is_instance_valid(_debug_editor):
@@ -3445,6 +3717,8 @@ func make_snapshot() -> Dictionary:
 		data["social"] = social.snapshot()
 		data["friend_extra_layout"] = 1
 		data["evening"] = _evening_snapshot()
+		data["am_layout"] = 1
+		data["antimemetic"] = antimemetic.snapshot()
 		data["oni_route_index"] = oni_route_index
 		data["flute_owned"] = flute_owned
 		data["prism_active"] = prism_active
@@ -3461,7 +3735,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -3518,6 +3792,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 			return false
 	if pet_count > 1 or (next_recalled and (pet_count != 1 or next_tools.stamped.has(TAMAGOTCHI_PET) or next_yuki.rules.any(func(rule): return rule["host"] == TAMAGOTCHI_PET))):
 		return false
+	var next_am := AM.new()
+	if not next_am.restore(data.get("antimemetic", next_am.snapshot())):
+		return false
+	if not observation_fixture and next_am.stage != 0:
+		return false
 	var next_social := Social.new()
 	var next_oni: Variant = data.get("oni_route_index", 0)
 	var next_flute: Variant = data.get("flute_owned", false)
@@ -3532,6 +3811,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 			or typeof(next_music_scale) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_music_scale)) \
 			or (float(next_music_scale) != 0.0 and (not next_flute or float(next_music_scale) < 0.5 or float(next_music_scale) > 2.0)) \
 			or not next_attraction.restore(data.get("music_attraction", 0.0)) or (not next_flute and next_attraction.remaining > 0.0):
+		return false
+	if next_am.stage == 2 and not next_social.meetings.has("TOFFI"):
 		return false
 	if (next_evening["stage"] > 0 and not next_social.can_gather()) or (next_evening["tamagotchi"] and not next_social.meetings.has("LEIA")):
 		return false
@@ -3743,6 +4024,16 @@ func apply_snapshot(data: Dictionary) -> bool:
 					candidate["entities"].append(initial.duplicate(true))
 		elif candidate["friend_extra_layout"] != 1:
 			return false
+	if observation_fixture:
+		if not candidate.has("am_layout"):
+			if _initial_am_states.size() != AM.DEFINITIONS.size():
+				return false
+			candidate = candidate.duplicate(true)
+			for initial in _initial_am_states:
+				if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
+					candidate["entities"].append(initial.duplicate(true))
+		elif candidate["am_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -3795,6 +4086,13 @@ func apply_snapshot(data: Dictionary) -> bool:
 	city_bench_observed = next_bench_seen
 	city_ray_settled = next_ray
 	social = next_social
+	antimemetic = next_am
+	_am_tracks.clear()
+	_am_echo_id = ""
+	_am_echo_remaining = 0.0
+	if is_instance_valid(_am_audio):
+		_am_audio.stop()
+	_sync_antimemetic_visibility()
 	leia_turtle_seen = next_evening["turtle_seen"]
 	leia_free = next_evening["leia_free"]
 	tamagotchi_owned = next_evening["tamagotchi"]
@@ -3918,6 +4216,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v10(point)
 	elif previous_schema == 11:
 		previous_location = _entity_location_v11(point)
+	elif previous_schema == 12:
+		previous_location = _entity_location_v12(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -3935,6 +4235,10 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		for definition in AM.DEFINITIONS:
+			var hidden: EntityBody = candidates.get(definition["id"])
+			if hidden == null or hidden.record.category != definition["category"]:
+				return false
 		for definition in FRIEND_EXTRA:
 			var friend_body: EntityBody = candidates.get(definition["id"])
 			if friend_body == null or friend_body.record.category != definition["category"]:
@@ -4066,7 +4370,7 @@ func _draw() -> void:
 		draw_rect(deck.grow(5.0), Color("2b393d"))
 		draw_rect(deck, color)
 	for wall in _walls:
-		if wall["bounds"] not in [ForestBank.REST_SPOT, AncientConsole.CONSOLE_BODY]:
+		if wall["bounds"] not in [ForestBank.REST_SPOT, AncientConsole.CONSOLE_BODY, AM.MONUMENT["bounds"]]:
 			draw_rect(wall["bounds"], Color("b5a0b0"))
 	draw_rect(Rect2(FRIDGE_SPOT - Vector2(55, 35), Vector2(110, 70)), Color("657572"))
 	draw_circle(RIFT_SPOT, 22.0, Color("3c3354"))
@@ -4090,6 +4394,7 @@ func _draw() -> void:
 		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
 		Visits.draw_on(self, flute_owned, prism_active)
 		City.draw_on(self)
+		_draw_antimemetic()
 		if not luna_door_session.is_empty():
 			var source := Vector2(float(luna_door_session["x"]), float(luna_door_session["y"]))
 			draw_rect(Rect2(source + Vector2(-14, -38), Vector2(28, 38)), Color("f2cfff"), false, 3.0)
