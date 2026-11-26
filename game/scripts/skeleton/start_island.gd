@@ -35,7 +35,7 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 5
+const ADDRESS_SCHEMA := 6
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -47,7 +47,7 @@ const AREA_LABELS := {
 	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
 	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
-	Coast.HOUSE_ID: "Дом вечерних окон",
+	Coast.HOUSE_ID: "Дом вечерних окон", Coast.GROTTO_ID: "Морской грот",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -101,6 +101,7 @@ var donut_refill := 0.0
 var retreat_step := -1
 var world_clock := WorldClock.new()
 var coast_house_phase: int = WorldClock.Phase.EVENING
+var _coast_tide: WaterVolume
 var _ice_duration := ActiveDuration.new(Meadows.ICE_SECONDS)
 var ice_remaining: float:
 	get:
@@ -124,7 +125,22 @@ func _entity_location(point: Vector2) -> String:
 	if observation_fixture:
 		if Coast.HOUSE_ROOM.has_point(point):
 			return Coast.HOUSE_ID
+		if Coast.grotto_contains(point):
+			return Coast.GROTTO_ID
 		if Coast.contains(point):
+			return Coast.LOCATION_ID
+		var extension := Valley.location_at(point)
+		if not extension.is_empty():
+			return extension
+	return _legacy_entity_location(point)
+
+
+# M3.83b partition before the grotto and headland.
+func _entity_location_v5(point: Vector2) -> String:
+	if observation_fixture:
+		if Coast.HOUSE_ROOM.has_point(point):
+			return Coast.HOUSE_ID
+		if Coast.contains_v5(point):
 			return Coast.LOCATION_ID
 		var extension := Valley.location_at(point)
 		if not extension.is_empty():
@@ -204,8 +220,15 @@ func _ready() -> void:
 		ground.append_array(AncientConsole.DECKS)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
+	if observation_fixture:
+		for tread in Coast.ESCAPE_DECKS:
+			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
+		_surfaces.append({"bounds": Coast.FOAM_BRIDGE, "height": 0.0, "safe": false, "feature_id": Coast.FOAM_BRIDGE_ID})
+		_surfaces.append({"bounds": Coast.TIDAL_MOUTH, "height": 0.0, "safe": false})
+		_coast_tide = WaterVolume.new(Coast.TIDAL_MOUTH, 0.0, Coast.tide_height(world_clock.minute_of_day()), Vector2(-60, 0), 2.0)
+		_water_volumes.append(_coast_tide)
 		_surfaces.append({"bounds": Valley.RAIN_BRIDGE, "height": 0.0, "safe": false, "feature_id": Valley.RAIN_BRIDGE_ID})
 		_surfaces.append({"bounds": Coast.SEA, "height": Coast.SEA_BED, "safe": false})
 		_water_volumes.append(WaterVolume.new(Coast.SEA, Coast.SEA_BED, 0.0, Vector2(8, 0), 1.2))
@@ -503,6 +526,9 @@ func _ordinary_arrival_points(address: String) -> Array[Vector2]:
 		Coast.LOCATION_ID:
 			if observation_fixture:
 				return [Coast.ENTRY, Coast.BEACH_ENTRY]
+		Coast.GROTTO_ID:
+			if observation_fixture:
+				return [Coast.GROTTO_ENTRY]
 	return []
 
 
@@ -624,6 +650,8 @@ func _apply_keyboard_input() -> void:
 
 
 func _update_world_light(_minute: int = 0) -> void:
+	if _coast_tide != null:
+		_coast_tide.surface = Coast.tide_height(world_clock.minute_of_day())
 	var phase: int = world_clock.phase()
 	if observation_fixture and is_instance_valid(actor) and Coast.HOUSE_ROOM.has_point(actor.position):
 		phase = coast_house_phase
@@ -1005,7 +1033,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -1157,6 +1185,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v3(point)
 	elif previous_schema == 4:
 		previous_location = _entity_location_v4(point)
+	elif previous_schema == 5:
+		previous_location = _entity_location_v5(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -1248,7 +1278,7 @@ func _draw() -> void:
 	Lake.draw_on(self)
 	if observation_fixture:
 		Valley.draw_on(self)
-		Coast.draw_on(self, coast_house_phase, world_clock.phase())
+		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
 			var point: Vector2 = field.ground_position

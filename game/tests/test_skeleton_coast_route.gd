@@ -100,6 +100,38 @@ func _run() -> void:
 	# No gated exit or change to outside world time. Return via the ordinary loop.
 	for point in [Vector2(2620, 740), Vector2(2620, 795), Coast.BEACH_ENTRY]:
 		assert(await _walk_to(scene, point))
+	# K1 foam bridge is solid at every phase, without a recovery anchor.
+	for point in [Vector2(2520, 930), Vector2(2520, 975), Coast.FOAM_VIEW,
+			Vector2(2520, 975), Vector2(2520, 930), Coast.BEACH_ENTRY]:
+		assert(await _walk_to(scene, point), "foam bridge %s" % point)
+		assert(scene.actor.recoveries == 0)
+	assert(not scene.actor.motion._has_support(Vector2(2520, 975), 0.0, scene.actor.surfaces, true))
+	# K6 is independent of the grotto and the deeper R07 route.
+	for point in [Vector2(2750, 940), Vector2(2770, 1040), Coast.CAPE_VIEW,
+			Vector2(2770, 1040), Vector2(2750, 940), Coast.BEACH_ENTRY]:
+		assert(await _walk_to(scene, point), "headland %s" % point)
+		assert(scene.actor.location_id == Coast.LOCATION_ID and scene.actor.recoveries == 0)
+	# K3 -> K5 uses the real same corridor at low tide, not a scripted door.
+	assert(scene.world_clock.set_time_of_day(Clock.MORNING_MINUTE))
+	assert(is_zero_approx(scene._coast_tide.surface))
+	for point in [Vector2(2740, 880), Vector2(2810, 880), Coast.GROTTO_ENTRY]:
+		assert(await _walk_to(scene, point), "low-tide grotto %s" % point)
+	assert(scene.actor.location_id == Coast.GROTTO_ID)
+	# High tide floods the actual walking surface; the inner room stays dry.
+	assert(scene.world_clock.set_time_of_day(Clock.START_MINUTE + 60))
+	assert(scene._coast_tide.submerged_fraction(Vector2(2810, 880), 0.0, scene.actor.body_height()) > 0.9)
+	assert(scene.actor._is_dry(Coast.GROTTO_ENTRY, 0.0))
+	var grotto_save: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(grotto_save) and scene.actor.location_id == Coast.GROTTO_ID)
+	assert(scene._coast_tide.surface == 30.0)
+	# Natural treads rise above the mouth, ending with a one-way ordinary drop.
+	for point in [Vector2(2980, 875), Vector2(2980, 820), Vector2(2980, 765),
+			Vector2(2980, 710), Vector2(2860, 710), Vector2(2750, 710)]:
+		assert(await _walk_to(scene, point), "upper grotto escape %s" % point)
+		assert(scene.actor.recoveries == 0)
+	assert(scene.actor.location_id == Coast.LOCATION_ID and is_zero_approx(scene.actor.motion.elevation))
+	for point in [Vector2(2750, 825), Coast.BEACH_ENTRY]:
+		assert(await _walk_to(scene, point))
 	shore_path.reverse()
 	for point in shore_path:
 		assert(await _walk_to(scene, point), "coast retreat %s" % point)
