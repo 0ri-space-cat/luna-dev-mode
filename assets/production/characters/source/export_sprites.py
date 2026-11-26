@@ -1,4 +1,4 @@
-"""Prepare front-idle sprites on a shared pixel grid and foot line."""
+"""Prepare idle sprites on a shared pixel grid and foot line."""
 
 import colorsys
 from pathlib import Path
@@ -13,6 +13,7 @@ YUKI_PORTRAIT = (
 )
 NEAREST = Image.Resampling.NEAREST
 BASELINE = 184
+CLASSIC_HEIGHTS = {"leya": 172, "miya": 176, "ori": 177, "toffi": 175, "yuki": 181, "oni": 175}
 
 # Masks exclude the face and the start of each collar. The color condition below
 # protects the skin and neutral linework even along the border of these masks.
@@ -66,13 +67,21 @@ def hair_tone(image, variant):
     return image
 
 
-def fitted(image, size, height, baseline):
+def fitted(image, size, height, baseline, *, align_feet=False):
     alpha = image.getchannel("A").point(lambda value: 255 if value >= 144 else 0)
     image.putalpha(alpha)
     image = image.crop(alpha.getbbox())
     image = image.resize((round(image.width * height / image.height), height), NEAREST)
+    left = (size[0] - image.width) // 2
+    if align_feet:
+        # Align the stance instead of letting the tail or hair move the anchor.
+        foot_band = image.getchannel("A").crop((0, height - 8, image.width, height))
+        foot_left, _, foot_right, _ = foot_band.getbbox()
+        left = (size[0] - foot_left - foot_right) // 2
+        if left < 0 or left + image.width > size[0]:
+            raise ValueError("Sprite does not fit the foot-aligned canvas")
     frame = Image.new("RGBA", size)
-    frame.paste(image, ((size[0] - image.width) // 2, baseline - height))
+    frame.paste(image, (left, baseline - height))
     # Canonical transparent pixels prevent faint fringe colors on import.
     blank = Image.new("RGBA", size)
     return Image.composite(frame, blank, frame.getchannel("A"))
@@ -92,7 +101,13 @@ def save(image, root, name):
 
 
 def main():
-    for name, height in (("leya", 172), ("miya", 176), ("ori", 177), ("toffi", 175), ("yuki", 181)):
+    for name, height in CLASSIC_HEIGHTS.items():
+        diagonal = load(CHARACTERS / "source" / f"{name}-front-right.png")
+        frame = fitted(diagonal, (128, 192), height, BASELINE, align_feet=True)
+        save(frame, CHARACTERS, f"{name}-idle-front-right")
+
+        if name == "oni":
+            continue
         image = load(CHARACTERS / "source" / f"{name}-front.png")
         if name == "yuki":
             image = hair_tone(image, "sprite")
