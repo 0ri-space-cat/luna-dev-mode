@@ -43,7 +43,7 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 14
+const ADDRESS_SCHEMA := 15
 const Mountain = preload("res://scripts/skeleton/mountain_layout.gd")
 const Highland = preload("res://scripts/runtime2d/highland_artifacts_2d.gd")
 var highland := Highland.new()
@@ -2931,16 +2931,16 @@ func _ordinary_arrival_points(address: String) -> Array[Vector2]:
 	match address:
 		Mountain.MOUNTAIN:
 			if observation_fixture:
-				return [Mountain.ENTRY, Vector2(1590, 760)]
+				return [Mountain.ENTRY, Vector2(1590, 1460)]
 		Mountain.UPDRAFT:
 			if observation_fixture:
-				return [Vector2(1500, 900)]
+				return [Vector2(1500, 1600)]
 		Mountain.SKY:
 			if observation_fixture:
-				return [Vector2(1840, 1080)]
+				return [Vector2(1840, 1780)]
 		Mountain.ORACLE:
 			if observation_fixture:
-				return [Vector2(2050, 960)]
+				return [Vector2(2050, 1660)]
 		City.CITY_ID:
 			if observation_fixture:
 				return [City.ARRIVAL, Vector2(4590, 410)]
@@ -3924,7 +3924,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -4408,6 +4408,16 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
 			return
 	var point := Vector2(float(raw[0]), float(raw[1]))
+	# Schema 14 accidentally overlaid the existing Mia cave. Relocate only
+	# records explicitly assigned to the old mountain addresses, not old valley records.
+	if previous_schema == 14 and canonical in Mountain.ADDRESSES and Mountain.old_mountain_point(point):
+		entry["position"] = [point.x, point.y + Mountain.OLD_OFFSET.y]
+		if not is_field and entry.get("motion") is Dictionary:
+			var anchor: Variant = entry["motion"].get("anchor")
+			if anchor is Array and anchor.size() == 3 and typeof(anchor[0]) in [TYPE_INT, TYPE_FLOAT] and typeof(anchor[1]) in [TYPE_INT, TYPE_FLOAT] and Mountain.old_mountain_point(Vector2(float(anchor[0]), float(anchor[1]))):
+				anchor[1] = float(anchor[1]) + Mountain.OLD_OFFSET.y
+		entry["location_id"] = _entity_location(point + Mountain.OLD_OFFSET)
+		return
 	var previous_location := _legacy_entity_location(point)
 	if previous_schema == 1:
 		previous_location = _entity_location_v1(point)
@@ -4434,6 +4444,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 	elif previous_schema == 12:
 		previous_location = _entity_location_v12(point)
 	elif previous_schema == 13:
+		previous_location = _entity_location_v13(point)
+	elif previous_schema == 14:
 		previous_location = _entity_location_v13(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
