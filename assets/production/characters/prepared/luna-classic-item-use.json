@@ -1,0 +1,77 @@
+{
+  "texture": "luna-classic-item-use.png",
+  "view": "front_right",
+  "cell_size": [
+    128,
+    192
+  ],
+  "pivot": [
+    64,
+    184
+  ],
+  "frames": [
+    {
+      "id": "lower",
+      "region": [
+        0,
+        0,
+        128,
+        192
+      ],
+      "grip": [
+        53,
+        104
+      ]
+    },
+    {
+      "id": "hold",
+      "region": [
+        128,
+        0,
+        128,
+        192
+      ],
+      "grip": [
+        54,
+        83
+      ]
+    },
+    {
+      "id": "raise",
+      "region": [
+        256,
+        0,
+        128,
+        192
+      ],
+      "grip": [
+        47,
+        76
+      ]
+    }
+  ],
+  "hold_frame": "lower",
+  "use": [
+    {
+      "frame": "lower",
+      "duration_ms": 100
+    },
+    {
+      "frame": "hold",
+      "duration_ms": 80
+    },
+    {
+      "frame": "raise",
+      "duration_ms": 160
+    },
+    {
+      "frame": "hold",
+      "duration_ms": 80
+    },
+    {
+      "frame": "lower",
+      "duration_ms": 100
+    }
+  ],
+  "loop": false
+}
