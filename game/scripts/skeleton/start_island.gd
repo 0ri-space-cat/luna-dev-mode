@@ -1656,13 +1656,6 @@ func _am_is_hidden(body: EntityBody) -> bool:
 	return body != null and AM.SPECIES.has(body.record.category)
 
 
-func _wand_target(target_id: String) -> EntityBody:
-	var target := super._wand_target(target_id)
-	if _am_is_hidden(target) and not _am_revealed(target):
-		return null
-	return target
-
-
 func _am_line_clear(point: Vector2) -> bool:
 	# Same physical authored walls as movement; avoid a reveal through room walls.
 	var origin: Vector2 = actor.position
@@ -3592,7 +3585,7 @@ func _wand_target(target_id: String) -> EntityBody:
 	if target_id == Administrator.ID:
 		return administrator
 	var target := super._wand_target(target_id)
-	return null if target is Fauna and not target.visible else target
+	return null if (target is Fauna and not target.visible) or (_am_is_hidden(target) and not _am_revealed(target)) else target
 
 
 func _wand_target_ids() -> Array[String]:
