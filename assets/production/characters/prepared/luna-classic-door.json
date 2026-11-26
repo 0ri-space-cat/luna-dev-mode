@@ -1,0 +1,56 @@
+{
+  "texture": "luna-classic-door.png",
+  "view": "back",
+  "cell_size": [
+    128,
+    192
+  ],
+  "anchor": [
+    64,
+    184
+  ],
+  "frames": [
+    {
+      "id": "door-step",
+      "region": [
+        0,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "door-pass",
+      "region": [
+        128,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "door-step-opposite",
+      "region": [
+        256,
+        0,
+        128,
+        192
+      ]
+    }
+  ],
+  "enter": [
+    {
+      "frame": "door-step",
+      "duration_ms": 130
+    },
+    {
+      "frame": "door-pass",
+      "duration_ms": 90
+    },
+    {
+      "frame": "door-step-opposite",
+      "duration_ms": 130
+    }
+  ],
+  "loop": false
+}

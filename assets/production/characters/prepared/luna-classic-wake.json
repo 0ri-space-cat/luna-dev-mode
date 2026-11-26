@@ -1,0 +1,79 @@
+{
+  "texture": "luna-classic-wake.png",
+  "view": "front_right",
+  "cell_size": [
+    192,
+    192
+  ],
+  "anchor": [
+    96,
+    184
+  ],
+  "frames": [
+    {
+      "id": "sleep-right",
+      "region": [
+        0,
+        0,
+        192,
+        192
+      ]
+    },
+    {
+      "id": "wake-recline",
+      "region": [
+        192,
+        0,
+        192,
+        192
+      ]
+    },
+    {
+      "id": "wake",
+      "region": [
+        384,
+        0,
+        192,
+        192
+      ]
+    },
+    {
+      "id": "wake-crouch",
+      "region": [
+        576,
+        0,
+        192,
+        192
+      ]
+    },
+    {
+      "id": "wake-stand",
+      "region": [
+        768,
+        0,
+        192,
+        192
+      ]
+    }
+  ],
+  "rest_frame": "sleep-right",
+  "wake": [
+    {
+      "frame": "wake-recline",
+      "duration_ms": 160
+    },
+    {
+      "frame": "wake",
+      "duration_ms": 240
+    },
+    {
+      "frame": "wake-crouch",
+      "duration_ms": 170
+    },
+    {
+      "frame": "wake-stand",
+      "duration_ms": 300
+    }
+  ],
+  "loop": false
+}
