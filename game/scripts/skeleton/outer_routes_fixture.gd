@@ -34,6 +34,7 @@ var crack_elapsed := 0.0
 var cracking := false
 var _drift := Vector2.ZERO
 var return_to_host: Callable
+var public_arrival: Callable
 var hosted_entry := BLACK_VOID
 
 @onready var traveler_visual: Sprite2D = $TravelerVisual
@@ -127,6 +128,17 @@ func _can_restore_at(room: Room, body: ElevationBody) -> bool:
 	if return_to_host.is_valid() and hosted_entry == WHITE_ADDRESS:
 		return _can_place(room, body.position)
 	return (room as RouteRoom).travel_bounds.grow(4.0).has_point(body.position)
+
+
+func start_hosted_public_ride() -> bool:
+	if not public_arrival.is_valid() or hosted_entry not in [MEADOWS, LUMA] or current_address != hosted_entry:
+		return false
+	_remember_safe_point()
+	var destination := LUMA if hosted_entry == MEADOWS else MEADOWS
+	if not _move_to_address(BUFFER):
+		return false
+	ride_destination = destination
+	return true
 
 
 func begin_station_ride() -> bool:
@@ -318,6 +330,8 @@ func _finish_buffer() -> bool:
 		moved = _move_to_address(HOUSE_04)
 	elif ride_destination.is_empty():
 		moved = _return_to_safe_point()
+	elif ride_destination in [LUMA, MEADOWS] and public_arrival.is_valid():
+		moved = public_arrival.call(ride_destination)
 	elif ride_destination == MEADOWS and return_to_host.is_valid():
 		moved = return_to_host.call()
 	else:

@@ -43,7 +43,8 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 11
+const ADDRESS_SCHEMA := 12
+const City = preload("res://scripts/skeleton/luma_city_layout.gd")
 const Social = preload("res://scripts/runtime2d/friend_progress_2d.gd")
 const Music = preload("res://scripts/runtime2d/flute_2d.gd")
 const Visits = preload("res://scripts/skeleton/oni_music_layout.gd")
@@ -78,6 +79,7 @@ const AREA_LABELS := {
 	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
 	Coast.HOUSE_ID: "Дом вечерних окон", Coast.GROTTO_ID: "Морской грот",
 	Valley.TOWER_ID: "Башня отражений", Tunnel.LOCATION_ID: "Подводный тоннель",
+	City.CITY_ID: "Люма", City.CAFE_ID: "Кафе", City.HOME_ID: "Комната Луны",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -133,6 +135,12 @@ var _initial_life_states: Array[Dictionary] = []
 var social := Social.new()
 var oni_route_index := 0
 var _initial_oni: Dictionary = {}
+var _initial_city_states: Array[Dictionary] = []
+var public_ride_requested: Callable
+var city_bench_active := true
+var city_bench_step := 0
+var city_bench_observed := false
+var city_ray_settled := false
 var flute_owned := false
 var prism_active := false
 var music_focus := false
@@ -184,6 +192,14 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture:
+		var city_address := City.location_at(point)
+		if not city_address.is_empty():
+			return city_address
+	return _entity_location_v11(point)
+
+
+func _entity_location_v11(point: Vector2) -> String:
 	if observation_fixture:
 		if CoastExtra.grotto_contains(point):
 			return Coast.GROTTO_ID
@@ -304,11 +320,11 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 48 if observation_fixture else super._entity_limit()
+	return 64 if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -325,14 +341,14 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
-		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING])
+		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
-		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS:
+		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE]:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
@@ -366,6 +382,8 @@ func _ready() -> void:
 	if observation_fixture:
 		_walls.append({"bounds": ForestBank.REST_SPOT, "height": 96.0, "layer": 2})
 		_walls.append({"bounds": Coast.HOUSE_SHELL, "height": 96.0, "layer": 2})
+		for wall in City.WALLS:
+			_walls.append(wall)
 	if ancient_console_enabled:
 		_walls.append({"bounds": AncientConsole.CONSOLE_BODY, "height": 92.0, "layer": 2})
 	for wall in _walls:
@@ -398,6 +416,7 @@ func _ready() -> void:
 		_spawn_lake_stone()
 		_spawn_coastal_life()
 		_spawn_oni()
+		_spawn_city()
 		_setup_flute()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
@@ -469,6 +488,125 @@ func _sync_crystal_observation() -> void:
 		_surfaces.erase(CoastExtra.BRIDGE)
 	# Reclose only after the actual body clears the doorway, never crush it.
 	_set_crystal_door(crystal_observer.luna_eyes_open and not _door_occupied())
+
+
+func _spawn_city() -> void:
+	for definition in City.DEFINITIONS:
+		var body := spawn_entity(definition, definition["point"], definition["height"])
+		if body == null:
+			push_error("Could not place city entity " + definition["id"])
+			continue
+		match body.entity_id:
+			City.BREAD:
+				body.set_parameter("size", 0.45)
+				body.set_parameter("mass", 0.15)
+				body.set_parameter("pickable", true)
+				body.set_parameter("behavior_mode", "WANDER")
+			City.BENCH:
+				body.set_parameter("alive", true)
+				body.set_parameter("behavior_mode", "IDLE")
+				body.set_parameter("size", 1.3)
+				body.set_parameter("speed", 0.6)
+				body.set_parameter("mass", 4.0)
+			City.CAT:
+				body.set_parameter("size", 0.6)
+				body.set_parameter("speed", 0.7)
+			City.RAY:
+				body.set_parameter("size", 0.65)
+				body.set_parameter("speed", 0.75)
+				body.set_parameter("behavior_mode", "IDLE")
+			City.TOFFI, City.YUKI, City.ORI:
+				body.set_parameter("behavior_mode", "IDLE")
+			City.CRATE:
+				body.set_parameter("mass", 1.3)
+				body.set_parameter("pickable", true)
+	for entry in make_snapshot()["entities"]:
+		for definition in City.DEFINITIONS:
+			if entry["id"] == definition["id"]:
+				_initial_city_states.append(entry)
+
+
+func _tick_city() -> void:
+	if not observation_fixture:
+		return
+	var bench := entities.get_entity(City.BENCH) as EntityBody
+	if bench != null and city_bench_active and bench.get_parameter("alive") and bench.get_parameter("ai_enabled") \
+			and not bench.is_attached() and City.PLAZA.merge(City.STREET).merge(City.STATION).has_point(bench.position):
+		var target: Vector2 = City.BENCH_ROUTE[city_bench_step]
+		if bench.position.distance_to(target) <= 5.0 and bench.motion.grounded:
+			city_bench_step = (city_bench_step + 1) % City.BENCH_ROUTE.size() if city_bench_step != City.BENCH_ROUTE.size() - 1 else city_bench_step
+			target = City.BENCH_ROUTE[city_bench_step]
+		bench.autonomous_destination = target
+		if City.STREET.merge(City.PLAZA).has_point(actor.position) and bench.position.distance_to(actor.position) <= 150.0 \
+				and bench.direction.length_squared() > 0.05:
+			city_bench_observed = true
+	elif bench != null:
+		bench.autonomous_destination = Vector2.INF
+	var ray := entities.get_entity(City.RAY) as EntityBody
+	if ray != null and not city_ray_settled and City.STATION.has_point(actor.position) and ray.get_parameter("ai_enabled") \
+			and not ray.is_attached():
+		if ray.position.distance_to(City.RAY_REST) <= 5.0 and ray.motion.grounded:
+			city_ray_settled = true
+			ray.autonomous_destination = Vector2.INF
+		else:
+			ray.autonomous_destination = City.RAY_REST
+
+
+func _city_door_action() -> Dictionary:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return {}
+	for door in City.DOORS:
+		var outside: Vector2 = door["outside"]
+		var inside: Vector2 = door["inside"]
+		if actor.position.distance_to(outside) <= 21.0 and absf(actor.motion.elevation) < 1.0:
+			return {"point": inside, "address": door["address"], "label": "Войти: " + door["name"]}
+		if actor.position.distance_to(inside) <= 21.0 and absf(actor.motion.elevation) < 1.0:
+			return {"point": outside, "address": City.CITY_ID, "label": "Выйти на улицу"}
+	return {}
+
+
+func _city_station_destination() -> String:
+	if not observation_fixture or not public_ride_requested.is_valid() or not actor.motion.grounded or actor.is_attached():
+		return ""
+	if actor.position.distance_to(City.MEADOWS_STATION) <= 22.0 and is_zero_approx(actor.motion.elevation):
+		return City.CITY_ID
+	if actor.position.distance_to(City.BOARD) <= 22.0 and is_zero_approx(actor.motion.elevation):
+		return Meadows.LOCATION_ID
+	return ""
+
+
+func _city_friend_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return ""
+	var toffi := entities.get_entity(City.TOFFI) as EntityBody
+	var ray := entities.get_entity(City.RAY) as EntityBody
+	if toffi != null and ray != null and City.STATION.has_point(actor.position) and City.STATION.has_point(toffi.position) \
+			and toffi.get_parameter("alive") and _within_reach(toffi.position, toffi.motion.elevation) \
+			and city_ray_settled and ray.position.distance_to(City.RAY_REST) <= 15.0:
+		return "Посмотреть на ската с Тоффи"
+	var yuki := entities.get_entity(City.YUKI) as EntityBody
+	if yuki != null and City.WORKSHOP.has_point(actor.position) and City.WORKSHOP.has_point(yuki.position) \
+			and yuki.get_parameter("alive") and _within_reach(yuki.position, yuki.motion.elevation) and city_bench_observed:
+		return "Обсудить скамейку с Юки"
+	return ""
+
+
+func _city_friend_interact(action: String) -> bool:
+	if action != _city_friend_action():
+		return false
+	if action == "Посмотреть на ската с Тоффи":
+		social.complete("TOFFI")
+		$Interface/SaveNotice.text = "Тоффи: Ну всё, теперь у них собрание."
+		return true
+	if action == "Обсудить скамейку с Юки":
+		city_bench_active = false
+		var bench := entities.get_entity(City.BENCH) as EntityBody
+		if bench != null:
+			bench.autonomous_destination = Vector2.INF
+		social.complete("YUKI")
+		$Interface/SaveNotice.text = "Юки: Кажется, скамейка решила дождаться рейса."
+		return true
+	return false
 
 
 func _spawn_oni() -> void:
@@ -1257,6 +1395,15 @@ func can_return_traveler(point: Vector2, height: float) -> bool:
 # No address catalogue is exposed to the player, and a Feature ID is not a destination.
 func _ordinary_arrival_points(address: String) -> Array[Vector2]:
 	match address:
+		City.CITY_ID:
+			if observation_fixture:
+				return [City.ARRIVAL, Vector2(4590, 410)]
+		City.CAFE_ID:
+			if observation_fixture:
+				return [Vector2(5590, 390), Vector2(5650, 375)]
+		City.HOME_ID:
+			if observation_fixture:
+				return [Vector2(5930, 390), Vector2(5990, 375)]
 		ISLAND_ID:
 			return [SPAWN, Vector2(410, 374)]
 		Meadows.LOCATION_ID:
@@ -1379,6 +1526,7 @@ func _physics_process(delta: float) -> void:
 		_lab_ice.tick(world_clock.sim_delta(delta))
 		_tick_mia()
 		_tick_oni()
+		_tick_city()
 		_tick_music(world_clock.sim_delta(delta))
 		_update_yeti_route()
 		_refresh_plank_surface()
@@ -1546,6 +1694,15 @@ func _use_tunnel(point: Vector2, address: String) -> bool:
 
 
 func _nearby_action() -> String:
+	var city_door := _city_door_action()
+	if not city_door.is_empty():
+		return city_door["label"]
+	var station := _city_station_destination()
+	if not station.is_empty():
+		return "Рейс в Люму" if station == City.CITY_ID else "Рейс на Большие луга"
+	var friend_action := _city_friend_action()
+	if not friend_action.is_empty():
+		return friend_action
 	var tunnel_action := _tunnel_action()
 	if not tunnel_action.is_empty():
 		return tunnel_action
@@ -1658,6 +1815,18 @@ func interact() -> bool:
 		forest_bank.respond()
 		forest_bank_interacted.emit()
 		return true
+	var city_door := _city_door_action()
+	if not city_door.is_empty():
+		if not _ordinary_arrival_is_safe(city_door["address"], city_door["point"]):
+			return false
+		_move_home_travelers(city_door["point"], city_door["address"])
+		return true
+	var station := _city_station_destination()
+	if not station.is_empty():
+		return public_ride_requested.call(station)
+	var friend_action := _city_friend_action()
+	if not friend_action.is_empty():
+		return _city_friend_interact(friend_action)
 	match _nearby_action():
 		"Нырнуть в тоннель":
 			return _use_tunnel(Tunnel.WEST_EXIT, Tunnel.LOCATION_ID)
@@ -1976,6 +2145,11 @@ func make_snapshot() -> Dictionary:
 		data["mia_experienced"] = mia_experienced
 		data["mia_route_step"] = mia_route_step
 		data["lab_ice"] = _lab_ice.remaining
+		data["city_layout"] = 1
+		data["city_bench_active"] = city_bench_active
+		data["city_bench_step"] = city_bench_step
+		data["city_bench_observed"] = city_bench_observed
+		data["city_ray_settled"] = city_ray_settled
 		data["friend_layout"] = 1
 		data["social"] = social.snapshot()
 		data["oni_route_index"] = oni_route_index
@@ -1994,7 +2168,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -2005,6 +2179,15 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_access := AccessState.new()
 	var next_projection := WandProjection.new()
 	var next_clock := WorldClock.new()
+	var next_bench: Variant = data.get("city_bench_active", true)
+	var next_bench_step: Variant = data.get("city_bench_step", 0)
+	var next_bench_seen: Variant = data.get("city_bench_observed", false)
+	var next_ray: Variant = data.get("city_ray_settled", false)
+	if not next_bench is bool or not next_bench_seen is bool or not next_ray is bool \
+			or typeof(next_bench_step) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_bench_step)) \
+			or float(next_bench_step) != floorf(float(next_bench_step)) or int(next_bench_step) < 0 \
+			or int(next_bench_step) >= City.BENCH_ROUTE.size():
+		return false
 	var next_social := Social.new()
 	var next_oni: Variant = data.get("oni_route_index", 0)
 	var next_flute: Variant = data.get("flute_owned", false)
@@ -2153,6 +2336,15 @@ func apply_snapshot(data: Dictionary) -> bool:
 			candidate["entities"].append(_initial_oni.duplicate(true))
 		elif candidate["friend_layout"] != 1:
 			return false
+	if observation_fixture:
+		if not candidate.has("city_layout"):
+			if _initial_city_states.size() != City.DEFINITIONS.size():
+				return false
+			candidate = candidate.duplicate(true)
+			for entry in _initial_city_states:
+				candidate["entities"].append(entry.duplicate(true))
+		elif candidate["city_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -2188,6 +2380,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 			if not previous_coast_bridge:
 				_surfaces.erase(CoastExtra.BRIDGE)
 		return false
+	city_bench_active = next_bench
+	city_bench_step = int(next_bench_step)
+	city_bench_observed = next_bench_seen
+	city_ray_settled = next_ray
 	social = next_social
 	oni_route_index = int(next_oni)
 	flute_owned = next_flute
@@ -2291,6 +2487,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v9(point)
 	elif previous_schema == 10:
 		previous_location = _entity_location_v10(point)
+	elif previous_schema == 11:
+		previous_location = _entity_location_v11(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -2308,6 +2506,10 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		for definition in City.DEFINITIONS:
+			var resident: EntityBody = candidates.get(definition["id"])
+			if resident == null or resident.record.category != definition["category"]:
+				return false
 		var oni: EntityBody = candidates.get(Visits.ONI_ID)
 		if oni == null or oni.record.category != "oni":
 			return false
@@ -2431,6 +2633,7 @@ func _draw() -> void:
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
 		Visits.draw_on(self, flute_owned, prism_active)
+		City.draw_on(self)
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
 			var point: Vector2 = field.ground_position

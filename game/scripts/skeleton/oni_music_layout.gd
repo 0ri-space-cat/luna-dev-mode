@@ -20,9 +20,9 @@ static func draw_on(canvas: Node2D, flute_owned: bool, prism: bool) -> void:
 		canvas.draw_line(FLUTE + Vector2(-13, -3), FLUTE + Vector2(13, -10), Color("d9b889"), 5.0)
 		for x in [-8, 0, 8]:
 			canvas.draw_circle(FLUTE + Vector2(x, -6), 1.5, Color("514c53"))
-	canvas.draw_string(font, M02_RECORD + Vector2(-32, -12), "♪ ↑ → ↑ ← ↓ →", PRISM_BLUE if prism else Color("e3d4b4"))
+	canvas.draw_string(font, M02_RECORD + Vector2(-32, -12), "♪ ↑ → ↑ ← ↓ →", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, PRISM_BLUE if prism else Color("e3d4b4"))
 	canvas.draw_arc(SHELL_NOTE, 10.0, PI, TAU, 16, Color("d2b9a6"), 2.0, true)
 	if prism:
-		canvas.draw_string(font, SHELL_NOTE + Vector2(-37, -15), "♪ → ↓ → ↑ ←", PRISM_BLUE)
-		canvas.draw_string(font, Vector2(3520, 343), "♪ ↑ ↑ ↓ ↓ ← → ← →", PRISM_BLUE)
-		canvas.draw_string(font, Vector2(3510, 169), "Палочка рядом / далеко", PRISM_GREEN)
+		canvas.draw_string(font, SHELL_NOTE + Vector2(-37, -15), "♪ → ↓ → ↑ ←", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, PRISM_BLUE)
+		canvas.draw_string(font, Vector2(3520, 343), "♪ ↑ ↑ ↓ ↓ ← → ← →", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, PRISM_BLUE)
+		canvas.draw_string(font, Vector2(3510, 169), "Палочка рядом / далеко", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, PRISM_GREEN)
