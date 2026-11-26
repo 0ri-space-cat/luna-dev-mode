@@ -1,0 +1,66 @@
+{
+  "texture": "luna-classic-jump.png",
+  "view": "front_right",
+  "cell_size": [
+    128,
+    192
+  ],
+  "anchor": [
+    64,
+    184
+  ],
+  "frames": [
+    {
+      "id": "ready",
+      "region": [
+        0,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "compress",
+      "region": [
+        128,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "takeoff",
+      "region": [
+        256,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "airborne",
+      "region": [
+        384,
+        0,
+        128,
+        192
+      ]
+    },
+    {
+      "id": "contact",
+      "region": [
+        512,
+        0,
+        128,
+        192
+      ]
+    }
+  ],
+  "jump": {
+    "anticipation": "compress",
+    "takeoff": "takeoff",
+    "airborne": "airborne",
+    "ground_contact": "contact",
+    "recovery": "ready"
+  }
+}

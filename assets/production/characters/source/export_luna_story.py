@@ -96,7 +96,7 @@ def door_frames():
     return frames
 
 
-def export(name, view, size, anchor, poses, sequence, *, preview_order=None, preview_stride=0):
+def export(name, view, size, anchor, poses, sequence, *, preview_order=None, preview_stride=0, preview_lift=None):
     width, height = size
     sheet = Image.new("RGBA", (width * len(poses), height))
     frames, records = {}, []
@@ -116,13 +116,16 @@ def export(name, view, size, anchor, poses, sequence, *, preview_order=None, pre
         **sequence,
     }, indent=2) + "\n")
     order = preview_order or [(pose, duration) for pose, _, duration in poses]
+    lift = preview_lift or [0] * len(order)
+    headroom = max(lift)
     preview = []
-    for index, (pose, _) in enumerate(order):
-        panel = Image.new("RGB", (width, height), "#374156")
+    for index, ((pose, _), elevation) in enumerate(zip(order, lift)):
+        panel = Image.new("RGB", (width, height + headroom), "#374156")
         draw = ImageDraw.Draw(panel)
-        draw.line((0, anchor[1], width - 1, anchor[1]), fill="#4D5970")
+        ground = anchor[1] + headroom
+        draw.line((0, ground, width - 1, ground), fill="#4D5970")
         frame = frames[pose]
-        panel.paste(frame, (0, -index * preview_stride), frame.getchannel("A"))
+        panel.paste(frame, (0, headroom - elevation - index * preview_stride), frame.getchannel("A"))
         preview.append(panel)
     # Pause on the last drawing so the reset of the preview stays readable.
     if preview_stride:
@@ -132,6 +135,36 @@ def export(name, view, size, anchor, poses, sequence, *, preview_order=None, pre
         PREVIEWS / f"{name}.gif", save_all=True, append_images=preview[1:],
         duration=timing, loop=0, disposal=2,
     )
+
+
+def export_jump():
+    size, anchor = (128, 192), (64, 184)
+    poses = (
+        ("ready", "wake-stand", (480, 1488), 270),
+        ("compress", "jump-compress", (500, 1464), 90),
+        ("takeoff", "jump-takeoff", (500, 1480), 70),
+        ("airborne", "jump", (480, 1444), 100),
+        ("contact", "jump-land", (460, 1473), 110),
+    )
+    cels = pixel_palette([
+        frame_on_canvas(source, 8, source_anchor, size, anchor)
+        for _, source, source_anchor, _ in poses
+    ], 48)
+    preview = [
+        ("ready", 220), ("compress", 90), ("takeoff", 70), ("airborne", 60),
+        ("airborne", 80), ("airborne", 60), ("contact", 110), ("ready", 500),
+    ]
+    export("luna-classic-jump", "front_right", size, anchor, [
+        (pose, cel, ms) for (pose, _, _, ms), cel in zip(poses, cels)
+    ], {
+        "jump": {
+            "anticipation": "compress",
+            "takeoff": "takeoff",
+            "airborne": "airborne",
+            "ground_contact": "contact",
+            "recovery": "ready",
+        },
+    }, preview_order=preview, preview_lift=[0, 0, 8, 18, 25, 13, 0, 0])
 
 
 def main():
@@ -156,3 +189,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    export_jump()
