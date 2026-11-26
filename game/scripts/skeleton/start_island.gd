@@ -417,6 +417,7 @@ func _ready() -> void:
 		_spawn_coastal_life()
 		_spawn_oni()
 		_spawn_city()
+		_setup_yuki()
 		_setup_flute()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
@@ -488,6 +489,145 @@ func _sync_crystal_observation() -> void:
 		_surfaces.erase(CoastExtra.BRIDGE)
 	# Reclose only after the actual body clears the doorway, never crush it.
 	_set_crystal_door(crystal_observer.luna_eyes_open and not _door_occupied())
+
+
+# The notebook and its physical experimental carrier share the regular world.
+const YukiProgram = preload("res://scripts/runtime2d/yuki_program_2d.gd")
+const YukiPanel = preload("res://scripts/skeleton/yuki_panel_2d.gd")
+const YUKI_FRIDGE := "C4_YUKI_FRIDGE"
+const YUKI_CAT_PREFIX := "YUKI_CAT_"
+const YUKI_FRIDGE_POINT := Vector2(5625, 600)
+const YUKI_CAT_POINTS := [Vector2(5775, 650), Vector2(5110, 420), Vector2(1330, 430), Vector2(5270, 470), Vector2(5635, 655), Vector2(4605, 400), Vector2(1285, 435), Vector2(5185, 550)]
+var yuki := YukiProgram.new()
+var _yuki_panel: PanelContainer
+var _initial_yuki_fridge: Dictionary = {}
+
+
+func _setup_yuki() -> void:
+	var fridge := spawn_entity({"id": YUKI_FRIDGE, "category": "fridge", "label": "Холодильник Юки", "material": "METAL"}, YUKI_FRIDGE_POINT, 0.0)
+	if fridge == null:
+		push_error("Could not place Yuki's fridge")
+	else:
+		fridge.set_parameter("pickable", true)
+		fridge.set_parameter("mass", 1.0)
+		for entry in make_snapshot()["entities"]:
+			if entry["id"] == YUKI_FRIDGE:
+				_initial_yuki_fridge = entry
+	var panel := YukiPanel.new()
+	$Interface.add_child(panel)
+	_yuki_panel = panel
+
+
+func _near_yuki() -> bool:
+	var friend_body := entities.get_entity(City.YUKI) as EntityBody
+	return observation_fixture and friend_body != null and City.WORKSHOP.has_point(actor.position) and City.WORKSHOP.has_point(friend_body.position) and friend_body.get_parameter("alive") and _within_reach(friend_body.position, friend_body.motion.elevation) and (actor as EntityBody).accepts_player_input()
+
+
+func _yuki_action() -> String:
+	if not _near_yuki():
+		return ""
+	if yuki.ownership == 0:
+		return "Одолжить ноутбук Юки"
+	if yuki.ownership == 1 and yuki.observed and not yuki.has_active_cat_rule():
+		return "Обсудить эксперимент с Юки"
+	return ""
+
+
+func _interact_yuki() -> bool:
+	match _yuki_action():
+		"Одолжить ноутбук Юки":
+			yuki.ownership = 1
+			return true
+		"Обсудить эксперимент с Юки":
+			yuki.ownership = 2
+			social.complete("YUKI")
+			return true
+	return false
+
+
+func return_yuki_loan() -> bool:
+	if yuki.ownership != 1 or not _near_yuki():
+		return false
+	yuki.ownership = 0
+	return true
+
+
+func _yuki_host_allowed(body: EntityBody) -> bool:
+	return body != null and body.record.category in ["fridge", "prop", "cat", "fox", "ray", "trollik", "crab", "turtle", "mirror_snail"]
+
+
+func yuki_nearby_hosts() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		if _yuki_host_allowed(body) and body.location_id == _entity_location(actor.position) and _within_reach(body.position, body.motion.elevation):
+			result.append({"id": identity, "label": body.record.display_name + "  (" + identity + ")"})
+	return result
+
+
+func install_yuki_rule(host: String, source: String) -> bool:
+	if not observation_fixture or yuki.ownership == 0 or not (actor as EntityBody).accepts_player_input():
+		return false
+	if not host.is_empty() and not yuki_nearby_hosts().any(func(item): return item["id"] == host):
+		return false
+	return yuki.install(host, source)
+
+
+func set_yuki_running(enabled: bool) -> bool:
+	if yuki.ownership == 0:
+		return false
+	yuki.running = enabled
+	return true
+
+
+func _execute_yuki_rule(rule: Dictionary) -> bool:
+	var host: String = rule["host"]
+	var body := entities.get_entity(host) as EntityBody
+	if not host.is_empty() and not _yuki_host_allowed(body):
+		return false
+	if rule["action"] == "SPAWN_CAT":
+		return _yuki_spawn_cat()
+	if body == null:
+		return false
+	var key: String = {"SET_SPEED": "speed", "SET_ALIVE": "alive", "SET_AI": "ai_enabled"}.get(rule["action"], "")
+	return not key.is_empty() and commands.execute_set(body, key, rule["value"], ENTITY_ID, "yuki:rule")
+
+
+func _yuki_spawn_cat() -> bool:
+	if yuki.spawn_serial >= YukiProgram.MAX_CATS:
+		return false
+	var id := YUKI_CAT_PREFIX + str(yuki.spawn_serial + 1)
+	for index in YUKI_CAT_POINTS.size():
+		var point: Vector2 = YUKI_CAT_POINTS[(yuki.spawn_serial + index) % YUKI_CAT_POINTS.size()]
+		var cat := spawn_entity({"id": id, "category": "cat", "label": "Котик", "material": "FABRIC"}, point, 0.0)
+		if cat != null:
+			yuki.spawn_serial += 1
+			# New bodies use the ordinary size parameter and physical checks.
+			cat.set_parameter("size", [0.5, 0.8, 1.2, 1.6][(yuki.spawn_serial - 1) % 4])
+			return true
+	return false
+
+
+func _tick_yuki(delta: float) -> void:
+	if not observation_fixture:
+		return
+	yuki.advance(delta * WorldClock.MINUTES_PER_SIM_SECOND, _execute_yuki_rule)
+	if yuki.ownership != 1 or yuki.observed:
+		return
+	for identity in entities.list_ids():
+		if identity.begins_with(YUKI_CAT_PREFIX):
+			var cat := entities.get_entity(identity) as EntityBody
+			if cat.location_id == _entity_location(actor.position) and _within_reach(cat.position, cat.motion.elevation):
+				yuki.observed = true
+				return
+
+
+func _open_yuki() -> bool:
+	if yuki.ownership == 0 or not is_instance_valid(_yuki_panel) or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
+		return false
+	_yuki_panel.open_for(self)
+	apply_player_input(Vector2.ZERO)
+	return true
 
 
 func _spawn_city() -> void:
@@ -1376,6 +1516,8 @@ func _configure_body(body: ElevationBody, entity_id: String) -> void:
 func set_home_active(active: bool) -> void:
 	if not active and ancient_console != null:
 		ancient_console.close()
+	if not active and is_instance_valid(_yuki_panel):
+		_yuki_panel.hide()
 	process_mode = Node.PROCESS_MODE_PAUSABLE if active else Node.PROCESS_MODE_DISABLED
 	visible = active
 	$Interface.visible = active
@@ -1527,6 +1669,7 @@ func _physics_process(delta: float) -> void:
 		_tick_mia()
 		_tick_oni()
 		_tick_city()
+		_tick_yuki(world_clock.sim_delta(delta))
 		_tick_music(world_clock.sim_delta(delta))
 		_update_yeti_route()
 		_refresh_plank_surface()
@@ -1561,6 +1704,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  H " + world_clock.mode
 	if flask_state > 0:
 		_status.text += "  ·  Enter: склянка"
+	if yuki.ownership > 0:
+		_status.text += "  ·  J: ноутбук"
 	if restriction_text.is_valid():
 		_status.text += restriction_text.call()
 	var action := _nearby_action()
@@ -1580,6 +1725,9 @@ func _update_local_camera() -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if is_instance_valid(_yuki_panel) and _yuki_panel.visible:
+		apply_player_input(Vector2.ZERO)
+		return
 	if music_focus:
 		apply_player_input(Vector2.ZERO)
 		return
@@ -1714,6 +1862,9 @@ func _nearby_action() -> String:
 	var friend_action := _city_friend_action()
 	if not friend_action.is_empty():
 		return friend_action
+	var yuki_action := _yuki_action()
+	if not yuki_action.is_empty():
+		return yuki_action
 	var tunnel_action := _tunnel_action()
 	if not tunnel_action.is_empty():
 		return tunnel_action
@@ -1838,6 +1989,8 @@ func interact() -> bool:
 	var friend_action := _city_friend_action()
 	if not friend_action.is_empty():
 		return _city_friend_interact(friend_action)
+	if not _yuki_action().is_empty():
+		return _interact_yuki()
 	match _nearby_action():
 		"Нырнуть в тоннель":
 			return _use_tunnel(Tunnel.WEST_EXIT, Tunnel.LOCATION_ID)
@@ -1950,6 +2103,11 @@ func _set_wand_mode(mode: String) -> bool:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
 		return
+	if is_instance_valid(_yuki_panel) and _yuki_panel.visible:
+		if event.keycode == KEY_ESCAPE:
+			_yuki_panel.hide()
+		get_viewport().set_input_as_handled()
+		return
 	if _alchemy_panel != null and _alchemy_panel.visible:
 		if event.keycode == KEY_ESCAPE:
 			_alchemy_panel.hide()
@@ -1977,6 +2135,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	match event.keycode:
+		KEY_J:
+			if _open_yuki():
+				get_viewport().set_input_as_handled()
 		KEY_M:
 			if _set_music_focus(true):
 				get_viewport().set_input_as_handled()
@@ -2011,7 +2172,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			exchange_nearby_wand()
 		KEY_ENTER:
 			if not is_instance_valid(_debug_editor):
-				if flask_state > 0 and _alchemy_panel != null:
+				if yuki.ownership > 0 and (_near_yuki() or flask_state == 0) and _open_yuki():
+					get_viewport().set_input_as_handled()
+				elif flask_state > 0 and _alchemy_panel != null:
 					_alchemy_panel.configure_access(true, true, false)
 					_alchemy_panel.show()
 					apply_player_input(Vector2.ZERO)
@@ -2083,6 +2246,12 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 	var tabs := super.get_wand_editor_tabs(target_id)
 	if target_id == Administrator.ID and not tabs.is_empty():
 		return {} if tabs["Отношения"].is_empty() else {"Отношения": tabs["Отношения"]}
+	if not tabs.is_empty():
+		for rule in yuki.rules:
+			if rule["host"] == target_id:
+				var rule_id := int(rule["id"])
+				var enabled: bool = rule["enabled"]
+				tabs["Общее"].append({"id": "YUKI_RULE_" + str(rule_id), "label": "SCRIPT " + str(rule_id), "kind": "action", "value": "Стоп" if enabled else "Пуск", "action": func(): return yuki.set_enabled(rule_id, not enabled)})
 	if not tabs.is_empty() and _holds_ecology_catalog() and FISH_POINTS.has(target_id):
 		var target := get_natural_fauna(target_id)
 		if target != null and target.get_parameter("alive"):
@@ -2157,6 +2326,8 @@ func make_snapshot() -> Dictionary:
 		data["mia_route_step"] = mia_route_step
 		data["lab_ice"] = _lab_ice.remaining
 		data["city_layout"] = 1
+		data["yuki_layout"] = 1
+		data["yuki"] = yuki.snapshot()
 		data["city_bench_active"] = city_bench_active
 		data["city_bench_step"] = city_bench_step
 		data["city_bench_observed"] = city_bench_observed
@@ -2198,6 +2369,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 			or typeof(next_bench_step) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_bench_step)) \
 			or float(next_bench_step) != floorf(float(next_bench_step)) or int(next_bench_step) < 0 \
 			or int(next_bench_step) >= City.BENCH_ROUTE.size():
+		return false
+	var next_yuki := YukiProgram.new()
+	if not next_yuki.restore(data.get("yuki", next_yuki.snapshot())):
 		return false
 	var next_social := Social.new()
 	var next_oni: Variant = data.get("oni_route_index", 0)
@@ -2356,6 +2530,27 @@ func apply_snapshot(data: Dictionary) -> bool:
 				candidate["entities"].append(entry.duplicate(true))
 		elif candidate["city_layout"] != 1:
 			return false
+	if observation_fixture:
+		if not candidate.has("yuki_layout"):
+			if _initial_yuki_fridge.is_empty():
+				return false
+			candidate = candidate.duplicate(true)
+			if not candidate["entities"].any(func(entry): return entry.get("id") == YUKI_FRIDGE):
+				candidate["entities"].append(_initial_yuki_fridge.duplicate(true))
+		elif candidate["yuki_layout"] != 1:
+			return false
+		for rule in next_yuki.rules:
+			if not rule["host"].is_empty() and not candidate["entities"].any(func(entry): return entry.get("id") == rule["host"] and entry.get("category") in ["fridge", "prop", "cat", "fox", "ray", "trollik", "crab", "turtle", "mirror_snail"]):
+				return false
+		var cats := 0
+		for entry in candidate["entities"]:
+			if str(entry.get("id", "")).begins_with(YUKI_CAT_PREFIX):
+				var suffix: String = str(entry["id"]).trim_prefix(YUKI_CAT_PREFIX)
+				if not suffix.is_valid_int() or int(suffix) < 1 or int(suffix) > next_yuki.spawn_serial or entry.get("category") != "cat":
+					return false
+				cats += 1
+		if cats != next_yuki.spawn_serial:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -2391,6 +2586,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 			if not previous_coast_bridge:
 				_surfaces.erase(CoastExtra.BRIDGE)
 		return false
+	yuki = next_yuki
+	if is_instance_valid(_yuki_panel):
+		_yuki_panel.hide()
 	city_bench_active = next_bench
 	city_bench_step = int(next_bench_step)
 	city_bench_observed = next_bench_seen
@@ -2517,6 +2715,9 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		var machine: EntityBody = candidates.get(YUKI_FRIDGE)
+		if machine == null or machine.record.category != "fridge":
+			return false
 		for definition in City.DEFINITIONS:
 			var resident: EntityBody = candidates.get(definition["id"])
 			if resident == null or resident.record.category != definition["category"]:
