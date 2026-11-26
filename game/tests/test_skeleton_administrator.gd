@@ -36,6 +36,12 @@ func _run() -> void:
 	assert(game.home.wand_pair.held == game.home.WandPair.DUPLICATE)
 	assert(game.save_game())
 	var known_world := game.home.make_snapshot()
+	# Simulate a pre-M3.73 rollback snapshot with the original wand on the shore.
+	known_world.erase("address_schema")
+	for entry in known_world["entities"]:
+		if entry["location_id"] == game.home.Lake.LOCATION_ID:
+			entry["location_id"] = game.home.Lake.LEGACY_LOCATION_ID
+	known_world["island"]["projection"]["location_id"] = game.home.Lake.LEGACY_LOCATION_ID
 
 	# An integrity fault has ordinary recovery but does not count as player overload.
 	assert(game.report_system_incident("DEV_SINGLE_FAULT"))
@@ -58,6 +64,8 @@ func _run() -> void:
 	assert(game.home.access.wand_mode == Access.ORDINARY)
 	assert(game.home.wand_pair.held == game.home.WandPair.DUPLICATE)
 	assert(game.apply_local_rollback(known_world))
+	assert(game.home.wand_pair.original.ground_location_id == game.home.Lake.LOCATION_ID)
+	assert(known_world["island"]["projection"]["location_id"] == game.home.Lake.LEGACY_LOCATION_ID)
 	assert(game.load_game() and game.journal.applied == 1)
 	assert(game.home.access.wand_mode == Access.ORDINARY and game.home.retreat_step == 2)
 	assert(game.home.exchange_nearby_wand() and game.home.wand_pair.held == game.home.WandPair.ORIGINAL)

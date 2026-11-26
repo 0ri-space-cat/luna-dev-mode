@@ -33,6 +33,8 @@ const FISH_POINTS := {
 	"DEV_POOL_FISH_C": Vector2(2576, 476),
 }
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
+const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
+const ADDRESS_SCHEMA := 1
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -42,7 +44,7 @@ const ISLAND_ID := "ET_START_ISLAND"
 const AREA_LABELS := {
 	ISLAND_ID: "Стартовый остров", Meadows.LOCATION_ID: "Большие луга",
 	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
-	AncientConsole.LOCATION_ID: "Лесная поляна",
+	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
 }
 const FRIDGE_ID := "START_FRIDGE"
 const BRIDGE_YETI_ID := "START_YETI"
@@ -115,6 +117,15 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture:
+		var extension := Valley.location_at(point)
+		if not extension.is_empty():
+			return extension
+	return _legacy_entity_location(point)
+
+
+# The pre-M3.73 spatial partition, with the lake alias normalized.
+func _legacy_entity_location(point: Vector2) -> String:
 	if ancient_console_enabled and AncientConsole.CLEARING.has_point(point):
 		return AncientConsole.LOCATION_ID
 	if observation_fixture and ForestBank.FOREST.has_point(point):
@@ -141,6 +152,7 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
+		ground.append_array(Valley.DECKS)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
@@ -800,6 +812,7 @@ func _toggle_debug_editor() -> void:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
+	data["address_schema"] = ADDRESS_SCHEMA
 	if observation_fixture:
 		data["observation_layout"] = 1
 	if ecology_fixture:
@@ -817,6 +830,11 @@ func make_snapshot() -> Dictionary:
 
 
 func apply_snapshot(data: Dictionary) -> bool:
+	var schema: Variant = data.get("address_schema", 0)
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, float(ADDRESS_SCHEMA)]:
+		return false
+	if float(schema) == 0.0:
+		data = _migrate_home_addresses(data)
 	var island: Variant = data.get("island")
 	var states: Variant = data.get("entities")
 	if not island is Dictionary or not states is Array:
@@ -913,6 +931,46 @@ func apply_snapshot(data: Dictionary) -> bool:
 	_configure_plank_marker(entities.get_entity(Meadows.PLANK_ID) as EntityBody)
 	_camera.position = actor.position
 	return true
+
+
+# Migrate only location-bearing records from the old schema. Leave all
+# positions, attachment IDs, modules and timers untouched. The normal
+# snapshot validator still checks every position and physical support.
+func _migrate_home_addresses(source: Dictionary) -> Dictionary:
+	var result := source.duplicate(true)
+	var states: Variant = result.get("entities")
+	if states is Array:
+		for state in states:
+			if state is Dictionary:
+				_migrate_address_entry(state, false)
+	var island: Variant = result.get("island")
+	if island is Dictionary and island.get("projection") is Dictionary:
+		_migrate_address_entry(island["projection"], true)
+	var pair: Variant = result.get("wand_pair")
+	if pair is Dictionary and pair.get("duplicate") is Dictionary:
+		_migrate_address_entry(pair["duplicate"], true)
+	result["address_schema"] = ADDRESS_SCHEMA
+	return result
+
+
+func _migrate_address_entry(entry: Dictionary, is_field: bool) -> void:
+	var stored: Variant = entry.get("location_id")
+	if not stored is String:
+		return
+	var canonical: String = Lake.LOCATION_ID if stored == Lake.LEGACY_LOCATION_ID else stored
+	# A carried wand may retain its previous ground location.
+	if is_field and entry.get("carried") == true:
+		entry["location_id"] = canonical
+		return
+	var raw: Variant = entry.get("position")
+	if not raw is Array or raw.size() != 2:
+		return
+	for coordinate in raw:
+		if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
+			return
+	var point := Vector2(float(raw[0]), float(raw[1]))
+	if canonical == _legacy_entity_location(point):
+		entry["location_id"] = _entity_location(point)
 
 
 func _build_saved_entity(state: Variant, version: int) -> EntityBody:

@@ -50,6 +50,8 @@ jobs:
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_start_island.gd
       - name: Test the meadows routes and thawing creek
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_meadows.gd
+      - name: Test the dry forest-valley route and lake address migration
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_valley_route.gd
       - name: Test the starter world clock, camp and timed effects
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_world_time.gd
       - name: Test the finite ability instance and bank access

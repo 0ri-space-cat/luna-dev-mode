@@ -1,7 +1,9 @@
 extends RefCounted
 ## Dry approach from the high edge to a small test section of W6.
 
-const LOCATION_ID := "ET_WATERFALL_DUPLICATE_LAKE"
+const LOCATION_ID := "ET_DUPLICATE_LAKE_CAVERN"
+const LEGACY_LOCATION_ID := "ET_WATERFALL_DUPLICATE_LAKE"
+const FEATURE_ID := "ET_DUPLICATE_LAKE"
 const BOUNDARY := 2260.0
 const SHORE := Vector2(2445, 426)
 const CONTACT := Vector2(2490, 426)
