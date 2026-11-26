@@ -44,7 +44,7 @@ func _run() -> void:
 	var dormant: Dictionary = home.make_snapshot()
 	assert(dormant["tamagotchi_recalled"])
 	assert(dormant["entities"].filter(func(entry): return entry["id"] == Island.TAMAGOTCHI_PET).size() == 1)
-	assert(home.apply_snapshot(dormant))
+	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(dormant))))
 	assert(home.entities.get_entity(Island.TAMAGOTCHI_PET) == null and home.ability_bank.amount(home.ENTITY_ID, "GLOW") == 0)
 	var bad: Dictionary = dormant.duplicate(true)
 	bad["evening"]["tamagotchi"] = false

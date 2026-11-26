@@ -1584,9 +1584,11 @@ func _valid_evening(data: Variant) -> bool:
 			return false
 	if data["tamagotchi"] and not data["leia_free"]:
 		return false
-	var stage: Variant = data.get("stage")
-	if typeof(stage) not in [TYPE_INT, TYPE_FLOAT] or stage not in [0, 1, 2, 3, 4]:
+	var raw_stage: Variant = data.get("stage")
+	# JSON numbers are floats; validate the value before canonicalizing to an int.
+	if typeof(raw_stage) not in [TYPE_INT, TYPE_FLOAT] or float(raw_stage) not in [0.0, 1.0, 2.0, 3.0, 4.0]:
 		return false
+	var stage := int(raw_stage)
 	var origins: Variant = data.get("origins")
 	if not origins is Dictionary or origins.size() > 6 or (stage < 2 and not origins.is_empty()) or (stage in [2, 3] and origins.size() != 6):
 		return false
