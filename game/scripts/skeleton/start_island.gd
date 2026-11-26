@@ -34,7 +34,7 @@ const FISH_POINTS := {
 }
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
-const ADDRESS_SCHEMA := 1
+const ADDRESS_SCHEMA := 2
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -124,6 +124,15 @@ func _entity_location(point: Vector2) -> String:
 	return _legacy_entity_location(point)
 
 
+# M3.73 partition before the W1 expansion.
+func _entity_location_v1(point: Vector2) -> String:
+	if observation_fixture:
+		var extension := Valley.location_at_v1(point)
+		if not extension.is_empty():
+			return extension
+	return _legacy_entity_location(point)
+
+
 # The pre-M3.73 spatial partition, with the lake alias normalized.
 func _legacy_entity_location(point: Vector2) -> String:
 	if ancient_console_enabled and AncientConsole.CLEARING.has_point(point):
@@ -159,6 +168,9 @@ func _ready() -> void:
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	_surfaces.assign(_decks)
+	if observation_fixture:
+		_surfaces.append({"bounds": Valley.ORDINARY_POOL, "height": Valley.ORDINARY_BED, "safe": false})
+		_water_volumes.append(WaterVolume.new(Valley.ORDINARY_POOL, Valley.ORDINARY_BED, 0.0, Vector2.ZERO, 1.2))
 	_surfaces.append({"bounds": Lake.POOL, "height": Lake.BED_HEIGHT, "safe": false})
 	_fish_surfaces.assign([{"bounds": Lake.POOL, "height": Lake.BED_HEIGHT}])
 	_water_volumes.append(WaterVolume.new(Lake.POOL, Lake.BED_HEIGHT, 0.0, Vector2.ZERO, 1.2))
@@ -831,10 +843,10 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, float(ADDRESS_SCHEMA)]:
 		return false
-	if float(schema) == 0.0:
-		data = _migrate_home_addresses(data)
+	if int(schema) < ADDRESS_SCHEMA:
+		data = _migrate_home_addresses(data, int(schema))
 	var island: Variant = data.get("island")
 	var states: Variant = data.get("entities")
 	if not island is Dictionary or not states is Array:
@@ -936,24 +948,24 @@ func apply_snapshot(data: Dictionary) -> bool:
 # Migrate only location-bearing records from the old schema. Leave all
 # positions, attachment IDs, modules and timers untouched. The normal
 # snapshot validator still checks every position and physical support.
-func _migrate_home_addresses(source: Dictionary) -> Dictionary:
+func _migrate_home_addresses(source: Dictionary, previous_schema: int) -> Dictionary:
 	var result := source.duplicate(true)
 	var states: Variant = result.get("entities")
 	if states is Array:
 		for state in states:
 			if state is Dictionary:
-				_migrate_address_entry(state, false)
+				_migrate_address_entry(state, false, previous_schema)
 	var island: Variant = result.get("island")
 	if island is Dictionary and island.get("projection") is Dictionary:
-		_migrate_address_entry(island["projection"], true)
+		_migrate_address_entry(island["projection"], true, previous_schema)
 	var pair: Variant = result.get("wand_pair")
 	if pair is Dictionary and pair.get("duplicate") is Dictionary:
-		_migrate_address_entry(pair["duplicate"], true)
+		_migrate_address_entry(pair["duplicate"], true, previous_schema)
 	result["address_schema"] = ADDRESS_SCHEMA
 	return result
 
 
-func _migrate_address_entry(entry: Dictionary, is_field: bool) -> void:
+func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: int) -> void:
 	var stored: Variant = entry.get("location_id")
 	if not stored is String:
 		return
@@ -969,7 +981,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool) -> void:
 		if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
 			return
 	var point := Vector2(float(raw[0]), float(raw[1]))
-	if canonical == _legacy_entity_location(point):
+	var previous_location := _legacy_entity_location(point) if previous_schema == 0 else _entity_location_v1(point)
+	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
 
@@ -1058,6 +1071,8 @@ func _draw() -> void:
 	draw_string(font, Vector2(1005, 339), "К Большим лугам →")
 	Meadows.draw_on(self, ice_remaining > 0.0)
 	Lake.draw_on(self)
+	if observation_fixture:
+		Valley.draw_on(self)
 	for field in [wand_pair.original, wand_pair.duplicate]:
 		if field != null and not field.carried:
 			var point: Vector2 = field.ground_position

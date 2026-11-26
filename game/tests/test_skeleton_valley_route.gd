@@ -34,7 +34,10 @@ func _run() -> void:
 	assert(Lake.LOCATION_ID == "ET_DUPLICATE_LAKE_CAVERN" and Lake.FEATURE_ID == "ET_DUPLICATE_LAKE")
 	assert(scene.wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID))
 	var saved: Dictionary = scene.make_snapshot()
-	assert(saved["address_schema"] == 1)
+	assert(saved["address_schema"] == 2)
+	var previous: Dictionary = saved.duplicate(true)
+	previous["address_schema"] = 1
+	assert(scene.apply_snapshot(previous))
 	# Restore the legacy name of the same cave and the duplicate wand.
 	var legacy: Dictionary = saved.duplicate(true)
 	legacy.erase("address_schema")
@@ -61,6 +64,23 @@ func _run() -> void:
 		assert(scene.actor.motion.grounded and scene.actor.recoveries == 0)
 	assert(await _walk_to(scene, Vector2(2140, 120)))
 	assert(scene.actor.location_id == Valley.FOREST_ID)
+	assert(scene.wand_pair.original.ground_location_id == Lake.LOCATION_ID)
+	# The ordinary W1 lake has a physical dry loop, not a second duplicate pool.
+	var lake_loop := [Vector2(2140, 220), Vector2(2130, 305), Vector2(2130, 351),
+		Vector2(2055, 351), Vector2(2055, 485), Vector2(2190, 485),
+		Vector2(2190, 425), Vector2(2240, 425)]
+	for point in lake_loop:
+		assert(await _walk_to(scene, point))
+		assert(scene.actor.motion.grounded and scene.actor.recoveries == 0)
+		if point == Vector2(2055, 485):
+			assert(scene.actor.location_id == Valley.LOCATION_ID)
+			var shore_save: Dictionary = scene.make_snapshot()
+			assert(scene.apply_snapshot(shore_save))
+			assert(scene.actor.location_id == Valley.LOCATION_ID)
+	lake_loop.reverse()
+	for point in lake_loop:
+		assert(await _walk_to(scene, point))
+		assert(scene.actor.motion.grounded and scene.actor.recoveries == 0)
 	assert(scene.wand_pair.original.ground_location_id == Lake.LOCATION_ID)
 	print("M3.73: dry forest-valley route, canonical lake and legacy address migration passed")
 	scene.queue_free()
