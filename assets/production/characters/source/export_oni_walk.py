@@ -1,21 +1,22 @@
-"""Register Oni's short walk against the original diagonal standing sprite."""
+"""Register the full-body diagonal walk cycle for Oni Classic."""
 
 from PIL import Image
 
-from export_luna_story import PREPARED, export
+from export_luna_story import export
 from export_sprites import CHARACTERS, NEAREST, load
 
 CELL = (128, 192)
 PIVOT = (64, 184)
 SOURCE = CHARACTERS / "source/oni-walk"
-SOURCE_PIVOT = (504, 1472)
+SOURCE_CENTER_X = 504
 SOURCE_PIXELS_PER_PIXEL = 8
+TOP = 9
 SHORTS_HEM = 127
 POSES = (
-    ("contact-near", 140),
-    ("pass-far", 110),
-    ("contact-far", 140),
-    ("pass-near", 110),
+    ("contact-near", 180),
+    ("pass-far", 200),
+    ("contact-far", 180),
+    ("pass-near", 200),
 )
 
 
@@ -60,40 +61,38 @@ def ink_leg_edges(colors, silhouette):
     return inked
 
 
-def registered_legs(source):
-    left = SOURCE_PIVOT[0] - PIVOT[0] * SOURCE_PIXELS_PER_PIXEL
-    top = SOURCE_PIVOT[1] - (PIVOT[1] - SHORTS_HEM) * SOURCE_PIXELS_PER_PIXEL
-    region = source.crop((left, top, left + CELL[0] * SOURCE_PIXELS_PER_PIXEL,
-                          source.getbbox()[3]))
-    size = (CELL[0], PIVOT[1] - SHORTS_HEM)
-    # Measure coverage once at the final resolution. Keep nearest samples
-    # for the palette and use the covered color when a center sample is clear.
+def registered_pose(source):
+    left = SOURCE_CENTER_X - PIVOT[0] * SOURCE_PIXELS_PER_PIXEL
+    _, top, _, bottom = source.getbbox()
+    region = source.crop((left, top, left + CELL[0] * SOURCE_PIXELS_PER_PIXEL, bottom))
+    size = (CELL[0], PIVOT[1] - TOP)
     coverage = region.getchannel("A").resize(size, Image.Resampling.BOX)
-    outline = coverage.point(lambda alpha: 255 if alpha >= 128 else 0)
+    silhouette = coverage.point(lambda alpha: 255 if alpha >= 128 else 0)
     sampled = region.resize(size, NEAREST)
-    legs = region.resize(size, Image.Resampling.BOX).convert("RGB")
-    legs.paste(sampled.convert("RGB"), mask=sampled.getchannel("A"))
-    return ink_leg_edges(legs, outline), outline
+    colors = region.resize(size, Image.Resampling.BOX).convert("RGB")
+    colors.paste(sampled.convert("RGB"), mask=sampled.getchannel("A"))
+
+    # Keep the neck and arms with each whole pose. Re-ink only the leg region
+    # where resampling can leave a broken or doubled edge.
+    leg_box = (0, SHORTS_HEM - TOP, CELL[0], size[1])
+    legs = ink_leg_edges(colors.crop(leg_box), silhouette.crop(leg_box))
+    colors.paste(legs, leg_box[:2])
+    frame = Image.new("RGBA", CELL)
+    frame.paste(colors, (0, TOP), silhouette)
+    return frame
 
 
 def main():
-    idle = load(PREPARED / "oni-idle-front-right.png")
-    frames = []
-    for name, duration in POSES:
-        legs, outline = registered_legs(load(SOURCE / f"{name}.png"))
-        frame = Image.new("RGBA", CELL)
-        frame.paste(idle.crop((0, 0, CELL[0], SHORTS_HEM)))
-        frame.paste(legs, (0, SHORTS_HEM), outline)
-        # Preserve the bottom of each idle cuff where its fixed hand reaches
-        # below the shorts-hem compositing line.
-        for left, right in ((0, 49), (79, CELL[0])):
-            frame.paste(idle.crop((left, SHORTS_HEM, right, 131)), (left, SHORTS_HEM))
-        frames.append((name, frame, duration))
-
+    frames = [(name, registered_pose(load(SOURCE / f"{name}.png")), duration)
+              for name, duration in POSES]
+    walk = [{"frame": name, "duration_ms": duration} for name, duration in POSES]
     export("oni-classic-walk-front-right", "front_right", CELL, PIVOT, frames, {
-        "walk": [{"frame": name, "duration_ms": duration} for name, duration in POSES],
+        "walk": walk,
         "loop": True,
-    }, shared_preview_palette=True, preview_background="#FFFFFF")
+    }, shared_preview_palette=True, preview_background="#FFFFFF",
+           preview_order=POSES * 2,
+           # On each support phase the heel stays at the contact's screen x.
+           preview_advance=(0, 19, 36, 50, 67, 86, 103, 117))
 
 
 if __name__ == "__main__":

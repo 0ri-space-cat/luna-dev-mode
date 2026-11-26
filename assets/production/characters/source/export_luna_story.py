@@ -96,7 +96,7 @@ def door_frames():
     return frames
 
 
-def export(name, view, size, anchor, poses, sequence, *, preview_order=None, preview_stride=0, preview_lift=None, shared_preview_palette=False, preview_background="#374156"):
+def export(name, view, size, anchor, poses, sequence, *, preview_order=None, preview_stride=0, preview_lift=None, shared_preview_palette=False, preview_background="#374156", preview_advance=None):
     width, height = size
     sheet = Image.new("RGBA", (width * len(poses), height))
     frames, records = {}, []
@@ -118,19 +118,21 @@ def export(name, view, size, anchor, poses, sequence, *, preview_order=None, pre
     order = preview_order or [(pose, duration) for pose, _, duration in poses]
     lift = preview_lift or [0] * len(order)
     headroom = max(lift)
+    advance = preview_advance or (0,) * len(order)
+    panel_width = width + max(advance)
     preview = []
-    for index, ((pose, _), elevation) in enumerate(zip(order, lift)):
-        panel = Image.new("RGB", (width, height + headroom), preview_background)
+    for index, ((pose, _), elevation, horizontal) in enumerate(zip(order, lift, advance)):
+        panel = Image.new("RGB", (panel_width, height + headroom), preview_background)
         draw = ImageDraw.Draw(panel)
         ground = anchor[1] + headroom
-        draw.line((0, ground, width - 1, ground), fill="#4D5970")
+        draw.line((0, ground, panel_width - 1, ground), fill="#4D5970")
         frame = frames[pose]
-        panel.paste(frame, (0, headroom - elevation - index * preview_stride), frame.getchannel("A"))
+        panel.paste(frame, (horizontal, headroom - elevation - index * preview_stride), frame.getchannel("A"))
         preview.append(panel)
     if shared_preview_palette:
-        samples = Image.new("RGB", (width * len(preview), height + headroom))
+        samples = Image.new("RGB", (panel_width * len(preview), height + headroom))
         for index, panel in enumerate(preview):
-            samples.paste(panel, (index * width, 0))
+            samples.paste(panel, (index * panel_width, 0))
         palette = samples.quantize(colors=256)
         preview = [panel.quantize(palette=palette, dither=Image.Dither.NONE) for panel in preview]
     # Pause on the last drawing so the reset of the preview stays readable.
