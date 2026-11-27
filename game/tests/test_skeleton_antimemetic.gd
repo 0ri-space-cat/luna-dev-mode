@@ -99,6 +99,25 @@ func _run() -> void:
 	var invalid: Dictionary = snapshot.duplicate(true)
 	invalid["antimemetic"]["stage"] = 0
 	assert(not home.apply_snapshot(invalid))
+	# Complete Q10 above, then isolate the saved profile from HUD geometry
+	# (physical profile selection is covered by the W8 integration test).
+	var toffi_save: Dictionary = JSON.parse_string(JSON.stringify(home.make_snapshot()))
+	toffi_save["hero_profile"] = "TOFFI"
+	assert(home.apply_snapshot(toffi_save) and home.hero_profile.active == "TOFFI")
+	assert(not home.antimemetic.active and home.antimemetic.stage == 2)
+	_place(home, home.actor, Vector2(2135, 135))
+	home._sync_antimemetic_visibility()
+	var curious = home.entities.get_entity(AM.CURIOUS)
+	assert(curious.visible and home._am_revealed(curious))
+	assert(not home._monument_visible()) # innate vision is not the artifact
+	var no_q10: Dictionary = toffi_save.duplicate(true)
+	no_q10["antimemetic"] = AM.new().snapshot()
+	assert(not home.apply_snapshot(no_q10) and home.hero_profile.active == "TOFFI")
+	toffi_save["hero_profile"] = "LUNA"
+	assert(home.apply_snapshot(toffi_save) and not home.antimemetic.active)
+	_place(home, home.actor, Vector2(2135, 135))
+	home._sync_antimemetic_visibility()
+	assert(not home.entities.get_entity(AM.CURIOUS).visible)
 	game.queue_free()
 	await process_frame
 	print("Q10: physical C6 approach/retreat, foreground, permanent hidden life, real gaze, M09, independent perception and saved monument")

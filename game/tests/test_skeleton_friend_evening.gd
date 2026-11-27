@@ -15,6 +15,7 @@ func _place(body: Node, point: Vector2) -> void:
 
 func _run() -> void:
 	_check_social_migration()
+	_check_profile_gates()
 	var game = Scene.instantiate()
 	game.profile_path = path
 	game.get_node("Home").keyboard = false
@@ -134,3 +135,22 @@ func _check_social_migration() -> void:
 	assert(copy.can_restore_evening() and not copy.can_gather() and copy.invitations.is_empty())
 	assert(copy.restore(copy.snapshot(), true))
 	assert(not copy.restore(copy.snapshot(), false))
+
+func _check_profile_gates() -> void:
+	var profile := Island.HeroProfile.new()
+	var initial := Island.HeroProfile.completed_branches(0, 0, 0, false, 0, false)
+	assert(profile.available(initial) == ["LUNA"])
+	var loans := Island.HeroProfile.completed_branches(1, 1, 1, false, 1, false)
+	assert(profile.available(loans) == ["LUNA"])
+	var done := Island.HeroProfile.completed_branches(2, 2, 2, true, 2, true)
+	assert(profile.available(done).size() == 7)
+	for id in Island.HeroProfile.ORDER:
+		assert(not profile.choose(id, done, false))
+		assert(profile.choose(id, done, true))
+		assert(profile.sees_hidden_creatures() == (id == "TOFFI"))
+		assert(profile.attracts_animals() == (id == "LEIA"))
+		assert(profile.sees_underside(false) == (id == "ONI"))
+		assert(not profile.sees_underside(true))
+	assert(not profile.restore("PROTO", done) and profile.active == "ONI")
+	assert(not profile.restore("ONI", loans) and profile.active == "ONI")
+	assert(profile.restore("LUNA", initial))

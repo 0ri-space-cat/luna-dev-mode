@@ -2436,10 +2436,15 @@ func _profile_edit_allowed() -> bool:
 	return HeroProfile.within_projected_control(actor, _camera, $Interface/ProfilePortrait, 24.0)
 
 
+func _completed_profile_branches() -> Dictionary:
+	return HeroProfile.completed_branches(yuki.ownership, flask_state, ori.ownership, tamagotchi_owned, antimemetic.stage, social.oni_profile_unlocked())
+
+
 func request_profile_change(profile_id: String) -> bool:
-	if not hero_profile.choose(profile_id, social.oni_profile_unlocked(), _profile_edit_allowed()):
+	if not hero_profile.choose(profile_id, _completed_profile_branches(), _profile_edit_allowed()):
 		return false
 	$Interface/ProfilePortrait.text = HeroProfile.NAMES[hero_profile.active]
+	_sync_antimemetic_visibility()
 	queue_redraw()
 	return true
 
@@ -2455,11 +2460,9 @@ func _open_profile_panel() -> bool:
 	var heading := Label.new()
 	heading.text = "Профиль · " + HeroProfile.NAMES[hero_profile.active]
 	box.add_child(heading)
-	for profile_id in hero_profile.available(social.oni_profile_unlocked()):
+	for profile_id in hero_profile.available(_completed_profile_branches()):
 		var button := Button.new()
-		button.text = HeroProfile.NAMES[profile_id]
-		if profile_id == HeroProfile.ONI:
-			button.text += " · изнанка с закрытыми глазами"
+		button.text = HeroProfile.NAMES[profile_id] + " · " + HeroProfile.DESCRIPTIONS[profile_id]
 		button.disabled = profile_id == hero_profile.active
 		button.pressed.connect(func():
 			if request_profile_change(profile_id):
@@ -2708,7 +2711,7 @@ func _am_line_clear(point: Vector2) -> bool:
 
 
 func _am_revealed(body: EntityBody) -> bool:
-	return antimemetic.stage > 0 and antimemetic.active and body != null and body.get_parameter("alive") and body.location_id == _entity_location(actor.position) and actor.position.distance_to(body.position) <= AM.REVEAL_RANGE and _am_line_clear(body.position)
+	return ((antimemetic.stage > 0 and antimemetic.active) or hero_profile.sees_hidden_creatures()) and body != null and body.get_parameter("alive") and body.location_id == _entity_location(actor.position) and actor.position.distance_to(body.position) <= AM.REVEAL_RANGE and _am_line_clear(body.position)
 
 
 func _am_gaze(body: EntityBody) -> bool:
@@ -5441,11 +5444,6 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_attraction := ActiveDuration.new(ATTRACTION_SECONDS)
 	if data.has("social") and not next_social.restore(data["social"], next_evening["stage"] > 0):
 		return false
-	var next_hero_profile := HeroProfile.new()
-	if not next_hero_profile.restore(data.get("hero_profile", HeroProfile.LUNA), next_social.oni_profile_unlocked()):
-		return false
-	if not observation_fixture and next_hero_profile.active != HeroProfile.LUNA:
-		return false
 	if not next_flute is bool or not next_prism is bool or (next_prism and not next_social.prism_owned) \
 			or typeof(next_oni) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_oni)) \
 			or float(next_oni) != floorf(float(next_oni)) or int(next_oni) < 0 or int(next_oni) >= Visits.ROUTE.size() \
@@ -5468,6 +5466,12 @@ func apply_snapshot(data: Dictionary) -> bool:
 			or float(next_mia_step) != floorf(float(next_mia_step)) or int(next_mia_step) < 0 or int(next_mia_step) > Life.MIA_ROUTE.size() \
 			or (next_recipe != "" and (next_flask == 0 or next_recipe not in AlchemyPanel.IMPLEMENTED)) \
 			or (next_flask > 0 and not next_experience) or not next_lab_ice.restore(data.get("lab_ice", 0.0)):
+		return false
+	var next_hero_profile := HeroProfile.new()
+	var completed := HeroProfile.completed_branches(next_yuki.ownership, int(next_flask), next_ori.ownership, next_evening["tamagotchi"], next_am.stage, next_social.oni_profile_unlocked())
+	if not next_hero_profile.restore(data.get("hero_profile", HeroProfile.LUNA), completed):
+		return false
+	if not observation_fixture and next_hero_profile.active != HeroProfile.LUNA:
 		return false
 	var next_eyes: Variant = data.get("luna_eyes_open", true)
 	var raw_facing: Variant = data.get("luna_facing", [0.0, 1.0])
