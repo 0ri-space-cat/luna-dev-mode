@@ -30,7 +30,7 @@ func _run() -> void:
 	assert(home.toggle_camera_lock())
 	await physics_frame
 	var bounds: Rect2 = home._frame_world_bounds()
-	assert(bounds.has_point(traveler.position))
+	assert(bounds.has_point(traveler.position), "Window bounds %s, Luna %s, camera %s, viewport %s" % [bounds, traveler.position, home.highland.camera_lock, home.get_viewport().get_visible_rect()])
 	var edge := Vector2(bounds.position.x + 18.0, traveler.position.y)
 	assert(await _walk_home(home, edge))
 	assert(not home.set_game_frame_solid(false))
@@ -48,7 +48,7 @@ func _run() -> void:
 		await physics_frame
 		if game._away:
 			break
-	assert(game._away and game.outer.current_address == Routes.DESKTOP and game.outer.actor == traveler)
+	assert(game._away and game.outer.current_address == Routes.DESKTOP and game.outer.actor == traveler, "Frame crossing: %s, solid=%s, gate=%s" % [traveler.position, home.game_frame_solid, home._frame_edit_allowed()])
 	assert(not game.white_discovered and not game._discover_white_from_desktop())
 	assert(game.save_game())
 	var desktop_save: Dictionary = Store.new().read_snapshot(path)
@@ -59,11 +59,10 @@ func _run() -> void:
 		await physics_frame
 		if game.outer.current_address == Routes.WHITE_ADDRESS:
 			break
-	assert(game.outer.current_address == Routes.WHITE_ADDRESS and game.white_discovered and game.outer.actor == traveler)
+	assert(game.outer.current_address == Routes.WHITE_ADDRESS and game.white_discovered and game.outer.actor == traveler, "Desktop exit: %s / %s" % [game.outer.current_address, traveler.position])
 	assert(not game.outer.get_node("Interface").visible)
 	assert(Store.new().read_snapshot(path)["white_discovered"])
 	assert(game.save_game())
-	var source: Dictionary = game._continuity.duplicate(true)
 	assert(game._return_to_home() and home.actor == traveler and home.game_frame_solid)
 	assert(game.apply_local_rollback(early) and game.white_discovered)
 	_place(home, Island.AncientConsole.RETURN_POINT)

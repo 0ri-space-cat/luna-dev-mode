@@ -5,10 +5,14 @@ var active := false
 var solid := true
 
 
+static func logical_size(size: Vector2) -> Vector2:
+	return size if size.x >= 100.0 and size.y >= 100.0 else Vector2(1280, 800)
+
+
 func _draw() -> void:
 	if not active:
 		return
-	var size := get_viewport_rect().size
+	var size := logical_size(get_viewport().get_visible_rect().size)
 	var frame := Rect2(size * INSET, size * (Vector2.ONE - INSET * 2.0))
 	var ink := Color("343348")
 	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, frame.position.y)), ink)

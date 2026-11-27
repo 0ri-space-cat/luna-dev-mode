@@ -2268,8 +2268,9 @@ func _update_window_visual() -> void:
 
 func _frame_world_bounds() -> Rect2:
 	_camera.force_update_scroll()
-	var extent := _camera.get_viewport_rect().size / _camera.zoom
-	return Rect2(_camera.get_screen_center_position() - extent * (Vector2.ONE * 0.5 - WindowFrame.INSET), extent * (Vector2.ONE - WindowFrame.INSET * 2.0))
+	var extent := WindowFrame.logical_size(get_viewport().get_visible_rect().size) / _camera.zoom
+	var center := highland.camera_lock if highland.camera_mode == "LOCKED" else _camera.position
+	return Rect2(center - extent * (Vector2.ONE * 0.5 - WindowFrame.INSET), extent * (Vector2.ONE - WindowFrame.INSET * 2.0))
 
 
 func _frame_edit_allowed() -> bool:
@@ -2333,7 +2334,10 @@ func toggle_camera_lock() -> bool:
 	if not highland.camera_owned or is_instance_valid(_debug_editor) or not (actor as EntityBody).accepts_player_input():
 		return false
 	if highland.camera_mode == "FOLLOW":
-		highland.camera_lock = _camera.get_screen_center_position()
+		_update_local_camera()
+		_camera.reset_smoothing()
+		_camera.force_update_scroll()
+		highland.camera_lock = _camera.position
 		highland.camera_mode = "LOCKED"
 	else:
 		highland.camera_mode = "FOLLOW"
