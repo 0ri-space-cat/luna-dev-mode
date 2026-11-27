@@ -486,6 +486,8 @@ func _discover_white_from_desktop() -> bool:
 		outer.apply_snapshot(before)
 		return false
 	_guest_save = guest
+	if not known:
+		outer.begin_first_white_intro()
 	return true
 
 

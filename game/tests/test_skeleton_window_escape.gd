@@ -61,6 +61,8 @@ func _run() -> void:
 			break
 	assert(game.outer.current_address == Routes.WHITE_ADDRESS and game.white_discovered and game.outer.actor == traveler, "Desktop exit: %s / %s" % [game.outer.current_address, traveler.position])
 	assert(not game.outer.get_node("Interface").visible)
+	assert(is_instance_valid(game.outer.white_presentation) and game.outer.white_presentation.intro_remaining > 0.0)
+	assert(not game.meta.pixel_seen and not game.meta.merged)
 	assert(Store.new().read_snapshot(path)["white_discovered"])
 	assert(game.save_game())
 	# A physical approach, not a menu or automatic story flag.
@@ -81,6 +83,7 @@ func _run() -> void:
 	assert(not game.meta.merged and game.outer._meta_stage == 0)
 	assert(game.outer.use_route() and game.outer.use_route() and game.outer.use_route())
 	assert(game.meta.merged and not game.meta.pixel_seen and not game.outer.pixel_repeat)
+	assert(game.outer.white_presentation.merge_remaining > 0.0)
 	assert(not game.outer.use_route() and not game._commit_meta_event("MERGE"))
 	assert(game.outer.actor == traveler and not game.outer.get_node("Interface").visible)
 	assert(Store.new().read_snapshot(path)["meta"] == {"merged": true, "pixel_seen": false})
@@ -100,7 +103,14 @@ func _run() -> void:
 			break
 	game.outer.actor.direction = Vector2.ZERO
 	assert(game.outer.at_meta_encounter() and game.outer.use_route() and not game.meta.pixel_seen)
-	assert(game.outer.use_route() and game.meta.pixel_seen and not game._away)
+	assert(game.outer.use_route() and game.meta.pixel_seen and game._away)
+	assert(game.outer.white_presentation.farewell_active)
+	assert(not game.outer.use_route())
+	for tick in 120:
+		await physics_frame
+		if not game._away:
+			break
+	assert(not game._away)
 	assert(home.actor.position.distance_to(Island.AncientConsole.RETURN_POINT) < 1.0)
 	game.queue_free()
 	await process_frame

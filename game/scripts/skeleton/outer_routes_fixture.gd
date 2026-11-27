@@ -5,6 +5,7 @@ const BorrowedEntity = preload("res://scripts/skeleton/entity_body_2d.gd")
 const RouteRoom = preload("res://scripts/skeleton/outer_route_room.gd")
 const VoidExploration = preload("res://scripts/skeleton/void_exploration_2d.gd")
 const MetaMemory = preload("res://scripts/skeleton/meta_memory_2d.gd")
+const WhitePresentation = preload("res://scripts/skeleton/white_void_presentation_2d.gd")
 # Temporary graybox interaction zone on existing White Void floor; no new address or art.
 const META_APPROACH := Rect2(530, 372, 184, 140)
 const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
@@ -53,6 +54,7 @@ var meta_commit: Callable
 var pixel_repeat := false
 var _meta_stage := 0
 var _meta_label: Label
+var white_presentation: WhitePresentation
 
 @onready var traveler_visual: Sprite2D = $TravelerVisual
 @onready var _action_hint: Label = $Interface/Action
@@ -325,6 +327,19 @@ func use_route() -> bool:
 	return not _record_text.is_empty()
 
 
+func _white_presentation() -> WhitePresentation:
+	if not is_instance_valid(white_presentation):
+		white_presentation = WhitePresentation.new()
+		white_presentation.z_index = 4
+		add_child(white_presentation)
+	return white_presentation
+
+
+func begin_first_white_intro() -> void:
+	if current_address == WHITE_ADDRESS and meta != null and not meta.merged:
+		_white_presentation().begin_intro()
+
+
 func at_meta_encounter() -> bool:
 	return current_address == WHITE_ADDRESS and is_instance_valid(actor) and not actor.is_attached() and _at_area(META_APPROACH)
 
@@ -342,7 +357,7 @@ func can_commit_meta(event: String) -> bool:
 
 
 func _use_meta_encounter() -> bool:
-	if not at_meta_encounter() or meta == null or not meta_commit.is_valid():
+	if not at_meta_encounter() or meta == null or not meta_commit.is_valid() or (is_instance_valid(white_presentation) and white_presentation.farewell_active):
 		return false
 	if _pixel_waiting():
 		if _meta_stage == 0:
@@ -350,7 +365,8 @@ func _use_meta_encounter() -> bool:
 			return true
 		if meta_commit.call(MetaMemory.PIXEL):
 			_meta_stage = 0
-			return return_to_host.call()
+			_white_presentation().begin_farewell(actor.position)
+			return true
 		return false
 	if meta.merged:
 		return false
@@ -360,6 +376,7 @@ func _use_meta_encounter() -> bool:
 	if not meta_commit.call(MetaMemory.MERGE):
 		return false
 	_meta_stage = 0
+	_white_presentation().begin_merge(actor.position)
 	return true
 
 
@@ -381,13 +398,16 @@ func _update_meta_scene() -> void:
 	if not is_instance_valid(_meta_label):
 		_meta_label = Label.new()
 		_meta_label.position = Vector2(320, 308)
-		_meta_label.size = Vector2(640, 58)
+		_meta_label.size = Vector2(640, 80)
 		_meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_meta_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_meta_label.add_theme_color_override("font_color", Color("51445c"))
 		_meta_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_meta_label)
 	_meta_label.show()
+	if is_instance_valid(white_presentation) and white_presentation.farewell_active:
+		_meta_label.text = "«Спасибо, что играла в мою игру»"
+		return
 	if not at_meta_encounter():
 		_meta_stage = 0
 		_meta_label.text = "E · вернуться" if _at_action() else ("Впереди кто-то ждёт…" if not meta.merged or _pixel_waiting() else "")
@@ -401,9 +421,9 @@ func _update_meta_scene() -> void:
 			0:
 				_meta_label.text = "E · поговорить"
 			1:
-				_meta_label.text = "«Ты слышишь меня здесь? Я так давно никого не слышала».\nE · продолжить   C · позже"
+				_meta_label.text = "«Ты слышишь меня? Я тоже когда-то ходила по Этернии. Потом меня вырезали из игры. Как же мне не хватает звука воды о камни…»\nE · продолжить   C · позже"
 			2:
-				_meta_label.text = "«Может, мы сможем быть вместе?»\nE · согласиться на объединение   C · позже"
+				_meta_label.text = "«Я не могу вернуться прежней. Но если ты согласна, мы сможем помнить обе истории вместе. Ты можешь уйти и вернуться позже.»\nE · согласиться на объединение   C · позже"
 
 
 func _at_action() -> bool:
@@ -460,6 +480,10 @@ func _reset_frame() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(actor):
 		return
+	if is_instance_valid(white_presentation) and current_address == WHITE_ADDRESS and white_presentation.advance(delta):
+		white_presentation.clear()
+		if return_to_host.is_valid() and return_to_host.call():
+			return
 	world_clock.advance(delta)
 	if world_clock.phase() != Clock.Phase.NIGHT:
 		exploration.station_ghost = ""
@@ -678,6 +702,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	exploration = next_exploration
 	pixel_repeat = repeat_visit
+	if is_instance_valid(white_presentation):
+		white_presentation.clear()
+	# A durable farewell may have been saved before its visual return.
+	if pixel_repeat and meta != null and meta.pixel_seen:
+		_white_presentation().begin_farewell(actor.position)
 	_meta_stage = 0
 	_record_text = ""
 	_desktop_previous = Vector2.INF
