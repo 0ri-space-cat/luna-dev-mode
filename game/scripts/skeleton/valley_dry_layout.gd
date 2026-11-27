@@ -125,3 +125,26 @@ static func draw_on(canvas: Node2D, tower_visible: bool) -> void:
 		canvas.draw_colored_polygon(PackedVector2Array([point + Vector2(-12, 7), point + Vector2(-8, -20), point + Vector2(3, -30), point + Vector2(14, -10), point + Vector2(12, 7)]), Color("7886aa"))
 		canvas.draw_line(point + Vector2(3, -30), point + Vector2(3, 7), Color("bac6df"), 2.0)
 	canvas.draw_string(font, Vector2(2895, 386), "Кристальные пещеры")
+
+
+# DEV diagram of the same field observation in two independent places.
+# No world geometry, unlock, coordinate or saved knowledge is encoded here.
+static func draw_field_note(canvas: Node2D, point: Vector2, overlapping: bool, ink: Color) -> void:
+	var count := 3 if overlapping else 2
+	var width := float(count) * 25.0 + 8.0
+	var origin := point - Vector2(width * 0.5, 26.0)
+	canvas.draw_rect(Rect2(origin, Vector2(width, 28.0)), Color("3d4254"))
+	canvas.draw_rect(Rect2(origin, Vector2(width, 28.0)), ink, false, 1.0)
+	for index in range(count):
+		var p := origin + Vector2(5.0 + float(index) * 25.0, 8.0)
+		canvas.draw_line(p, p + Vector2(7, 5), ink, 1.5)
+		canvas.draw_line(p + Vector2(7, 5), p + Vector2(11, 2), ink, 1.5)
+		if index == 1:
+			canvas.draw_line(p + Vector2(11, 2), p + Vector2(20, 8), ink, 1.5)
+		else:
+			canvas.draw_line(p + Vector2(16, 5), p + Vector2(20, 8), ink, 1.5)
+		var wand := p + (Vector2(20, 15) if index == 1 else Vector2(10, 12))
+		canvas.draw_line(wand, wand + Vector2(5, -4), ink, 2.0)
+		if index == 2:
+			canvas.draw_arc(wand + Vector2(-3, -4), 7, 0, TAU, 18, ink, 1.0)
+			canvas.draw_arc(wand + Vector2(3, -4), 7, 0, TAU, 18, ink, 1.0)

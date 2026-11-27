@@ -37,6 +37,11 @@ func _run() -> void:
 	assert(remark.contains("подстриглась") and not remark.contains("META_WHITE_VOID"))
 	assert(home.social.snapshot() == before_social and home.access.snapshot() == before_access)
 	assert(not game.white_discovered and not game.meta.merged)
+	var actual_meta: Callable = home.meta_merged
+	home.meta_merged = func(): return true
+	assert(home.interact() and not home.get_node("Interface/SaveNotice").text.contains("подстриглась"))
+	home.meta_merged = actual_meta
+	assert(home.social.snapshot() == before_social and home.access.snapshot() == before_access)
 	assert(home.world_clock.set_time_of_day(9 * 60))
 	for key in Island.TOOL_POINTS:
 		_place(home, Island.TOOL_POINTS[key])

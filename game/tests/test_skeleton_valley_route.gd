@@ -168,6 +168,20 @@ func _run() -> void:
 			Vector2(3675, 185), Valley.TOWER_UPPER_VIEW]:
 		assert(await _walk_to(scene, point), "tower stair %s" % point)
 	assert(scene.actor.motion.elevation == 18.0)
+	assert(not scene.social.prism_owned and not scene._tower_field_note_near())
+	var social_before: Dictionary = scene.social.snapshot()
+	var access_before: Dictionary = scene.access.snapshot()
+	# Seed only the instrument for this independent observation test.
+	scene.social.prism_owned = true
+	assert(scene.toggle_prism() and scene._tower_field_note_near())
+	assert(scene._nearby_action() == "Рассмотреть чертежи Башни")
+	assert(scene.interact() and scene.get_node("Interface/SaveNotice").text.contains("контур продолжается"))
+	scene.set_luna_eyes(false)
+	assert(not scene._tower_field_note_near())
+	scene.set_luna_eyes(true)
+	assert(scene.toggle_prism() and not scene._tower_field_note_near())
+	scene.social.prism_owned = false
+	assert(scene.social.snapshot() == social_before and scene.access.snapshot() == access_before)
 	assert(scene.world_clock.set_time_of_day(Clock.NIGHT_MINUTE))
 	var tower_save: Dictionary = scene.make_snapshot()
 	assert(scene.apply_snapshot(tower_save) and scene.actor.location_id == Valley.TOWER_ID)

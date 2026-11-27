@@ -78,6 +78,11 @@ func _run() -> void:
 	assert(home.entities.get_entity(Island.Visits.ONI_ID) == oni and oni.location_id == Edge.ID)
 	_place(home, Island.Visits.EDGE_SPOT + Vector2(0, 28))
 	assert(home._edge_action() == "Поговорить с Они" and home.interact())
+	assert(home.get_node("Interface/SaveNotice").text.contains("иначе выглядела"))
+	var actual_meta: Callable = home.meta_merged
+	home.meta_merged = func(): return true
+	assert(home.interact() and not home.get_node("Interface/SaveNotice").text.contains("иначе выглядела"))
+	home.meta_merged = actual_meta
 	assert(not home.social.prism_owned and home.social.meetings.is_empty())
 	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
 	oni = home.entities.get_entity(Island.Visits.ONI_ID)

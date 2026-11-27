@@ -1815,10 +1815,14 @@ func _near_city_resident() -> bool:
 	return _friend_available(resident) and resident.record.category == "resident" and resident.location_id == City.CITY_ID and _entity_location(actor.position) == City.CITY_ID and _within_reach(resident.position, resident.motion.elevation)
 
 
+func _can_hint_previous_luna() -> bool:
+	return hero_profile.active == HeroProfile.LUNA and not (meta_merged.is_valid() and meta_merged.call())
+
+
 func _city_resident_line() -> String:
 	# Small optional ordinary remark, not an unlock, tracked quest or marker.
 	# The narrow time window is temporary staging, not a published schedule.
-	if hero_profile.active == HeroProfile.LUNA and world_clock.is_in_window(16 * 60 + 10, 16 * 60 + 25) and not (meta_merged.is_valid() and meta_merged.call()):
+	if _can_hint_previous_luna() and world_clock.is_in_window(16 * 60 + 10, 16 * 60 + 25):
 		return "Прохожий: Кажется, я тебя здесь уже видел. Ты что, подстриглась?"
 	return "Прохожий: Сегодня на площади довольно спокойно."
 
@@ -2360,7 +2364,10 @@ func _interact_edge() -> bool:
 		"Поговорить с Они":
 			if not _oni_edge_near():
 				return false
-			$Interface/SaveNotice.text = "Они: Я всё пытаюсь понять, почему здесь линии не сходятся. Мне казалось, ты уже была здесь… Ты раньше немного иначе выглядела."
+			var line := "Они: Я всё пытаюсь понять, почему здесь линии не сходятся."
+			if _can_hint_previous_luna():
+				line += " Мне казалось, ты уже была здесь… Ты раньше немного иначе выглядела."
+			$Interface/SaveNotice.text = line
 			return true
 		"Рассмотреть рисунок":
 			$Interface/SaveNotice.text = "Несколько линий сходятся к пустому месту. На полях — зачёркнутые варианты и вопросительный знак."
@@ -2432,14 +2439,14 @@ func _setup_highland() -> void:
 
 
 func _highland_action() -> String:
-	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached() or actor.has_passenger():
 		return ""
 	if not highland.camera_owned and Mountain.TREE_POCKET.has_point(actor.position) and _within_reach(Mountain.CAMERA_POINT):
 		return "Взять Камеру"
 	if not highland.compass_owned and Mountain.H1.has_point(actor.position) and _within_reach(Mountain.COMPASS):
 		return "Взять Гравитационный компас"
 	var oracle := entities.get_entity(Mountain.ORACLE_ID) as EntityBody
-	if oracle != null and oracle.get_parameter("alive") and oracle.location_id == _entity_location(actor.position) and _within_reach(oracle.position, oracle.motion.elevation):
+	if _friend_available(oracle) and oracle.location_id == _entity_location(actor.position) and _within_reach(oracle.position, oracle.motion.elevation):
 		return "Поговорить с Оракулом"
 	if Mountain.H4.has_point(actor.position) and _within_reach(Mountain.H4_NOTE):
 		return "Рассмотреть старые рисунки"
@@ -2462,7 +2469,7 @@ func _interact_highland() -> bool:
 			$Interface/SaveNotice.text = "Оракул: Заметила, как лёгкие вещи подхватывает ветер? Тяжёлые иногда даже не шелохнутся."
 			return true
 		"Рассмотреть старые рисунки":
-			$Interface/SaveNotice.text = "На листе три рисунка: палочка у разрыва контура, палочка вдали, две перекрывающиеся области."
+			$Interface/SaveNotice.text = "На листе три рисунка одной скалы. Палочка рядом — разрыв. Палочка вдали — цельный контур. На третьем две перекрывающиеся области."
 			return true
 	return false
 
@@ -3251,7 +3258,7 @@ func _oni_site() -> String:
 	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
 		return ""
 	var oni := entities.get_entity(Visits.ONI_ID) as EntityBody
-	if oni == null or not oni.motion.grounded or oni.is_attached() or not _within_reach(oni.position, oni.motion.elevation):
+	if not _friend_available(oni) or _friend_at_cafe(Visits.ONI_ID) or actor.has_passenger() or not _within_reach(oni.position, oni.motion.elevation):
 		return ""
 	if oni.position.distance_to(Visits.LAKE) <= 10.0 and _entity_location(actor.position) == Valley.LOCATION_ID:
 		return "W1"
@@ -3260,21 +3267,26 @@ func _oni_site() -> String:
 	return ""
 
 
+func _oni_observation_line(site: String) -> String:
+	if site == "W1":
+		if world_clock.phase() == WorldClock.Phase.EVENING:
+			return "Они: Теперь башня и на берегу, и в воде. Красиво, правда?"
+		return "Они: На берегу пусто, а в воде есть башня. Я всё пыталась поймать её краем глаза."
+	if site == "K6":
+		return "Они: Иногда мне кажется, море помнит, каким был берег. Сейчас " + ("отлив." if _coast_tide.surface < 1.0 else "вода поднялась.")
+	return ""
+
+
 func _observe_with_oni() -> bool:
 	var site := _oni_site()
 	if site.is_empty():
 		return false
 	var fresh := social.observe_with_oni(site)
-	if fresh:
-		if site == "W1":
-			$Interface/SaveNotice.text = "Они: Смотри, отражение и берег. Как любопытно." if world_clock.phase() != WorldClock.Phase.EVENING else "Они: Теперь башня и на берегу, и в воде."
-		else:
-			$Interface/SaveNotice.text = "Они: Иногда мне кажется, море помнит, каким был берег. Сейчас " + ("отлив." if _coast_tide.surface < 1.0 else "вода поднялась.")
-		if social.oni_sites.size() == 2 and not social.prism_owned:
-			social.prism_owned = true
-			$Interface/SaveNotice.text = "Они: Возьми эту Призму. Мне интересно, что ты обнаружишь."
-	else:
-		$Interface/SaveNotice.text = "Они: Хорошо здесь, правда?"
+	var line := _oni_observation_line(site)
+	if fresh and social.oni_sites.size() == 2 and not social.prism_owned:
+		social.prism_owned = true
+		line += " Возьми эту Призму. Мне интересно, что ты обнаружишь."
+	$Interface/SaveNotice.text = line
 	return true
 
 
@@ -4572,12 +4584,22 @@ func _update_world_light(_minute: int = 0) -> void:
 	queue_redraw()
 
 
+func _tower_field_note_visible() -> bool:
+	return observation_fixture and social.prism_owned and prism_active and crystal_observer.luna_eyes_open
+
+
+func _tower_field_note_near() -> bool:
+	return _tower_field_note_visible() and actor.motion.grounded and not actor.is_attached() and not actor.has_passenger() and _entity_location(actor.position) == Valley.TOWER_ID and _within_reach(Valley.TOWER_UPPER_VIEW, 18.0)
+
+
 func _tower_action() -> String:
 	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
 		return ""
 	if _entity_location(actor.position) == Valley.TOWER_ID:
 		if _within_reach(Valley.TOWER_ENTRY):
 			return "Выйти из Башни"
+		if _tower_field_note_near():
+			return "Рассмотреть чертежи Башни"
 	elif Valley.W3_SITE.has_point(actor.position) and _within_reach(Valley.W3_VIEW) \
 			and world_clock.phase() == WorldClock.Phase.EVENING:
 		return "Войти в Башню"
@@ -4911,6 +4933,11 @@ func interact() -> bool:
 			_alchemy_panel.configure_access(false, flask_state > 0, _can_borrow_flask())
 			_alchemy_panel.show()
 			apply_player_input(Vector2.ZERO)
+			return true
+		"Рассмотреть чертежи Башни":
+			if not _tower_field_note_near():
+				return false
+			$Interface/SaveNotice.text = "Два рисунка одной скалы: рядом с палочкой линия прерывается. На рисунке с палочкой вдали контур продолжается."
 			return true
 		"Войти в Башню":
 			return _use_tower_door(true)
@@ -6340,6 +6367,8 @@ func _draw() -> void:
 	Lake.draw_on(self)
 	if observation_fixture:
 		Valley.draw_on(self, world_clock.phase() == WorldClock.Phase.EVENING)
+		if _tower_field_note_visible():
+			Valley.draw_field_note(self, Valley.TOWER_UPPER_VIEW, false, Color("9edee8"))
 		MiaLab.draw_on(self)
 		Tunnel.draw_on(self)
 		Crystal.draw_on(self, _crystal_door_solid)
@@ -6356,6 +6385,7 @@ func _draw() -> void:
 		City.draw_on(self)
 		_draw_antimemetic()
 		Mountain.draw_on(self, highland.compass_owned, highland.camera_owned, actor.position, prism_active, _mountain_echo)
+		Valley.draw_field_note(self, Mountain.H4_NOTE, true, Color("e3d3ad"))
 		Edge.draw_on(self, edge.elapsed, edge.time_owned, edge.portal_owned)
 		_draw_anomalies()
 		for endpoint in [edge.portal_a, edge.portal_b]:

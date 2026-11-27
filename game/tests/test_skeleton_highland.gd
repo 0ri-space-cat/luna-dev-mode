@@ -61,6 +61,18 @@ func _run() -> void:
 	assert(home.return_to_luna() and home.highland.camera_mode == "FOLLOW")
 	assert(not home._surfaces.has(Mountain.CAMERA_BRIDGE))
 	_place(home, home.actor, Vector2(2100, 1890))
+	assert(not home.social.prism_owned and not home.prism_active)
+	assert(home._highland_action() == "Рассмотреть старые рисунки" and home.interact())
+	assert(home.get_node("Interface/SaveNotice").text.contains("две перекрывающиеся"))
+	assert(not home.social.prism_owned and not home.prism_active)
+	# Oracle needs a real available entity, not only its position.
+	var oracle = home.entities.get_entity(Mountain.ORACLE_ID)
+	_place(home, home.actor, oracle.position + Vector2(-15, 0), oracle.motion.elevation)
+	assert(home._highland_action() == "Поговорить с Оракулом")
+	assert(oracle.set_parameter("ai_enabled", false))
+	assert(home._highland_action() != "Поговорить с Оракулом")
+	assert(oracle.set_parameter("ai_enabled", true))
+	_place(home, home.actor, Vector2(2100, 1890))
 	home.flute_owned = true
 	assert(home.perform_music("DULRDU") and home._mountain_echo > 0.0)
 	var bad: Dictionary = state.duplicate(true)
