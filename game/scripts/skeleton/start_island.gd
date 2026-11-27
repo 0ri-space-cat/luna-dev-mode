@@ -96,6 +96,7 @@ const LAKE_PROP_LIMIT := 3
 const LAKE_INTERVAL := 5.0
 const LAKE_STONE_ID := "W6_SHORE_STONE"
 const Crystal = preload("res://scripts/skeleton/crystal_observation_layout.gd")
+const W8 = preload("res://scripts/skeleton/underside_refuge_layout.gd")
 const Gaze = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const Solidity = preload("res://scripts/runtime2d/observation_body_2d.gd")
 const Tunnel = preload("res://scripts/skeleton/waterfall_tunnel_layout.gd")
@@ -218,6 +219,8 @@ var _alchemy_bubble := ActiveDuration.new(BUBBLE_SECONDS)
 var _bubble_started := false
 var crystal_observer := Gaze.new()
 var _crystal_door: StaticBody2D
+var _w8_wall: StaticBody2D
+var _w8_open := false
 var _crystal_door_solid := false
 var _alchemy_light: PointLight2D
 var _coast_tide: WaterVolume
@@ -248,6 +251,10 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture:
+		var underside_address := W8.address(point)
+		if not underside_address.is_empty():
+			return underside_address
 	if observation_fixture and (ShellCollection.COVE.has_point(point) or ShellCollection.PATH.has_point(point)):
 		return Coast.LOCATION_ID
 	if observation_fixture and FairyBranch.ROOM.has_point(point):
@@ -462,6 +469,7 @@ func _ready() -> void:
 		ground.append_array(QuietRegions.decks())
 		ground.append_array([RuneRoom.KEY_PATH, RuneRoom.KEY_ROOM, FairyBranch.ROOM])
 		ground.append_array(ShellCollection.DECKS)
+		ground.append_array([W8.APPROACH, W8.LANDING, W8.ROOM])
 		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS + Mountain.GROUND + Edge.GROUND)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
@@ -540,6 +548,7 @@ func _ready() -> void:
 		_spawn_observation_fixture()
 		_setup_alchemy()
 		_setup_crystal_observation()
+		_setup_w8()
 		if ecology_fixture:
 			_spawn_mirror_snail()
 		_spawn_lake_stone()
@@ -578,6 +587,92 @@ func _setup_crystal_observation() -> void:
 	_crystal_door.add_child(collider)
 	add_child(_crystal_door)
 	_sync_crystal_observation()
+
+
+func _setup_w8() -> void:
+	_w8_wall = StaticBody2D.new()
+	_w8_wall.collision_mask = 0
+	_w8_wall.disable_mode = CollisionObject2D.DISABLE_MODE_KEEP_ACTIVE
+	var bounds: Rect2 = W8.SEAM["bounds"]
+	_w8_wall.position = bounds.get_center()
+	var collider := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = bounds.size
+	collider.shape = shape
+	_w8_wall.add_child(collider)
+	add_child(_w8_wall)
+	_set_w8_open(false)
+
+
+func _set_w8_open(open: bool) -> void:
+	if not is_instance_valid(_w8_wall):
+		return
+	_w8_open = open
+	if open:
+		if not _surfaces.has(W8.BRIDGE):
+			_surfaces.append(W8.BRIDGE)
+		_walls.erase(W8.SEAM)
+		_w8_wall.collision_layer = 0
+	else:
+		_surfaces.erase(W8.BRIDGE)
+		if not _walls.has(W8.SEAM):
+			_walls.append(W8.SEAM)
+		_w8_wall.collision_layer = int(W8.SEAM["layer"])
+	queue_redraw()
+
+
+func _sync_w8() -> void:
+	if not observation_fixture or not is_instance_valid(_w8_wall):
+		return
+	var outside := wand_pair.outside_all_on_plane(actor.position)
+	# When a field returns while a body overlaps the seam, do not crush it.
+	# The bridge itself still follows the field immediately.
+	if not outside:
+		_surfaces.erase(W8.BRIDGE)
+		var bounds: Rect2 = W8.SEAM["bounds"]
+		for id in entities.list_ids():
+			var body := entities.get_entity(id) as EntityBody
+			if body != null and body.motion.elevation < float(W8.SEAM["height"]) and bounds.grow(body.foot_radius()).has_point(body.position):
+				_w8_open = false
+				_walls.erase(W8.SEAM)
+				_w8_wall.collision_layer = 0
+				queue_redraw()
+				return
+	if outside != _w8_open or (not outside and not _walls.has(W8.SEAM)):
+		_set_w8_open(outside)
+
+
+func _w8_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached() or actor.has_passenger():
+		return ""
+	if W8.ROOM.has_point(actor.position):
+		if _within_reach(W8.NOTE):
+			return "Рассмотреть старую запись"
+		if _within_reach(W8.ENTRY):
+			return "Выйти из малого убежища"
+	elif _w8_open and W8.LANDING.has_point(actor.position) and _within_reach(W8.FAR):
+		return "Войти в малое убежище"
+	return ""
+
+
+func _interact_w8() -> bool:
+	match _w8_action():
+		"Войти в малое убежище":
+			if not _ordinary_arrival_is_safe(W8.REFUGE, W8.ENTRY):
+				return false
+			_move_home_travelers(W8.ENTRY, W8.REFUGE)
+		"Выйти из малого убежища":
+			# If the field has been restored, the same return has a safe shore.
+			var point := W8.FAR if wand_pair.outside_all_on_plane(W8.FAR) else W8.NEAR
+			if not _ordinary_arrival_is_safe(W8.PASSAGE, point):
+				return false
+			_move_home_travelers(point, W8.PASSAGE)
+		"Рассмотреть старую запись":
+			$Interface/SaveNotice.text = "Два рисунка одного камня: один цельный, у другого линии продолжаются за краем. Кто-то долго сравнивал их."
+		_:
+			return false
+	_sync_w8()
+	return true
 
 
 func set_luna_eyes(open: bool) -> void:
@@ -4095,6 +4190,7 @@ func _physics_process(delta: float) -> void:
 	if not actor.direction.is_zero_approx():
 		crystal_observer.facing = actor.direction.normalized()
 	_sync_crystal_observation()
+	_sync_w8()
 	if not is_instance_valid(_debug_editor):
 		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
@@ -4342,6 +4438,9 @@ func _use_tunnel(point: Vector2, address: String) -> bool:
 
 
 func _nearby_action() -> String:
+	var w8_action := _w8_action()
+	if not w8_action.is_empty():
+		return w8_action
 	var fairy_door := _fairy_door_action()
 	if not fairy_door.is_empty():
 		return fairy_door
@@ -4495,6 +4594,8 @@ func _update_ice_support(active: bool) -> void:
 func interact() -> bool:
 	if not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	if not _w8_action().is_empty():
+		return _interact_w8()
 	if _ghost_action():
 		return ghost_ride_requested.call()
 	if not _edge_action().is_empty():
@@ -4638,6 +4739,20 @@ func exchange_nearby_wand() -> bool:
 		return false
 	projection = wand_pair.active()
 	_wand_hold = 0.0
+	queue_redraw()
+	return true
+
+
+func drop_held_wand() -> bool:
+	if not observation_fixture or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor) or actor.is_attached() or not actor.motion.grounded or not is_zero_approx(actor.motion.elevation):
+		return false
+	# Dropping on a conditional span would remove its own source of support.
+	if not can_return_traveler(actor.position, 0.0) or not actor._is_dry(actor.position, 0.0):
+		return false
+	if not wand_pair.drop_held(actor.position, _entity_location(actor.position)):
+		return false
+	_wand_hold = 0.0
+	_sync_w8()
 	queue_redraw()
 	return true
 
@@ -4828,7 +4943,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_toggle_debug_editor()
 				get_viewport().set_input_as_handled()
 		KEY_G:
-			exchange_nearby_wand()
+			if exchange_nearby_wand() or drop_held_wand():
+				get_viewport().set_input_as_handled()
 		KEY_ENTER:
 			if not is_instance_valid(_debug_editor):
 				if _active_city_tool == "tamagotchi" and _open_tamagotchi():
@@ -5220,7 +5336,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var wand_data: Variant = data.get("wand_pair", {"held": legacy_held, "retained": WandPair.ORIGINAL, "duplicate": {}})
 	if not pair.restore(next_projection, wand_data):
 		return false
-	if pair.duplicate != null and (not _valid_ground_wand(pair.original) or not _valid_ground_wand(pair.duplicate)):
+	if (observation_fixture and not _valid_ground_wand(pair.original)) or (pair.duplicate != null and (not _valid_ground_wand(pair.original) or not _valid_ground_wand(pair.duplicate))):
 		return false
 	if typeof(refill) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(refill)) \
 			or float(refill) < 0.0 or float(refill) > DONUT_REFILL_SECONDS:
@@ -5485,6 +5601,18 @@ func apply_snapshot(data: Dictionary) -> bool:
 	# A saved conditional contact is re-evaluated with the restored observer.
 	# Temporarily permit the physical span and open doorway for candidate validation.
 	var previous_door := _crystal_door_solid
+	var previous_w8_open := _w8_open
+	var previous_w8_wall := _walls.has(W8.SEAM)
+	if observation_fixture:
+		var saved_point := Vector2.INF
+		for entry in candidate["entities"]:
+			if entry is Dictionary and entry.get("id") == ENTITY_ID:
+				var raw: Variant = entry.get("position")
+				if raw is Array and raw.size() == 2 and typeof(raw[0]) in [TYPE_INT, TYPE_FLOAT] and typeof(raw[1]) in [TYPE_INT, TYPE_FLOAT]:
+					saved_point = Vector2(float(raw[0]), float(raw[1]))
+		if not saved_point.is_finite():
+			return false
+		_set_w8_open(pair.outside_all_on_plane(saved_point))
 	var previous_bridge := _surfaces.has(Crystal.BRIDGE)
 	var previous_coast_bridge := _surfaces.has(CoastExtra.BRIDGE)
 	var previous_edge_surfaces: Array[Dictionary] = []
@@ -5514,6 +5642,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 		_ice_duration.restore(previous_ice)
 		_set_plank_surface(previous_plank)
 		if observation_fixture:
+			_set_w8_open(previous_w8_open)
+			if not previous_w8_wall:
+				_walls.erase(W8.SEAM)
+				_w8_wall.collision_layer = 0
 			_set_crystal_door(previous_door)
 			if not previous_bridge:
 				_surfaces.erase(Crystal.BRIDGE)
@@ -5609,6 +5741,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	wand_pair = pair
 	projection = wand_pair.active()
 	_wand_hold = 0.0
+	_sync_w8()
 	queue_redraw()
 	coast_house_phase = int(next_house_phase)
 	_alchemy_glow.restore(next_glow.remaining)
@@ -5948,6 +6081,7 @@ func _draw() -> void:
 		MiaLab.draw_on(self)
 		Tunnel.draw_on(self)
 		Crystal.draw_on(self, _crystal_door_solid)
+		W8.draw_on(self, _w8_open)
 		CoastExtra.draw_on(self)
 		Lake.draw_shallow_on(self)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))

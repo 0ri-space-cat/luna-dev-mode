@@ -49,6 +49,24 @@ func exchange(point: Vector2, location: String) -> bool:
 	return false
 
 
+func drop_held(point: Vector2, location: String) -> bool:
+	if held.is_empty() or not point.is_finite() or location.is_empty():
+		return false
+	if not active().drop_at(point, location):
+		return false
+	held = ""
+	return true
+
+
+func outside_all_on_plane(point: Vector2) -> bool:
+	# Continuous graybox geography shares physical coordinates across adjacent
+	# logical location labels. A border alone cannot cancel a nearby field.
+	for field in [original, duplicate]:
+		if field != null and (field.carried or point.distance_to(field.ground_position) <= field.radius):
+			return false
+	return true
+
+
 func snapshot() -> Dictionary:
 	return {"held": held, "retained": retained,
 		"duplicate": {} if duplicate == null else duplicate.snapshot()}
