@@ -33,8 +33,21 @@ func _run() -> void:
 	_place(home, home.actor, toffi.position + Vector2(0, 30))
 	assert(home._meet_ordinary_friend())
 	assert(home.social.meetings.has("TOFFI") and home.antimemetic.stage == 0 and not joy.visible)
+	# The ordinary street does not reveal C6. Its floor gap is real, and
+	# the foreground is a viewpoint-dependent layer, not a secret flag.
+	var public_corner: Vector2 = Island.City.C6_PUBLIC_CORNER
+	_place(home, home.actor, public_corner)
+	home._sync_c6_facade()
+	assert(home._c6_facade.visible and not Island.City.c6_behind_facade(public_corner))
+	assert(not home.actor.motion._has_support(Vector2(5075, 240), 0.0, home.actor.surfaces, true))
+	assert(home.antimemetic.stage == 0 and not home.flute_owned and not home.prism_active)
+	# Walk the continuous side approach with actual player input.
+	for point in Island.City.C6_APPROACH:
+		assert(await _walk(home, point), "C6 approach blocked: %s -> %s" % [home.actor.position, point])
+	home._sync_c6_facade()
+	assert(not home._c6_facade.visible and AM.NICHE.has_point(home.actor.position))
+	assert(home.antimemetic.stage == 0 and home._entity_location(home.actor.position) == Island.City.CITY_ID)
 	# Same Toffi and giant, now on the optional continuous street.
-	_place(home, home.actor, Vector2(5095, 170))
 	_place(home, toffi, AM.TOFFI_ROUTE[-1])
 	home.antimemetic.route_index = AM.TOFFI_ROUTE.size() - 1
 	home.crystal_observer.facing = Vector2.RIGHT
@@ -51,6 +64,14 @@ func _run() -> void:
 	home.set_luna_eyes(true)
 	assert(home.toggle_lantern() and not giant.visible and home.entities.get_entity(AM.GIANT) == giant)
 	assert(not home.antimemetic.seen.is_empty())
+	# Return on foot after the optional gift; no plot gate closes the exit.
+	var retreat: Array = Island.City.C6_APPROACH.duplicate()
+	retreat.reverse()
+	for point in retreat:
+		assert(await _walk(home, point), "C6 retreat blocked: %s -> %s" % [home.actor.position, point])
+	assert(await _walk(home, public_corner))
+	home._sync_c6_facade()
+	assert(home._c6_facade.visible and home.antimemetic.stage == 2)
 	# Genuine hidden fauna responds to the approved phrase without being revealed.
 	_place(home, home.actor, Vector2(2135, 135))
 	home.flute_owned = true
@@ -80,5 +101,17 @@ func _run() -> void:
 	assert(not home.apply_snapshot(invalid))
 	game.queue_free()
 	await process_frame
-	print("M3.150–161: Q10, permanent hidden life, real gaze, M09, independent perception and saved monument")
+	print("Q10: physical C6 approach/retreat, foreground, permanent hidden life, real gaze, M09, independent perception and saved monument")
 	quit()
+
+
+func _walk(home, target: Vector2) -> bool:
+	for tick in 180:
+		var offset: Vector2 = target - home.actor.position
+		if offset.length_squared() < 16.0:
+			home.apply_player_input(Vector2.ZERO)
+			return true
+		home.apply_player_input(offset.normalized())
+		await physics_frame
+	home.apply_player_input(Vector2.ZERO)
+	return false

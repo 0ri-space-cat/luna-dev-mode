@@ -170,6 +170,7 @@ var social := Social.new()
 var oni_route_index := 0
 var _initial_oni: Dictionary = {}
 var _initial_city_states: Array[Dictionary] = []
+var _c6_facade: Node2D
 var public_ride_requested: Callable
 var desktop_requested: Callable
 const WindowFrame = preload("res://scripts/skeleton/window_frame_2d.gd")
@@ -2739,6 +2740,9 @@ func _draw_antimemetic() -> void:
 
 
 func _spawn_city() -> void:
+	_c6_facade = City.create_c6_facade()
+	add_child(_c6_facade)
+	_sync_c6_facade()
 	for definition in City.DEFINITIONS:
 		var body := spawn_entity(definition, definition["point"], definition["height"])
 		if body == null:
@@ -2774,9 +2778,15 @@ func _spawn_city() -> void:
 				_initial_city_states.append(entry)
 
 
+func _sync_c6_facade() -> void:
+	if is_instance_valid(_c6_facade) and is_instance_valid(actor):
+		_c6_facade.visible = not City.c6_behind_facade(actor.position, actor.motion.elevation)
+
+
 func _tick_city() -> void:
 	if not observation_fixture:
 		return
+	_sync_c6_facade()
 	if not luna_door_session.is_empty() and not _door_session_is_live():
 		luna_door_session.clear()
 		queue_redraw()
@@ -3964,6 +3974,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_local_camera() -> void:
+	_sync_c6_facade()
 	if highland.camera_owned and highland.camera_mode == "LOCKED":
 		_camera.position = highland.camera_lock
 		return

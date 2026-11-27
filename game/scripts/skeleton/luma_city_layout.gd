@@ -19,6 +19,12 @@ const MAP := Rect2(4735, 240, 110, 90)
 const TABLE := {"bounds": Rect2(5680, 270, 92, 60), "height": 6.0, "walk_up": true}
 const HIDDEN_STREET := Rect2(5100, 85, 295, 210)
 const HIDDEN_NICHE := Rect2(5040, 95, 110, 105)
+# C6 is a side branch behind a foreground facade. Keep the existing support
+# union and canonical address so old positions and airborne snapshots remain valid.
+const C6_PUBLIC_CORNER := Vector2(5020, 240)
+const C6_APPROACH := [Vector2(5020, 320), Vector2(5150, 320), Vector2(5150, 240), Vector2(5150, 170), Vector2(5095, 170)]
+const C6_FACADE_SCREEN := Rect2(5040, 85, 355, 180)
+const C6_CLUE_POINTS := [Vector2(5050, 310), Vector2(5100, 299), Vector2(5140, 280)]
 const LEGACY_DECKS := [STATION, STREET, PLAZA, NORTH, SOUTH, CAFE, ROOM, WORKSHOP, SHOP]
 const DECKS := [STATION, STREET, PLAZA, NORTH, SOUTH, CAFE, ROOM, WORKSHOP, SHOP, HIDDEN_STREET, HIDDEN_NICHE]
 const DOORS := [
@@ -66,6 +72,36 @@ static func location_at(point: Vector2, include_hidden: bool = true) -> String:
 	return ""
 
 
+# An ordinary camera foreground layer. It is determined by the physical
+# viewpoint, never by a learned-secret flag, a tool, or the game clock.
+static func c6_behind_facade(point: Vector2, height: float = 0.0) -> bool:
+	return (HIDDEN_NICHE.has_point(point) or HIDDEN_STREET.has_point(point) and point.y < 265.0) or (height >= 85.0 and point.distance_to(C6_FACADE_SCREEN.get_center()) < 260.0)
+
+
+static func _facade_rect(parent: Node2D, bounds: Rect2, color: Color) -> void:
+	var shape := Polygon2D.new()
+	shape.polygon = PackedVector2Array([bounds.position, Vector2(bounds.end.x, bounds.position.y), bounds.end, Vector2(bounds.position.x, bounds.end.y)])
+	shape.color = color
+	parent.add_child(shape)
+
+
+static func create_c6_facade() -> Node2D:
+	var foreground := Node2D.new()
+	foreground.name = "C6ForegroundFacade"
+	foreground.z_index = 40
+	# Graybox silhouette of the foreground architecture; no permanent art,
+	# collision change or additional room. Reveal the existing walkable alley
+	# when the traveler rounds the facade (or views it from sufficient height).
+	_facade_rect(foreground, C6_FACADE_SCREEN, Color("69667e"))
+	_facade_rect(foreground, Rect2(5040, 85, 355, 27), Color("554f68"))
+	_facade_rect(foreground, Rect2(5040, 246, 355, 19), Color("80768d"))
+	for x in range(5075, 5375, 58):
+		_facade_rect(foreground, Rect2(x, 132, 30, 41), Color("a59aaf"))
+		_facade_rect(foreground, Rect2(x + 4, 136, 22, 33), Color("e0cbb8"))
+		_facade_rect(foreground, Rect2(x + 14, 136, 2, 33), Color("81778b"))
+	return foreground
+
+
 static func draw_on(canvas: Node2D) -> void:
 	var font := ThemeDB.fallback_font
 	for deck in DECKS:
@@ -73,6 +109,14 @@ static func draw_on(canvas: Node2D) -> void:
 		canvas.draw_rect(deck.grow(-4.0), Color("bdb2c8"), false, 1.0)
 	canvas.draw_rect(Rect2(5108, 92, 54, 22), Color("756b94"))
 	canvas.draw_rect(Rect2(5048, 103, 48, 13), Color("80738f"))
+	# Traces on the ordinary pavement turn behind the facade, without an
+	# arrow, quest marker, or an artifact requirement.
+	for index in C6_CLUE_POINTS.size():
+		var point: Vector2 = C6_CLUE_POINTS[index]
+		var opacity := 0.28 + float(index) * 0.12
+		canvas.draw_circle(point + Vector2(-5, 3), 5.0, Color(0.32, 0.29, 0.39, opacity))
+		canvas.draw_circle(point + Vector2(6, -4), 5.0, Color(0.32, 0.29, 0.39, opacity))
+		canvas.draw_arc(point, 13.0, 0.15, 2.7, 14, Color(0.70, 0.67, 0.78, opacity), 1.0)
 	canvas.draw_rect(Rect2(4510, 335, 225, 35), Color("756b94"))
 	for x in range(4530, 4730, 43):
 		canvas.draw_rect(Rect2(x, 341, 22, 20), Color("e5d7a7"))
