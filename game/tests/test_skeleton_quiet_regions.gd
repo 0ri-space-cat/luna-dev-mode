@@ -18,7 +18,12 @@ func _run() -> void:
 	await physics_frame
 	var home = game.home
 	assert(home.access.wand_mode == home.AccessState.ORDINARY)
+	assert(not Quiet.LAKE.intersects(Island.AncientConsole.CLEARING))
+	assert(not Quiet.LAKE.intersects(Island.Lake.POOL))
+	assert(not Quiet.EDGE.intersects(Island.Coast.HOUSE_ROOM))
+	assert(not Quiet.EDGE.intersects(Island.Edge.D5))
 	# Entry positions are on pre-existing physical routes; the walks use input.
+	# The Edge test starts inside the already discovered region, not on an L0 route.
 	for region in Quiet.REGIONS:
 		var entry: Vector2 = region["entry"]
 		var view: Vector2 = region["view"]
@@ -43,18 +48,30 @@ func _run() -> void:
 		assert(animal.record.category == Quiet.FAUNA[identity]["category"])
 		assert(animal.set_parameter("speed", 1.3))
 	var saved: Dictionary = JSON.parse_string(JSON.stringify(home.make_snapshot()))
-	assert(saved["address_schema"] == 17 and saved["quiet_regions_layout"] == 1)
+	assert(saved["address_schema"] == 18 and saved["quiet_regions_layout"] == 2)
 	assert(home.apply_snapshot(saved))
 	for identity in Quiet.FAUNA:
 		assert(is_equal_approx(float(home.get_natural_fauna(identity).get_parameter("speed")), 1.3))
 	assert(game.mark_safe_state())
+	# The immediately previous profile keeps its edited animals, adding only
+	# the new lake residents. Old records cannot be silently repaired by v2.
+	var v1 := saved.duplicate(true)
+	v1["address_schema"] = 17
+	v1["quiet_regions_layout"] = 1
+	v1["entities"] = v1["entities"].filter(func(record): return record["id"] not in Quiet.V2_FAUNA_IDS)
+	assert(home.apply_snapshot(v1))
+	assert(is_equal_approx(float(home.get_natural_fauna("F_QUIET_FOX").get_parameter("speed")), 1.3))
+	assert(home.get_natural_fauna("W_QUIET_LIZARD") != null)
+	var malformed := v1.duplicate(true)
+	malformed["entities"] = malformed["entities"].filter(func(record): return record["id"] != "F_QUIET_FOX")
+	assert(not home.apply_snapshot(malformed))
 	var invalid := saved.duplicate(true)
 	invalid["entities"] = invalid["entities"].filter(func(record): return record["id"] != "F_QUIET_FOX")
 	assert(not home.apply_snapshot(invalid))
 	assert(home.get_natural_fauna("F_QUIET_FOX") != null)
 	game.queue_free()
 	await process_frame
-	print("Quiet regional ground: four ordinary walks, persistent fauna, old profile migration and recovery passed")
+	print("Quiet regional ground: six local walks, persistent fauna, both old layouts and recovery passed")
 	quit()
 
 

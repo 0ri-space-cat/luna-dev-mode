@@ -43,7 +43,7 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 17
+const ADDRESS_SCHEMA := 18
 const QuietRegions = preload("res://scripts/skeleton/quiet_regions_layout.gd")
 const FriendRoutes = preload("res://scripts/skeleton/friend_routes_2d.gd")
 const Edge = preload("res://scripts/skeleton/forgotten_edge_layout.gd")
@@ -226,6 +226,14 @@ func _location_id() -> String:
 func _entity_location(point: Vector2) -> String:
 	if observation_fixture:
 		var quiet_address := QuietRegions.address(point)
+		if not quiet_address.is_empty():
+			return quiet_address
+	return _entity_location_v16(point)
+
+
+func _entity_location_v17(point: Vector2) -> String:
+	if observation_fixture:
+		var quiet_address := QuietRegions.address(point, false)
 		if not quiet_address.is_empty():
 			return quiet_address
 	return _entity_location_v16(point)
@@ -4527,7 +4535,7 @@ func make_snapshot() -> Dictionary:
 	data["meadows"] = {"ice_remaining": ice_remaining, "layout_version": 2}
 	data["quiet_meadow_layout"] = 1
 	if observation_fixture:
-		data["quiet_regions_layout"] = 1
+		data["quiet_regions_layout"] = 2
 	data["world_clock"] = world_clock.snapshot()
 	data["coast_house_phase"] = coast_house_phase
 	data["alchemy_glow"] = _alchemy_glow.remaining
@@ -4584,7 +4592,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -4777,15 +4785,18 @@ func apply_snapshot(data: Dictionary) -> bool:
 	elif candidate["quiet_meadow_layout"] != 1:
 		return false
 	if observation_fixture:
-		if not candidate.has("quiet_regions_layout"):
+		var quiet_version: Variant = candidate.get("quiet_regions_layout", 0)
+		if typeof(quiet_version) not in [TYPE_FLOAT, TYPE_INT] or float(quiet_version) not in [0.0, 1.0, 2.0]:
+			return false
+		if int(quiet_version) < 2:
 			if _initial_quiet_region_states.size() != QuietRegions.FAUNA.size():
 				return false
 			candidate = candidate.duplicate(true)
 			for entry in _initial_quiet_region_states:
+				if int(quiet_version) == 1 and entry["id"] not in QuietRegions.V2_FAUNA_IDS:
+					continue
 				if not candidate["entities"].any(func(saved): return saved.get("id") == entry["id"]):
 					candidate["entities"].append(entry.duplicate(true))
-		elif candidate["quiet_regions_layout"] != 1:
-			return false
 	if ecology_fixture and not candidate.has("ecology_layout"):
 		candidate = candidate.duplicate(true)
 		for entry in _initial_ecology_states:
@@ -5165,6 +5176,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v15(point)
 	elif previous_schema == 16:
 		previous_location = _entity_location_v16(point)
+	elif previous_schema == 17:
+		previous_location = _entity_location_v17(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
