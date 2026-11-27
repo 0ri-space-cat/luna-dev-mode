@@ -1,15 +1,30 @@
 extends RefCounted
 ## Physical ordinary route. One Oni body, never a duplicate at two endpoints.
 const ONI_ID := "W1_K6_ONI"
+const Refuge = preload("res://scripts/skeleton/underside_refuge_layout.gd")
 const ROUTE := [Vector2(2138, 490), Vector2(2194, 490), Vector2(2240, 490),
 	Vector2(2240, 600), Vector2(2240, 755), Vector2(2340, 790),
 	Vector2(2440, 805), Vector2(2620, 870), Vector2(2750, 940),
 	Vector2(2770, 1040), Vector2(2855, 1085),
-	Vector2(2940, 1085), Vector2(3245, 1085), Vector2(3300, 1100), Vector2(3365, 1145), Vector2(3480, 1150)]
+	Vector2(2940, 1085), Vector2(3245, 1085), Vector2(3300, 1100), Vector2(3365, 1145), Vector2(3480, 1150),
+	# Append only: all existing saved route indices retain their meanings.
+	Vector2(2440, 580), Vector2(2440, 550), Vector2(2740, 550), Vector2(2740, 415),
+	Vector2(3085, 415), Refuge.NEAR, Refuge.FAR, Vector2(4120, 655), Vector2(4140, 610)]
 const CAPE_INDEX := 10
 const BRIDGE_WEST_INDEX := 11
 const BRIDGE_EAST_INDEX := 12
 const EDGE_INDEX := 15
+const W8_JUNCTION := 3
+const W8_FIRST_INDEX := 16
+const W8_NEAR_INDEX := 21
+const W8_FAR_INDEX := 22
+const W8_ROOM_ENTRY_INDEX := 23
+const W8_STUDY_INDEX := 24
+
+
+static func private_refuge_period(minute: int) -> bool:
+	# DEV schedule; not a published meeting time or a quest prerequisite.
+	return minute >= 2 * 60 and minute < 5 * 60
 const EDGE_SPOT := Vector2(3480, 1150)
 
 

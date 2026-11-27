@@ -3032,6 +3032,12 @@ func _tick_oni() -> void:
 		return
 	var daytime := world_clock.phase() in [WorldClock.Phase.DAY, WorldClock.Phase.EVENING]
 	var destination := Visits.destination_index(world_clock.minute_of_day(), daytime)
+	var wants_refuge := _oni_wants_refuge()
+	if oni_route_index >= Visits.W8_FIRST_INDEX:
+		_tick_oni_refuge(oni, wants_refuge)
+		return
+	if wants_refuge:
+		destination = Visits.W8_JUNCTION
 	# If a camera-dependent span vanishes, actual physics owns recovery.
 	# Reconcile a recovered body with its own shore, never snap it to the target.
 	if oni_route_index in [Visits.BRIDGE_WEST_INDEX, Visits.BRIDGE_EAST_INDEX] and not _surfaces.has(Edge.R07):
@@ -3045,7 +3051,11 @@ func _tick_oni() -> void:
 	var target: Vector2 = Visits.ROUTE[oni_route_index]
 	if oni.position.distance_to(target) < 5.0:
 		if destination == oni_route_index:
-			oni.autonomous_destination = Vector2.INF
+			if wants_refuge and oni_route_index == Visits.W8_JUNCTION:
+				oni_route_index = Visits.W8_FIRST_INDEX
+				oni.autonomous_destination = Visits.ROUTE[oni_route_index]
+			else:
+				oni.autonomous_destination = Vector2.INF
 			return
 		var next := oni_route_index + (1 if destination > oni_route_index else -1)
 		if mini(next, oni_route_index) == Visits.BRIDGE_WEST_INDEX and not _surfaces.has(Edge.R07):
@@ -3054,6 +3064,58 @@ func _tick_oni() -> void:
 		oni_route_index = next
 		target = Visits.ROUTE[oni_route_index]
 	oni.autonomous_destination = target
+
+
+func _oni_wants_refuge() -> bool:
+	# She can investigate independently, and an already-open passage permits
+	# the visit without making the player wait for a specific hour.
+	return Visits.private_refuge_period(world_clock.minute_of_day()) or (
+		_w8_open and _entity_location(actor.position) in [W8.PASSAGE, W8.REFUGE])
+
+
+func _tick_oni_refuge(oni: EntityBody, wants_refuge: bool) -> void:
+	# The same physical NPC walks the existing dry geometry. Only the real
+	# W8 doorway permits a threshold transfer, under the same return rule as Luna.
+	if not _w8_open and oni_route_index in [Visits.W8_NEAR_INDEX, Visits.W8_FAR_INDEX]:
+		if oni.position.y < W8.SEAM["bounds"].position.y:
+			oni_route_index = Visits.W8_NEAR_INDEX
+		elif W8.LANDING.has_point(oni.position):
+			oni.autonomous_destination = Vector2.INF
+			return
+		else:
+			# If a support disappears underfoot, the ordinary motion system
+			# handles falling and recovery; do not move across the closed seam.
+			oni.autonomous_destination = Vector2.INF
+			return
+	var target: Vector2 = Visits.ROUTE[oni_route_index]
+	if oni.position.distance_to(target) >= 5.0:
+		oni.autonomous_destination = target
+		return
+	if wants_refuge:
+		if oni_route_index == Visits.W8_STUDY_INDEX:
+			oni.autonomous_destination = Vector2.INF
+			return
+		if oni_route_index == Visits.W8_NEAR_INDEX and not _w8_open:
+			oni.autonomous_destination = Vector2.INF
+			return
+		if oni_route_index == Visits.W8_FAR_INDEX:
+			oni.autonomous_destination = Vector2.INF
+			if _w8_open and _friend_threshold(oni, W8.FAR, Visits.ROUTE[Visits.W8_ROOM_ENTRY_INDEX]):
+				oni_route_index = Visits.W8_ROOM_ENTRY_INDEX
+			return
+		oni_route_index += 1
+	else:
+		if oni_route_index == Visits.W8_ROOM_ENTRY_INDEX:
+			oni.autonomous_destination = Vector2.INF
+			var shore := W8.FAR if _w8_open else W8.NEAR
+			if _friend_threshold(oni, Visits.ROUTE[Visits.W8_ROOM_ENTRY_INDEX], shore):
+				oni_route_index = Visits.W8_FAR_INDEX if _w8_open else Visits.W8_NEAR_INDEX
+			return
+		if oni_route_index == Visits.W8_FIRST_INDEX:
+			oni_route_index = Visits.W8_JUNCTION
+		else:
+			oni_route_index -= 1
+	oni.autonomous_destination = Visits.ROUTE[oni_route_index]
 
 
 func _oni_w8_near() -> bool:

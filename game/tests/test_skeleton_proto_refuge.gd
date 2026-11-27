@@ -93,20 +93,24 @@ func _run() -> void:
 	assert(await _walk_to(home, Island.W8.NOTE))
 	assert(home.interact() and not home.get_node("Interface/SaveNotice").text.contains("META_WHITE_VOID"))
 	assert(not home.social.oni_profile_unlocked() and not home._oni_w8_near())
-	# Isolate the Q21b contact contract using the existing NPC, never a duplicate.
-	# Autonomous W8 approach is a separate production block.
-	assert(await _walk_to(home, Vector2(4140, 585)))
+	# Start the existing NPC at the real near shore, then let her walk the
+	# open bridge and use the doorway. The test does not place her in the room.
 	var oni = home.entities.get_entity(Island.Visits.ONI_ID)
-	var oni_origin: Vector2 = oni.position
-	var oni_height: float = oni.motion.elevation
-	home._place_friend(oni, Vector2(4140, 610), 0.0)
-	assert(home._oni_w8_near() and home.interact())
+	home._place_friend(oni, Island.W8.NEAR, 0.0)
+	home.oni_route_index = Island.Visits.W8_NEAR_INDEX
+	assert(await _walk_to(home, Vector2(4140, 585)))
+	for tick in 480:
+		if home.oni_route_index == Island.Visits.W8_STUDY_INDEX and oni.position.distance_to(Island.Visits.ROUTE[Island.Visits.W8_STUDY_INDEX]) < 5.0:
+			break
+		await physics_frame
+	assert(oni.location_id == Island.W8.REFUGE and home._oni_w8_near())
+	assert(home.entities.get_entity(Island.Visits.ONI_ID) == oni and home.interact())
 	assert(home.social.oni_profile_unlocked() and not home.social.prism_owned and home.social.oni_sites.is_empty())
-	home._place_friend(oni, oni_origin, oni_height)
-	assert(not home._oni_w8_near())
 	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
 	assert(home.social.oni_profile_unlocked())
 	assert(home.actor.location_id == Island.W8.REFUGE and home.wand_pair.held.is_empty())
+	assert(home.oni_route_index == Island.Visits.W8_STUDY_INDEX)
+	assert(home.entities.get_entity(Island.Visits.ONI_ID).location_id == Island.W8.REFUGE)
 	assert(await _walk_to(home, Island.W8.ENTRY))
 	assert(home.interact() and home.actor.location_id == Island.W8.PASSAGE)
 	assert(await _walk_to(home, Vector2(3085, 550)))
@@ -115,6 +119,14 @@ func _run() -> void:
 	assert(await _walk_to(home, Vector2(2785, 415)))
 	assert(home.exchange_nearby_wand(), "Wands %s at %s" % [home.wand_pair.snapshot(), home.actor.position])
 	assert(not home.wand_pair.held.is_empty())
+	# Daytime ordinary schedule resumes; the room exit uses the same safe
+	# near-shore fallback when the retrieved wand restores the field.
+	home.world_clock.set_time_of_day(12 * 60)
+	for tick in 480:
+		if home.entities.get_entity(Island.Visits.ONI_ID).location_id != Island.W8.REFUGE:
+			break
+		await physics_frame
+	assert(home.entities.get_entity(Island.Visits.ONI_ID).location_id != Island.W8.REFUGE)
 	game.queue_free()
 	await process_frame
 	print("Relocated Q22: physical waterfall approach, camera span, old save and return passed")
