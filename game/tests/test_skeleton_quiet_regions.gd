@@ -48,7 +48,7 @@ func _run() -> void:
 		assert(animal.record.category == Quiet.FAUNA[identity]["category"])
 		assert(animal.set_parameter("speed", 1.3))
 	var saved: Dictionary = JSON.parse_string(JSON.stringify(home.make_snapshot()))
-	assert(saved["address_schema"] == 18 and saved["quiet_regions_layout"] == 2)
+	assert(saved["address_schema"] == Island.ADDRESS_SCHEMA and saved["quiet_regions_layout"] == 2)
 	assert(home.apply_snapshot(saved))
 	for identity in Quiet.FAUNA:
 		assert(is_equal_approx(float(home.get_natural_fauna(identity).get_parameter("speed")), 1.3))
