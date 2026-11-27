@@ -60,7 +60,7 @@ func _test_ghost_route() -> void:
 	# earlier address entry is available, and the text stays local to the record.
 	assert(await _drift_to(Vector2(1080, 672)))
 	assert(world.actor.motion.grounded)
-	assert(world.use_route() and world._record_text == "META_WHITE_VOID")
+	assert(world.use_route() and not world._record_text.is_empty() and not world._record_text.contains(Routes.WHITE_ADDRESS))
 	assert(world.exploration.return_wait > 0.0)
 	assert(world.apply_snapshot(_snapshot()))
 	assert(is_equal_approx(world.exploration.return_delay, delay) and world._record_text == "")

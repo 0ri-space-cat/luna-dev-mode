@@ -60,10 +60,13 @@ func _run() -> void:
 	await process_frame
 	var count := home.entities.count_live()
 	await _type_command("SPAWN CAT")
-	assert(field.visible and home.entities.count_live() == count)
+	assert(not field.visible and home.entities.count_live() == count + 1)
+	assert(home.entities.get_entity("FOREST_CONSOLE_CAT_00") != null)
+	_key(KEY_E)
+	await process_frame
 	await _type_command("SPAWN FOX")
 	var fox := home.entities.get_entity("FOREST_CONSOLE_FOX_00") as Island.EntityBody
-	assert(not field.visible and home.entities.count_live() == count + 1)
+	assert(not field.visible and home.entities.count_live() == count + 2)
 	assert(fox != null and fox.get_parameter("alive") and fox.location_id == Console.LOCATION_ID)
 	assert(fox.motion.grounded and Console.CLEARING.has_point(fox.position))
 	await _assert_unsafe_landing_keeps_traveler()

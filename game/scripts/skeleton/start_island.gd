@@ -45,6 +45,7 @@ const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
 const ADDRESS_SCHEMA := 18
 const QuietRegions = preload("res://scripts/skeleton/quiet_regions_layout.gd")
+const SecretFinds = preload("res://scripts/skeleton/secret_finds_layout.gd")
 const FriendRoutes = preload("res://scripts/skeleton/friend_routes_2d.gd")
 const Edge = preload("res://scripts/skeleton/forgotten_edge_layout.gd")
 const EdgeState = preload("res://scripts/runtime2d/forgotten_edge_state.gd")
@@ -421,7 +422,7 @@ func _ready() -> void:
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
-		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS + Edge.LOWER_STEPS + [Edge.LOWER]:
+		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS + Edge.LOWER_STEPS + [Edge.LOWER] + SecretFinds.GRAVITY_STEPS + SecretFinds.FLUTE_STEPS:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
@@ -908,7 +909,7 @@ func _open_ori() -> bool:
 
 const CityTools = preload("res://scripts/runtime2d/city_tools_2d.gd")
 const PASSERBY := "C1_PASSERBY"
-const TOOL_POINTS := {"BESTIARY": Vector2(5960, 650), "REALITY_STAMP": Vector2(6160, 660), "GRAVITY_GUN": Vector2(4550, 515), "PIXEL_GLOBE": Vector2(4780, 285), "LUNA_ROOM_DOOR": Vector2(6080, 360)}
+const TOOL_POINTS := {"BESTIARY": Vector2(5960, 650), "REALITY_STAMP": Vector2(6160, 660), "GRAVITY_GUN": SecretFinds.GRAVITY_POINT, "PIXEL_GLOBE": Vector2(4780, 285), "LUNA_ROOM_DOOR": Vector2(6080, 360)}
 const TOOL_NAMES := {"BESTIARY": "Бестиарий", "REALITY_STAMP": "Штамп реальности", "GRAVITY_GUN": "Гравипушка", "PIXEL_GLOBE": "Глобус", "LUNA_ROOM_DOOR": "Дверь Луны"}
 const ORI_PLAZA := Vector2(5170, 525)
 const ORI_EXIT := Vector2(5930, 685)
@@ -1010,7 +1011,12 @@ func _city_tool_action() -> String:
 	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
 		return ""
 	for key in TOOL_POINTS:
-		if key not in city_tools.owned and _entity_location(TOOL_POINTS[key]) == _entity_location(actor.position) and _within_reach(TOOL_POINTS[key]):
+		if key in city_tools.owned or _entity_location(TOOL_POINTS[key]) != _entity_location(actor.position):
+			continue
+		if key == "GRAVITY_GUN":
+			if SecretFinds.can_reach(actor.position, actor.motion.elevation, SecretFinds.GRAVITY_POINT, SecretFinds.GRAVITY_HEIGHT):
+				return key
+		elif _within_reach(TOOL_POINTS[key]):
 			return key
 	return ""
 
@@ -2742,7 +2748,7 @@ func _setup_flute() -> void:
 func _can_take_flute() -> bool:
 	return observation_fixture and not flute_owned and actor.motion.grounded \
 		and _entity_location(actor.position) == ForestBank.LOCATION_ID \
-		and actor.position.distance_to(Visits.FLUTE) <= 22.0
+		and SecretFinds.can_reach(actor.position, actor.motion.elevation, SecretFinds.FLUTE_POINT, SecretFinds.FLUTE_HEIGHT)
 
 
 func _take_flute() -> bool:
@@ -3136,11 +3142,11 @@ func at_ancient_console() -> bool:
 
 
 func spawn_console_species(species_id: String) -> bool:
-	if species_id != "FOX":
+	if species_id not in ["FOX", "CAT"]:
 		return false
-	var definition := CONSOLE_FOX.duplicate()
-	for index in MAX_ENTITIES:
-		var identity := "FOREST_CONSOLE_FOX_%02d" % index
+	var definition := CONSOLE_FOX.duplicate() if species_id == "FOX" else {"category": "cat", "label": "Котик", "material": "FABRIC"}
+	for index in _entity_limit():
+		var identity := "FOREST_CONSOLE_%s_%02d" % [species_id, index]
 		if entities.get_entity(identity) == null:
 			definition["id"] = identity
 			break
@@ -5371,6 +5377,7 @@ func _draw() -> void:
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
 		Visits.draw_on(self, flute_owned, prism_active)
+		SecretFinds.draw_on(self, actor.position, actor.motion.elevation, "GRAVITY_GUN" in city_tools.owned, flute_owned)
 		City.draw_on(self)
 		_draw_antimemetic()
 		Mountain.draw_on(self, highland.compass_owned, highland.camera_owned, actor.position, prism_active, _mountain_echo)
@@ -5386,7 +5393,7 @@ func _draw() -> void:
 			var source := Vector2(float(luna_door_session["x"]), float(luna_door_session["y"]))
 			draw_rect(Rect2(source + Vector2(-14, -38), Vector2(28, 38)), Color("f2cfff"), false, 3.0)
 		for key in TOOL_POINTS:
-			if key not in city_tools.owned:
+			if key not in city_tools.owned and key != "GRAVITY_GUN":
 				var point: Vector2 = TOOL_POINTS[key]
 				draw_circle(point, 9.0, Color("f4d6a4"))
 				draw_string(font, point + Vector2(-30, -13), TOOL_NAMES[key])

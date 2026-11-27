@@ -174,6 +174,8 @@ func _run() -> void:
 	assert(not scene.perform_music("RDRUL"))
 	scene.actor.position = scene.Visits.FLUTE
 	scene.actor.motion.reset_on_surface(scene.actor.position, 0.0)
+	assert(not scene._take_flute())
+	scene.actor.motion.reset_on_surface(scene.actor.position, scene.SecretFinds.FLUTE_HEIGHT)
 	assert(scene._take_flute() and not scene._take_flute())
 	assert(scene.perform_music("LDLURD") and scene.actor.body_size == 0.5)
 	assert(scene.perform_music("RURDLU") and scene.actor.body_size == 1.0)

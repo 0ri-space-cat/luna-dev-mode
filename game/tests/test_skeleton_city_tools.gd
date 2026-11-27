@@ -25,6 +25,9 @@ func _run() -> void:
 	var home = game.home
 	for key in Island.TOOL_POINTS:
 		_place(home, Island.TOOL_POINTS[key])
+		if key == "GRAVITY_GUN":
+			assert(not home._take_city_tool(key))
+			home.actor.motion.reset_on_surface(home.actor.position, Island.SecretFinds.GRAVITY_HEIGHT)
 		assert(home._take_city_tool(key))
 		assert(not home._take_city_tool(key))
 	var cat = home.entities.get_entity(Island.City.CAT)

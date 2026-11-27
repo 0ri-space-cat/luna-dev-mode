@@ -245,7 +245,7 @@ func read_local_record() -> String:
 	if not _near_record():
 		return ""
 	if current_address == BLACK_VOID:
-		return WHITE_ADDRESS
+		return "На обрывке остались лишь незамкнутые линии."
 	if current_address == HOUSE_04:
 		return "M08"
 	return ""
