@@ -97,6 +97,7 @@ const LAKE_INTERVAL := 5.0
 const LAKE_STONE_ID := "W6_SHORE_STONE"
 const Crystal = preload("res://scripts/skeleton/crystal_observation_layout.gd")
 const W8 = preload("res://scripts/skeleton/underside_refuge_layout.gd")
+const BackdropRoute = preload("res://scripts/skeleton/interior_backdrop_2d.gd")
 const Gaze = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const Solidity = preload("res://scripts/runtime2d/observation_body_2d.gd")
 const Tunnel = preload("res://scripts/skeleton/waterfall_tunnel_layout.gd")
@@ -115,6 +116,7 @@ const AREA_LABELS := {
 	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
 	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
+	W8.PASSAGE: "Кристальные пещеры", W8.REFUGE: "Малое убежище",
 	Coast.HOUSE_ID: "Дом вечерних окон", Coast.GROTTO_ID: "Морской грот",
 	Valley.TOWER_ID: "Башня отражений", Tunnel.LOCATION_ID: "Подводный тоннель",
 	City.CITY_ID: "Люма", City.CAFE_ID: "Кафе", City.HOME_ID: "Комната Луны",
@@ -179,6 +181,8 @@ var _initial_city_states: Array[Dictionary] = []
 var _c6_facade: Node2D
 var public_ride_requested: Callable
 var desktop_requested: Callable
+# Only an author-designated room may configure this. Default Adventure has none.
+var backdrop_route: BackdropRoute
 const WindowFrame = preload("res://scripts/skeleton/window_frame_2d.gd")
 var game_mode := "FULLSCREEN"
 var game_frame_solid := true
@@ -5336,7 +5340,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var wand_data: Variant = data.get("wand_pair", {"held": legacy_held, "retained": WandPair.ORIGINAL, "duplicate": {}})
 	if not pair.restore(next_projection, wand_data):
 		return false
-	if (observation_fixture and not _valid_ground_wand(pair.original)) or (pair.duplicate != null and (not _valid_ground_wand(pair.original) or not _valid_ground_wand(pair.duplicate))):
+	if pair.duplicate != null and (not _valid_ground_wand(pair.original) or not _valid_ground_wand(pair.duplicate)):
 		return false
 	if typeof(refill) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(refill)) \
 			or float(refill) < 0.0 or float(refill) > DONUT_REFILL_SECONDS:

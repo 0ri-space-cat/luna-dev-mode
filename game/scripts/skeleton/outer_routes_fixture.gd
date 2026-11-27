@@ -17,6 +17,8 @@ const EDGE := "DEV_OUTER_EDGE"
 const BLACK_VOID := "DEV_OUTER_BLACK_VOID"
 # Hosted journey provenance, not a second public address.
 const GHOST_ENTRY := "P04_NIGHT_STATION"
+# Internal provenance only, not a public Location ID or teleport destination.
+const BACKDROP_ENTRY := "INTERIOR_BACKDROP_ENTRY"
 const HOUSE_04 := "ET_LUMA_RES_04"
 const WHITE_ADDRESS := "META_WHITE_VOID"
 const DESKTOP := "DEV_VIRTUAL_DESKTOP"
@@ -93,7 +95,7 @@ func mount_host_traveler(body: ElevationBody, host_access: Access, host_clock: C
 	world_clock = host_clock
 	last_safe_address = MEADOWS
 	last_safe_point = router.locations[MEADOWS]["entries"]["entry"]
-	var arrived := _enter_void("ghost" if hosted_entry == GHOST_ENTRY else "entry") if hosted_entry in [BLACK_VOID, GHOST_ENTRY] else _move_to_address(hosted_entry)
+	var arrived := _enter_void("ghost" if hosted_entry == GHOST_ENTRY else "entry") if hosted_entry in [BLACK_VOID, GHOST_ENTRY, BACKDROP_ENTRY] else _move_to_address(hosted_entry)
 	if not arrived:
 		actor = null
 		return false
@@ -281,7 +283,7 @@ func _board_station_ghost() -> bool:
 func _board_void_ghost() -> bool:
 	if not void_ghost_available() or not _at_area((_room as RouteRoom).ghost_bounds):
 		return false
-	if return_to_host.is_valid() and hosted_entry == GHOST_ENTRY and public_arrival.is_valid():
+	if return_to_host.is_valid() and hosted_entry in [GHOST_ENTRY, BACKDROP_ENTRY] and public_arrival.is_valid():
 		world_clock.set_time_of_day(Clock.NIGHT_MINUTE)
 		return public_arrival.call(LUMA)
 	if not _move_to_address(LUMA, "ghost"):
@@ -650,7 +652,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	if (address == WHITE_ADDRESS) != white_visit or (address == DESKTOP) != (return_to_host.is_valid() and hosted_entry == DESKTOP):
 		return false
-	if return_to_host.is_valid() and hosted_entry == GHOST_ENTRY and address != BLACK_VOID:
+	if return_to_host.is_valid() and hosted_entry in [GHOST_ENTRY, BACKDROP_ENTRY] and address != BLACK_VOID:
 		return false
 	if data.has("outer_exploration"):
 		if not next_exploration.restore(data["outer_exploration"]) or data.get("routes") != router.snapshot_routes():

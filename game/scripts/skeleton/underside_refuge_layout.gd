@@ -18,7 +18,7 @@ const NOTE := Vector2(4200, 610)
 static func address(point: Vector2) -> String:
 	if ROOM.has_point(point):
 		return REFUGE
-	if APPROACH.has_point(point) or LANDING.has_point(point) or BRIDGE["bounds"].has_point(point):
+	if (APPROACH.has_point(point) and point.y >= 500.0) or LANDING.has_point(point) or BRIDGE["bounds"].has_point(point):
 		return PASSAGE
 	return ""
 

@@ -151,6 +151,9 @@ jobs:
       - name: Test voluntary ghost rides, house address and the distant record
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_void_exploration.gd
+      - name: Test special interior adapter and actual HUD/Black Void route
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_interior_backdrop.gd
       - name: Test the integrated island, wand reset and Black Void recovery
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 0 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_administrator.gd
