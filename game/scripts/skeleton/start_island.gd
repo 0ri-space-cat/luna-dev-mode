@@ -151,9 +151,6 @@ const BRIDGE_RAILS: Array[Dictionary] = [
 @export var ecology_fixture := false
 @export var observation_fixture := false
 @export var ancient_console_enabled := false
-# DEV P0 candidate, not an approved final scale or a new physical parameter.
-@export var body_art_preview := false
-@export var body_art_preview_scale := 1.0
 var forest_bank: ForestBank
 var ancient_console: AncientConsole
 var _was_at_bank := false
@@ -1439,8 +1436,6 @@ func _sync_leia_pose() -> void:
 		return
 	# Placeholder silhouette only. Collision, size and color are unchanged.
 	var buried := not leia_free and not _friend_at_cafe(LEIA_ID) and leia.position.distance_to(LEIA_START) < 25.0
-	if is_instance_valid(leia.body_visual):
-		leia.body_visual.suppressed = buried
 	leia._marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-12, -16), Vector2(-4, -16), Vector2(-4, -5), Vector2(4, -5), Vector2(4, -19), Vector2(12, -19), Vector2(12, 0)]) if buried else PackedVector2Array([Vector2(-12, 0), Vector2(-12, -18), Vector2(0, -32), Vector2(12, -18), Vector2(12, 0)])
 
 
@@ -3880,9 +3875,6 @@ func _configure_plank_marker(plank: EntityBody) -> void:
 
 func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	super._configure_body(body, entity_id)
-	if body is EntityBody:
-		body.visual_preview = body_art_preview
-		body.visual_preview_scale = body_art_preview_scale
 	body.emergency_anchor = Vector3(SPAWN.x, SPAWN.y, 0.0)
 	if body is Fauna and body.aquatic_bounds.has_area():
 		body.surfaces = _fish_surfaces

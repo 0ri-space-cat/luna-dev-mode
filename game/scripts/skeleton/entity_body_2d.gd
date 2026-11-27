@@ -5,10 +5,6 @@ const EntityRecord = preload("res://scripts/core/entity_record.gd")
 const Parameters = preload("res://scripts/skeleton/entity_parameters_2d.gd")
 
 const Brain = preload("res://scripts/runtime2d/behavior_brain_2d.gd")
-const BodyVisual = preload("res://scripts/skeleton/body_visual_2d.gd")
-var visual_preview := false
-var visual_preview_scale := 1.0
-var body_visual: BodyVisual
 const SEAT_HEIGHT := 16.0
 const SEAT_CAPACITY := 2.0
 const BODY_OBSTACLE_LAYER := 1 << 8
@@ -54,10 +50,6 @@ func _ready() -> void:
 	_marker.color = get_parameter("color")
 	_sync_ability_glow()
 	refresh_form_marker()
-	if visual_preview:
-		body_visual = BodyVisual.new()
-		body_visual.mount(_marker, position, visual_preview_scale)
-		body_visual.sync(self, 0.0)
 
 
 func refresh_form_marker() -> void:
@@ -271,8 +263,6 @@ func _physics_process(delta: float) -> void:
 	elif not accepts_player_input():
 		_stop_active_motion()
 	super._physics_process(delta)
-	if is_instance_valid(body_visual):
-		body_visual.sync(self, delta)
 
 
 func _wander_on_support(delta: float) -> Vector2:

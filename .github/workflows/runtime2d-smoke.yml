@@ -145,9 +145,6 @@ jobs:
       - name: Test the 2D+Z exterior and interior projection sample
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_art_probe.gd
-      - name: Test Adventure body visuals and P0 candidate math
-        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
-        run: bash ci/run_godot_script.sh res://tests/test_skeleton_body_visual.gd
       - name: Test loading-frame travel and Black Void recovery
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_outer_routes.gd
@@ -237,21 +234,3 @@ jobs:
           if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|Invalid call|^ERROR:' /tmp/runtime2d-boot.log; then
             exit 1
           fi
-
-  p0-art-review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install Pillow
-        run: python -m pip install Pillow==11.3.0
-      - name: Build non-destructive P0 candidate contact sheet
-        run: python game/tools/build_p0_calibration.py --out "$RUNNER_TEMP/luna-p0"
-      - name: Upload review-only contact sheets and source report
-        uses: actions/upload-artifact@v4
-        with:
-          name: luna-p0-art-review
-          path: ${{ runner.temp }}/luna-p0
-          if-no-files-found: error
