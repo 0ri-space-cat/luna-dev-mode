@@ -32,6 +32,7 @@ func _run() -> void:
 	legacy.erase("friend_layout")
 	legacy.erase("city_layout")
 	legacy.erase("ori_layout")
+	legacy.erase("highland_layout")
 	legacy.erase("ori")
 	legacy["entities"] = legacy["entities"].filter(func(state):
 		return not Island.FISH_POINTS.has(state["id"]) and state["id"] != Island.ECOLOGY_CATALOG \
@@ -39,11 +40,12 @@ func _run() -> void:
 			and state["id"] not in [Island.Life.MIA_ID, Island.Life.SHELL_ID, Island.Life.STONE_ID] \
 			and not Island.Life.FAUNA.has(state["id"]) and state["id"] != Island.Visits.ONI_ID \
 			and not Island.City.DEFINITIONS.any(func(definition): return definition["id"] == state["id"]) \
-			and state["id"] not in [Island.ORI_GLOW_DONOR, Island.ORI_FLY_DONOR, Island.ORI_CUSTOMER])
+			and state["id"] not in [Island.ORI_GLOW_DONOR, Island.ORI_FLY_DONOR, Island.ORI_CUSTOMER, Island.Mountain.RAY_ID, Island.Mountain.ORACLE_ID])
 	for state in legacy["entities"]:
 		state.erase("components")
 		state["life"].erase("respawn_remaining")
 	assert(game.apply_local_rollback(legacy) and game.home.get_natural_fauna(FISH_A) != null)
+	assert(game.home.entities.get_entity(Island.Mountain.RAY_ID).has_active_ability("FLY"))
 	_place(Vector2(320, 480))
 	assert(game.home.interact() and game.home.access.wand_mode == Access.PLAYFUL)
 	await _complete_actual_help()

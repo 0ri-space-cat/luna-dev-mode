@@ -29,18 +29,19 @@ func _run() -> void:
 	assert(home.social.meetings.has("LEIA") and not home.tamagotchi_owned)
 	_place(home.actor, Island.CAFE_TALK)
 	assert(not home.begin_cafe_evening())
-	for friend in ["YUKI", "TOFFI", "ORI", "MIA"]:
-		home.social.complete(friend)
-	home.social.observe_with_oni("W1")
-	assert(not home.social.can_gather() and not home.begin_cafe_evening())
-	# Physical invitation must follow the entity ID, not the order of arrays.
-	for pair in [[Island.City.ORI, "ORI"], [Island.City.YUKI, "YUKI"]]:
+	# Ordinary physical meetings and invitations must work before any gift.
+	for pair in [[Island.City.ORI, "ORI"], [Island.City.YUKI, "YUKI"], [Island.Life.MIA_ID, "MIA"]]:
 		var body = home.entities.get_entity(pair[0])
 		_place(home.actor, body.position + Vector2(0, 25))
+		assert(home._ordinary_friend_target() == pair[1])
+		assert(home._meet_ordinary_friend())
 		assert(home._friend_invitation_target() == pair[1])
 		assert(home._invite_nearby_friend())
 		assert(home.social.invitations.has(pair[1]))
-	for friend in ["LEIA", "TOFFI", "MIA"]:
+	assert(home.yuki.ownership == 0 and home.ori.ownership == 0 and home.flask_state == 0)
+	home.social.complete("TOFFI")
+	home.social.observe_with_oni("W1")
+	for friend in ["LEIA", "TOFFI"]:
 		assert(home.social.invite(friend))
 	_place(home.actor, Island.CAFE_TALK)
 	assert(not home.social.can_gather() and not home.begin_cafe_evening())

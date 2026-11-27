@@ -1499,6 +1499,41 @@ func _friend_safe(body: EntityBody, point: Vector2, height: float, ignore: Array
 	return true
 
 
+# Ordinary social contact with these three friends needs no tool, recipe,
+# catalog order or scripted demonstration. Keep optional tool interactions.
+func _ordinary_friend_target() -> String:
+	if not observation_fixture or evening_stage in [1, 2, 3] or not actor.motion.grounded or actor.is_attached():
+		return ""
+	var choices := {City.YUKI: "YUKI", City.ORI: "ORI", Life.MIA_ID: "MIA"}
+	var closest := INF
+	var result := ""
+	for id in choices:
+		var friend: String = choices[id]
+		var body := entities.get_entity(id) as EntityBody
+		if friend in social.meetings or not _friend_available(body) or _friend_at_cafe(id):
+			continue
+		if _entity_location(body.position) != _entity_location(actor.position) or not _within_reach(body.position, body.motion.elevation):
+			continue
+		var distance: float = actor.position.distance_squared_to(body.position)
+		# The laboratory's physical controls remain accessible without being
+		# intercepted by the nearby NPC.
+		if id == Life.MIA_ID and _at_alchemy_station() and actor.position.distance_squared_to(MiaLab.STATION) < distance:
+			continue
+		if distance < closest:
+			closest = distance
+			result = friend
+	return result
+
+
+func _meet_ordinary_friend() -> bool:
+	var friend := _ordinary_friend_target()
+	if friend.is_empty() or not social.complete(friend):
+		return false
+	var names := {"YUKI": "Юки", "ORI": "Ори", "MIA": "Мия"}
+	$Interface/SaveNotice.text = "Встреча: " + names[friend]
+	return true
+
+
 # Explicit ordinary invitations are independent of the artifact inventory.
 func _friend_invitation_target() -> String:
 	if not observation_fixture or evening_stage != 0 or not actor.motion.grounded or actor.is_attached():
@@ -1517,6 +1552,8 @@ func _friend_invitation_target() -> String:
 		if _entity_location(body.position) != _entity_location(actor.position) or not _within_reach(body.position, body.motion.elevation):
 			continue
 		var distance: float = actor.position.distance_squared_to(body.position)
+		if id == Life.MIA_ID and _at_alchemy_station() and actor.position.distance_squared_to(MiaLab.STATION) < distance:
+			continue
 		if distance < closest:
 			closest = distance
 			result = friend
@@ -2285,7 +2322,6 @@ func _interact_toffi_secret() -> bool:
 			return true
 		"Вернуться к Тоффи":
 			antimemetic.stage = 2
-			social.complete("TOFFI")
 			$Interface/SaveNotice.text = "Тоффи: Они же никуда не исчезали. Ты просто забывала, на что смотрела. Получено: Фонарь."
 			return true
 	return false
@@ -3722,6 +3758,10 @@ func _nearby_action() -> String:
 	var station := _city_station_destination()
 	if not station.is_empty():
 		return "Рейс в Люму" if station == City.CITY_ID else "Рейс на Большие луга"
+	if not _ordinary_friend_target().is_empty():
+		return "Поговорить"
+	if not _friend_invitation_target().is_empty():
+		return "Пригласить в кафе"
 	var friend_action := _city_friend_action()
 	if not friend_action.is_empty():
 		return friend_action
@@ -3740,8 +3780,6 @@ func _nearby_action() -> String:
 	var leia_action := _leia_action()
 	if not leia_action.is_empty():
 		return leia_action
-	if not _friend_invitation_target().is_empty():
-		return "Пригласить в кафе"
 	var cafe_action := _cafe_action()
 	if not cafe_action.is_empty():
 		return cafe_action
@@ -3873,6 +3911,10 @@ func interact() -> bool:
 	var station := _city_station_destination()
 	if not station.is_empty():
 		return public_ride_requested.call(station)
+	if _meet_ordinary_friend():
+		return true
+	if _invite_nearby_friend():
+		return true
 	var friend_action := _city_friend_action()
 	if not friend_action.is_empty():
 		return _city_friend_interact(friend_action)
@@ -3885,8 +3927,6 @@ func interact() -> bool:
 	if _interact_toffi_secret():
 		return true
 	if _interact_leia():
-		return true
-	if _invite_nearby_friend():
 		return true
 	if not _cafe_action().is_empty():
 		_show_evening_panel()
@@ -4473,8 +4513,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 			or (float(next_music_scale) != 0.0 and (not next_flute or float(next_music_scale) < 0.5 or float(next_music_scale) > 2.0)) \
 			or not next_attraction.restore(data.get("music_attraction", 0.0)) or (not next_flute and next_attraction.remaining > 0.0):
 		return false
-	if next_am.stage == 2 and not next_social.meetings.has("TOFFI"):
-		return false
+	# C6 is an independent discovery, not an ordinary friendship requirement.
 	if (next_evening["stage"] > 0 and not next_social.can_restore_evening()) or (next_evening["tamagotchi"] and not next_social.meetings.has("LEIA")):
 		return false
 	var next_hourglass: Variant = data.get("hourglass_owned", false)
