@@ -450,7 +450,7 @@ func _on_ancient_command(command: String, argument: String) -> void:
 
 
 func _start_desktop_visit() -> bool:
-	if _away or _simulation_suspended() or not _interrupted.is_empty() or home.game_mode != "WINDOWED" or home.game_frame_solid or not home._frame_edit_allowed():
+	if _away or _simulation_suspended() or not _interrupted.is_empty() or home.game_mode != "WINDOWED" or home.game_frame_solid or not home._frame_crossing or not home._frame_edit_allowed():
 		return false
 	var checkpoint := home.make_snapshot()
 	if not _activate_guest(OuterRoutes.DESKTOP):
@@ -466,7 +466,7 @@ func _start_desktop_visit() -> bool:
 
 
 func _discover_white_from_desktop() -> bool:
-	if not _away or _simulation_suspended() or not is_instance_valid(outer) or outer.hosted_entry != OuterRoutes.DESKTOP or outer.current_address != OuterRoutes.DESKTOP or not outer.at_desktop_exit():
+	if not _away or _simulation_suspended() or not is_instance_valid(outer) or outer.hosted_entry != OuterRoutes.DESKTOP or outer.current_address != OuterRoutes.DESKTOP or not outer._desktop_crossing or not outer.at_desktop_exit():
 		return false
 	var before := outer.make_snapshot()
 	var known := white_discovered

@@ -40,6 +40,7 @@ var _drift := Vector2.ZERO
 var return_to_host: Callable
 var desktop_exit: Callable
 var _desktop_previous := Vector2.INF
+var _desktop_crossing := false
 var public_arrival: Callable
 var hosted_entry := BLACK_VOID
 
@@ -389,7 +390,9 @@ func _physics_process(delta: float) -> void:
 		var previous := _desktop_previous
 		_desktop_previous = actor.position
 		if previous != Vector2.INF and previous.distance_to(actor.position) <= 64.0 and not DESKTOP_EXIT.has_point(previous) and at_desktop_exit() and desktop_exit.is_valid():
+			_desktop_crossing = true
 			desktop_exit.call()
+			_desktop_crossing = false
 	_update_interface()
 
 

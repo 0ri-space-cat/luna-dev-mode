@@ -176,6 +176,7 @@ var _window_frame: WindowFrame
 var _frame_panel: PanelContainer
 var _frame_switch: CheckButton
 var _frame_previous := Vector2.INF
+var _frame_crossing := false
 var city_bench_active := true
 var city_bench_step := 0
 var city_bench_observed := false
@@ -2217,7 +2218,7 @@ func cycle_compass() -> bool:
 func _setup_window_frame() -> void:
 	_window_frame = WindowFrame.new()
 	var layer := CanvasLayer.new()
-	layer.layer = 0
+	layer.layer = 1
 	add_child(layer)
 	layer.add_child(_window_frame)
 	_frame_panel = PanelContainer.new()
@@ -2308,7 +2309,10 @@ func _tick_window_frame() -> bool:
 	actor.motion.reset_on_surface(safe, actor.motion.elevation)
 	_frame_previous = inside
 	if not game_frame_solid and access.wand_mode == AccessState.DEVELOPER and desktop_requested.is_valid():
-		if desktop_requested.call():
+		_frame_crossing = true
+		var crossed: bool = desktop_requested.call()
+		_frame_crossing = false
+		if crossed:
 			_reset_window_frame()
 			return true
 	actor._impulse_velocity = Vector2.ZERO
