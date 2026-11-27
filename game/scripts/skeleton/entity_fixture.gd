@@ -172,6 +172,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	for state in states:
 		var candidate := _build_saved_entity(state, int(version))
 		if candidate == null or candidates.has(candidate.entity_id):
+			# A failed transaction must remain non-destructive, but name the rejected
+			# stable record so the next migration can fix the actual invariant.
+			push_warning("Snapshot rejected entity: " + str(state.get("id", "?") if state is Dictionary else "?"))
 			if candidate != null:
 				candidate.free()
 			_free_candidates(candidates)
@@ -181,9 +184,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 		_free_candidates(candidates)
 		return false
 	if version >= 6 and not _restore_attachments(states, candidates):
+		push_warning("Snapshot rejected attachment graph")
 		_free_candidates(candidates)
 		return false
 	if not _validate_saved_entities(candidates):
+		push_warning("Snapshot rejected authored entity or finite module invariant")
 		_free_candidates(candidates)
 		return false
 

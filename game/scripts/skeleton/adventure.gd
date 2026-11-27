@@ -52,6 +52,7 @@ var _journal_elapsed := 0.0
 
 
 func _ready() -> void:
+	recovery.safe_actor_limit = home._entity_limit()
 	home.managed_save = true
 	home.system_pause = system_pause
 	system_pause.ended.connect(_on_pause_ended)

@@ -163,7 +163,9 @@ func _run() -> void:
 	assert(ledger.observe_with_oni("K6"))
 	assert(not ledger.observe_with_oni("K6") and ledger.meetings.size() == 1)
 	assert(ledger.observe_with_oni("W1") and ledger.meetings.size() == 1)
-	assert(ledger.complete("MIA") and ledger.complete("LEIA") and ledger.can_gather())
+	assert(ledger.complete("MIA") and ledger.complete("LEIA") and not ledger.can_gather())
+	assert(ledger.invite("ONI") and ledger.invite("MIA") and ledger.invite("LEIA"))
+	assert(not ledger.can_gather())
 	ledger.prism_owned = true
 	var restored = scene.Social.new()
 	assert(restored.restore(ledger.snapshot()) and restored.prism_owned)

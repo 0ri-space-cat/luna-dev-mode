@@ -49,6 +49,19 @@ func _run() -> void:
 	assert(not guard.report("DUPLICATE"))
 	guard.acknowledge()
 	assert(not guard.pending)
+	# A larger adventure uses the same guard without weakening the small runtime.
+	var expanded := {"format": 2, "entities": []}
+	for index in 72:
+		expanded["entities"].append({"id": str(index)})
+	var shape := func(_data: Dictionary) -> bool: return true
+	assert(not guard.capture(expanded, shape))
+	guard.safe_actor_limit = 72
+	assert(guard.capture(expanded, shape) and guard.has_checkpoint())
+	expanded["entities"].append({"id": "overflow"})
+	assert(not guard.capture(expanded, shape))
+	assert(guard.report("CAPACITY_TEST"))
+	assert(guard.snapshot_for_recovery()["entities"].size() == 72)
+	guard.acknowledge()
 	game.queue_free()
 	print("LUNA runtime2d: real overflow, single incident and safe world recovery passed")
 	quit(0)

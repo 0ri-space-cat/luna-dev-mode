@@ -8,6 +8,8 @@ signal recovery_requested(reason: String)
 const MAX_SAFE_ACTORS := 48
 const MAX_REASON_LENGTH := 128
 
+## Default for the small standalone runtime. Adventure supplies its actual bounded capacity.
+var safe_actor_limit := MAX_SAFE_ACTORS
 var pending := false
 var reason := ""
 var _safe_snapshot: Dictionary = {}
@@ -58,7 +60,7 @@ func _valid_snapshot(data: Dictionary, shape: Callable) -> bool:
 	if typeof(data.get("format", null)) not in [TYPE_INT, TYPE_FLOAT] or float(data["format"]) != 2.0:
 		return false
 	var entities: Variant = data.get("entities", null)
-	if not (entities is Array) or entities.is_empty() or entities.size() > MAX_SAFE_ACTORS:
+	if not (entities is Array) or entities.is_empty() or entities.size() > safe_actor_limit:
 		return false
 	if shape.is_valid():
 		return shape.call(data) == true
