@@ -206,6 +206,7 @@ var ice_remaining: float:
 		return _ice_duration.remaining
 var freeze_selected := false
 var _initial_meadow_states: Array[Dictionary] = []
+var _initial_quiet_states: Array[Dictionary] = []
 var _plank_surface := {}
 var _store := SaveStore.new()
 
@@ -372,7 +373,7 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 72 if observation_fixture else super._entity_limit()
+	return 76 if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
@@ -463,6 +464,7 @@ func _ready() -> void:
 	yeti.set_parameter("behavior_mode", "IDLE")
 	_connect_bridge_body()
 	_spawn_meadow_entities()
+	_spawn_quiet_meadow_fauna()
 	if ecology_fixture:
 		_spawn_ecology_fixture()
 	if observation_fixture:
@@ -2904,6 +2906,22 @@ func _spawn_meadow_entities() -> void:
 			_initial_meadow_states.append(entry)
 
 
+func _spawn_quiet_meadow_fauna() -> void:
+	for identity in Meadows.QUIET_FAUNA:
+		var definition: Dictionary = Meadows.QUIET_FAUNA[identity]
+		var body := spawn_entity({"id": identity, "category": definition["category"],
+			"label": definition["label"], "material": "FABRIC"}, definition["point"], 0.0)
+		if body == null:
+			push_error("Could not place meadow resident " + identity)
+			continue
+		body.set_parameter("size", definition["size"])
+		body.set_parameter("speed", definition["speed"])
+		body.set_parameter("behavior_mode", "WANDER")
+	for entry in make_snapshot()["entities"]:
+		if Meadows.QUIET_FAUNA.has(entry["id"]):
+			_initial_quiet_states.append(entry.duplicate(true))
+
+
 func _spawn_observation_fixture() -> void:
 	forest_bank = FOREST_BANK_SCENE.instantiate()
 	add_child(forest_bank)
@@ -3161,6 +3179,11 @@ func request_install_duplicate(target_id: String) -> bool:
 
 
 func _create_entity_body(identity: String, category: String) -> EntityBody:
+	if Meadows.QUIET_FAUNA.has(identity) and category == Meadows.QUIET_FAUNA[identity]["category"]:
+		var resident := Fauna.new()
+		resident.birth_point = Meadows.QUIET_FAUNA[identity]["point"]
+		resident.respawned.connect(fauna_respawned.emit)
+		return resident
 	if observation_fixture and Life.FAUNA.has(identity) and category == Life.FAUNA_CATEGORY[identity]:
 		var animal := Fauna.new()
 		animal.birth_point = Life.FAUNA[identity]
@@ -4305,6 +4328,7 @@ func make_snapshot() -> Dictionary:
 		"donut_refill": donut_refill, "retreat_step": retreat_step,
 	}
 	data["meadows"] = {"ice_remaining": ice_remaining, "layout_version": 2}
+	data["quiet_meadow_layout"] = 1
 	data["world_clock"] = world_clock.snapshot()
 	data["coast_house_phase"] = coast_house_phase
 	data["alchemy_glow"] = _alchemy_glow.remaining
@@ -4543,6 +4567,17 @@ func apply_snapshot(data: Dictionary) -> bool:
 		for entry in _initial_meadow_states:
 			if not data.has("meadows") or entry["id"] == Meadows.PLANK_ID:
 				candidate["entities"].append(entry)
+	# Add only missing authored individuals to legacy profiles, preserving any
+	# existing state; never regenerate on a current-format load.
+	if not candidate.has("quiet_meadow_layout"):
+		if _initial_quiet_states.size() != Meadows.QUIET_FAUNA.size():
+			return false
+		candidate = candidate.duplicate(true)
+		for entry in _initial_quiet_states:
+			if not candidate["entities"].any(func(saved): return saved.get("id") == entry["id"]):
+				candidate["entities"].append(entry.duplicate(true))
+	elif candidate["quiet_meadow_layout"] != 1:
+		return false
 	if ecology_fixture and not candidate.has("ecology_layout"):
 		candidate = candidate.duplicate(true)
 		for entry in _initial_ecology_states:
@@ -4937,6 +4972,10 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
+	for identity in Meadows.QUIET_FAUNA:
+		var resident: EntityBody = candidates.get(identity)
+		if not resident is Fauna or resident.record.category != Meadows.QUIET_FAUNA[identity]["category"]:
+			return false
 	if observation_fixture:
 		for definition in Anomaly.DEFINITIONS:
 			var anomalous: EntityBody = candidates.get(definition["id"])

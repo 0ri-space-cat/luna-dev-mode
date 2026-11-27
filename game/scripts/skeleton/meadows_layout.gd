@@ -9,7 +9,18 @@ const M2 := Rect2(1616, 206, 335, 277)
 const SOUTH_TURN := Rect2(1232, 491, 212, 133)
 const DRY_TRAIL := Rect2(1370, 565, 638, 134)
 const M3 := Rect2(1840, 416, 168, 240)
-const DECKS := [M0, M1_BANK, M2, SOUTH_TURN, DRY_TRAIL, M3]
+# Provisional physical geography: two ordinary, dry meadow clearings.
+# No new address, collectible, secret gate, puzzle or objective.
+const QUIET_NORTH := Rect2(1210, 24, 185, 270)
+const QUIET_SOUTH := Rect2(1600, 625, 365, 355)
+const QUIET_DECKS := [QUIET_NORTH, QUIET_SOUTH]
+const DECKS := [M0, M1_BANK, M2, SOUTH_TURN, DRY_TRAIL, M3] + QUIET_DECKS
+const QUIET_FAUNA := {
+	"M_QUIET_FOX_N": {"category": "fox", "label": "Лисичка", "point": Vector2(1290, 115), "size": 0.72, "speed": 0.85},
+	"M_QUIET_TURTLE_N": {"category": "turtle", "label": "Черепашка", "point": Vector2(1330, 190), "size": 0.8, "speed": 0.35},
+	"M_QUIET_FOX_S": {"category": "fox", "label": "Лисичка", "point": Vector2(1720, 825), "size": 0.95, "speed": 1.1},
+	"M_QUIET_TURTLE_S": {"category": "turtle", "label": "Черепашка", "point": Vector2(1850, 865), "size": 1.05, "speed": 0.5},
+}
 const CREEK := Rect2(1530, 184, 86, 325)
 const CREEK_BED := -112.0
 const ICE_BOUNDS := Rect2(1517, 312, 112, 78)
