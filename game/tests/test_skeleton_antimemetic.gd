@@ -62,6 +62,9 @@ func _run() -> void:
 	assert(home.monument_read() == "")
 	assert(home.toggle_lantern())
 	assert(home._monument_visible() and home.monument_read() == "")
+	# Fixture setup must satisfy the same durable Oni/Prism contract as play.
+	assert(home.social.observe_with_oni("W1"))
+	assert(home.social.observe_with_oni("K6"))
 	home.social.prism_owned = true
 	assert(home.toggle_prism())
 	var command: String = home.monument_read()

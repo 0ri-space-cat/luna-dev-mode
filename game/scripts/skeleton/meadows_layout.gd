@@ -16,7 +16,7 @@ const QUIET_NORTH := Rect2(1210, 24, 185, 270)
 const QUIET_SOUTH := Rect2(1220, 600, 245, 430)
 const QUIET_EAST := Rect2(1600, 625, 365, 155)
 const QUIET_DECKS := [QUIET_NORTH, QUIET_SOUTH, QUIET_EAST]
-const DECKS := [M0, M1_BANK, M2, SOUTH_TURN, DRY_TRAIL, M3] + QUIET_DECKS
+const DECKS := [M0, M1_BANK, M2, SOUTH_TURN, DRY_TRAIL, M3, QUIET_NORTH, QUIET_SOUTH, QUIET_EAST]
 const QUIET_FAUNA := {
 	"M_QUIET_FOX_N": {"category": "fox", "label": "Лисичка", "point": Vector2(1290, 115), "size": 0.72, "speed": 0.85},
 	"M_QUIET_TURTLE_N": {"category": "turtle", "label": "Черепашка", "point": Vector2(1330, 190), "size": 0.8, "speed": 0.35},
