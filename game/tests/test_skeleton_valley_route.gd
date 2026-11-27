@@ -241,8 +241,14 @@ func _run() -> void:
 	assert(scene.interact() and scene.actor.location_id == Lake.LOCATION_ID, "Tunnel action=%s, safe arrivals=%s, pos=%s" % [tunnel_action, str(arrival_checks), str(scene.actor.position)])
 	assert(Lake.TUNNEL_ARRIVALS.any(func(point): return scene.actor.position.distance_to(point) < 3.0))
 	assert(scene.actor.motion.grounded and scene.actor._is_dry(scene.actor.position, scene.actor.motion.elevation))
+	# Existing alternate entrance must also support a physical return from W6.
 	scene._clear_bubble()
 	assert(not scene.actor.can_swim())
+	# Both ordinary pools use the same reversible corridor and return shelves.
+	assert(Tunnel.WATER_SURFACES[0]["bounds"] == Tunnel.WATER)
+	assert(scene._ordinary_arrival_is_safe(Valley.LOCATION_ID, Tunnel.W1_RETURN))
+	var tunnel_return: Dictionary = scene.make_snapshot()
+	assert(scene.apply_snapshot(tunnel_return) and scene.actor.location_id == Lake.LOCATION_ID)
 	# The integrated ecology fixture has an original and unique DUPLICATE.
 	scene.queue_free()
 	await process_frame

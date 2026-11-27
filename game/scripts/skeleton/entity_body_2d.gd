@@ -32,6 +32,8 @@ func get_parameter(key: String) -> Variant:
 
 
 func can_edit_parameter(key: String) -> bool:
+	if key in ["edible", "portions"]:
+		return record.category in ["food", "drink"]
 	if key == "alive":
 		return record.category in ["fridge", "prop"]
 	if key == "asleep":
@@ -99,6 +101,8 @@ func _sync_ability_glow() -> void:
 func set_parameter(key: String, value: Variant) -> bool:
 	if not can_edit_parameter(key):
 		return false
+	if key in ["edible", "portions"]:
+		return record.set_parameter(key, value)
 	if key in Parameters.ATTACHMENT_FIELDS:
 		if not value is bool:
 			return false

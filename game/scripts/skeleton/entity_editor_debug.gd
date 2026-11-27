@@ -2,13 +2,19 @@ extends PanelContainer
 ## Internal six-tab editor. Each input delegates to the world request.
 
 func populate(tabs: Dictionary, submit: Callable) -> void:
+	var layout := VBoxContainer.new()
+	add_child(layout)
 	var stack := TabContainer.new()
-	add_child(stack)
+	layout.add_child(stack)
+	var footer := HBoxContainer.new()
 	for title in tabs:
 		var page := VBoxContainer.new()
 		page.name = title
 		stack.add_child(page)
 		for spec in tabs[title]:
+			if spec.get("footer", false):
+				_add_input(footer, spec, submit)
+				continue
 			var row := HBoxContainer.new()
 			page.add_child(row)
 			var label := Label.new()
@@ -16,6 +22,7 @@ func populate(tabs: Dictionary, submit: Callable) -> void:
 			label.custom_minimum_size.x = 160
 			row.add_child(label)
 			_add_input(row, spec, submit)
+	layout.add_child(footer)
 
 
 func _add_input(row: HBoxContainer, spec: Dictionary, submit: Callable) -> void:
@@ -26,7 +33,7 @@ func _add_input(row: HBoxContainer, spec: Dictionary, submit: Callable) -> void:
 			var button := Button.new()
 			button.text = initial
 			button.pressed.connect(func():
-				if spec["action"].call():
+				if spec["action"].call() and not spec.get("repeatable", false):
 					button.disabled = true)
 			row.add_child(button)
 		"bool":
@@ -36,7 +43,7 @@ func _add_input(row: HBoxContainer, spec: Dictionary, submit: Callable) -> void:
 			toggle.toggled.connect(func(value: bool):
 				if not submit.call(key, value):
 					toggle.set_pressed_no_signal(not value))
-		"float":
+		"float", "int":
 			var number := SpinBox.new()
 			number.min_value = spec["min"]
 			number.max_value = spec["max"]
@@ -44,7 +51,7 @@ func _add_input(row: HBoxContainer, spec: Dictionary, submit: Callable) -> void:
 			number.value = initial
 			row.add_child(number)
 			number.value_changed.connect(func(value: float):
-				if not submit.call(key, value):
+				if not submit.call(key, int(value) if spec["kind"] == "int" else value):
 					number.set_value_no_signal(float(number.get_meta("accepted")))
 				else:
 					number.set_meta("accepted", value))

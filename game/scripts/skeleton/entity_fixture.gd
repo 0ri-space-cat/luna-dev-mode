@@ -155,6 +155,8 @@ func make_snapshot() -> Dictionary:
 		data["editor"] = body.editor_snapshot()
 		data["gravity_scale"] = body.get_parameter("gravity_scale")
 		data["attachment"] = body.attachment_snapshot()
+		if body.record.category in ["food", "drink"]:
+			data["food"] = {"edible": body.get_parameter("edible"), "portions": body.get_parameter("portions")}
 		states.append(data)
 	return {"format": SaveStore.FORMAT, "fixture": _location_id(), "entity_state_version": 6, "entities": states}
 
@@ -219,6 +221,14 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 		return null
 	var body := _build_entity(state)
 	if body != null and ((version >= 5 and not body.set_parameter("gravity_scale", state["gravity_scale"])) or (version >= 4 and not body.restore_editor(state["editor"])) or (version >= 3 and not body.restore_movement(state["movement"])) or not _restore_body_state(body, state) or (version >= 1 and not body.restore_life(state["life"])) or (version >= 2 and not body.restore_control(state["control"]))):
+		body.free()
+		return null
+	if body != null and body.record.category in ["food", "drink"]:
+		var food: Variant = state.get("food")
+		if not food is Dictionary or food.size() != 2 or not body.set_parameter("edible", food.get("edible")) or not body.set_parameter("portions", food.get("portions")):
+			body.free()
+			return null
+	elif body != null and state.has("food"):
 		body.free()
 		return null
 	if body != null:

@@ -8,6 +8,7 @@ signal forest_bank_interacted
 signal forest_bank_left
 
 const ForestBank = preload("res://scripts/skeleton/forest_bank_2d.gd")
+const FairyBranch = preload("res://scripts/skeleton/fairy_branch_layout.gd")
 const FOREST_BANK_SCENE = preload("res://scenes/skeleton/forest_bank.tscn")
 const AncientConsole = preload("res://scripts/skeleton/ancient_console_2d.gd")
 const CONSOLE_FOX := {"category": "fox", "label": "Лисичка", "material": "FABRIC"}
@@ -224,6 +225,10 @@ var freeze_selected := false
 var _initial_meadow_states: Array[Dictionary] = []
 var _initial_quiet_states: Array[Dictionary] = []
 var _initial_quiet_region_states: Array[Dictionary] = []
+var _initial_f2_food_states: Array[Dictionary] = []
+const CAFE_SNACK := "C2_CAFE_SNACK"
+const WAND_COPY_PREFIX := "WAND_COPY_"
+const WAND_COPY_LIMIT := 32
 var _secret_find_visibility := Vector2i(-1, -1)
 var _plank_surface := {}
 var _store := SaveStore.new()
@@ -239,6 +244,8 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture and FairyBranch.ROOM.has_point(point):
+		return FairyBranch.ID
 	if observation_fixture and RuneRoom.contains(point):
 		return ForestBank.LOCATION_ID
 	return _entity_location_v19(point)
@@ -424,11 +431,11 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 77 + QuietRegions.FAUNA.size() if observation_fixture else super._entity_limit()
+	return 79 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle", "glitch_fox", "return_cat", "double_rabbit"] or super._starts_alive(category)
+	return category in ["fairy", "fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle", "glitch_fox", "return_cat", "double_rabbit"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -447,7 +454,7 @@ func _ready() -> void:
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
 		ground.append_array(QuietRegions.decks())
-		ground.append_array([RuneRoom.KEY_PATH, RuneRoom.KEY_ROOM])
+		ground.append_array([RuneRoom.KEY_PATH, RuneRoom.KEY_ROOM, FairyBranch.ROOM])
 		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS + Mountain.GROUND + Edge.GROUND)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
@@ -455,7 +462,7 @@ func _ready() -> void:
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
-		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS + Edge.LOWER_STEPS + [Edge.LOWER] + SecretFinds.GRAVITY_STEPS + SecretFinds.FLUTE_STEPS:
+		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS + Edge.LOWER_STEPS + [Edge.LOWER] + SecretFinds.GRAVITY_STEPS + SecretFinds.FLUTE_STEPS + FairyBranch.STEPS:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
 	if observation_fixture:
@@ -542,6 +549,7 @@ func _ready() -> void:
 		_setup_highland()
 		_setup_anomalies()
 		_spawn_quiet_region_fauna()
+		_setup_f2_food()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -3300,6 +3308,121 @@ func _spawn_quiet_meadow_fauna() -> void:
 			_initial_quiet_states.append(entry.duplicate(true))
 
 
+func _setup_f2_food() -> void:
+	var fairy := spawn_entity({"id": FairyBranch.RESIDENT, "category": "fairy", "label": "Фея", "material": "FABRIC"}, FairyBranch.RESIDENT_POINT, 0.0)
+	if fairy != null:
+		fairy.set_parameter("size", 0.5)
+		fairy.set_parameter("speed", 0.5)
+		fairy.set_parameter("behavior_mode", "IDLE")
+	else:
+		push_error("Could not spawn the F2 resident")
+	var snack := spawn_entity({"id": CAFE_SNACK, "category": "food", "label": "Тарелка с пончиками", "material": "FABRIC"}, Vector2(5605, 320), 0.0)
+	if snack != null:
+		snack.set_parameter("size", 0.5)
+		snack.set_parameter("mass", 0.2)
+		snack.set_parameter("pickable", true)
+		snack.set_parameter("portions", 2)
+	else:
+		push_error("Could not spawn cafe food")
+	for entry in make_snapshot()["entities"]:
+		if entry["id"] in [FairyBranch.RESIDENT, CAFE_SNACK]:
+			_initial_f2_food_states.append(entry.duplicate(true))
+
+
+func _fairy_door_action() -> String:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached() or actor.has_passenger():
+		return ""
+	if FairyBranch.ROOM.has_point(actor.position) and actor.position.distance_to(FairyBranch.INSIDE) <= 20.0:
+		return "Выйти на ветвь"
+	if FairyBranch.can_enter(actor.position, actor.motion.elevation, actor.body_size):
+		return "Войти в домик феи"
+	return ""
+
+
+func _use_fairy_door() -> bool:
+	var action := _fairy_door_action()
+	if action == "Войти в домик феи" and _ordinary_arrival_is_safe(FairyBranch.ID, FairyBranch.INSIDE):
+		_move_home_travelers(FairyBranch.INSIDE, FairyBranch.ID)
+		return true
+	if action == "Выйти на ветвь" and _ordinary_arrival_is_safe(ForestBank.LOCATION_ID, FairyBranch.DOOR, FairyBranch.HEIGHT):
+		_move_home_travelers(FairyBranch.DOOR, ForestBank.LOCATION_ID, FairyBranch.HEIGHT)
+		return true
+	return false
+
+
+func _nearby_food() -> EntityBody:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
+		return null
+	var closest: EntityBody
+	var distance := INF
+	for identity in entities.list_ids():
+		var target := entities.get_entity(identity) as EntityBody
+		if target.record.category != "food" or not target.get_parameter("edible") or int(target.get_parameter("portions")) <= 0:
+			continue
+		if target.location_id != _entity_location(actor.position) or (target.is_attached() and not (actor.has_passenger() and actor._rider == target)):
+			continue
+		var gap := Vector3(target.position.x - actor.position.x, target.position.y - actor.position.y, target.motion.elevation - actor.motion.elevation).length()
+		if gap <= 36.0 and gap < distance:
+			closest = target
+			distance = gap
+	return closest
+
+
+func _eat_nearby_food() -> bool:
+	var food := _nearby_food()
+	if food == null or not food.set_parameter("portions", int(food.get_parameter("portions")) - 1):
+		return false
+	$Interface/SaveNotice.text = "Съедена порция. Осталось: %d" % int(food.get_parameter("portions"))
+	return true
+
+
+func _ordinary_copy_source(target: EntityBody) -> bool:
+	if target == null or target.record.category not in ["prop", "food"] or target.is_attached() or target.has_passenger() or not target.motion.grounded:
+		return false
+	# Explicit ordinary source set: no artifact, structural puzzle prop, NPC,
+	# finite ability or special machine is silently made replicable.
+	return target.entity_id in [City.CRATE, City.BREAD, CAFE_SNACK, LAKE_STONE_ID] or target.entity_id.begins_with(WAND_COPY_PREFIX)
+
+
+func request_wand_copy(target_id: String) -> String:
+	if not observation_fixture or not (actor as EntityBody).accepts_player_input():
+		return ""
+	var source := _wand_target(target_id)
+	if not _ordinary_copy_source(source) or not wand_policy.authorize(actor, source, _entity_location(actor.position), projection, access, parameters, "mass"):
+		return ""
+	if Vector3(actor.position.x - source.position.x, actor.position.y - source.position.y, actor.motion.elevation - source.motion.elevation).length() > WandPolicy.REACH_PX:
+		return ""
+	var identity := ""
+	for index in range(1, WAND_COPY_LIMIT + 1):
+		var candidate_id := WAND_COPY_PREFIX + str(index)
+		if entities.get_entity(candidate_id) == null:
+			identity = candidate_id
+			break
+	if identity.is_empty():
+		return ""
+	for offset in [Vector2(42, 0), Vector2(-42, 0), Vector2(0, 42), Vector2(0, -42), Vector2(42, 42), Vector2(-42, 42), Vector2(42, -42), Vector2(-42, -42)]:
+		var point: Vector2 = source.position + offset
+		if _entity_location(point) != _entity_location(source.position):
+			continue
+		var copy := spawn_entity({"id": identity, "category": source.record.category, "label": source.record.display_name, "material": source.get_parameter("material")}, point, source.motion.elevation)
+		if copy == null:
+			continue
+		var ok := true
+		for field in ["size", "mass", "bounciness", "gravity_scale", "speed", "color", "pickable"]:
+			if not copy.set_parameter(field, source.get_parameter(field)):
+				ok = false
+				break
+		if ok and source.record.category == "food":
+			ok = copy.set_parameter("edible", source.get_parameter("edible")) and copy.set_parameter("portions", source.get_parameter("portions"))
+		if not ok:
+			entities.unregister_entity(identity)
+			copy.free()
+			continue
+		# No component/ability bank, unique artifact, script or control lease is copied.
+		return identity
+	return ""
+
+
 func _spawn_quiet_region_fauna() -> void:
 	for identity in QuietRegions.FAUNA:
 		var definition: Dictionary = QuietRegions.FAUNA[identity]
@@ -3979,7 +4102,7 @@ func _update_local_camera() -> void:
 		_camera.position = highland.camera_lock
 		return
 	if observation_fixture:
-		for room in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP, RuneRoom.KEY_ROOM]:
+		for room in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP, RuneRoom.KEY_ROOM, FairyBranch.ROOM]:
 			if room.has_point(actor.position):
 				_camera.position = room.get_center()
 				_camera.zoom = Vector2(2.25, 2.25)
@@ -4129,6 +4252,9 @@ func _use_tunnel(point: Vector2, address: String) -> bool:
 
 
 func _nearby_action() -> String:
+	var fairy_door := _fairy_door_action()
+	if not fairy_door.is_empty():
+		return fairy_door
 	if _ghost_action():
 		return "Сесть на призрачного ската"
 	var edge_action := _edge_action()
@@ -4139,6 +4265,8 @@ func _nearby_action() -> String:
 		return city_door["label"]
 	if _can_use_placed_luna_door():
 		return "Пройти через Дверь Луны"
+	if _nearby_food() != null:
+		return "Съесть порцию"
 	var station := _city_station_destination()
 	if not station.is_empty():
 		return "Рейс в Люму" if station == City.CITY_ID else "Рейс на Большие луга"
@@ -4326,6 +4454,10 @@ func interact() -> bool:
 	if not city_tool.is_empty():
 		return _take_city_tool(city_tool)
 	match _nearby_action():
+		"Войти в домик феи", "Выйти на ветвь":
+			return _use_fairy_door()
+		"Съесть порцию":
+			return _eat_nearby_food()
 		"Пройти через Дверь Луны":
 			return use_luna_door()
 		"Нырнуть в тоннель":
@@ -4728,6 +4860,8 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 					if not tabs.has("Способности"):
 						tabs["Способности"] = []
 					tabs["Способности"].append({"id": id, "label": ORI_MODULES[id], "kind": "action", "value": "В банк", "action": func(): return request_extract_ori(target_id, id)})
+	if not tabs.is_empty() and _ordinary_copy_source(_wand_target(target_id)):
+		tabs["Общее"].append({"id": "COPY", "label": "Copy", "kind": "action", "value": "Copy", "footer": true, "repeatable": true, "action": func(): return not request_wand_copy(target_id).is_empty()})
 	return tabs
 
 
@@ -4779,6 +4913,7 @@ func make_snapshot() -> Dictionary:
 	data["quiet_meadow_layout"] = 1
 	if observation_fixture:
 		data["quiet_regions_layout"] = 2
+		data["f2_food_layout"] = 1
 	data["world_clock"] = world_clock.snapshot()
 	data["coast_house_phase"] = coast_house_phase
 	data["alchemy_glow"] = _alchemy_glow.remaining
@@ -5096,6 +5231,16 @@ func apply_snapshot(data: Dictionary) -> bool:
 				candidate["entities"].append(entry.duplicate(true))
 		elif candidate["city_layout"] != 1:
 			return false
+		var f2_version: Variant = candidate.get("f2_food_layout", 0)
+		if typeof(f2_version) not in [TYPE_FLOAT, TYPE_INT] or float(f2_version) not in [0.0, 1.0]:
+			return false
+		if int(f2_version) == 0:
+			if _initial_f2_food_states.size() != 2:
+				return false
+			candidate = candidate.duplicate(true)
+			for initial in _initial_f2_food_states:
+				if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
+					candidate["entities"].append(initial.duplicate(true))
 		var door_version: Variant = candidate.get("luna_door_layout", 0)
 		if typeof(door_version) not in [TYPE_FLOAT, TYPE_INT] or float(door_version) not in [0.0, float(LunaDoor.LAYOUT_VERSION)]:
 			return false
@@ -5535,6 +5680,15 @@ func _validate_saved_entities(candidates: Dictionary) -> bool:
 					return false
 			elif resident.record.category != definition["category"]:
 				return false
+		var fairy: EntityBody = candidates.get(FairyBranch.RESIDENT)
+		var snack: EntityBody = candidates.get(CAFE_SNACK)
+		if fairy == null or fairy.record.category != "fairy" or snack == null or snack.record.category != "food":
+			return false
+		for identity in candidates:
+			if identity.begins_with(WAND_COPY_PREFIX):
+				var suffix: String = identity.trim_prefix(WAND_COPY_PREFIX)
+				if not suffix.is_valid_int() or int(suffix) < 1 or int(suffix) > WAND_COPY_LIMIT or candidates[identity].record.category not in ["prop", "food"]:
+					return false
 		var original: EntityBody = candidates.get(LunaDoor.ID)
 		if not original is LunaDoor or original.record.category != "prop":
 			return false
@@ -5674,6 +5828,7 @@ func _draw() -> void:
 		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
 		Visits.draw_on(self, flute_owned, prism_active)
 		SecretFinds.draw_on(self, actor.position, actor.motion.elevation, "GRAVITY_GUN" in city_tools.owned, flute_owned)
+		FairyBranch.draw_on(self)
 		RuneRoom.draw_on(self)
 		City.draw_on(self)
 		_draw_antimemetic()
