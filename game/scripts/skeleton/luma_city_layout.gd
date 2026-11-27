@@ -37,7 +37,7 @@ const BREAD := "C2_BREAD"
 const BENCH := "C1_BENCH"
 const CAT := "C1_CAT"
 const RAY := "C0_RESTING_RAY"
-const TOFFI := "C0_TOFFI"
+const TOFFI := "C0_TOFFI" # Stable historical ID; ordinary home is now the meadows.
 const YUKI := "C4_YUKI"
 const ORI := "C3_ORI"
 const CRATE := "C0_CRATE"
@@ -48,7 +48,7 @@ const DEFINITIONS := [
 	{"id": BENCH, "category": "prop", "label": "Скамейка", "material": "WOOD", "point": Vector2(5020, 465), "height": 0.0},
 	{"id": CAT, "category": "cat", "label": "Котик", "material": "FABRIC", "point": Vector2(5200, 425), "height": 0.0},
 	{"id": RAY, "category": "ray", "label": "Маленький скат", "material": "FABRIC", "point": Vector2(4690, 500), "height": 0.0},
-	{"id": TOFFI, "category": "toffi", "label": "Тоффи", "material": "FABRIC", "point": Vector2(4620, 455), "height": 0.0},
+	{"id": TOFFI, "category": "toffi", "label": "Тоффи", "material": "FABRIC", "point": Vector2(1820, 405), "height": 0.0},
 	{"id": YUKI, "category": "yuki", "label": "Юки", "material": "FABRIC", "point": Vector2(5700, 620), "height": 0.0},
 	{"id": ORI, "category": "ori", "label": "Ори", "material": "FABRIC", "point": Vector2(6050, 620), "height": 0.0},
 	{"id": CRATE, "category": "prop", "label": "Ящик", "material": "WOOD", "point": Vector2(4670, 355), "height": 0.0},

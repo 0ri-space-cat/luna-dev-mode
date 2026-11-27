@@ -45,6 +45,7 @@ const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
 const ADDRESS_SCHEMA := 17
 const QuietRegions = preload("res://scripts/skeleton/quiet_regions_layout.gd")
+const FriendRoutes = preload("res://scripts/skeleton/friend_routes_2d.gd")
 const Edge = preload("res://scripts/skeleton/forgotten_edge_layout.gd")
 const EdgeState = preload("res://scripts/runtime2d/forgotten_edge_state.gd")
 var edge := EdgeState.new()
@@ -1312,7 +1313,11 @@ func _tick_leia() -> void:
 				leia_turtle_seen = true
 	else:
 		turtle.autonomous_destination = Vector2.INF
-	if leia_free or not leia.get_parameter("ai_enabled") or leia.is_attached() or leia.has_passenger():
+	if not _schedule_available(leia):
+		leia.autonomous_destination = Vector2.INF
+		return
+	if leia_free:
+		leia.autonomous_destination = FriendRoutes.next_point(leia.position, FriendRoutes.LEIA_PATH, world_clock.phase() in [WorldClock.Phase.EVENING, WorldClock.Phase.NIGHT])
 		return
 	var blocked := false
 	for id in ["F1_FOX", "F1_TROLLIK"]:
@@ -1325,16 +1330,27 @@ func _tick_leia() -> void:
 		leia.autonomous_destination = Vector2.INF
 
 
+func _sync_leia_pose() -> void:
+	if not observation_fixture:
+		return
+	var leia := entities.get_entity(LEIA_ID) as EntityBody
+	if leia == null or not is_instance_valid(leia._marker):
+		return
+	# Placeholder silhouette only. Collision, size and color are unchanged.
+	var buried := not leia_free and not _friend_at_cafe(LEIA_ID) and leia.position.distance_to(LEIA_START) < 25.0
+	leia._marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-12, -16), Vector2(-4, -16), Vector2(-4, -5), Vector2(4, -5), Vector2(4, -19), Vector2(12, -19), Vector2(12, 0)]) if buried else PackedVector2Array([Vector2(-12, 0), Vector2(-12, -18), Vector2(0, -32), Vector2(12, -18), Vector2(12, 0)])
+
+
 func _leia_action() -> String:
 	if not observation_fixture or not actor.motion.grounded:
 		return ""
 	var leia := entities.get_entity(LEIA_ID) as EntityBody
-	if leia == null or not _within_reach(leia.position, leia.motion.elevation) or _friend_at_cafe(LEIA_ID):
+	if not _friend_available(leia) or actor.is_attached() or _entity_location(actor.position) != _entity_location(leia.position) or not _within_reach(leia.position, leia.motion.elevation) or _friend_at_cafe(LEIA_ID):
 		return ""
 	if leia_free and not tamagotchi_owned:
 		return "Помочь Лее"
-	if leia_turtle_seen and not social.meetings.has("LEIA"):
-		return "Посмотреть на черепашку с Леей"
+	if not social.meetings.has("LEIA"):
+		return "Посмотреть на черепашку с Леей" if leia_turtle_seen else "Поговорить с Леей"
 	return ""
 
 
@@ -1348,7 +1364,7 @@ func _interact_leia() -> bool:
 		_active_city_tool = "tamagotchi"
 		$Interface/SaveNotice.text = "Лея: Спасибо! Теперь мы можем пройти. Получено: Тамагочи."
 	else:
-		$Interface/SaveNotice.text = "Лея: Смотри, черепашка добралась!"
+		$Interface/SaveNotice.text = "Лея: Смотри, черепашка добралась!" if leia_turtle_seen else "Лея: Привет! Кажется, меня тут очень любят."
 	return true
 
 
@@ -1516,13 +1532,15 @@ func _friend_safe(body: EntityBody, point: Vector2, height: float, ignore: Array
 func _ordinary_friend_target() -> String:
 	if not observation_fixture or evening_stage in [1, 2, 3] or not actor.motion.grounded or actor.is_attached():
 		return ""
-	var choices := {City.YUKI: "YUKI", City.ORI: "ORI", Life.MIA_ID: "MIA"}
+	var choices := {City.YUKI: "YUKI", City.ORI: "ORI", Life.MIA_ID: "MIA", City.TOFFI: "TOFFI"}
 	var closest := INF
 	var result := ""
 	for id in choices:
 		var friend: String = choices[id]
 		var body := entities.get_entity(id) as EntityBody
 		if friend in social.meetings or not _friend_available(body) or _friend_at_cafe(id):
+			continue
+		if id == City.TOFFI and not Meadows.M2.has_point(body.position):
 			continue
 		if _entity_location(body.position) != _entity_location(actor.position) or not _within_reach(body.position, body.motion.elevation):
 			continue
@@ -1542,7 +1560,10 @@ func _meet_ordinary_friend() -> bool:
 	if friend.is_empty() or not social.complete(friend):
 		return false
 	var names := {"YUKI": "Юки", "ORI": "Ори", "MIA": "Мия"}
-	$Interface/SaveNotice.text = "Встреча: " + names[friend]
+	if friend == "TOFFI":
+		$Interface/SaveNotice.text = "Тоффи вздыхает и продолжает играть."
+	else:
+		$Interface/SaveNotice.text = "Встреча: " + names[friend]
 	return true
 
 
@@ -1560,6 +1581,8 @@ func _friend_invitation_target() -> String:
 		var friend: String = friend_by_entity[id]
 		var body := entities.get_entity(id) as EntityBody
 		if not social.can_invite(friend) or not _friend_available(body):
+			continue
+		if id == City.TOFFI and (City.HIDDEN_STREET.has_point(body.position) or AM.NICHE.has_point(body.position)):
 			continue
 		if _entity_location(body.position) != _entity_location(actor.position) or not _within_reach(body.position, body.motion.elevation):
 			continue
@@ -2291,23 +2314,67 @@ func toggle_lantern() -> bool:
 	return true
 
 
+func _schedule_available(body: EntityBody) -> bool:
+	return _friend_available(body) and body.get_parameter("behavior_mode") == "IDLE" and body.get_parameter("control_source") == "NONE"
+
+
+func _friend_threshold(body: EntityBody, source: Vector2, destination: Vector2) -> bool:
+	if body.position.distance_to(source) >= 8.0 or not _friend_safe(body, destination, 0.0):
+		return false
+	_place_friend(body, destination, 0.0)
+	body.direction = Vector2.ZERO
+	return true
+
+
 func _tick_toffi_route() -> void:
 	var toffi := entities.get_entity(City.TOFFI) as EntityBody
-	if not _friend_available(toffi) or _friend_at_cafe(City.TOFFI):
+	if toffi == null or _friend_at_cafe(City.TOFFI):
 		return
-	if toffi.get_parameter("behavior_mode") != "IDLE":
+	if not _schedule_available(toffi):
 		toffi.autonomous_destination = Vector2.INF
 		return
-	# One existing friend, physically walking either way along the same public route.
-	var desired := AM.TOFFI_ROUTE.size() - 1 if City.HIDDEN_STREET.has_point(actor.position) or AM.NICHE.has_point(actor.position) else 0
-	var current: Vector2 = AM.TOFFI_ROUTE[antimemetic.route_index]
-	if toffi.position.distance_to(current) <= 8.0:
-		if antimemetic.route_index == desired:
-			toffi.autonomous_destination = Vector2.INF
-			return
-		antimemetic.route_index += 1 if desired > antimemetic.route_index else -1
-		current = AM.TOFFI_ROUTE[antimemetic.route_index]
-	toffi.autonomous_destination = current
+	var secret_visit := City.HIDDEN_STREET.has_point(actor.position) or AM.NICHE.has_point(actor.position)
+	var meadow_time := FriendRoutes.toffi_meadow_time(world_clock.minute_of_day()) and not secret_visit
+	var point := toffi.position
+	# A secret approach never completes an ordinary meeting. The same Toffi
+	# travels from the meadows, or exits Ori's shop, to the optional street.
+	if _entity_location(point) == Meadows.LOCATION_ID:
+		if meadow_time:
+			var joy := entities.get_entity(AM.JOY) as EntityBody
+			if point.distance_to(FriendRoutes.TOFFI_MEADOW) < 75.0 and joy != null and joy.get_parameter("alive") and Meadows.M2.has_point(joy.position):
+				var play_point := (joy.position + Vector2(36, 0)).clamp(Meadows.M2.position + Vector2(20, 20), Meadows.M2.end - Vector2(20, 20))
+				toffi.autonomous_destination = play_point if point.distance_to(play_point) > 8.0 else Vector2.INF
+			else:
+				toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.MEADOW_PATH, false)
+		elif not _friend_threshold(toffi, FriendRoutes.MEADOW_GATE, FriendRoutes.CITY_GATE):
+			toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.MEADOW_PATH, true)
+		return
+	if City.SHOP.has_point(point):
+		if not meadow_time and not secret_visit:
+			toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.SHOP_PATH, true)
+		elif not _friend_threshold(toffi, FriendRoutes.SHOP_INSIDE, FriendRoutes.SHOP_GATE):
+			toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.SHOP_PATH, false)
+		return
+	if _entity_location(point) != City.CITY_ID:
+		toffi.autonomous_destination = Vector2.INF
+		return
+	# The secret branch rejoins the public plaza before leaving for another site.
+	if point.y < 475.0 and point.x >= 5030.0:
+		toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.SECRET_PATH, secret_visit)
+		return
+	if secret_visit:
+		if point.distance_to(FriendRoutes.PLAZA_TURN) < 8.0:
+			toffi.autonomous_destination = FriendRoutes.SECRET_PATH[1]
+		elif point.y >= 480.0 and point.x >= 5130.0:
+			toffi.autonomous_destination = FriendRoutes.PLAZA_TURN
+		else:
+			toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.CITY_PATH, true)
+		return
+	if meadow_time:
+		if not _friend_threshold(toffi, FriendRoutes.CITY_GATE, FriendRoutes.MEADOW_GATE):
+			toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.CITY_PATH, false)
+	elif not _friend_threshold(toffi, FriendRoutes.SHOP_GATE, FriendRoutes.SHOP_INSIDE):
+		toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.CITY_PATH, true)
 
 
 func _toffi_secret_action() -> String:
@@ -2525,12 +2592,6 @@ func _city_station_destination() -> String:
 func _city_friend_action() -> String:
 	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
 		return ""
-	var toffi := entities.get_entity(City.TOFFI) as EntityBody
-	var ray := entities.get_entity(City.RAY) as EntityBody
-	if toffi != null and ray != null and City.STATION.has_point(actor.position) and City.STATION.has_point(toffi.position) \
-			and toffi.get_parameter("alive") and _within_reach(toffi.position, toffi.motion.elevation) \
-			and city_ray_settled and ray.position.distance_to(City.RAY_REST) <= 15.0 and not antimemetic.station_seen:
-		return "Посмотреть на ската с Тоффи"
 	var yuki_body := entities.get_entity(City.YUKI) as EntityBody
 	if yuki_body != null and City.WORKSHOP.has_point(actor.position) and City.WORKSHOP.has_point(yuki_body.position) \
 			and yuki_body.get_parameter("alive") and _within_reach(yuki_body.position, yuki_body.motion.elevation) and city_bench_observed and city_bench_active:
@@ -2541,11 +2602,6 @@ func _city_friend_action() -> String:
 func _city_friend_interact(action: String) -> bool:
 	if action != _city_friend_action():
 		return false
-	if action == "Посмотреть на ската с Тоффи":
-		antimemetic.station_seen = true
-		social.complete("TOFFI")
-		$Interface/SaveNotice.text = "Тоффи: Ну всё, теперь у них собрание."
-		return true
 	if action == "Обсудить скамейку с Юки":
 		city_bench_active = false
 		var bench := entities.get_entity(City.BENCH) as EntityBody
@@ -3563,6 +3619,7 @@ func _physics_process(delta: float) -> void:
 		_tick_ori()
 		_tick_ori_helper()
 		_tick_leia()
+		_sync_leia_pose()
 		_tick_antimemetic(world_clock.sim_delta(delta))
 		_sync_highland_forces()
 		_tick_edge(delta)
@@ -4913,6 +4970,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 		_tamagotchi_panel.hide()
 	evening_stage = int(next_evening["stage"])
 	evening_origins = next_evening["origins"].duplicate(true)
+	_sync_leia_pose()
 	_evening_delay = 1.8
 	if is_instance_valid(_evening_panel):
 		_evening_panel.hide()

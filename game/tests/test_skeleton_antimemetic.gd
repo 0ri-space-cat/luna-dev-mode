@@ -27,12 +27,12 @@ func _run() -> void:
 	assert(giant != null and joy != null and not giant.visible and not joy.visible)
 	assert(giant.collision_layer != 0 and home.antimemetic.seen.is_empty())
 	assert(not home.toggle_lantern() and home.monument_read() == "")
-	# The old ordinary station meeting does not expose the hidden layer.
+	# The old station encounter is gone; the ordinary meadow encounter is independent.
 	_place(home, home.actor, AM.TOFFI_ROUTE[0] + Vector2(0, 30))
-	_place(home, home.entities.get_entity(Island.City.RAY), Island.City.RAY_REST)
-	home._tick_city()
-	assert(home._city_friend_interact(home._city_friend_action()))
-	assert(home.social.meetings.has("TOFFI") and home.antimemetic.stage == 0)
+	assert(home._ordinary_friend_target().is_empty() and home._city_friend_action().is_empty())
+	_place(home, home.actor, toffi.position + Vector2(0, 30))
+	assert(home._meet_ordinary_friend())
+	assert(home.social.meetings.has("TOFFI") and home.antimemetic.stage == 0 and not joy.visible)
 	# Same Toffi and giant, now on the optional continuous street.
 	_place(home, home.actor, Vector2(5095, 170))
 	_place(home, toffi, AM.TOFFI_ROUTE[-1])
