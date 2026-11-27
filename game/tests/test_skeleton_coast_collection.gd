@@ -1,5 +1,6 @@
 extends SceneTree
 const Start = preload("res://scenes/skeleton/start_island.tscn")
+const Island = preload("res://scripts/skeleton/start_island.gd")
 const Cove = preload("res://scripts/skeleton/shell_collection_2d.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
 
@@ -18,6 +19,10 @@ func _run() -> void:
 	var legacy: Dictionary = home.make_snapshot()
 	legacy.erase("shell_collection")
 	assert(home.apply_snapshot(legacy) and not home.shell_collection_ready)
+	# Use the real starter rift, not a privileged fixture or direct access mutation.
+	assert(home.access.wand_mode == "ORDINARY")
+	assert(await _walk(home, Island.RIFT_SPOT + Vector2(0, -44)))
+	assert(home.interact() and home.access.wand_mode == "PLAYFUL")
 	_place(home, Coast.BEACH_ENTRY)
 	for point in [Vector2(2440, 830), Vector2(2375, 830), Cove.ENTRY]:
 		assert(await _walk(home, point), "Cove route: %s / %s" % [point, home.actor.position])
@@ -36,7 +41,7 @@ func _run() -> void:
 	var copies: Array[String] = []
 	for index in range(29):
 		var identity: String = home.request_wand_copy(source.entity_id)
-		assert(not identity.is_empty(), "Copy %d failed" % index)
+		assert(not identity.is_empty(), "Copy %d failed: mode=%s policy=%s entities=%d" % [index, home.access.wand_mode, home.wand_policy.last_error, home.entities.count_live()])
 		copies.append(identity)
 	assert(Cove.identical_count(home.entities) == 30)
 	var altered = home.entities.get_entity(copies[-1])

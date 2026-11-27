@@ -250,7 +250,8 @@ func _run() -> void:
 	var tunnel_return: Dictionary = scene.make_snapshot()
 	assert(scene.apply_snapshot(tunnel_return) and scene.actor.location_id == Lake.LOCATION_ID)
 	assert(scene._apply_alchemy("ALC-R21"))
-	# Walk to a clear shore before diving; use the ordinary swim control to descend.
+	# Walk to a clear shore, then swim past the real shallow shelf before diving.
+	# Stopping directly over the mouth leaves Luna standing on its -4 support.
 	assert(await _walk_to(scene, Vector2(2465, 426)))
 	scene.actor.direction = Vector2.RIGHT
 	for tick in range(220):
@@ -258,11 +259,12 @@ func _run() -> void:
 		await physics_frame
 		if scene._tunnel_action() == "Нырнуть в обратный тоннель":
 			break
-		if scene.actor.position.x >= Tunnel.W6_MOUTH.x:
+		if scene.actor.position.x >= Lake.SHALLOW_SURFACE["bounds"].end.x + 15.0:
 			scene.actor.direction = Vector2.ZERO
 	scene.actor.direction = Vector2.ZERO
 	scene.actor.swim_intent = 0.0
 	assert(scene._tunnel_action() == "Нырнуть в обратный тоннель", "W6 return mouth: %s Z=%s" % [scene.actor.position, scene.actor.motion.elevation])
+	assert(scene.actor.motion.elevation <= -12.0 and scene.actor.can_swim())
 	assert(scene.interact() and scene.actor.location_id == Tunnel.LOCATION_ID)
 	scene.actor.direction = Vector2.LEFT
 	for tick in range(400):
