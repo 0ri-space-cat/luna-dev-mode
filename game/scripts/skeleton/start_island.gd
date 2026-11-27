@@ -43,7 +43,8 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 16
+const ADDRESS_SCHEMA := 17
+const QuietRegions = preload("res://scripts/skeleton/quiet_regions_layout.gd")
 const Edge = preload("res://scripts/skeleton/forgotten_edge_layout.gd")
 const EdgeState = preload("res://scripts/runtime2d/forgotten_edge_state.gd")
 var edge := EdgeState.new()
@@ -207,6 +208,7 @@ var ice_remaining: float:
 var freeze_selected := false
 var _initial_meadow_states: Array[Dictionary] = []
 var _initial_quiet_states: Array[Dictionary] = []
+var _initial_quiet_region_states: Array[Dictionary] = []
 var _plank_surface := {}
 var _store := SaveStore.new()
 
@@ -221,6 +223,14 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture:
+		var quiet_address := QuietRegions.address(point)
+		if not quiet_address.is_empty():
+			return quiet_address
+	return _entity_location_v16(point)
+
+
+func _entity_location_v16(point: Vector2) -> String:
 	if observation_fixture:
 		var edge_address := Edge.address(point)
 		if not edge_address.is_empty():
@@ -373,7 +383,7 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 76 if observation_fixture else super._entity_limit()
+	return 76 + QuietRegions.FAUNA.size() if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
@@ -394,6 +404,7 @@ func _ready() -> void:
 	var ground := Meadows.DECKS + Lake.DECKS
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
+		ground.append_array(QuietRegions.decks())
 		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS + Mountain.GROUND + Edge.GROUND)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
@@ -486,6 +497,7 @@ func _ready() -> void:
 		_setup_antimemetic()
 		_setup_highland()
 		_setup_anomalies()
+		_spawn_quiet_region_fauna()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -2958,6 +2970,22 @@ func _spawn_quiet_meadow_fauna() -> void:
 			_initial_quiet_states.append(entry.duplicate(true))
 
 
+func _spawn_quiet_region_fauna() -> void:
+	for identity in QuietRegions.FAUNA:
+		var definition: Dictionary = QuietRegions.FAUNA[identity]
+		var body := spawn_entity({"id": identity, "category": definition["category"],
+			"label": definition["label"], "material": "FABRIC"}, definition["point"], 0.0)
+		if body == null:
+			push_error("Could not place quiet region resident " + identity)
+			continue
+		body.set_parameter("size", definition["size"])
+		body.set_parameter("speed", definition["speed"])
+		body.set_parameter("behavior_mode", "WANDER")
+	for entry in make_snapshot()["entities"]:
+		if QuietRegions.FAUNA.has(entry["id"]):
+			_initial_quiet_region_states.append(entry.duplicate(true))
+
+
 func _spawn_observation_fixture() -> void:
 	forest_bank = FOREST_BANK_SCENE.instantiate()
 	add_child(forest_bank)
@@ -3215,6 +3243,11 @@ func request_install_duplicate(target_id: String) -> bool:
 
 
 func _create_entity_body(identity: String, category: String) -> EntityBody:
+	if observation_fixture and QuietRegions.FAUNA.has(identity) and category == QuietRegions.FAUNA[identity]["category"]:
+		var region_resident := Fauna.new()
+		region_resident.birth_point = QuietRegions.FAUNA[identity]["point"]
+		region_resident.respawned.connect(fauna_respawned.emit)
+		return region_resident
 	if Meadows.QUIET_FAUNA.has(identity) and category == Meadows.QUIET_FAUNA[identity]["category"]:
 		var resident := Fauna.new()
 		resident.birth_point = Meadows.QUIET_FAUNA[identity]["point"]
@@ -4369,6 +4402,8 @@ func make_snapshot() -> Dictionary:
 	}
 	data["meadows"] = {"ice_remaining": ice_remaining, "layout_version": 2}
 	data["quiet_meadow_layout"] = 1
+	if observation_fixture:
+		data["quiet_regions_layout"] = 1
 	data["world_clock"] = world_clock.snapshot()
 	data["coast_house_phase"] = coast_house_phase
 	data["alchemy_glow"] = _alchemy_glow.remaining
@@ -4425,7 +4460,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -4617,6 +4652,16 @@ func apply_snapshot(data: Dictionary) -> bool:
 				candidate["entities"].append(entry.duplicate(true))
 	elif candidate["quiet_meadow_layout"] != 1:
 		return false
+	if observation_fixture:
+		if not candidate.has("quiet_regions_layout"):
+			if _initial_quiet_region_states.size() != QuietRegions.FAUNA.size():
+				return false
+			candidate = candidate.duplicate(true)
+			for entry in _initial_quiet_region_states:
+				if not candidate["entities"].any(func(saved): return saved.get("id") == entry["id"]):
+					candidate["entities"].append(entry.duplicate(true))
+		elif candidate["quiet_regions_layout"] != 1:
+			return false
 	if ecology_fixture and not candidate.has("ecology_layout"):
 		candidate = candidate.duplicate(true)
 		for entry in _initial_ecology_states:
@@ -4993,6 +5038,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v13(point)
 	elif previous_schema == 15:
 		previous_location = _entity_location_v15(point)
+	elif previous_schema == 16:
+		previous_location = _entity_location_v16(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -5016,6 +5063,10 @@ func _validate_saved_entities(candidates: Dictionary) -> bool:
 		if not resident is Fauna or resident.record.category != Meadows.QUIET_FAUNA[identity]["category"]:
 			return false
 	if observation_fixture:
+		for identity in QuietRegions.FAUNA:
+			var region_resident: EntityBody = candidates.get(identity)
+			if not region_resident is Fauna or region_resident.record.category != QuietRegions.FAUNA[identity]["category"]:
+				return false
 		for definition in Anomaly.DEFINITIONS:
 			var anomalous: EntityBody = candidates.get(definition["id"])
 			if anomalous == null or anomalous.record.category != definition["category"]:
