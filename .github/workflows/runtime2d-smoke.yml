@@ -145,6 +145,9 @@ jobs:
       - name: Test the 2D+Z exterior and interior projection sample
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_art_probe.gd
+      - name: Test Adventure body visuals and P0 candidate math
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_body_visual.gd
       - name: Test loading-frame travel and Black Void recovery
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_outer_routes.gd

@@ -6,12 +6,11 @@ const ArtRoom = preload("res://scripts/skeleton/art_probe_room.gd")
 const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
 const ART_CATALOG := "res://data/skeleton/DEV_ART_LOCATIONS.json"
 const EXTERIOR := "DEV_ART_EXTERIOR"
-const CELL := Vector2(48, 76)
-const FOOT := Vector2(24, 70)
-const LUNA := preload("res://assets/art_probe/luna.png")
-const ONI := preload("res://assets/art_probe/oni.png")
-# Clockwise from screen-right. Left facings reuse the corresponding art.
-const VIEW_ROWS := [2, 1, 0, 1, 2, 3, 4, 3]
+const BodyVisual = preload("res://scripts/skeleton/body_visual_2d.gd")
+const CELL := BodyVisual.CELL
+const FOOT := BodyVisual.FOOT
+const LUNA := BodyVisual.LUNA
+const ONI := BodyVisual.ONI
 
 var view: RoomProjection
 var world_clock := Clock.new()
@@ -44,6 +43,7 @@ func _ready() -> void:
 	for sprite in [luna_art, oni_art]:
 		sprite.centered = false
 		sprite.offset = -FOOT
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		add_child(sprite)
 	luna_art.texture = LUNA
 	luna_art.region_enabled = true
@@ -95,8 +95,8 @@ func _advance_walk(delta: float) -> void:
 	var walking := actor.motion.grounded and travel.length_squared() > 0.16
 	_walk_frame = 0
 	if walking:
-		_facing = posmod(roundi(travel.angle() / (PI / 4.0)), 8)
-		_walk_cycle = fposmod(_walk_cycle + delta * 8.0, 4.0)
+		_facing = BodyVisual.facing_for(travel)
+		_walk_cycle = fposmod(_walk_cycle + delta * BodyVisual.FRAME_RATE, 4.0)
 		_walk_frame = 1 + floori(_walk_cycle)
 	else:
 		_walk_cycle = 0.0
@@ -106,8 +106,8 @@ func _advance_walk(delta: float) -> void:
 func _process(_delta: float) -> void:
 	if view == null or not is_instance_valid(actor):
 		return
-	luna_art.region_rect = Rect2(Vector2(_walk_frame, VIEW_ROWS[_facing]) * CELL, CELL)
-	luna_art.flip_h = _facing in [3, 4, 5]
+	luna_art.region_rect = BodyVisual.atlas_rect(_facing, _walk_frame)
+	luna_art.flip_h = BodyVisual.mirrored(_facing)
 	var height := actor.motion.elevation
 	_place_visual(luna_art, luna_shadow, actor.position, height, _support_below(actor.position, height))
 	_hint.visible = _door_nearby()
