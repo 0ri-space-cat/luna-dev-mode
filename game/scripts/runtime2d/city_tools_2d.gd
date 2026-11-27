@@ -62,7 +62,7 @@ func restore(data: Variant) -> bool:
 		return false
 	var grants: Variant = data.get("stamped")
 	var cats: Variant = data.get("cat_sizes")
-	if not grants is Dictionary or grants.size() > 12 or not cats is Dictionary or cats.size() > 8:
+	if not grants is Dictionary or grants.size() > 12 or not cats is Dictionary or cats.size() > 128:
 		return false
 	for id in grants:
 		var grant: Variant = grants[id]

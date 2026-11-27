@@ -677,11 +677,8 @@ func _execute_yuki_rule(rule: Dictionary) -> bool:
 
 
 func _yuki_spawn_cat() -> bool:
-	var live_cats := 0
-	for identity in entities.list_ids():
-		if identity.begins_with(YUKI_CAT_PREFIX):
-			live_cats += 1
-	if live_cats >= YukiProgram.MAX_CATS or yuki.spawn_serial >= 999999:
+	# Shared world capacity, not a separate narrative ceiling for cats.
+	if entities.count_live() >= _entity_limit() or yuki.spawn_serial >= 999999:
 		return false
 	var id := YUKI_CAT_PREFIX + str(yuki.spawn_serial + 1)
 	for index in YUKI_CAT_POINTS.size():
@@ -1311,7 +1308,7 @@ func _tick_leia() -> void:
 	var turtle := entities.get_entity(LEIA_TURTLE) as EntityBody
 	if leia == null or turtle == null:
 		return
-	if not leia_turtle_seen and _attraction.remaining <= 0.0 and turtle.get_parameter("ai_enabled") and turtle.get_parameter("alive"):
+	if not leia_turtle_seen and _attraction.remaining <= 0.0 and _schedule_available(turtle):
 		turtle.autonomous_destination = LEIA_SEAT
 		if turtle.position.distance_to(LEIA_SEAT) < 8.0:
 			turtle.autonomous_destination = Vector2.INF
@@ -1605,7 +1602,15 @@ func _invite_nearby_friend() -> bool:
 	var friend := _friend_invitation_target()
 	if friend.is_empty() or not social.invite(friend):
 		return false
-	$Interface/SaveNotice.text = "Приглашены в кафе: %d из 6" % social.invitations.size()
+	var replies := {
+		"YUKI": "Юки: Договорились! Загляну после работы.",
+		"ORI": "Ори: Конечно, увидимся в кафе!",
+		"MIA": "Мия: Отлично, посидим вместе.",
+		"LEIA": "Лея: Давай! Я приду.",
+		"TOFFI": "Тоффи: Ага, до встречи!",
+		"ONI": "Они: С удовольствием.",
+	}
+	$Interface/SaveNotice.text = replies[friend]
 	return true
 
 
@@ -2622,6 +2627,14 @@ func _city_station_destination() -> String:
 	return ""
 
 
+func _toffi_shop_chat() -> bool:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached() or not City.SHOP.has_point(actor.position):
+		return false
+	var toffi := entities.get_entity(City.TOFFI) as EntityBody
+	var ori_body := entities.get_entity(City.ORI) as EntityBody
+	return _friend_available(toffi) and _friend_available(ori_body) and City.SHOP.has_point(toffi.position) and City.SHOP.has_point(ori_body.position) and toffi.position.distance_to(ori_body.position) < 100.0 and _within_reach(toffi.position, toffi.motion.elevation)
+
+
 func _city_friend_action() -> String:
 	if not observation_fixture or not actor.motion.grounded or actor.is_attached():
 		return ""
@@ -2663,7 +2676,9 @@ func _tick_oni() -> void:
 	if _friend_at_cafe(Visits.ONI_ID):
 		return
 	var oni := entities.get_entity(Visits.ONI_ID) as EntityBody
-	if oni == null or not oni.get_parameter("ai_enabled") or oni.is_attached() or oni.has_passenger():
+	if not _schedule_available(oni):
+		if oni != null:
+			oni.autonomous_destination = Vector2.INF
 		return
 	var towards_cape := world_clock.phase() in [WorldClock.Phase.DAY, WorldClock.Phase.EVENING]
 	var last := Visits.ROUTE.size() - 1
@@ -2854,8 +2869,13 @@ func cycle_hourglass() -> bool:
 	return world_clock.set_mode(modes[(modes.find(world_clock.mode) + 1) % modes.size()])
 
 
+func _can_borrow_flask() -> bool:
+	var mia := entities.get_entity(Life.MIA_ID) as EntityBody
+	return flask_state == 0 and mia_experienced and _at_alchemy_station() and _friend_available(mia) and _within_reach(mia.position, mia.motion.elevation)
+
+
 func _borrow_flask() -> bool:
-	if flask_state != 0 or not mia_experienced or not _at_alchemy_station():
+	if not _can_borrow_flask():
 		return false
 	flask_state = 1
 	mia_route_step = 0
@@ -2872,10 +2892,18 @@ func _mia_at_upper() -> bool:
 
 
 func _tick_mia() -> void:
-	if _friend_at_cafe(Life.MIA_ID) or flask_state != 1:
+	if not observation_fixture or _friend_at_cafe(Life.MIA_ID):
 		return
 	var mia := entities.get_entity(Life.MIA_ID) as EntityBody
-	if mia == null or mia_route_step >= Life.MIA_ROUTE.size():
+	if not _schedule_available(mia):
+		if mia != null:
+			mia.autonomous_destination = Vector2.INF
+		return
+	if flask_state != 1:
+		var daily_path := [Life.MIA_START] + Life.MIA_ROUTE
+		mia.autonomous_destination = FriendRoutes.next_point(mia.position, daily_path, world_clock.phase() in [WorldClock.Phase.EVENING, WorldClock.Phase.NIGHT])
+		return
+	if mia_route_step >= Life.MIA_ROUTE.size():
 		return
 	var target: Vector2 = Life.MIA_ROUTE[mia_route_step]
 	if mia.position.distance_to(target) < 5.0 and mia.motion.grounded:
@@ -2955,7 +2983,7 @@ func _apply_lab_effect(effect_id: String) -> void:
 		if mia != null and _within_reach(mia.position, mia.motion.elevation) and mia.get_parameter("alive"):
 			social.complete("MIA")
 			$Interface/SaveNotice.text = "Мия: Вот это да! Посмотри, что получилось."
-		_alchemy_panel.configure_access(false, flask_state > 0, flask_state == 0)
+		_alchemy_panel.configure_access(false, flask_state > 0, _can_borrow_flask())
 		_alchemy_panel.hide()
 
 
@@ -3895,6 +3923,8 @@ func _nearby_action() -> String:
 	var ori_action := _ori_action()
 	if not ori_action.is_empty():
 		return ori_action
+	if _toffi_shop_chat():
+		return "Послушать разговор"
 	var highland_action := _highland_action()
 	if not highland_action.is_empty():
 		return highland_action
@@ -4046,6 +4076,9 @@ func interact() -> bool:
 		return _interact_yuki()
 	if not _ori_action().is_empty():
 		return _interact_ori()
+	if _toffi_shop_chat():
+		$Interface/SaveNotice.text = "Ори: А если у ската будут маленькие лапки? Тоффи: Тогда пусть сам выбирает, ходить ему или летать."
+		return true
 	if _interact_highland():
 		return true
 	if _interact_toffi_secret():
@@ -4079,7 +4112,7 @@ func interact() -> bool:
 		"Посмотреть вместе с Они":
 			return _observe_with_oni()
 		"Алхимическая установка":
-			_alchemy_panel.configure_access(false, flask_state > 0, mia_experienced and flask_state == 0)
+			_alchemy_panel.configure_access(false, flask_state > 0, _can_borrow_flask())
 			_alchemy_panel.show()
 			apply_player_input(Vector2.ZERO)
 			return true
@@ -4824,7 +4857,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 				if not suffix.is_valid_int() or int(suffix) < 1 or int(suffix) > next_yuki.spawn_serial or entry.get("category") != "cat":
 					return false
 				cats += 1
-		if cats > YukiProgram.MAX_CATS or cats > next_yuki.spawn_serial:
+		if cats > _entity_limit() or cats > next_yuki.spawn_serial:
 			return false
 		if not candidate["entities"].any(func(entry): return entry.get("id") == PASSERBY):
 			if candidate.has("city_tools") or _initial_passerby.is_empty():

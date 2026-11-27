@@ -1,7 +1,6 @@
 extends RefCounted
 ## Data-only, bounded scheduler. Every installed rule has independent state.
 const MAX_RULES := 12
-const MAX_CATS := 8
 const ACTIONS := ["SPAWN_CAT", "SET_SPEED", "SET_ALIVE", "SET_AI"]
 var ownership := 0 # 0 Yuki, 1 loan, 2 gift
 var running := true

@@ -56,6 +56,17 @@ func _run() -> void:
 	assert(home.apply_snapshot(saved))
 	assert(home.yuki.ownership == 2 and not home.yuki.running and home.yuki.rules.size() == 2)
 	assert(home.entities.get_entity(Island.YUKI_CAT_PREFIX + "1") != null)
+	# Free up physical spawn footprints, but keep every cat alive and tracked.
+	# Exceed the old eight-cat ceiling through the actual rule executor.
+	for index in 9:
+		assert(home._execute_yuki_rule({"host": Island.YUKI_FRIDGE, "action": "SPAWN_CAT"}))
+		var extra = home.entities.get_entity(Island.YUKI_CAT_PREFIX + str(index + 2))
+		extra.position = Vector2(1240 + (index % 3) * 65, 690 + (index / 3) * 65)
+		extra.motion.reset_on_surface(extra.position, 0.0)
+		extra.location_id = home._entity_location(extra.position)
+	assert(home.yuki.spawn_serial == 10 and home.city_tools.cat_sizes.size() >= 9)
+	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
+	assert(home.entities.get_entity(Island.YUKI_CAT_PREFIX + "10") != null)
 	game.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PROFILE))
