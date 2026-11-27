@@ -441,6 +441,8 @@ func _on_ancient_command(command: String, argument: String) -> void:
 				succeeded = clock.set_time_of_day(minute)
 			"SPAWN":
 				succeeded = home.spawn_console_species(argument)
+			"GAME_MODE":
+				succeeded = home.set_game_mode(argument)
 	if succeeded:
 		console.close()
 	else:

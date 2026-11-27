@@ -43,7 +43,9 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 19
+const ADDRESS_SCHEMA := 20
+const Runes = preload("res://scripts/runtime2d/latin_runes_2d.gd")
+const RuneRoom = preload("res://scripts/skeleton/rune_room_layout.gd")
 const QuietRegions = preload("res://scripts/skeleton/quiet_regions_layout.gd")
 const SecretFinds = preload("res://scripts/skeleton/secret_finds_layout.gd")
 const FriendRoutes = preload("res://scripts/skeleton/friend_routes_2d.gd")
@@ -235,6 +237,12 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture and RuneRoom.contains(point):
+		return ForestBank.LOCATION_ID
+	return _entity_location_v19(point)
+
+
+func _entity_location_v19(point: Vector2) -> String:
 	if observation_fixture:
 		var quiet_address := QuietRegions.address(point)
 		if not quiet_address.is_empty():
@@ -437,6 +445,7 @@ func _ready() -> void:
 	if observation_fixture:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
 		ground.append_array(QuietRegions.decks())
+		ground.append_array([RuneRoom.KEY_PATH, RuneRoom.KEY_ROOM])
 		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS + Mountain.GROUND + Edge.GROUND)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
@@ -485,6 +494,7 @@ func _ready() -> void:
 			_walls.append(wall)
 		_walls.append(AM.MONUMENT)
 		_walls.append_array(Mountain.ROOT_WALLS)
+		_walls.append_array(RuneRoom.WALLS)
 		_walls.append(Mountain.ANCHOR_WALL)
 	if ancient_console_enabled:
 		_walls.append({"bounds": AncientConsole.CONSOLE_BODY, "height": 92.0, "layer": 2})
@@ -2635,7 +2645,7 @@ func _monument_visible() -> bool:
 func monument_read() -> String:
 	if not _monument_visible() or not prism_active or not crystal_observer.luna_eyes_open or not _within_reach(AM.MONUMENT_POINT):
 		return ""
-	return AM.COMMANDS[antimemetic.monument_index]
+	return Runes.encode(AM.COMMANDS[antimemetic.monument_index])
 
 
 func _am_music_response() -> bool:
@@ -2675,10 +2685,10 @@ func _draw_antimemetic() -> void:
 		var bounds: Rect2 = AM.MONUMENT["bounds"]
 		draw_rect(Rect2(bounds.position - Vector2(0, 58), bounds.size + Vector2(0, 58)), Color("606678"))
 		draw_rect(Rect2(bounds.position - Vector2(-5, 53), Vector2(22, 42)), Color("8795a0"), false, 2.0)
-		draw_string(ThemeDB.fallback_font, bounds.position + Vector2(-8, -25), "◊ ᚱ ◊", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("c7e5d6"))
+		draw_circle(bounds.position + Vector2(6, -25), 3.0, Color("c7e5d6"))
 		var reading := monument_read()
 		if not reading.is_empty():
-			draw_string(ThemeDB.fallback_font, AM.MONUMENT_POINT + Vector2(-75, -65), reading, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("f4d99d"))
+			Runes.draw_encoded(self, reading, AM.MONUMENT_POINT + Vector2(-75, -65), Color("f4d99d"), 0.85)
 	draw_string(ThemeDB.fallback_font, Vector2(2110, 93), "↑ ↓ → ↓ ← ↑", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("c8c2d2"))
 
 
@@ -3907,7 +3917,7 @@ func _update_local_camera() -> void:
 		_camera.position = highland.camera_lock
 		return
 	if observation_fixture:
-		for room in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP]:
+		for room in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP, RuneRoom.KEY_ROOM]:
 			if room.has_point(actor.position):
 				_camera.position = room.get_center()
 				_camera.zoom = Vector2(2.25, 2.25)
@@ -4760,7 +4770,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if next_game_mode not in ["FULLSCREEN", "WINDOWED"]:
 		return false
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -5284,7 +5294,7 @@ func _migrate_home_addresses(source: Dictionary, previous_schema: int) -> Dictio
 	var pair: Variant = result.get("wand_pair")
 	if pair is Dictionary and pair.get("duplicate") is Dictionary:
 		_migrate_address_entry(pair["duplicate"], true, previous_schema)
-	if observation_fixture and previous_schema >= 16:
+	if observation_fixture and previous_schema >= 16 and previous_schema <= 18:
 		var old_highland: Variant = result.get("highland")
 		if old_highland is Dictionary:
 			_shift_legacy_refuge_xy(old_highland.get("camera_lock"))
@@ -5319,7 +5329,7 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 	if not stored is String:
 		return
 	var canonical: String = Lake.LOCATION_ID if stored == Lake.LEGACY_LOCATION_ID else stored
-	if observation_fixture and previous_schema >= 16 and not is_field and entry.get("motion") is Dictionary:
+	if observation_fixture and previous_schema >= 16 and previous_schema <= 18 and not is_field and entry.get("motion") is Dictionary:
 		_shift_legacy_refuge_xy(entry["motion"].get("anchor"))
 	# A carried wand may retain its previous ground location.
 	if is_field and entry.get("carried") == true:
@@ -5332,7 +5342,7 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
 			return
 	var point := Vector2(float(raw[0]), float(raw[1]))
-	if observation_fixture and previous_schema >= 16 and canonical == Edge.address_v18(point) and _shift_legacy_refuge_xy(raw):
+	if observation_fixture and previous_schema >= 16 and previous_schema <= 18 and canonical == Edge.address_v18(point) and _shift_legacy_refuge_xy(raw):
 		entry["location_id"] = _entity_location(point + Edge.REFUGE_OFFSET)
 		return
 	# Schema 14 accidentally overlaid the existing Mia cave. Relocate only
@@ -5382,6 +5392,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v17(point)
 	elif previous_schema == 18:
 		previous_location = _entity_location_v18(point)
+	elif previous_schema == 19:
+		previous_location = _entity_location_v19(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 
@@ -5576,6 +5588,7 @@ func _draw() -> void:
 		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
 		Visits.draw_on(self, flute_owned, prism_active)
 		SecretFinds.draw_on(self, actor.position, actor.motion.elevation, "GRAVITY_GUN" in city_tools.owned, flute_owned)
+		RuneRoom.draw_on(self)
 		City.draw_on(self)
 		_draw_antimemetic()
 		Mountain.draw_on(self, highland.compass_owned, highland.camera_owned, actor.position, prism_active, _mountain_echo)

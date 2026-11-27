@@ -1,4 +1,6 @@
 extends RefCounted
+const Runes = preload("res://scripts/runtime2d/latin_runes_2d.gd")
+const RuneRoom = preload("res://scripts/skeleton/rune_room_layout.gd")
 ## Chapter VII provisional geometry. Ground and height use the shared physics.
 const MOUNTAIN := "ET_MOUNTAINS"
 const UPDRAFT := "ET_UPDRAFT_VALLEY"
@@ -99,11 +101,11 @@ static func draw_on(canvas: Node2D, compass_owned: bool, camera_owned: bool, pla
 	canvas.draw_colored_polygon(PackedVector2Array([anchor + Vector2(-14, 8), anchor + Vector2(-8, -24), anchor + Vector2(5, -34), anchor + Vector2(16, -7), anchor + Vector2(10, 8)]), Color("91c7d2"))
 	for i in range(3):
 		canvas.draw_circle(Vector2(2005 + i * 40, 1860), 6.0, Color("edbf88"))
+	Runes.draw_encoded(canvas, Runes.encode("ET_FORGOTTEN_EDGE"), H6_RUNE + Vector2(-70, -25), Color("e9d0a1") if prism else Color("b2a5a6"), 0.75)
 	if prism:
-		canvas.draw_string(font, H6_RUNE + Vector2(-70, -15), "ET_FORGOTTEN_EDGE", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("e9d0a1"))
+		Runes.draw_encoded(canvas, Runes.encode(RuneRoom.TEMPLE_COMMAND), RuneRoom.TEMPLE_POINT + Vector2(-43, -28), Color("e9d0a1"), 0.8)
 		canvas.draw_string(font, M07_SOURCE + Vector2(-32, -15), "↓ ↑ ← → ↓ ↑", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("83d8ee"))
-	else:
-		canvas.draw_string(font, H6_RUNE + Vector2(-25, -15), "ᛖ ᛏ ◊ ᚠ", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("b2a5a6"))
+
 	if echo > 0.0:
 		canvas.draw_arc(M07_SOURCE, 16.0 + (3.0 - echo) * 9.0, 0, TAU, 24, Color(0.9, 0.8, 0.6, echo / 3.0), 2.0)
 	if not camera_owned and TREE_POCKET.has_point(player_point):

@@ -68,7 +68,7 @@ func _run() -> void:
 	home.social.prism_owned = true
 	assert(home.toggle_prism())
 	var command: String = home.monument_read()
-	assert(command in AM.COMMANDS and home.antimemetic.active)
+	assert(command == Island.Runes.encode(AM.COMMANDS[home.antimemetic.monument_index]) and command not in AM.COMMANDS and home.antimemetic.active)
 	var snapshot: Dictionary = JSON.parse_string(JSON.stringify(home.make_snapshot()))
 	assert(home.apply_snapshot(snapshot))
 	assert(home.monument_read() == command)
