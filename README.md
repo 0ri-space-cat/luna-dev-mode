@@ -1,5 +1,7 @@
 # LUNA: Dev Mode 🌙
 
+**Актуальная авторская ревизия 27.11:** [§08.26 мануала](docs/manual/00_LUNA_PRODUCTION_MANUAL.md) · [Редакционный барьер](docs/scenario/SCENARIO_DESIGN_GATE.md) · [Гибридное окружение](docs/art/HYBRID_ENVIRONMENT_ASSET_PLAN_DRAFT.md).
+
 **Начать здесь: [короткая память проекта](docs/CHAT_HANDOFF.md), [постоянное задание ведущему агенту](docs/CHAT_PROMPT.md) и [единый производственный мануал](docs/manual/00_LUNA_PRODUCTION_MANUAL.md).** Текущий шаг — §12 мануала. [AGENTS.md](AGENTS.md) задаёт правила работы с репозиторием.
 
 | Папка | Назначение |

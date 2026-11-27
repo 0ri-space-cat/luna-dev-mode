@@ -1,5 +1,7 @@
 # Документация LUNA
 
+**Актуально 27.11:** [§08.26 мануала](manual/00_LUNA_PRODUCTION_MANUAL.md), [редакционный барьер](scenario/SCENARIO_DESIGN_GATE.md), [ведомость гибридного окружения](art/HYBRID_ENVIRONMENT_ASSET_PLAN_DRAFT.md).
+
 [Короткая память проекта](CHAT_HANDOFF.md) · [Постоянное задание ведущему агенту](CHAT_PROMPT.md) · [Правила агентов](../AGENTS.md) · [Текущая точка продолжения](manual/00_LUNA_PRODUCTION_MANUAL.md#12-передача-следующей-модели--точное-следующее-действие)
 
 - [Единый мануал](manual/00_LUNA_PRODUCTION_MANUAL.md) — актуальные общие законы и статусы.
