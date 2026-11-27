@@ -1807,6 +1807,26 @@ func _city_resident_line() -> String:
 	return "Прохожий: Сегодня на площади довольно спокойно."
 
 
+func _near_ori_customer() -> bool:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached() or actor.has_passenger() or not City.SHOP.has_point(actor.position):
+		return false
+	var customer := entities.get_entity(ORI_CUSTOMER) as EntityBody
+	return _friend_available(customer) and customer.record.category == "resident" and City.SHOP.has_point(customer.position) and _within_reach(customer.position, customer.motion.elevation)
+
+
+func _ori_customer_line() -> String:
+	# A current observation, not a delivery order, reward or memory flag.
+	var customer := entities.get_entity(ORI_CUSTOMER) as EntityBody
+	if customer != null:
+		for identity in entities.list_ids():
+			if not identity.begins_with(ORI_CREATED_PREFIX):
+				continue
+			var creature := entities.get_entity(identity) as EntityBody
+			if creature != null and creature.visible and creature.get_parameter("alive") and City.SHOP.has_point(creature.position) and creature.position.distance_to(customer.position) <= 100.0 and absf(creature.motion.elevation - customer.motion.elevation) <= 48.0 and creature.has_active_ability("GLOW"):
+				return "Посетитель: Какая прелесть! С этим зверьком и ночник не нужен."
+	return "Посетитель: Зашёл просто посмотреть. Тут каждый раз кто-нибудь новенький."
+
+
 # Explicit ordinary invitations are independent of the artifact inventory.
 func _friend_invitation_target() -> String:
 	if not observation_fixture or evening_stage != 0 or not actor.motion.grounded or actor.is_attached():
@@ -4736,6 +4756,8 @@ func _nearby_action() -> String:
 		return "Заморозить воду"
 	if _near_city_resident():
 		return "Поговорить с прохожим"
+	if _near_ori_customer():
+		return "Поговорить с посетителем"
 	return ""
 
 
@@ -4896,6 +4918,11 @@ func interact() -> bool:
 			if not _near_city_resident():
 				return false
 			$Interface/SaveNotice.text = _city_resident_line()
+			return true
+		"Поговорить с посетителем":
+			if not _near_ori_customer():
+				return false
+			$Interface/SaveNotice.text = _ori_customer_line()
 			return true
 		"Взять пончик":
 			has_donut = true

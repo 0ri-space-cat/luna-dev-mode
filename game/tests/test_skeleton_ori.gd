@@ -23,6 +23,16 @@ func _run() -> void:
 	root.add_child(game)
 	await physics_frame
 	var home = game.home
+	# Optional visitor interaction works without a loan or a creation.
+	var visitor = home.entities.get_entity(Island.ORI_CUSTOMER)
+	_place(home, visitor.position + Vector2(25, 0))
+	var social_before: Dictionary = home.social.snapshot()
+	var ori_before: Dictionary = home.ori.snapshot()
+	assert(home._near_ori_customer() and home._nearby_action() == "Поговорить с посетителем")
+	assert(home.interact() and home.get_node("Interface/SaveNotice").text.contains("просто посмотреть"))
+	assert(home.social.snapshot() == social_before and home.ori.snapshot() == ori_before)
+	_place(home, Vector2(510, 535))
+	assert(not home._near_ori_customer())
 	var cat = home.entities.get_entity(Island.City.CAT)
 	_place(home, cat.position + Vector2(-30, 0))
 	home._tick_ori()
@@ -45,6 +55,15 @@ func _run() -> void:
 	assert(not first.is_empty())
 	var created = home.entities.get_entity(first)
 	assert(created.has_active_ability("GLOW"))
+	# Observe the genuine creature in its current physical room, without
+	# granting a friend meeting or changing the module bank.
+	assert(created.position.distance_to(customer.position) <= 100.0)
+	_place(home, customer.position + Vector2(25, 0))
+	var visitor_social: Dictionary = home.social.snapshot()
+	var visitor_bank: Dictionary = home.actor.record.get_component("ABILITY_BANK").duplicate(true)
+	assert(home.interact() and home.get_node("Interface/SaveNotice").text.contains("ночник"))
+	assert(home.social.snapshot() == visitor_social and home.actor.record.get_component("ABILITY_BANK") == visitor_bank)
+	_place(home, customer.position + Vector2(-42, 0))
 	home._tick_ori()
 	_place(home, Vector2(5990, 650))
 	var second: String = home.catalog_repeat()
