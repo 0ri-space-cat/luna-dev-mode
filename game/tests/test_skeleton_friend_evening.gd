@@ -33,8 +33,16 @@ func _run() -> void:
 		home.social.complete(friend)
 	home.social.observe_with_oni("W1")
 	assert(not home.social.can_gather() and not home.begin_cafe_evening())
-	for friend in ["LEIA", "YUKI", "TOFFI", "ORI", "MIA"]:
+	# Physical invitation must follow the entity ID, not the order of arrays.
+	for pair in [[Island.City.ORI, "ORI"], [Island.City.YUKI, "YUKI"]]:
+		var body = home.entities.get_entity(pair[0])
+		_place(home.actor, body.position + Vector2(0, 25))
+		assert(home._friend_invitation_target() == pair[1])
+		assert(home._invite_nearby_friend())
+		assert(home.social.invitations.has(pair[1]))
+	for friend in ["LEIA", "TOFFI", "MIA"]:
 		assert(home.social.invite(friend))
+	_place(home.actor, Island.CAFE_TALK)
 	assert(not home.social.can_gather() and not home.begin_cafe_evening())
 	assert(home.social.invite("ONI") and home.social.can_gather())
 	assert(not home.social.invite("ONI"))

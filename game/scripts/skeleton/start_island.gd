@@ -1501,12 +1501,15 @@ func _friend_safe(body: EntityBody, point: Vector2, height: float, ignore: Array
 func _friend_invitation_target() -> String:
 	if not observation_fixture or evening_stage != 0 or not actor.motion.grounded or actor.is_attached():
 		return ""
-	var ids := _friend_ids()
+	var friend_by_entity := {
+		City.YUKI: "YUKI", City.ORI: "ORI", Life.MIA_ID: "MIA",
+		LEIA_ID: "LEIA", City.TOFFI: "TOFFI", Visits.ONI_ID: "ONI",
+	}
 	var closest := INF
 	var result := ""
-	for index in ids.size():
-		var friend: String = Social.FRIENDS[index]
-		var body := entities.get_entity(ids[index]) as EntityBody
+	for id in friend_by_entity:
+		var friend: String = friend_by_entity[id]
+		var body := entities.get_entity(id) as EntityBody
 		if not social.can_invite(friend) or not _friend_available(body):
 			continue
 		if _entity_location(body.position) != _entity_location(actor.position) or not _within_reach(body.position, body.motion.elevation):
