@@ -1792,6 +1792,21 @@ func _meet_ordinary_friend() -> bool:
 	return true
 
 
+func _near_city_resident() -> bool:
+	if not observation_fixture or not actor.motion.grounded or actor.is_attached() or actor.has_passenger():
+		return false
+	var resident := entities.get_entity(PASSERBY) as EntityBody
+	return _friend_available(resident) and resident.record.category == "resident" and resident.location_id == City.CITY_ID and _entity_location(actor.position) == City.CITY_ID and _within_reach(resident.position, resident.motion.elevation)
+
+
+func _city_resident_line() -> String:
+	# Small optional ordinary remark, not an unlock, tracked quest or marker.
+	# The narrow time window is temporary staging, not a published schedule.
+	if hero_profile.active == HeroProfile.LUNA and world_clock.is_in_window(16 * 60 + 10, 16 * 60 + 25) and not (meta_merged.is_valid() and meta_merged.call()):
+		return "Прохожий: Кажется, я тебя здесь уже видел. Ты что, подстриглась?"
+	return "Прохожий: Сегодня на площади довольно спокойно."
+
+
 # Explicit ordinary invitations are independent of the artifact inventory.
 func _friend_invitation_target() -> String:
 	if not observation_fixture or evening_stage != 0 or not actor.motion.grounded or actor.is_attached():
@@ -4719,6 +4734,8 @@ func _nearby_action() -> String:
 		return "Отдохнуть до утра" if _rest_until_morning() else "Отдохнуть до ночи"
 	if freeze_selected and _can_freeze_creek():
 		return "Заморозить воду"
+	if _near_city_resident():
+		return "Поговорить с прохожим"
 	return ""
 
 
@@ -4875,6 +4892,11 @@ func interact() -> bool:
 			var duplicated := wand_pair.duplicate_in_water(Lake.SHORE + Vector2(17, 0), Lake.LOCATION_ID)
 			queue_redraw()
 			return duplicated
+		"Поговорить с прохожим":
+			if not _near_city_resident():
+				return false
+			$Interface/SaveNotice.text = _city_resident_line()
+			return true
 		"Взять пончик":
 			has_donut = true
 			donut_refill = DONUT_REFILL_SECONDS

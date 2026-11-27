@@ -23,6 +23,21 @@ func _run() -> void:
 	root.add_child(game)
 	await physics_frame
 	var home = game.home
+	# Ordinary resident is the same physical body as the later machine target.
+	var resident = home.entities.get_entity(Island.PASSERBY)
+	_place(home, resident.position + Vector2(0, 30))
+	assert(home.world_clock.set_time_of_day(12 * 60))
+	assert(home._near_city_resident() and home.interact())
+	assert(not home.get_node("Interface/SaveNotice").text.contains("подстриглась"))
+	assert(home.world_clock.set_time_of_day(16 * 60 + 15))
+	var before_social: Dictionary = home.social.snapshot()
+	var before_access: Dictionary = home.access.snapshot()
+	assert(home.interact())
+	var remark: String = home.get_node("Interface/SaveNotice").text
+	assert(remark.contains("подстриглась") and not remark.contains("META_WHITE_VOID"))
+	assert(home.social.snapshot() == before_social and home.access.snapshot() == before_access)
+	assert(not game.white_discovered and not game.meta.merged)
+	assert(home.world_clock.set_time_of_day(9 * 60))
 	for key in Island.TOOL_POINTS:
 		_place(home, Island.TOOL_POINTS[key])
 		if key == "GRAVITY_GUN":
@@ -65,6 +80,7 @@ func _run() -> void:
 	home._tick_yuki(1.0)
 	var person = home.entities.get_entity(Island.PASSERBY)
 	assert(person.record.category == "mouse")
+	assert(not home._near_city_resident())
 	assert(home.set_yuki_running(false))
 	home._tick_yuki(6.0)
 	assert(person.record.category == "resident")
