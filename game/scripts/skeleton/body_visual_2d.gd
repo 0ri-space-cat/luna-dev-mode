@@ -2,6 +2,7 @@ extends Node2D
 ## DEV visual adapter: reads existing bodies and never changes physics, modules or saves.
 const LUNA := preload("res://assets/art_probe/luna.png")
 const ONI := preload("res://assets/art_probe/oni.png")
+const ArtBank = preload("res://scripts/skeleton/body_visual_bank_2d.gd")
 const CELL := Vector2(48, 76)
 const FOOT := Vector2(24, 70)
 const VIEW_ROWS := [2, 1, 0, 1, 2, 3, 4, 3]
@@ -15,6 +16,8 @@ var installed_walk := false
 var enabled_walk := false
 var installed_fly := false
 var enabled_fly := false
+var suppressed := false
+var _preview_scale := 1.0
 var _last_point := Vector2.ZERO
 var _marker: Polygon2D
 var _category := ""
@@ -47,6 +50,7 @@ static func module_state(instances: Dictionary, ability: String) -> Vector2i:
 func mount(marker: Polygon2D, point: Vector2, preview_scale: float) -> void:
 	_marker = marker
 	_last_point = point
+	_preview_scale = preview_scale
 	name = "DEVBodyVisual"
 	sprite.centered = false
 	sprite.offset = -FOOT
@@ -71,21 +75,8 @@ func sync(body, delta: float) -> void:
 		frame = 0
 	var category: String = body.record.category
 	var category_changed := category != _category
-	if category_changed:
-		_category = category
-		sprite.texture = LUNA if category == "player" else (ONI if category == "oni" else null)
-		sprite.region_enabled = category == "player"
-		sprite.visible = sprite.texture != null
-		# self_modulate hides just the polygon, not sprite, appendages or GLOW.
-		_marker.self_modulate = Color(1, 1, 1, 0) if sprite.visible else Color.WHITE
-	if sprite.visible:
-		if category == "player":
-			sprite.region_rect = atlas_rect(facing, frame)
-			sprite.flip_h = mirrored(facing)
-		else:
-			sprite.flip_h = false
-		var default_color: Color = body.record.registry.get_spec(category, "color").get("default", Color.WHITE)
-		sprite.modulate = Color.WHITE if _marker.color == default_color else _marker.color
+	_category = category
+	_sync_sprite(category)
 	var instances: Dictionary = body.record.get_component("ABILITY_SET").get("instances", {})
 	var walk := module_state(instances, "WALK")
 	var fly := module_state(instances, "FLY")
@@ -100,6 +91,41 @@ func sync(body, delta: float) -> void:
 	_limb_color = next_color
 	if changed or installed_walk:
 		queue_redraw()
+
+
+func _sync_sprite(category: String) -> void:
+	var picture: Texture2D = null
+	var pivot := FOOT
+	var draw_scale := _preview_scale
+	var row: int = VIEW_ROWS[facing]
+	var flip := mirrored(facing)
+	if not suppressed:
+		if category == "player":
+			picture = LUNA
+		elif category == "oni" and row == 0:
+			# Retain the existing approved front from the original probe.
+			picture = ONI
+			flip = false
+		else:
+			var art := ArtBank.frame_for(category, row, frame)
+			if not art.is_empty():
+				picture = art["texture"]
+				pivot = art["pivot"]
+				draw_scale *= float(art["scale"])
+	if sprite.texture != picture:
+		sprite.texture = picture
+	sprite.region_enabled = picture != null and category == "player"
+	if sprite.region_enabled:
+		sprite.region_rect = atlas_rect(facing, frame)
+	elif picture != null and flip:
+		pivot.x = picture.get_width() - pivot.x
+	sprite.flip_h = flip
+	sprite.offset = -pivot
+	sprite.scale = Vector2.ONE * draw_scale
+	sprite.visible = picture != null
+	# Keep the original polygon/pose for unavailable artwork or the buried Leia.
+	_marker.self_modulate = Color(1, 1, 1, 0) if sprite.visible else Color.WHITE
+	sprite.modulate = Color.WHITE if _marker.color == ArtBank.original_color(category) else _marker.color
 
 
 func _draw() -> void:

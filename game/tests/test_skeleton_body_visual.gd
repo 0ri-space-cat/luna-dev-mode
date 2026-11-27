@@ -3,6 +3,7 @@ const Adventure = preload("res://scenes/skeleton/adventure.tscn")
 const Island = preload("res://scripts/skeleton/start_island.gd")
 const Visual = preload("res://scripts/skeleton/body_visual_2d.gd")
 const Calibration = preload("res://scripts/skeleton/p0_calibration_2d.gd")
+const ArtBank = preload("res://scripts/skeleton/body_visual_bank_2d.gd")
 const PROFILE := "user://luna_body_visual_regression.json"
 
 
@@ -27,6 +28,18 @@ func _run() -> void:
 	assert(actor._marker.position.y == -actor.motion.elevation)
 	var oni = home.entities.get_entity(Island.Visits.ONI_ID)
 	assert(oni.body_visual.sprite.texture == Visual.ONI)
+	assert(oni.body_visual.sprite.modulate == Color.WHITE)
+	for category in ArtBank.FRIENDS:
+		for row in range(5):
+			var art_view := ArtBank.frame_for(category, row, 0)
+			assert(not art_view.is_empty(), "Missing friend view: %s / %d" % [category, row])
+			assert(art_view["pivot"] == ArtBank.FRIEND_PIVOT)
+	for row in range(5):
+		var idle := ArtBank.frame_for("chibi_luna", row, 0)
+		assert(not idle.is_empty(), "Missing Chibi idle: %d" % row)
+		for column in range(1, 5):
+			var contact := ArtBank.frame_for("chibi_luna", row, column)
+			assert(not contact.is_empty() and contact["pivot"] == idle["pivot"], "Chibi registration: %d/%d" % [row, column])
 	var prop = home.entities.get_entity(Island.FRIDGE_ID)
 	assert(not prop.body_visual.sprite.visible and prop._marker.self_modulate.a == 1.0)
 	var initial: Vector2 = actor.position
@@ -43,7 +56,8 @@ func _run() -> void:
 	actor.jump()
 	for tick in range(5):
 		await physics_frame
-	assert(actor.motion.elevation > 0.0 and actor._marker.position.y == -actor.motion.elevation)
+	assert(actor.motion.elevation > 0.0, "Jump height: %s" % actor.motion.elevation)
+	assert(is_equal_approx(actor._marker.position.y, -actor.motion.elevation), "Foot Z: marker=%s physical=%s" % [actor._marker.position.y, actor.motion.elevation])
 	assert(art.sprite.offset == -Visual.FOOT and actor.foot_radius() == radius)
 	for tick in range(120):
 		await physics_frame
@@ -56,6 +70,14 @@ func _run() -> void:
 	assert(home.apply_snapshot(saved))
 	assert(home.actor.entity_id == Island.ENTITY_ID)
 	assert(home.actor.body_visual.sprite.texture == Visual.LUNA and home.actor.foot_radius() == radius)
+	assert(home._spawn_lake_chibi())
+	var clone = home.entities.get_entity(Island.LAKE_CHIBI_PREFIX + "1")
+	assert(clone != null and clone.body_visual.sprite.visible and clone.entity_id != home.actor.entity_id)
+	assert(clone.body_visual.sprite.texture == ArtBank.frame_for("chibi_luna", 0, 0)["texture"])
+	var clone_id: String = clone.entity_id
+	var clone_save: Dictionary = home.make_snapshot()
+	assert(home.apply_snapshot(clone_save))
+	assert(home.entities.get_entity(clone_id).body_visual.sprite.visible)
 	# Presence and enabled state are independent; temporary effects own no modules.
 	var modules := {"W": {"ability_id": "WALK", "enabled": false}, "F": {"ability_id": "FLY", "enabled": true}}
 	assert(Visual.module_state(modules, "WALK") == Vector2i(1, 0))

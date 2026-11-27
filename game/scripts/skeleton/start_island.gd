@@ -1439,6 +1439,8 @@ func _sync_leia_pose() -> void:
 		return
 	# Placeholder silhouette only. Collision, size and color are unchanged.
 	var buried := not leia_free and not _friend_at_cafe(LEIA_ID) and leia.position.distance_to(LEIA_START) < 25.0
+	if is_instance_valid(leia.body_visual):
+		leia.body_visual.suppressed = buried
 	leia._marker.polygon = PackedVector2Array([Vector2(-12, 0), Vector2(-12, -16), Vector2(-4, -16), Vector2(-4, -5), Vector2(4, -5), Vector2(4, -19), Vector2(12, -19), Vector2(12, 0)]) if buried else PackedVector2Array([Vector2(-12, 0), Vector2(-12, -18), Vector2(0, -32), Vector2(12, -18), Vector2(12, 0)])
 
 
