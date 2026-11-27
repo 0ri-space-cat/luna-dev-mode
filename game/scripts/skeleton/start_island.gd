@@ -76,6 +76,7 @@ var _am_stomp: AudioStreamWAV
 var _am_echo_id := ""
 var _am_echo_remaining := 0.0
 const City = preload("res://scripts/skeleton/luma_city_layout.gd")
+const LunaDoor = preload("res://scripts/skeleton/luna_door_2d.gd")
 const Social = preload("res://scripts/runtime2d/friend_progress_2d.gd")
 const Music = preload("res://scripts/runtime2d/flute_2d.gd")
 const Visits = preload("res://scripts/skeleton/oni_music_layout.gd")
@@ -422,7 +423,7 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 76 + QuietRegions.FAUNA.size() if observation_fixture else super._entity_limit()
+	return 77 + QuietRegions.FAUNA.size() if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
@@ -941,7 +942,7 @@ func _open_ori() -> bool:
 
 const CityTools = preload("res://scripts/runtime2d/city_tools_2d.gd")
 const PASSERBY := "C1_PASSERBY"
-const TOOL_POINTS := {"BESTIARY": Vector2(5960, 650), "REALITY_STAMP": Vector2(6160, 660), "GRAVITY_GUN": SecretFinds.GRAVITY_POINT, "PIXEL_GLOBE": Vector2(4780, 285), "LUNA_ROOM_DOOR": Vector2(6080, 360)}
+const TOOL_POINTS := {"BESTIARY": Vector2(5960, 650), "REALITY_STAMP": Vector2(6160, 660), "GRAVITY_GUN": SecretFinds.GRAVITY_POINT, "PIXEL_GLOBE": Vector2(4780, 285)}
 const TOOL_NAMES := {"BESTIARY": "Бестиарий", "REALITY_STAMP": "Штамп реальности", "GRAVITY_GUN": "Гравипушка", "PIXEL_GLOBE": "Глобус", "LUNA_ROOM_DOOR": "Дверь Луны"}
 const ORI_PLAZA := Vector2(5170, 525)
 const ORI_EXIT := Vector2(5930, 685)
@@ -950,9 +951,18 @@ var _initial_passerby: Dictionary = {}
 var _city_tool_panel: PanelContainer
 var _stamp_choice := "GLOW"
 var luna_door_session: Dictionary = {}
+var _initial_luna_door: Dictionary = {}
 
 
 func _setup_city_tools() -> void:
+	var original := spawn_entity({"id": LunaDoor.ID, "category": "prop", "label": "Дверь Луны", "material": "WOOD"}, LunaDoor.HOME_POINT, 0.0)
+	if original == null:
+		push_error("Could not place the original Luna room door")
+	else:
+		original.set_parameter("pickable", false)
+		for entry in make_snapshot()["entities"]:
+			if entry["id"] == LunaDoor.ID:
+				_initial_luna_door = entry
 	var passerby := spawn_entity({"id": PASSERBY, "category": "resident", "label": "Прохожий", "material": "FABRIC"}, Vector2(5260, 375), 0.0)
 	if passerby != null:
 		passerby.set_parameter("behavior_mode", "IDLE")
@@ -984,7 +994,7 @@ func _door_source(data: Variant) -> Dictionary:
 
 
 func _door_return_point() -> Dictionary:
-	if luna_door_session.is_empty():
+	if not _door_session_is_live():
 		return {}
 	var point := Vector2(float(luna_door_session["x"]), float(luna_door_session["y"]))
 	var address: String = luna_door_session["address"]
@@ -995,8 +1005,35 @@ func _door_return_point() -> Dictionary:
 	return {}
 
 
+func _door_body() -> LunaDoor:
+	return entities.get_entity(LunaDoor.ID) as LunaDoor
+
+
+func _door_session_is_live() -> bool:
+	var door := _door_body()
+	if door == null or luna_door_session.is_empty():
+		return false
+	var point := Vector2(float(luna_door_session["x"]), float(luna_door_session["y"]))
+	return door.is_placed_at(point) and _entity_location(door.position) == luna_door_session["address"]
+
+
+func _door_at_source() -> bool:
+	var door := _door_body()
+	return door != null and not door.is_attached() and door.motion.grounded and is_zero_approx(door.motion.elevation) and _entity_location(door.position) == _entity_location(actor.position) and _within_reach(door.position)
+
+
+func interact_with_attachment(target_id: String = "") -> bool:
+	var result := super.interact_with_attachment(target_id)
+	var door := _door_body()
+	if result and door != null and actor.has_passenger() and actor._rider == door:
+		city_tools.acquire(LunaDoor.TOOL_KEY)
+		luna_door_session.clear()
+		queue_redraw()
+	return result
+
+
 func use_luna_door() -> bool:
-	if "LUNA_ROOM_DOOR" not in city_tools.owned or not (actor as EntityBody).accepts_player_input() or actor.is_attached() or not actor.motion.grounded or not is_zero_approx(actor.motion.elevation):
+	if not observation_fixture or not (actor as EntityBody).accepts_player_input() or actor.is_attached() or not actor.motion.grounded or not is_zero_approx(actor.motion.elevation):
 		return false
 	var address := _entity_location(actor.position)
 	if address == City.HOME_ID:
@@ -1007,26 +1044,21 @@ func use_luna_door() -> bool:
 			return false
 		_move_home_travelers(back["point"], back["address"])
 		return true
-	if not luna_door_session.is_empty():
-		var source := Vector2(float(luna_door_session["x"]), float(luna_door_session["y"]))
-		if address != luna_door_session["address"] or not _within_reach(source):
-			return false
-	else:
-		var source := _door_source({"address": address, "x": actor.position.x, "y": actor.position.y})
-		if source.is_empty():
-			return false
-		for point in _ordinary_arrival_points(City.HOME_ID):
-			if _ordinary_arrival_is_safe(City.HOME_ID, point):
-				luna_door_session = source
-				_move_home_travelers(point, City.HOME_ID)
-				return true
+	if not _door_at_source() or actor.has_passenger():
+		return false
+	var door := _door_body()
+	if not city_tools.owned.has(LunaDoor.TOOL_KEY) or not door.get_parameter("pickable"):
+		return false
+	var source := _door_source({"address": address, "x": door.position.x, "y": door.position.y})
+	if source.is_empty():
 		return false
 	for point in _ordinary_arrival_points(City.HOME_ID):
 		if _ordinary_arrival_is_safe(City.HOME_ID, point):
+			luna_door_session = source
 			_move_home_travelers(point, City.HOME_ID)
+			queue_redraw()
 			return true
 	return false
-
 
 func close_luna_door() -> bool:
 	if luna_door_session.is_empty() or not (actor as EntityBody).accepts_player_input():
@@ -2743,6 +2775,9 @@ func _spawn_city() -> void:
 func _tick_city() -> void:
 	if not observation_fixture:
 		return
+	if not luna_door_session.is_empty() and not _door_session_is_live():
+		luna_door_session.clear()
+		queue_redraw()
 	var bench := entities.get_entity(City.BENCH) as EntityBody
 	if bench != null and city_bench_active and bench.get_parameter("alive") and bench.get_parameter("ai_enabled") \
 			and not bench.is_attached() and City.PLAZA.merge(City.STREET).merge(City.STATION).has_point(bench.position):
@@ -2775,8 +2810,10 @@ func _city_door_action() -> Dictionary:
 		if actor.position.distance_to(outside) <= 21.0 and absf(actor.motion.elevation) < 1.0:
 			return {"point": inside, "address": door["address"], "label": "Войти: " + door["name"]}
 		if actor.position.distance_to(inside) <= 21.0 and absf(actor.motion.elevation) < 1.0:
-			if door["id"] == "room" and not luna_door_session.is_empty():
-				return _door_return_point()
+			if door["id"] == "room" and _door_session_is_live():
+				var back := _door_return_point()
+				if not back.is_empty():
+					return back
 			return {"point": outside, "address": City.CITY_ID, "label": "Выйти на улицу"}
 	return {}
 
@@ -3358,7 +3395,7 @@ func _lake_place_point() -> Vector2:
 	if not observation_fixture or not actor.has_passenger() or not actor.motion.grounded:
 		return Vector2.INF
 	var item := actor._rider as EntityBody
-	if item == null or not item.is_carried() or item.record.category != "prop" or item.entity_id == ECOLOGY_CATALOG:
+	if item == null or not item.is_carried() or item.record.category != "prop" or item.entity_id in [ECOLOGY_CATALOG, LunaDoor.ID]:
 		return Vector2.INF
 	var point := Vector2(2507, clampf(actor.position.y, 405.0, 445.0))
 	if point.distance_to(actor.position) > 58.0 or not Lake.SHALLOW_SURFACE["bounds"].has_point(point):
@@ -3391,7 +3428,7 @@ func _spawn_lake_chibi() -> bool:
 
 func _copy_lake_prop(source: EntityBody) -> bool:
 	if source == null or source.record.category != "prop" or source.entity_id == ECOLOGY_CATALOG \
-			or source.entity_id.begins_with(LAKE_PROP_PREFIX) or source.is_attached() or not _lake_wet(source):
+			or source.entity_id == LunaDoor.ID or source.entity_id.begins_with(LAKE_PROP_PREFIX) or source.is_attached() or not _lake_wet(source):
 		return false
 	var identity := LAKE_PROP_PREFIX + source.entity_id
 	if identity.length() > 96 or entities.get_entity(identity) != null:
@@ -3524,6 +3561,8 @@ func request_install_duplicate(target_id: String) -> bool:
 
 
 func _create_entity_body(identity: String, category: String) -> EntityBody:
+	if observation_fixture and identity == LunaDoor.ID and category == "prop":
+		return LunaDoor.new()
 	if observation_fixture and QuietRegions.FAUNA.has(identity) and category == QuietRegions.FAUNA[identity]["category"]:
 		var region_resident := Fauna.new()
 		region_resident.birth_point = QuietRegions.FAUNA[identity]["point"]
@@ -4085,6 +4124,8 @@ func _nearby_action() -> String:
 	var city_door := _city_door_action()
 	if not city_door.is_empty():
 		return city_door["label"]
+	if _door_at_source() and _entity_location(actor.position) != City.HOME_ID and _door_session_is_live():
+		return "Пройти через Дверь Луны"
 	var station := _city_station_destination()
 	if not station.is_empty():
 		return "Рейс в Люму" if station == City.CITY_ID else "Рейс на Большие луга"
@@ -4270,6 +4311,8 @@ func interact() -> bool:
 	if not city_tool.is_empty():
 		return _take_city_tool(city_tool)
 	match _nearby_action():
+		"Пройти через Дверь Луны":
+			return use_luna_door()
 		"Нырнуть в тоннель":
 			return _use_tunnel(Tunnel.WEST_EXIT, Tunnel.LOCATION_ID)
 		"Нырнуть в обратный тоннель":
@@ -4739,10 +4782,11 @@ func make_snapshot() -> Dictionary:
 		data["mia_route_step"] = mia_route_step
 		data["lab_ice"] = _lab_ice.remaining
 		data["city_layout"] = 1
+		data["luna_door_layout"] = LunaDoor.LAYOUT_VERSION
 		data["yuki_layout"] = 1
 		data["yuki"] = yuki.snapshot()
 		data["city_tools"] = city_tools.snapshot()
-		data["luna_door_session"] = luna_door_session.duplicate(true)
+		data["luna_door_session"] = luna_door_session.duplicate(true) if _door_session_is_live() else {}
 		if ecology_fixture:
 			data["ori_layout"] = 1
 			data["ori"] = ori.snapshot()
@@ -5037,6 +5081,20 @@ func apply_snapshot(data: Dictionary) -> bool:
 				candidate["entities"].append(entry.duplicate(true))
 		elif candidate["city_layout"] != 1:
 			return false
+		var door_version: Variant = candidate.get("luna_door_layout", 0)
+		if typeof(door_version) not in [TYPE_FLOAT, TYPE_INT] or float(door_version) not in [0.0, float(LunaDoor.LAYOUT_VERSION)]:
+			return false
+		if int(door_version) == 0:
+			if candidate["entities"].any(func(entry): return entry.get("id") == LunaDoor.ID):
+				return false
+			var original := LunaDoor.migrate_legacy(_initial_luna_door, next_tools.owned.has(LunaDoor.TOOL_KEY), next_door)
+			if original.is_empty():
+				return false
+			candidate = candidate.duplicate(true)
+			candidate["entities"].append(original)
+		else:
+			if not candidate["entities"].any(func(entry): return entry.get("id") == LunaDoor.ID and entry.get("category") == "prop"):
+				return false
 	if observation_fixture:
 		if not candidate.has("yuki_layout"):
 			if _initial_yuki_fridge.is_empty():
@@ -5462,6 +5520,9 @@ func _validate_saved_entities(candidates: Dictionary) -> bool:
 					return false
 			elif resident.record.category != definition["category"]:
 				return false
+		var original: EntityBody = candidates.get(LunaDoor.ID)
+		if not original is LunaDoor or original.record.category != "prop":
+			return false
 		var oni: EntityBody = candidates.get(Visits.ONI_ID)
 		if oni == null or oni.record.category != "oni":
 			return false

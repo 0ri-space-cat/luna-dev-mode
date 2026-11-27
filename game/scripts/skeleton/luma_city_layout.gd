@@ -91,6 +91,9 @@ static func draw_on(canvas: Node2D) -> void:
 	for doorway in DOORS:
 		for key in ["outside", "inside"]:
 			var point: Vector2 = doorway[key]
+			if doorway["id"] == "room" and key == "inside":
+				canvas.draw_rect(Rect2(point + Vector2(-18, -35), Vector2(36, 35)), Color("665878"), false, 2.0)
+				continue
 			canvas.draw_rect(Rect2(point + Vector2(-18, -35), Vector2(36, 35)), Color("665878"))
 			canvas.draw_rect(Rect2(point + Vector2(-16, -33), Vector2(32, 31)), Color("e5c79b"), false, 2.0)
 		canvas.draw_string(font, doorway["outside"] + Vector2(-42, -42), doorway["name"])
