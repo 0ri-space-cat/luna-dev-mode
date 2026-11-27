@@ -2227,6 +2227,7 @@ func cycle_compass() -> bool:
 
 func _setup_window_frame() -> void:
 	_window_frame = WindowFrame.new()
+	_window_frame.physics_tick = _tick_window_frame
 	var layer := CanvasLayer.new()
 	layer.layer = 1
 	add_child(layer)
@@ -2315,9 +2316,15 @@ func _tick_window_frame() -> bool:
 	var inside := current.clamp(bounds.position + Vector2.ONE, bounds.end - Vector2.ONE)
 	var safe := inside + Vector2(0, actor.motion.elevation)
 	if not can_return_traveler(safe, actor.motion.elevation):
-		return false
+		# A border crossing cannot replace an existing safe return anchor with an unsafe one.
+		safe = previous + Vector2(0, actor.motion.elevation)
+		if not can_return_traveler(safe, actor.motion.elevation):
+			return false
+		inside = previous
 	actor.position = safe
 	actor.motion.reset_on_surface(safe, actor.motion.elevation)
+	actor.location_id = _entity_location(safe)
+	actor._sync_projection()
 	_frame_previous = inside
 	if not game_frame_solid and access.wand_mode == AccessState.DEVELOPER and desktop_requested.is_valid():
 		_frame_crossing = true
@@ -2327,6 +2334,7 @@ func _tick_window_frame() -> bool:
 			_reset_window_frame()
 			return true
 	actor._impulse_velocity = Vector2.ZERO
+	actor.velocity = Vector2.ZERO
 	return false
 
 
@@ -3864,8 +3872,6 @@ func _physics_process(delta: float) -> void:
 		forest_bank_left.emit()
 	_was_at_bank = at_bank
 	_update_local_camera()
-	if _tick_window_frame():
-		return
 	_sync_mountain_bridge()
 	var find_visibility := Vector2i(
 		int(actor.motion.elevation >= SecretFinds.GRAVITY_HEIGHT and actor.position.distance_to(SecretFinds.GRAVITY_POINT) < 75.0),

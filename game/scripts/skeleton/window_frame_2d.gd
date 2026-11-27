@@ -3,6 +3,18 @@ extends Node2D
 const INSET := Vector2(0.16, 0.18)
 var active := false
 var solid := true
+var physics_tick: Callable
+
+
+func _ready() -> void:
+	# Actors move at default priority; constrain the finished step, not the previous one.
+	process_physics_priority = 100
+	set_physics_process(physics_tick.is_valid())
+
+
+func _physics_process(_delta: float) -> void:
+	if physics_tick.is_valid():
+		physics_tick.call()
 
 
 static func logical_size(size: Vector2) -> Vector2:

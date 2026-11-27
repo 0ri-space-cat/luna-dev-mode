@@ -7,8 +7,14 @@ if [ "$#" -ne 1 ]; then
 fi
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
+# The integrated Administrator regression walks the full forest-valley route
+# multiple times and restarts the profile. Other tests retain the 40s budget.
+budget=40s
+if [ "$1" = "res://tests/test_skeleton_administrator.gd" ]; then
+  budget=80s
+fi
 set +e
-timeout 40s godot --headless --path . --script "$1" 2>&1 | tee "$log"
+timeout "$budget" godot --headless --path . --script "$1" 2>&1 | tee "$log"
 godot_status=${PIPESTATUS[0]}
 set -e
 if [ "$godot_status" -ne 0 ]; then

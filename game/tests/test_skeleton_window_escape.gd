@@ -39,8 +39,8 @@ func _run() -> void:
 	home.apply_player_input(Vector2.LEFT)
 	for tick in 24:
 		await physics_frame
+		assert(not game._away and bounds.grow(1.0).has_point(traveler.position), "Solid frame tick %d: Luna=%s, bounds=%s" % [tick, traveler.position, bounds])
 	home.apply_player_input(Vector2.ZERO)
-	assert(not game._away and bounds.grow(1.0).has_point(traveler.position))
 	assert(home.set_game_frame_solid(false))
 	assert(not game._start_desktop_visit())
 	home.apply_player_input(Vector2.LEFT)

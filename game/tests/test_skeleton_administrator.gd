@@ -45,6 +45,7 @@ func _run() -> void:
 			entry["location_id"] = game.home.Lake.LEGACY_LOCATION_ID
 	known_world["island"]["projection"]["location_id"] = game.home.Lake.LEGACY_LOCATION_ID
 
+	print("ADMIN checkpoint: ordinary route and duplicate wand reached")
 	# An integrity fault has ordinary recovery but does not count as player overload.
 	assert(game.report_system_incident("DEV_SINGLE_FAULT"))
 	assert(await _wait_for_recovery())
@@ -89,6 +90,7 @@ func _run() -> void:
 	assert(game.home.exchange_nearby_wand() and game.home.wand_pair.held == game.home.WandPair.ORIGINAL)
 	assert(not game.home.tick_wand_self_hack(4.0, true))
 
+	print("ADMIN checkpoint: durable first recovery and legacy migration passed")
 	# The forest-valley route remains physically open with an ordinary wand.
 	await _walk_from_lake()
 	assert(await _walk(Vector2(1290, 374)) and await _walk(Vector2(320, 374)))
@@ -101,6 +103,7 @@ func _run() -> void:
 	assert(game.home.tick_wand_self_hack(3.05, true))
 	assert(game.home.access.wand_mode == Access.DEVELOPER)
 
+	print("ADMIN checkpoint: restored DEVELOPER through the physical route")
 	# Bring a real carried prop into the second recovery. The exact recovered
 	# Entity and attachment move to the authored Void scene and back.
 	await _walk_from_lake()
