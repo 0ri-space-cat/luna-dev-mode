@@ -12,14 +12,16 @@ const M3 := Rect2(1840, 416, 168, 240)
 # Provisional physical geography: two ordinary, dry meadow clearings.
 # No new address, collectible, secret gate, puzzle or objective.
 const QUIET_NORTH := Rect2(1210, 24, 185, 270)
-const QUIET_SOUTH := Rect2(1600, 625, 365, 355)
-const QUIET_DECKS := [QUIET_NORTH, QUIET_SOUTH]
+# Keep the south meadow west of the mountain road and out of Mia's cave.
+const QUIET_SOUTH := Rect2(1220, 600, 245, 430)
+const QUIET_EAST := Rect2(1600, 625, 365, 155)
+const QUIET_DECKS := [QUIET_NORTH, QUIET_SOUTH, QUIET_EAST]
 const DECKS := [M0, M1_BANK, M2, SOUTH_TURN, DRY_TRAIL, M3] + QUIET_DECKS
 const QUIET_FAUNA := {
 	"M_QUIET_FOX_N": {"category": "fox", "label": "Лисичка", "point": Vector2(1290, 115), "size": 0.72, "speed": 0.85},
 	"M_QUIET_TURTLE_N": {"category": "turtle", "label": "Черепашка", "point": Vector2(1330, 190), "size": 0.8, "speed": 0.35},
-	"M_QUIET_FOX_S": {"category": "fox", "label": "Лисичка", "point": Vector2(1720, 825), "size": 0.95, "speed": 1.1},
-	"M_QUIET_TURTLE_S": {"category": "turtle", "label": "Черепашка", "point": Vector2(1850, 865), "size": 1.05, "speed": 0.5},
+	"M_QUIET_FOX_S": {"category": "fox", "label": "Лисичка", "point": Vector2(1310, 820), "size": 0.95, "speed": 1.1},
+	"M_QUIET_TURTLE_S": {"category": "turtle", "label": "Черепашка", "point": Vector2(1390, 890), "size": 1.05, "speed": 0.5},
 }
 const CREEK := Rect2(1530, 184, 86, 325)
 const CREEK_BED := -112.0

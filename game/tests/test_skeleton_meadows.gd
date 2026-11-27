@@ -2,6 +2,8 @@ extends SceneTree
 
 const Start = preload("res://scenes/skeleton/start_island.tscn")
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
+const Mia = preload("res://scripts/skeleton/mia_lab_layout.gd")
+const Mountain = preload("res://scripts/skeleton/mountain_layout.gd")
 
 
 func _initialize() -> void:
@@ -31,6 +33,12 @@ func _run() -> void:
 	# Walk from the junction to the east bank via the dry lookout route.
 	assert(await _walk_to(scene, Vector2(1300, 374)))
 	assert(scene.actor.location_id == Meadows.LOCATION_ID)
+	# New dry ground must not fill old cave water or overwrite elevation supports.
+	for deck in Meadows.QUIET_DECKS:
+		for surface in Mia.WATER + Mia.ELEVATED:
+			assert(not deck.intersects(surface["bounds"]))
+		for slope in Mountain.GROUND:
+			assert(not deck.intersects(slope))
 	# Both new clearings are real walkable ground on the same address.
 	assert(await _walk_to(scene, Vector2(1260, 75), 250))
 	assert(scene.actor.location_id == Meadows.LOCATION_ID and scene.actor.recoveries == 0)
@@ -38,15 +46,17 @@ func _run() -> void:
 		assert(scene.get_natural_fauna(id) != null)
 	assert(await _walk_to(scene, Vector2(1300, 374), 250))
 	assert(await _walk_to(scene, Vector2(1300, 610)))
-	assert(await _walk_to(scene, Vector2(1910, 610), 230))
-	assert(await _walk_to(scene, Vector2(1910, 940), 250))
+	assert(await _walk_to(scene, Vector2(1300, 940), 250))
 	assert(scene.actor.location_id == Meadows.LOCATION_ID and scene.actor.recoveries == 0)
 	var resident = scene.get_natural_fauna("M_QUIET_TURTLE_S")
 	assert(resident.set_parameter("speed", 0.65))
 	var quiet_save: Dictionary = JSON.parse_string(JSON.stringify(scene.make_snapshot()))
 	assert(scene.apply_snapshot(quiet_save))
 	assert(is_equal_approx(float(scene.get_natural_fauna("M_QUIET_TURTLE_S").get_parameter("speed")), 0.65))
-	assert(await _walk_to(scene, Vector2(1910, 610), 250))
+	assert(await _walk_to(scene, Vector2(1300, 610), 250))
+	assert(await _walk_to(scene, Vector2(1910, 610), 230))
+	assert(await _walk_to(scene, Vector2(1910, 745), 120))
+	assert(await _walk_to(scene, Vector2(1910, 610), 120))
 	assert(await _walk_to(scene, Vector2(1910, 350)))
 	assert(await _walk_to(scene, Vector2(1640, 350)))
 	assert(scene.ice_remaining == 0.0 and scene.actor.recoveries == 0)
