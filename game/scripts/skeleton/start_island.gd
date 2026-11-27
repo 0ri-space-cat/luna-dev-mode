@@ -986,10 +986,26 @@ func _tick_ori() -> void:
 			continue
 		if _within_reach(body.position, body.motion.elevation):
 			ori.discover(body.record.category)
-		if ori.order_id.is_empty() and ori.ownership > 0 and customer != null and identity.begins_with(ORI_CREATED_PREFIX) and body.record.category == "cat" and body.get_parameter("luna_relation") == "FRIEND" and body.has_active_ability("GLOW") and City.SHOP.has_point(customer.position) and City.SHOP.has_point(body.position) and body.position.distance_to(customer.position) <= 50.0 and _within_reach(customer.position, customer.motion.elevation):
+		if ori.order_id.is_empty() and ori.ownership > 0 and identity.begins_with(ORI_CREATED_PREFIX) and _ori_order_contact(customer, body):
 			ori.order_id = identity
 			social.complete("ORI")
 			$Interface/SaveNotice.text = "Ори: А кого бы ты придумала для себя?"
+
+
+# The optional example only counts a real, currently possible meeting.
+# Do not grant progress for a disabled customer or a cat on another Z plane.
+func _ori_order_contact(customer: EntityBody, cat: EntityBody) -> bool:
+	if not _friend_available(customer) or customer.record.category != "resident" or not actor.motion.grounded or actor.is_attached() or actor.has_passenger():
+		return false
+	if not City.SHOP.has_point(actor.position) or not City.SHOP.has_point(customer.position) or not City.SHOP.has_point(cat.position):
+		return false
+	if cat.record.category != "cat" or not cat.get_parameter("alive") or not cat.visible or cat.get_parameter("luna_relation") != "FRIEND" or not cat.has_active_ability("GLOW"):
+		return false
+	if not cat.motion.grounded or cat.is_attached() or cat.has_passenger():
+		return false
+	var offset := cat.position - customer.position
+	var separation := Vector3(offset.x, offset.y, cat.motion.elevation - customer.motion.elevation)
+	return separation.length_squared() <= 50.0 * 50.0 and _within_reach(customer.position, customer.motion.elevation)
 
 
 func _can_extract_ori(target: EntityBody) -> bool:
