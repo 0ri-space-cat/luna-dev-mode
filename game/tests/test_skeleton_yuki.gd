@@ -61,9 +61,11 @@ func _run() -> void:
 	for index in 9:
 		assert(home._execute_yuki_rule({"host": Island.YUKI_FRIDGE, "action": "SPAWN_CAT"}))
 		var extra = home.entities.get_entity(Island.YUKI_CAT_PREFIX + str(index + 2))
-		extra.position = Vector2(1240 + (index % 3) * 65, 690 + (index / 3) * 65)
-		extra.motion.reset_on_surface(extra.position, 0.0)
-		extra.location_id = home._entity_location(extra.position)
+		# The largest randomized cat has a 22.4px safe margin. Leave
+		# enough room for that full body and its validated recovery anchor.
+		var point := Vector2(1260 + (index % 3) * 75, 650 + floori(float(index) / 3.0) * 65)
+		assert(extra.motion._has_support(point, 0.0, extra.surfaces, true))
+		home._place_friend(extra, point, 0.0)
 	assert(home.yuki.spawn_serial == 10 and home.city_tools.cat_sizes.size() >= 9)
 	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
 	assert(home.entities.get_entity(Island.YUKI_CAT_PREFIX + "10") != null)
