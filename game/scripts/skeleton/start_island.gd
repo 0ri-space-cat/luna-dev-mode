@@ -80,6 +80,9 @@ var _am_echo_remaining := 0.0
 const City = preload("res://scripts/skeleton/luma_city_layout.gd")
 const LunaDoor = preload("res://scripts/skeleton/luna_door_2d.gd")
 const Social = preload("res://scripts/runtime2d/friend_progress_2d.gd")
+const HeroProfile = preload("res://scripts/skeleton/hero_profile_2d.gd")
+var hero_profile := HeroProfile.new()
+var _profile_panel: PanelContainer
 const Music = preload("res://scripts/runtime2d/flute_2d.gd")
 const Visits = preload("res://scripts/skeleton/oni_music_layout.gd")
 const ATTRACTION_SECONDS := 14.0
@@ -461,6 +464,7 @@ func _editor_parent() -> Node:
 
 func _ready() -> void:
 	_setup_window_frame()
+	_setup_profile_panel()
 	wand_pair.original = projection
 	world_clock.minute_changed.connect(_update_world_light)
 	_ice_duration.active_changed.connect(_update_ice_support)
@@ -691,6 +695,7 @@ func _interact_w8() -> bool:
 func set_luna_eyes(open: bool) -> void:
 	crystal_observer.luna_eyes_open = open
 	_sync_crystal_observation()
+	queue_redraw()
 
 
 func _set_crystal_door(solid: bool) -> void:
@@ -2397,6 +2402,59 @@ func cycle_compass() -> bool:
 	return true
 
 
+func _setup_profile_panel() -> void:
+	_profile_panel = PanelContainer.new()
+	_profile_panel.position = Vector2(40, 85)
+	$Interface.add_child(_profile_panel)
+	_profile_panel.hide()
+
+
+func _profile_edit_allowed() -> bool:
+	if not observation_fixture or not visible or not $Interface.visible or not is_instance_valid(actor) or actor.entity_id != ENTITY_ID or not actor.accepts_player_input():
+		return false
+	if access.wand_mode != AccessState.DEVELOPER or wand_pair.held.is_empty() or not wand_pair.active().carried or not actor.motion.grounded or not is_zero_approx(float(actor.motion.elevation)) or actor.is_attached() or actor.has_passenger() or is_instance_valid(_debug_editor):
+		return false
+	return HeroProfile.within_projected_control(actor, _camera, $Interface/ProfilePortrait, 24.0)
+
+
+func request_profile_change(profile_id: String) -> bool:
+	if not hero_profile.choose(profile_id, social.oni_profile_unlocked(), _profile_edit_allowed()):
+		return false
+	$Interface/ProfilePortrait.text = HeroProfile.NAMES[hero_profile.active]
+	queue_redraw()
+	return true
+
+
+func _open_profile_panel() -> bool:
+	if not _profile_edit_allowed() or not is_instance_valid(_profile_panel):
+		return false
+	for child in _profile_panel.get_children():
+		_profile_panel.remove_child(child)
+		child.queue_free()
+	var box := VBoxContainer.new()
+	_profile_panel.add_child(box)
+	var heading := Label.new()
+	heading.text = "Профиль · " + HeroProfile.NAMES[hero_profile.active]
+	box.add_child(heading)
+	for profile_id in hero_profile.available(social.oni_profile_unlocked()):
+		var button := Button.new()
+		button.text = HeroProfile.NAMES[profile_id]
+		if profile_id == HeroProfile.ONI:
+			button.text += " · изнанка с закрытыми глазами"
+		button.disabled = profile_id == hero_profile.active
+		button.pressed.connect(func():
+			if request_profile_change(profile_id):
+				_profile_panel.hide())
+		box.add_child(button)
+	var close := Button.new()
+	close.text = "Закрыть"
+	close.pressed.connect(_profile_panel.hide)
+	box.add_child(close)
+	_profile_panel.show()
+	apply_player_input(Vector2.ZERO)
+	return true
+
+
 func _setup_window_frame() -> void:
 	_window_frame = WindowFrame.new()
 	_window_frame.physics_tick = _tick_window_frame
@@ -4098,6 +4156,8 @@ func set_home_active(active: bool) -> void:
 		_window_frame.visible = active
 	if not active:
 		_reset_window_frame()
+		if is_instance_valid(_profile_panel):
+			_profile_panel.hide()
 	if not active and ancient_console != null:
 		ancient_console.close()
 	if not active and is_instance_valid(_yuki_panel):
@@ -4380,6 +4440,11 @@ func _update_local_camera() -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if is_instance_valid(_profile_panel) and _profile_panel.visible:
+		if not _profile_edit_allowed():
+			_profile_panel.hide()
+		apply_player_input(Vector2.ZERO)
+		return
 	if is_instance_valid(_frame_panel) and _frame_panel.visible:
 		apply_player_input(Vector2.ZERO)
 		return
@@ -4865,6 +4930,11 @@ func _set_wand_mode(mode: String) -> bool:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
 		return
+	if is_instance_valid(_profile_panel) and _profile_panel.visible:
+		if event.keycode in [KEY_ESCAPE, KEY_TAB]:
+			_profile_panel.hide()
+		get_viewport().set_input_as_handled()
+		return
 	if is_instance_valid(_tamagotchi_panel) and _tamagotchi_panel.visible:
 		if event.keycode == KEY_ESCAPE:
 			_tamagotchi_panel.hide()
@@ -5005,6 +5075,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if cycle_hourglass():
 				get_viewport().set_input_as_handled()
 		KEY_TAB:
+			if get_wand_editor_tabs(Administrator.ID).is_empty() and _open_profile_panel():
+				get_viewport().set_input_as_handled()
+				return
 			if _frame_edit_allowed():
 				_frame_switch.set_pressed_no_signal(game_frame_solid)
 				_frame_panel.show()
@@ -5180,6 +5253,7 @@ func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
 	data["address_schema"] = ADDRESS_SCHEMA
 	data["game_mode"] = game_mode
+	data["hero_profile"] = hero_profile.active
 	# FORWARD is a transient autonomy lease. Disk/recovery saves preserve the
 	# physical result but return the player to ordinary input on restoration.
 	if not _forward_behavior.is_empty():
@@ -5347,6 +5421,11 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_music_scale: Variant = data.get("music_scale", 0.0)
 	var next_attraction := ActiveDuration.new(ATTRACTION_SECONDS)
 	if data.has("social") and not next_social.restore(data["social"], next_evening["stage"] > 0):
+		return false
+	var next_hero_profile := HeroProfile.new()
+	if not next_hero_profile.restore(data.get("hero_profile", HeroProfile.LUNA), next_social.oni_profile_unlocked()):
+		return false
+	if not observation_fixture and next_hero_profile.active != HeroProfile.LUNA:
 		return false
 	if not next_flute is bool or not next_prism is bool or (next_prism and not next_social.prism_owned) \
 			or typeof(next_oni) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_oni)) \
@@ -5761,6 +5840,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 	city_bench_observed = next_bench_seen
 	city_ray_settled = next_ray
 	social = next_social
+	hero_profile = next_hero_profile
+	$Interface/ProfilePortrait.text = HeroProfile.NAMES[hero_profile.active]
+	if is_instance_valid(_profile_panel):
+		_profile_panel.hide()
 	antimemetic = next_am
 	highland = next_highland
 	edge = next_edge
@@ -6163,7 +6246,7 @@ func _draw() -> void:
 		MiaLab.draw_on(self)
 		Tunnel.draw_on(self)
 		Crystal.draw_on(self, _crystal_door_solid)
-		W8.draw_on(self, _w8_open)
+		W8.draw_on(self, _w8_open, hero_profile.sees_underside(crystal_observer.luna_eyes_open))
 		CoastExtra.draw_on(self)
 		Lake.draw_shallow_on(self)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))

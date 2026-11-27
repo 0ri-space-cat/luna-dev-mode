@@ -127,6 +127,39 @@ func _run() -> void:
 			break
 		await physics_frame
 	assert(home.entities.get_entity(Island.Visits.ONI_ID).location_id != Island.W8.REFUGE)
+	# Real portrait projection, separate access and no new physical hero.
+	var portrait := home.get_node("Interface/ProfilePortrait") as Control
+	var bounds: Rect2 = portrait.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, portrait.size)
+	var screen: Rect2 = home.get_viewport().get_visible_rect()
+	home.highland.camera_owned = true
+	home.highland.camera_mode = "LOCKED"
+	home.highland.camera_lock = home.actor.position + (screen.get_center() - bounds.get_center()) / home._camera.zoom
+	home._update_local_camera()
+	home._camera.reset_smoothing()
+	home._camera.force_update_scroll()
+	assert(home.access.set_wand_mode("PLAYFUL"))
+	assert(not home.request_profile_change("ONI"))
+	assert(home.access.set_wand_mode("DEVELOPER"))
+	assert(home._profile_edit_allowed())
+	var original_actor = home.actor
+	var components: Dictionary = original_actor.record.get_components()
+	assert(not home.request_profile_change("YUKI"))
+	assert(home.request_profile_change("ONI") and home.hero_profile.active == "ONI")
+	assert(home.actor == original_actor and home.actor.record.get_components() == components)
+	home.set_luna_eyes(false)
+	assert(home.hero_profile.sees_underside(false) and not home._w8_open)
+	assert(not home.hero_profile.sees_underside(true))
+	var profile_save: Dictionary = JSON.parse_string(JSON.stringify(home.make_snapshot()))
+	var invalid_profile := profile_save.duplicate(true)
+	invalid_profile["social"]["oni_deep_met"] = false
+	assert(not home.apply_snapshot(invalid_profile) and home.hero_profile.active == "ONI")
+	assert(home.apply_snapshot(profile_save) and home.hero_profile.active == "ONI")
+	assert(home.social.oni_profile_unlocked())
+	home.highland.camera_mode = "FOLLOW"
+	home._update_local_camera()
+	home._camera.reset_smoothing()
+	home._camera.force_update_scroll()
+	assert(not home.request_profile_change("LUNA"))
 	game.queue_free()
 	await process_frame
 	print("Relocated Q22: physical waterfall approach, camera span, old save and return passed")

@@ -23,11 +23,15 @@ static func address(point: Vector2) -> String:
 	return ""
 
 
-static func draw_on(canvas: Node2D, outside: bool) -> void:
+static func draw_on(canvas: Node2D, outside: bool, oni_glimpse: bool = false) -> void:
 	# Plain structural outlines, never imported art. Do not label hidden content
 	# on the ordinary side of the seam.
 	if outside:
 		canvas.draw_rect(BRIDGE["bounds"], Color("527c9d"))
 		canvas.draw_line(Vector2(3085, 563), Vector2(3085, 687), Color("9ccef0"), 2.0)
 		canvas.draw_rect(Rect2(FAR - Vector2(11, 16), Vector2(22, 30)), Color("9ccef0"), false, 2.0)
+	elif oni_glimpse:
+		# Perception only: outline derives from the same actual geometry.
+		canvas.draw_rect(BRIDGE["bounds"], Color("80bde8"), false, 2.0)
+		canvas.draw_rect(SEAM["bounds"], Color("80bde8"), false, 1.0)
 	canvas.draw_rect(Rect2(NOTE - Vector2(18, 12), Vector2(36, 24)), Color("bdb0a5"))

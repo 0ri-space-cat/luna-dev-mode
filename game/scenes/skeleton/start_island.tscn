@@ -17,8 +17,18 @@ visible = false
 
 [node name="Interface" type="CanvasLayer" parent="."]
 
-[node name="Status" type="Label" parent="Interface"]
+[node name="ProfilePortrait" type="Label" parent="Interface"]
 offset_left = 24.0
+offset_top = 20.0
+offset_right = 120.0
+offset_bottom = 50.0
+mouse_filter = 2
+text = "Луна"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Status" type="Label" parent="Interface"]
+offset_left = 132.0
 offset_top = 20.0
 
 [node name="Prompt" type="Label" parent="Interface"]
