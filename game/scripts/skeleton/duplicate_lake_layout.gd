@@ -6,6 +6,9 @@ const LEGACY_LOCATION_ID := "ET_WATERFALL_DUPLICATE_LAKE"
 const FEATURE_ID := "ET_DUPLICATE_LAKE"
 const BOUNDARY := 2260.0
 const SHORE := Vector2(2445, 426)
+# Preserve the original shore as first choice, with nearby dry alternatives
+# when a real body occupies the arrival footprint.
+const TUNNEL_ARRIVALS := [SHORE, Vector2(2415, 385), Vector2(2445, 470), Vector2(2390, 420)]
 const CONTACT := Vector2(2490, 426)
 const BED_HEIGHT := -32.0
 const POOL := Rect2(2490, 345, 203, 160)

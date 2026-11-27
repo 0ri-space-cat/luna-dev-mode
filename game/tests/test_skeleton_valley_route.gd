@@ -234,8 +234,13 @@ func _run() -> void:
 	scene.actor.direction = Vector2.ZERO
 	assert(Tunnel.EAST.has_point(scene.actor.position), str(scene.actor.position))
 	assert(scene.actor.motion.grounded)
-	assert(scene.interact() and scene.actor.location_id == Lake.LOCATION_ID)
-	assert(scene.actor.position.distance_to(Lake.SHORE) < 3.0)
+	var tunnel_action: String = scene._tunnel_action()
+	var arrival_checks: Array = []
+	for point in Lake.TUNNEL_ARRIVALS:
+		arrival_checks.append(scene._ordinary_arrival_is_safe(Lake.LOCATION_ID, point))
+	assert(scene.interact() and scene.actor.location_id == Lake.LOCATION_ID, "Tunnel action=%s, safe arrivals=%s, pos=%s" % [tunnel_action, str(arrival_checks), str(scene.actor.position)])
+	assert(Lake.TUNNEL_ARRIVALS.any(func(point): return scene.actor.position.distance_to(point) < 3.0))
+	assert(scene.actor.motion.grounded and scene.actor._is_dry(scene.actor.position, scene.actor.motion.elevation))
 	scene._clear_bubble()
 	assert(not scene.actor.can_swim())
 	# The integrated ecology fixture has an original and unique DUPLICATE.

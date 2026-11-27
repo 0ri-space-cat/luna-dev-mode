@@ -3622,7 +3622,10 @@ func interact() -> bool:
 		"К тихому озеру":
 			return _use_tunnel(Tunnel.W1_RETURN, Valley.LOCATION_ID)
 		"К Озеру Дубликатов":
-			return _use_tunnel(Lake.SHORE, Lake.LOCATION_ID)
+			for landing in Lake.TUNNEL_ARRIVALS:
+				if _use_tunnel(landing, Lake.LOCATION_ID):
+					return true
+			return false
 		"Взять Песочные часы":
 			return _take_hourglass()
 		"Поговорить с Мией":
