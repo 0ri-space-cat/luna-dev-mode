@@ -61,20 +61,29 @@ func clear() -> void:
 
 
 func advance(delta: float) -> bool:
+	if not is_finite(delta) or delta <= 0.0:
+		return farewell_active and farewell_remaining <= 0.0
 	var had_steps := steps.active_count() > 0
-	steps.advance(delta, _surfaces)
+	var remaining := delta
+	# Age each physical support from its scheduled birth, even when a
+	# delayed tick spans several steps or the entire introduction.
+	if intro_remaining > 0.0 and is_instance_valid(_pixel_marker):
+		var elapsed := INTRO_SECONDS - intro_remaining
+		while _step_index < STEP_POINTS.size() - 1:
+			var until_step := maxf(0.0, 0.55 + float(_step_index) * 0.45 - elapsed)
+			if until_step > remaining:
+				break
+			steps.advance(until_step, _surfaces)
+			remaining -= until_step
+			elapsed += until_step
+			_step_index += 1
+			_pixel_marker.position = STEP_POINTS[_step_index]
+			steps.observe_step(_pixel_marker, STEP_HEIGHTS[_step_index], _surfaces)
+	steps.advance(remaining, _surfaces)
 	if had_steps:
 		queue_redraw()
 	if intro_remaining > 0.0 or merge_remaining > 0.0 or farewell_active:
-		var was_intro := intro_remaining > 0.0
 		intro_remaining = maxf(0.0, intro_remaining - delta)
-		if was_intro and is_instance_valid(_pixel_marker):
-			var elapsed := INTRO_SECONDS - intro_remaining
-			var next := mini(3, maxi(0, int(floor((elapsed - 0.55) / 0.45)) + 1))
-			while _step_index < next:
-				_step_index += 1
-				_pixel_marker.position = STEP_POINTS[_step_index]
-				steps.observe_step(_pixel_marker, STEP_HEIGHTS[_step_index], _surfaces)
 		merge_remaining = maxf(0.0, merge_remaining - delta)
 		farewell_remaining = maxf(0.0, farewell_remaining - delta)
 		queue_redraw()

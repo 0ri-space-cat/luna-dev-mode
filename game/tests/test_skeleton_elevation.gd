@@ -5,6 +5,7 @@ const Motion = preload("res://scripts/skeleton/elevation_motion_2d.gd")
 const Fixture = preload("res://scenes/skeleton/elevation_fixture.tscn")
 const SaveStore = preload("res://scripts/runtime2d/save_store_2d.gd")
 const PixelSteps = preload("res://scripts/skeleton/pixel_air_steps_2d.gd")
+const WhitePresentation = preload("res://scripts/skeleton/white_void_presentation_2d.gd")
 
 
 func _initialize() -> void:
@@ -14,6 +15,8 @@ func _initialize() -> void:
 func _run() -> void:
 	_check_solver()
 	_check_pixel_steps()
+	_check_pixel_step_limits()
+	_check_pixel_timing()
 	var scene = Fixture.instantiate()
 	scene.keyboard = false
 	root.add_child(scene)
@@ -253,3 +256,55 @@ func _check_pixel_steps() -> void:
 	assert(floor_surfaces.size() == 1 and not steps.observe_step(pixel, 24.0, floor_surfaces))
 	pixel.free()
 	stranger.free()
+
+
+func _check_pixel_step_limits() -> void:
+	var permanent: Dictionary = {"bounds": Rect2(0, 0, 500, 500), "height": 0.0}
+	var surfaces: Array[Dictionary] = [permanent]
+	var marker := Node2D.new()
+	var steps := PixelSteps.new()
+	assert(steps.bind(marker))
+	# Repeated bursts cannot grow the shared collision array unboundedly.
+	for cycle in 100:
+		for index in 20:
+			marker.position += Vector2(25, 0)
+			var created := steps.observe_step(marker, 18.0, surfaces)
+			assert(created == (index < PixelSteps.MAX_ACTIVE))
+			assert(steps.active_count() <= PixelSteps.MAX_ACTIVE)
+			assert(surfaces.size() == 1 + steps.active_count())
+		steps.advance(PixelSteps.LIFETIME, surfaces)
+		assert(steps.active_count() == 0 and surfaces == [permanent])
+	marker.position += Vector2(25, 0)
+	assert(steps.observe_step(marker, 18.0, surfaces))
+	steps.clear(surfaces)
+	assert(surfaces == [permanent])
+	marker.free()
+
+
+func _check_pixel_timing() -> void:
+	var permanent: Dictionary = {"bounds": Rect2(0, 0, 1000, 1000), "height": 0.0}
+	var fine_surfaces: Array[Dictionary] = [permanent]
+	var coarse_surfaces: Array[Dictionary] = [permanent]
+	var fine := WhitePresentation.new()
+	var coarse := WhitePresentation.new()
+	root.add_child(fine)
+	root.add_child(coarse)
+	fine.begin_intro(fine_surfaces)
+	coarse.begin_intro(coarse_surfaces)
+	# A delayed frame must not grant fresh lifetime to old steps.
+	for tick in 32:
+		fine.advance(0.1)
+	coarse.advance(3.2)
+	assert(fine.steps.active_count() == 2 and coarse.steps.active_count() == 2)
+	assert(fine.steps.live_surfaces() == coarse.steps.live_surfaces())
+	fine.advance(0.8)
+	coarse.advance(0.8)
+	assert(fine_surfaces == [permanent] and coarse_surfaces == [permanent])
+	# A completely skipped introduction leaves no invisible collision.
+	coarse.begin_intro(coarse_surfaces)
+	coarse.advance(4.0)
+	assert(coarse.steps.active_count() == 0 and coarse_surfaces == [permanent])
+	fine.clear()
+	coarse.clear()
+	fine.queue_free()
+	coarse.queue_free()
