@@ -67,3 +67,18 @@ func clear(surfaces: Array[Dictionary]) -> void:
 
 func active_count() -> int:
 	return _steps.size()
+
+
+func live_surfaces() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for step in _steps:
+		result.append(step["surface"].duplicate(true))
+	return result
+
+
+func supports(point: Vector2, height: float) -> bool:
+	for step in _steps:
+		var surface: Dictionary = step["surface"]
+		if is_equal_approx(float(surface["height"]), height) and surface["bounds"].has_point(point):
+			return true
+	return false

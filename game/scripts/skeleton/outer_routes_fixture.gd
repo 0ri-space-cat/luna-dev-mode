@@ -337,7 +337,7 @@ func _white_presentation() -> WhitePresentation:
 
 func begin_first_white_intro() -> void:
 	if current_address == WHITE_ADDRESS and meta != null and not meta.merged:
-		_white_presentation().begin_intro()
+		_white_presentation().begin_intro(_surfaces)
 
 
 func at_meta_encounter() -> bool:
@@ -652,6 +652,12 @@ func _contextual_action() -> String:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
+	# Temporary steps are intentionally absent from persisted world geometry.
+	# A body grounded on one saves an airborne continuation at the same XY/Z,
+	# with its genuine permanent recovery anchor, rather than a false floor.
+	if current_address == WHITE_ADDRESS and is_instance_valid(white_presentation) and actor.motion.grounded and white_presentation.steps.supports(actor.position, actor.motion.elevation):
+		data["actor"]["motion"]["grounded"] = false
+		data["actor"]["motion"]["vertical_speed"] = 0.0
 	data["last_safe"] = {"address": last_safe_address, "point": [last_safe_point.x, last_safe_point.y]}
 	data["clock"] = world_clock.snapshot()
 	data["outer_exploration"] = exploration.snapshot()

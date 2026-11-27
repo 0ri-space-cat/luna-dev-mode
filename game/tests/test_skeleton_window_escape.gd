@@ -65,6 +65,40 @@ func _run() -> void:
 	assert(not game.meta.pixel_seen and not game.meta.merged)
 	assert(Store.new().read_snapshot(path)["white_discovered"])
 	assert(game.save_game())
+	game.outer.actor.direction = Vector2.ZERO
+	# Observe the actual scene create shared, temporary supports. Neither
+	# their presence nor their expiry changes story progress.
+	for tick in 120:
+		await physics_frame
+		if game.outer.white_presentation.steps.active_count() > 0:
+			break
+	assert(game.outer.white_presentation.steps.active_count() > 0)
+	var surface: Dictionary = game.outer.white_presentation.steps.live_surfaces()[0]
+	assert(game.outer._surfaces.has(surface) and not surface["safe"])
+	var original_position: Vector2 = traveler.position
+	var original_motion: Dictionary = traveler.motion.snapshot()
+	# Isolate the save contract from movement timing (real landing is covered
+	# by the elevation regression). No persistent new support is introduced.
+	traveler.position = surface["bounds"].get_center()
+	traveler.motion.elevation = float(surface["height"])
+	traveler.motion.grounded = true
+	traveler.motion.vertical_speed = 0.0
+	var transient_save: Dictionary = game.outer.make_snapshot()
+	assert(not transient_save["actor"]["motion"]["grounded"])
+	assert(traveler.motion.grounded and transient_save["actor"]["motion"]["anchor"] == original_motion["anchor"])
+	assert(game.save_game() and game.load_game())
+	assert(game._away and not game.meta.merged and not game.meta.pixel_seen)
+	assert(not traveler.motion.grounded and traveler.position == surface["bounds"].get_center())
+	for tick in 90:
+		await physics_frame
+		if traveler.motion.grounded:
+			break
+	assert(traveler.motion.grounded and is_zero_approx(traveler.motion.elevation))
+	assert(not is_instance_valid(game.outer.white_presentation) or game.outer.white_presentation.steps.active_count() == 0)
+	# Return to the pre-test position on the actual floor, for the original
+	# independent voluntary encounter and movement assertions.
+	traveler.position = original_position
+	traveler.motion.reset_on_surface(original_position, 0.0)
 	# A physical approach, not a menu or automatic story flag.
 	assert(not game._commit_meta_event("MERGE") and not game.meta.merged)
 	assert(not game.outer.pixel_repeat and not game.outer.use_route())
