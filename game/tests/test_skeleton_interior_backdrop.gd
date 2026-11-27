@@ -47,6 +47,8 @@ func _run() -> void:
 	assert(await _walk(home, route, Vector2(450, 420)))
 	assert(route.on_backdrop() and not route.ready_for_void(body))
 	assert(not route.can_use_reverse_door(body, Callable()))
+	# Stay on the backdrop, without cutting back through the test room.
+	assert(await _walk(home, route, Vector2(450, 300)))
 	# Approach the real projected HUD, not a duplicate world-space target.
 	var hud_rect: Rect2 = hud.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, hud.size)
 	var hud_world: Vector2 = home._camera.get_canvas_transform().affine_inverse() * hud_rect.get_center()
@@ -55,7 +57,7 @@ func _run() -> void:
 	assert(home.access.set_wand_mode("DEVELOPER"))
 	assert(route.can_edit_hud(body, home.access, hud))
 	assert(not route.can_edit_hud(body, home.access, home.get_node("Interface/Controls")))
-	var screen := home.get_viewport().get_visible_rect()
+	var screen: Rect2 = home.get_viewport().get_visible_rect()
 	var transform: Transform2D = home._camera.get_canvas_transform()
 	var outside: Vector2 = transform.affine_inverse() * Vector2(screen.end.x + 300.0, screen.get_center().y)
 	assert(await _walk(home, route, outside))

@@ -45,7 +45,7 @@ func _can_move(body) -> bool:
 func begin(body, clock) -> bool:
 	if source_address.is_empty() or not is_instance_valid(_door) or not is_instance_valid(_camera) or not _camera.is_current() or not _can_move(body) or not _door.is_open_at(clock) or body.get_world_location_id() != source_address:
 		return false
-	if not _room.has_point(body.global_position) or not _door.can_interact_from(body.global_position):
+	if not is_zero_approx(float(body.motion.elevation)) or not _room.has_point(body.global_position) or not _door.can_interact_from(body.global_position):
 		return false
 	# Start only at the interior side of the real threshold.
 	if (body.global_position - _door.global_position).dot(_outward) > 0.0:

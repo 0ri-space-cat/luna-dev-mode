@@ -98,8 +98,9 @@ func _run() -> void:
 	assert(home.interact() and home.actor.location_id == Island.W8.PASSAGE)
 	assert(await _walk_to(home, Vector2(3085, 550)))
 	assert(await _walk_to(home, Vector2(3085, 415)))
-	assert(await _walk_to(home, Vector2(2810, 415)))
-	assert(home.exchange_nearby_wand())
+	# Return to the actual drop location/address on the west side.
+	assert(await _walk_to(home, Vector2(2785, 415)))
+	assert(home.exchange_nearby_wand(), "Wands %s at %s" % [home.wand_pair.snapshot(), home.actor.position])
 	assert(not home.wand_pair.held.is_empty())
 	game.queue_free()
 	await process_frame
