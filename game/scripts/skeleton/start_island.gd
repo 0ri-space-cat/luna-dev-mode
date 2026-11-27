@@ -654,12 +654,24 @@ func _w8_action() -> String:
 	if not observation_fixture or not actor.motion.grounded or actor.is_attached() or actor.has_passenger():
 		return ""
 	if W8.ROOM.has_point(actor.position):
+		# All three targets may overlap within wand reach. Choose the real
+		# nearest reachable object/body rather than hiding Oni behind the note.
+		var nearest := INF
+		var action := ""
 		if _within_reach(W8.NOTE):
-			return "Рассмотреть старую запись"
+			nearest = actor.position.distance_squared_to(W8.NOTE)
+			action = "Рассмотреть старую запись"
 		if _within_reach(W8.ENTRY):
-			return "Выйти из малого убежища"
+			var entry_distance: float = actor.position.distance_squared_to(W8.ENTRY)
+			if entry_distance < nearest:
+				nearest = entry_distance
+				action = "Выйти из малого убежища"
 		if _oni_w8_near():
-			return "Поговорить с Они в убежище"
+			var oni := entities.get_entity(Visits.ONI_ID) as EntityBody
+			var offset := Vector3(actor.position.x - oni.position.x, actor.position.y - oni.position.y, actor.motion.elevation - oni.motion.elevation)
+			if offset.length_squared() < nearest:
+				action = "Поговорить с Они в убежище"
+		return action
 	elif _w8_open and W8.LANDING.has_point(actor.position) and _within_reach(W8.FAR):
 		return "Войти в малое убежище"
 	return ""

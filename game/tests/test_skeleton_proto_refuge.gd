@@ -103,9 +103,10 @@ func _run() -> void:
 		if home.oni_route_index == Island.Visits.W8_STUDY_INDEX and oni.position.distance_to(Island.Visits.ROUTE[Island.Visits.W8_STUDY_INDEX]) < 5.0:
 			break
 		await physics_frame
-	assert(oni.location_id == Island.W8.REFUGE and home._oni_w8_near())
+	assert(oni.location_id == Island.W8.REFUGE and home._oni_w8_near(), "Oni at %s, route %d, player %s" % [oni.position, home.oni_route_index, home.actor.position])
+	assert(home._w8_action() == "Поговорить с Они в убежище", "Wrong W8 action: %s at %s" % [home._w8_action(), home.actor.position])
 	assert(home.entities.get_entity(Island.Visits.ONI_ID) == oni and home.interact())
-	assert(home.social.oni_profile_unlocked() and not home.social.prism_owned and home.social.oni_sites.is_empty())
+	assert(home.social.oni_profile_unlocked() and not home.social.prism_owned and home.social.oni_sites.is_empty(), "Social state: %s" % home.social.snapshot())
 	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
 	assert(home.social.oni_profile_unlocked())
 	assert(home.actor.location_id == Island.W8.REFUGE and home.wand_pair.held.is_empty())
