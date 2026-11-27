@@ -8,6 +8,10 @@ signal forest_bank_interacted
 signal forest_bank_left
 
 const ForestBank = preload("res://scripts/skeleton/forest_bank_2d.gd")
+const FairyMap = preload("res://scripts/skeleton/fairy_realm_layout.gd")
+const FairyRealm = preload("res://scripts/skeleton/fairy_realm_2d.gd")
+const FairyFox = preload("res://scripts/skeleton/fairy_slime_fox_2d.gd")
+const CanopyResident = preload("res://scripts/skeleton/fairy_canopy_resident_2d.gd")
 const FairyBranch = preload("res://scripts/skeleton/fairy_branch_layout.gd")
 const FOREST_BANK_SCENE = preload("res://scenes/skeleton/forest_bank.tscn")
 const AncientConsole = preload("res://scripts/skeleton/ancient_console_2d.gd")
@@ -198,6 +202,8 @@ var desktop_requested: Callable
 # Only an author-designated room may configure this. Default Adventure has none.
 var backdrop_route: BackdropRoute
 var _room_view: StaticRoomView
+@export var fairy_realm_enabled := false
+var fairy_realm: FairyRealm
 var _outdoor_camera_zoom := Vector2(1.25, 1.25)
 const WindowFrame = preload("res://scripts/skeleton/window_frame_2d.gd")
 var game_mode := "FULLSCREEN"
@@ -271,6 +277,8 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if fairy_realm_enabled and FairyMap.owns(point):
+		return FairyMap.ID
 	if observation_fixture:
 		var underside_address := W8.address(point)
 		if not underside_address.is_empty():
@@ -464,7 +472,7 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 80 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT + ShellCollection.REQUIRED if observation_fixture else super._entity_limit()
+	return 80 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT + ShellCollection.REQUIRED + (2 if fairy_realm_enabled else 0) if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
@@ -501,12 +509,16 @@ func _ready() -> void:
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
 		ground.append_array(AncientConsole.DECKS)
+	if fairy_realm_enabled:
+		ground.append_array(FairyMap.decks())
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
 		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS + Edge.LOWER_STEPS + [Edge.LOWER] + SecretFinds.GRAVITY_STEPS + SecretFinds.FLUTE_STEPS + FairyBranch.STEPS:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
+	if fairy_realm_enabled:
+		_surfaces.append(FairyMap.CANOPY_LOWER)
 	if observation_fixture:
 		_surfaces.append({"bounds": Edge.WATER, "height": -48.0, "safe": false})
 		_water_volumes.append(WaterVolume.new(Edge.WATER, -48.0, -5.0, Vector2(0, -230), 3.0))
@@ -549,6 +561,8 @@ func _ready() -> void:
 		_walls.append(Mountain.ANCHOR_WALL)
 	if ancient_console_enabled:
 		_walls.append({"bounds": AncientConsole.CONSOLE_BODY, "height": 92.0, "layer": 2})
+	if fairy_realm_enabled:
+		_walls.append_array(FairyMap.ROOT_WALLS)
 	for wall in _walls:
 		_build_wall(wall)
 	commands.configure_world(entities)
@@ -598,6 +612,10 @@ func _ready() -> void:
 		add_child(ancient_console)
 		ancient_console.attach_interface($Interface)
 	_camera.position = actor.position
+	if fairy_realm_enabled:
+		fairy_realm = FairyRealm.new()
+		add_child(fairy_realm)
+		fairy_realm.mount(self)
 
 
 func _setup_crystal_observation() -> void:
@@ -726,6 +744,8 @@ func _interact_w8() -> bool:
 func set_luna_eyes(open: bool) -> void:
 	crystal_observer.luna_eyes_open = open
 	_sync_crystal_observation()
+	if fairy_realm != null:
+		fairy_realm.sync_observation()
 	queue_redraw()
 
 
@@ -4195,6 +4215,10 @@ func request_install_duplicate(target_id: String) -> bool:
 
 
 func _create_entity_body(identity: String, category: String) -> EntityBody:
+	if fairy_realm_enabled and identity == FairyMap.FOX_ID and category == "slime_fox":
+		return FairyFox.new()
+	if fairy_realm_enabled and identity == FairyMap.CANOPY_RESIDENT and category == "fairy":
+		return CanopyResident.new()
 	if observation_fixture and identity == LunaDoor.ID and category == "prop":
 		return LunaDoor.new()
 	if observation_fixture and QuietRegions.FAUNA.has(identity) and category == QuietRegions.FAUNA[identity]["category"]:
@@ -4321,6 +4345,8 @@ func _configure_plank_marker(plank: EntityBody) -> void:
 func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	super._configure_body(body, entity_id)
 	body.emergency_anchor = Vector3(SPAWN.x, SPAWN.y, 0.0)
+	if fairy_realm_enabled and entity_id == FairyMap.FOX_ID:
+		body.emergency_anchor = Vector3(FairyMap.FOX_LATE.x, FairyMap.FOX_LATE.y, 0.0)
 	if body is Fauna and body.aquatic_bounds.has_area():
 		body.surfaces = _fish_surfaces
 		body.emergency_anchor = Vector3(body.birth_point.x, body.birth_point.y, body.birth_height)
@@ -4508,6 +4534,8 @@ func _physics_process(delta: float) -> void:
 		crystal_observer.facing = actor.direction.normalized()
 	_sync_crystal_observation()
 	_sync_w8()
+	if fairy_realm != null:
+		fairy_realm.tick(world_clock.sim_delta(delta))
 	if not is_instance_valid(_debug_editor):
 		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
@@ -4557,7 +4585,8 @@ func _physics_process(delta: float) -> void:
 	if find_visibility != _secret_find_visibility:
 		_secret_find_visibility = find_visibility
 		queue_redraw()
-	var area: String = AREA_LABELS[_entity_location(actor.position)]
+	var address := _entity_location(actor.position)
+	var area: String = "Мир фей" if address == FairyMap.ID else AREA_LABELS[address]
 	var local_phase: int = coast_house_phase if _entity_location(actor.position) == Coast.HOUSE_ID else world_clock.phase()
 	_world_light.color = PHASE_TINTS[local_phase]
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
@@ -4602,7 +4631,7 @@ func _physics_process(delta: float) -> void:
 
 func _update_local_camera() -> void:
 	_sync_c6_facade()
-	var room := Rect2()
+	var room := fairy_realm.view_bounds(actor.position) if fairy_realm != null else Rect2()
 	if _room_view != null:
 		for candidate in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP, RuneRoom.KEY_ROOM, FairyBranch.ROOM]:
 			if candidate.has_point(actor.position):
@@ -4783,6 +4812,10 @@ func _use_tunnel(point: Vector2, address: String) -> bool:
 
 
 func _nearby_action() -> String:
+	if fairy_realm != null:
+		var threshold := fairy_realm.action()
+		if not threshold.is_empty():
+			return threshold["label"]
 	var w8_action := _w8_action()
 	if not w8_action.is_empty():
 		return w8_action
@@ -4943,6 +4976,10 @@ func _update_ice_support(active: bool) -> void:
 func interact() -> bool:
 	if not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	if fairy_realm != null:
+		var threshold := fairy_realm.action()
+		if not threshold.is_empty():
+			return fairy_realm.interact(threshold)
 	if not _w8_action().is_empty():
 		return _interact_w8()
 	if _ghost_action():
@@ -5468,6 +5505,8 @@ func _toggle_debug_editor() -> void:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
+	if fairy_realm != null:
+		data["fairy_realm"] = fairy_realm.snapshot()
 	data["address_schema"] = ADDRESS_SCHEMA
 	data["game_mode"] = game_mode
 	data["hero_profile"] = hero_profile.active
@@ -5554,6 +5593,9 @@ func make_snapshot() -> Dictionary:
 
 
 func apply_snapshot(data: Dictionary) -> bool:
+	var next_realm: Variant = data.get("fairy_realm", FairyRealm.START)
+	if fairy_realm != null and not FairyRealm.valid_snapshot(next_realm):
+		return false
 	var next_game_mode: Variant = data.get("game_mode", "FULLSCREEN")
 	if next_game_mode not in ["FULLSCREEN", "WINDOWED"]:
 		return false
@@ -5970,6 +6012,13 @@ func apply_snapshot(data: Dictionary) -> bool:
 					candidate["entities"].append(initial.duplicate(true))
 		elif candidate["anomaly_layout"] != 1:
 			return false
+	if fairy_realm != null and not candidate.has("fairy_realm"):
+		if fairy_realm.initial_residents.size() != 2:
+			return false
+		candidate = candidate.duplicate(true)
+		for initial in fairy_realm.initial_residents:
+			if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
+				candidate["entities"].append(initial.duplicate(true))
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -6016,7 +6065,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var previous_plank := _plank_surface
 	_ice_duration.restore(next_ice.remaining)
 	_set_plank_surface(_saved_plank_surface(plank))
+	var previous_realm := {}
+	if fairy_realm != null:
+		previous_realm = fairy_realm.snapshot()
+		fairy_realm.stage_snapshot(next_realm)
 	if not super.apply_snapshot(candidate):
+		if fairy_realm != null:
+			fairy_realm.stage_snapshot(previous_realm)
+			fairy_realm.finish_snapshot()
 		_lab_ice.restore(previous_lab_ice)
 		_ice_duration.restore(previous_ice)
 		_set_plank_surface(previous_plank)
@@ -6120,6 +6176,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 	crystal_observer.luna_eyes_open = next_eyes
 	crystal_observer.facing = next_facing
 	_sync_crystal_observation()
+	if fairy_realm != null:
+		fairy_realm.finish_snapshot()
 	access = next_access
 	wand_pair = pair
 	projection = wand_pair.active()
@@ -6282,6 +6340,12 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
+	if fairy_realm_enabled:
+		var fox: EntityBody = candidates.get(FairyMap.FOX_ID)
+		if not fox is FairyFox or not (FairyMap.LATE.has_point(fox.position) or FairyMap.EARLY.has_point(fox.position)):
+			return false
+		if not candidates.get(FairyMap.CANOPY_RESIDENT) is CanopyResident:
+			return false
 	for identity in Meadows.QUIET_FAUNA:
 		var resident: EntityBody = candidates.get(identity)
 		if not resident is Fauna or resident.record.category != Meadows.QUIET_FAUNA[identity]["category"]:

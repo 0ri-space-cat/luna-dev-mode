@@ -1,5 +1,6 @@
 class_name SkeletonElevationBody2D
 extends CharacterBody2D
+signal planar_impact(collider: Object, incoming_speed: float)
 ## Skeleton adapter. CharacterBody2D owns XY; the elevation model owns Z.
 ## The fixture uses a separate layer per height volume, with walkable tops.
 
@@ -553,6 +554,7 @@ func _move_with_contacts(drive: Vector2, delta: float, acceleration: float) -> v
 		var incoming := -velocity.dot(normal)
 		if incoming <= ElevationMotion.EPSILON:
 			break
+		planar_impact.emit(hit.get_collider(), incoming)
 		var rebound := incoming * _bounciness
 		if rebound < ElevationMotion.REST_SPEED:
 			rebound = 0.0

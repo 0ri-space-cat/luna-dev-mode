@@ -15,6 +15,7 @@ process_mode = 1
 ecology_fixture = true
 observation_fixture = true
 ancient_console_enabled = true
+fairy_realm_enabled = true
 
 [node name="SystemPause" type="Node" parent="."]
 script = ExtResource("4")
