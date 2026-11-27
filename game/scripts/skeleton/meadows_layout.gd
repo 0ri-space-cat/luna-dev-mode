@@ -18,10 +18,10 @@ const QUIET_EAST := Rect2(1600, 625, 365, 155)
 const QUIET_DECKS := [QUIET_NORTH, QUIET_SOUTH, QUIET_EAST]
 const DECKS := [M0, M1_BANK, M2, SOUTH_TURN, DRY_TRAIL, M3, QUIET_NORTH, QUIET_SOUTH, QUIET_EAST]
 const QUIET_FAUNA := {
-	"M_QUIET_FOX_N": {"category": "fox", "label": "Лисичка", "point": Vector2(1290, 115), "size": 0.72, "speed": 0.85},
-	"M_QUIET_TURTLE_N": {"category": "turtle", "label": "Черепашка", "point": Vector2(1330, 190), "size": 0.8, "speed": 0.35},
-	"M_QUIET_FOX_S": {"category": "fox", "label": "Лисичка", "point": Vector2(1310, 820), "size": 0.95, "speed": 1.1},
-	"M_QUIET_TURTLE_S": {"category": "turtle", "label": "Черепашка", "point": Vector2(1390, 890), "size": 1.05, "speed": 0.5},
+	"M_QUIET_FOX_N": {"category": "fox", "label": "Лисичка", "point": Vector2(1290, 115), "size": 0.7, "speed": 0.9},
+	"M_QUIET_TURTLE_N": {"category": "turtle", "label": "Черепашка", "point": Vector2(1330, 190), "size": 0.8, "speed": 0.4},
+	"M_QUIET_FOX_S": {"category": "fox", "label": "Лисичка", "point": Vector2(1310, 820), "size": 1.0, "speed": 1.1},
+	"M_QUIET_TURTLE_S": {"category": "turtle", "label": "Черепашка", "point": Vector2(1390, 890), "size": 1.1, "speed": 0.5},
 }
 const CREEK := Rect2(1530, 184, 86, 325)
 const CREEK_BED := -112.0
