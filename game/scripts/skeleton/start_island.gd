@@ -1606,10 +1606,10 @@ func _leia_action() -> String:
 	var leia := entities.get_entity(LEIA_ID) as EntityBody
 	if not _friend_available(leia) or actor.is_attached() or _entity_location(actor.position) != _entity_location(leia.position) or not _within_reach(leia.position, leia.motion.elevation) or _friend_at_cafe(LEIA_ID):
 		return ""
-	if leia_free and not tamagotchi_owned:
-		return "Помочь Лее"
 	if not social.meetings.has("LEIA"):
 		return "Посмотреть на черепашку с Леей" if leia_turtle_seen else "Поговорить с Леей"
+	if leia_free and not tamagotchi_owned:
+		return "Помочь Лее"
 	return ""
 
 
@@ -1618,7 +1618,7 @@ func _interact_leia() -> bool:
 	if action.is_empty():
 		return false
 	social.complete("LEIA")
-	if leia_free:
+	if action == "Помочь Лее":
 		tamagotchi_owned = true
 		_active_city_tool = "tamagotchi"
 		$Interface/SaveNotice.text = "Лея: Спасибо! Теперь мы можем пройти. Получено: Тамагочи."

@@ -582,6 +582,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_address_input.show()
 				_address_input.grab_focus()
 		KEY_ESCAPE:
+			if not _address_input.visible:
+				return
 			_address_input.hide()
 		KEY_T:
 			var minute := Clock.START_MINUTE if world_clock.phase() == Clock.Phase.NIGHT else Clock.NIGHT_MINUTE

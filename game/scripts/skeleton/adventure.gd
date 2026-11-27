@@ -17,6 +17,7 @@ const Journal = preload("res://scripts/runtime2d/system_incident_journal_2d.gd")
 const RareDirector = preload("res://scripts/runtime2d/rare_encounter_director_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const Store = preload("res://scripts/runtime2d/save_store_2d.gd")
+const PauseMenu = preload("res://scripts/skeleton/adventure_pause_menu_2d.gd")
 const GUEST_OFFSET := Vector2(6000, 0)
 const PROFILE_KIND := "luna_adventure"
 const CHECKPOINT_SECONDS := 0.5
@@ -50,6 +51,7 @@ var _ready_for_play := false
 var _profile_valid := true
 var _checkpoint_elapsed := 0.0
 var _journal_elapsed := 0.0
+var _pause_menu: PauseMenu
 
 @onready var home: Island = $Home
 @onready var _recovery_view: RecoveryView = $Recovery
@@ -76,6 +78,9 @@ func _ready() -> void:
 	home.forest_bank_interacted.connect(_on_forest_press)
 	home.forest_bank_left.connect(_queue_forest_report)
 	home.ancient_console.command_submitted.connect(_on_ancient_command)
+	_pause_menu = PauseMenu.new()
+	add_child(_pause_menu)
+	_pause_menu.setup(save_game, load_game, home.set_game_mode)
 	events.event_dropped.connect(_on_overflow)
 	_recovery_view.finished.connect(_finish_recovery)
 	var profile := _store.read_snapshot(profile_path)
@@ -131,12 +136,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_handle_suspended_key(key)
 		return
 	match key:
+		KEY_ESCAPE:
+			if _away and outer.current_address in [OuterRoutes.DESKTOP, OuterRoutes.WHITE_ADDRESS]:
+				return
+			_pause_menu.open(home.game_mode, not _away)
 		KEY_F5:
 			_notice("Сохранено" if save_game() else "Сохранение недоступно")
 		KEY_F9:
 			_notice("Загружено" if load_game() else "Загрузка недоступна")
 		KEY_F7:
-			demonstrate_overload()
+			if OS.has_feature("editor"):
+				demonstrate_overload()
 		_:
 			return
 	get_viewport().set_input_as_handled()

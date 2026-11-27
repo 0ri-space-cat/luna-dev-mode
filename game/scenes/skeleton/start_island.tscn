@@ -38,7 +38,7 @@ offset_top = 52.0
 [node name="Controls" type="Label" parent="Interface"]
 offset_left = 24.0
 offset_top = 738.0
-text = "WASD / стрелки — движение   ·   Пробел — прыжок   ·   2, затем E — заморозка   ·   Tab — взлом   ·   F5 / F9 — сохранение"
+text = "WASD / стрелки — движение   ·   Пробел — прыжок   ·   E — действие   ·   Tab — взлом   ·   Esc — меню"
 
 [node name="SaveNotice" type="Label" parent="Interface"]
 offset_left = 24.0

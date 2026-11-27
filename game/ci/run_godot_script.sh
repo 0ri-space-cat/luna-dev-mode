@@ -8,11 +8,13 @@ fi
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 # The integrated Administrator regression walks the full forest-valley route
-# multiple times and restarts the profile. Other tests retain the 40s budget.
+# multiple times and restarts the profile. The public campaign walks from
+# the default start to the ordinary credits and the physical White Void route.
 budget=40s
-if [ "$1" = "res://tests/test_skeleton_administrator.gd" ]; then
-  budget=80s
-fi
+case "$1" in
+  res://tests/test_skeleton_administrator.gd) budget=80s ;;
+  res://tests/test_skeleton_luma_city.gd) budget=170s ;;
+esac
 set +e
 timeout "$budget" godot --headless --path . --script "$1" 2>&1 | tee "$log"
 godot_status=${PIPESTATUS[0]}

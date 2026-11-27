@@ -25,6 +25,7 @@ func _run() -> void:
 	_place(leia, Island.LEIA_EXIT)
 	_place(home.actor, Island.LEIA_EXIT + Vector2(0, 30))
 	home._tick_leia()
+	assert(home.leia_free and home._interact_leia() and not home.tamagotchi_owned)
 	assert(home.leia_free and home._interact_leia() and home.tamagotchi_owned)
 	_place(home.actor, Island.SPAWN)
 	assert(home.tamagotchi_configure("cat", pink, 0.8))

@@ -94,7 +94,7 @@ jobs:
       - name: Test physical shell collection and ordinary repeatable Copy
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_coast_collection.gd
-      - name: Test public Luma travel, physical city doors and persistent residents
+      - name: Test the uninterrupted ordinary campaign, save and return
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_luma_city.gd
       - name: Test Yuki notebook, physical program carriers and durable scripts

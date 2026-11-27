@@ -86,12 +86,28 @@ func _run() -> void:
 	assert(game._profile_valid and game._away and game.outer.hosted_entry == Outer.BACKDROP_ENTRY)
 	assert(game._return_to_home() and game.home.actor.position.distance_to(source) < 1.0)
 	assert(not game.white_discovered and game.journal.applied == 0)
+	_check_public_room_camera(game.home)
 	game.queue_free()
 	await process_frame
 	for file in [path, path + ".bak"]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(file))
 	print("Special interior adapter: real door, HUD, static viewport crossing, distinct Black Void provenance and safe reload")
 	quit()
+
+
+func _check_public_room_camera(home: Node) -> void:
+	var city = Island.City
+	var porch: Vector2 = city.DOORS[0]["outside"]
+	home.highland.camera_owned = true
+	home.highland.camera_mode = "FOLLOW"
+	home._move_home_travelers(porch + Vector2(-48, 0), city.CITY_ID)
+	assert(home.toggle_camera_lock())
+	var outside_frame: Vector2 = home.highland.camera_lock
+	home._move_home_travelers(porch, city.CITY_ID)
+	assert(home.interact() and home.actor.location_id == city.CAFE_ID)
+	assert(home._room_view.visible and home._camera.get_screen_center_position().is_equal_approx(city.CAFE.get_center()))
+	assert(home.interact() and home.actor.location_id == city.CITY_ID)
+	assert(not home._room_view.visible and home._camera.get_screen_center_position().is_equal_approx(outside_frame))
 
 
 func _walk(home, route, target: Vector2) -> bool:
