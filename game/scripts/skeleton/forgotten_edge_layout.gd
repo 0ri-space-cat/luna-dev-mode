@@ -57,6 +57,8 @@ const COAST_RETURN := Vector2(2900, 1085)
 const DESK := Vector2(3710, 1440)
 const LEGACY_NOTE := Vector2(4520, 1260)
 const NOTE := Vector2(3410, 145)
+# Working D2 site, distinct from the relocated main refuge.
+const ONI_RECORD := Vector2(3520, 1180)
 const PORTAL_A := Vector2(3360, 1310)
 const PORTAL_B := Vector2(3545, 1410)
 const PORTAL_A_EXIT := Vector2(3395, 1310)
@@ -147,3 +149,8 @@ static func draw_on(canvas: Node2D, elapsed: float, time_owned: bool, portal_own
 		canvas.draw_rect(Rect2(Vector2(3450, 1440), Vector2(20, 9)), Color("d9b5e6"))
 	canvas.draw_rect(Rect2(NOTE - Vector2(25, 12), Vector2(50, 24)), Color("8e736d"))
 	canvas.draw_rect(Rect2(NOTE - Vector2(9, 7), Vector2(18, 14)), Color("e3d6c6"))
+	# Technical map of broken relations on a sheet, not a portrait or address.
+	canvas.draw_rect(Rect2(ONI_RECORD - Vector2(18, 12), Vector2(36, 24)), Color("d9d0bc"))
+	for offset in [Vector2(-12, -6), Vector2(-12, 6), Vector2(12, -6)]:
+		canvas.draw_line(ONI_RECORD + offset, ONI_RECORD + offset.normalized() * 4.0, Color("625d7d"), 1.5)
+		canvas.draw_circle(ONI_RECORD + offset, 2.0, Color("625d7d"))

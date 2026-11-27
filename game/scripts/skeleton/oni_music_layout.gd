@@ -4,7 +4,20 @@ const ONI_ID := "W1_K6_ONI"
 const ROUTE := [Vector2(2138, 490), Vector2(2194, 490), Vector2(2240, 490),
 	Vector2(2240, 600), Vector2(2240, 755), Vector2(2340, 790),
 	Vector2(2440, 805), Vector2(2620, 870), Vector2(2750, 940),
-	Vector2(2770, 1040), Vector2(2855, 1085)]
+	Vector2(2770, 1040), Vector2(2855, 1085),
+	Vector2(2940, 1085), Vector2(3245, 1085), Vector2(3300, 1100), Vector2(3365, 1145), Vector2(3480, 1150)]
+const CAPE_INDEX := 10
+const BRIDGE_WEST_INDEX := 11
+const BRIDGE_EAST_INDEX := 12
+const EDGE_INDEX := 15
+const EDGE_SPOT := Vector2(3480, 1150)
+
+
+static func destination_index(minute: int, daytime: bool) -> int:
+	# DEV repeated private study period; ordinary W1/K6 hours remain otherwise intact.
+	if minute >= 23 * 60 or minute < 2 * 60:
+		return EDGE_INDEX
+	return CAPE_INDEX if daytime else 0
 const FLUTE := Vector2(1880, -275)
 const CAPE := Vector2(2855, 1085)
 const LAKE := Vector2(2138, 490)

@@ -2134,6 +2134,10 @@ func _edge_action() -> String:
 	var address := _entity_location(actor.position)
 	if address == Edge.ID and _within_reach(Edge.RETURN):
 		return "Вернуться на побережье"
+	if address == Edge.ID and _oni_edge_near():
+		return "Поговорить с Они"
+	if address == Edge.ID and _within_reach(Edge.ONI_RECORD):
+		return "Рассмотреть рисунок"
 	if address == Edge.REFUGE and _within_reach(Edge.NOTE):
 		return "Прочесть личную запись"
 	if address == Edge.SERVICE and _within_reach(Edge.DESK) and Edge.D4_DESK.has_point(actor.position) and not edge.time_owned:
@@ -2166,6 +2170,14 @@ func _interact_edge() -> bool:
 			if not _ordinary_arrival_is_safe(Coast.LOCATION_ID, Edge.COAST_RETURN):
 				return false
 			_move_home_travelers(Edge.COAST_RETURN, Coast.LOCATION_ID)
+			return true
+		"Поговорить с Они":
+			if not _oni_edge_near():
+				return false
+			$Interface/SaveNotice.text = "Они: Я всё пытаюсь понять, почему здесь линии не сходятся. Мне казалось, ты уже была здесь… Ты раньше немного иначе выглядела."
+			return true
+		"Рассмотреть рисунок":
+			$Interface/SaveNotice.text = "Несколько линий сходятся к пустому месту. На полях — зачёркнутые варианты и вопросительный знак."
 			return true
 		"Прочесть личную запись":
 			$Interface/SaveNotice.text = "На листе прямоугольник окна (WINDOWED). След шагов продолжается за его границей; рядом незаконченный рисунок GAME_FRAME и рабочего стола."
@@ -2910,17 +2922,37 @@ func _tick_oni() -> void:
 		if oni != null:
 			oni.autonomous_destination = Vector2.INF
 		return
-	var towards_cape := world_clock.phase() in [WorldClock.Phase.DAY, WorldClock.Phase.EVENING]
-	var last := Visits.ROUTE.size() - 1
+	var daytime := world_clock.phase() in [WorldClock.Phase.DAY, WorldClock.Phase.EVENING]
+	var destination := Visits.destination_index(world_clock.minute_of_day(), daytime)
+	# If a camera-dependent span vanishes, actual physics owns recovery.
+	# Reconcile a recovered body with its own shore, never snap it to the target.
+	if oni_route_index in [Visits.BRIDGE_WEST_INDEX, Visits.BRIDGE_EAST_INDEX] and not _surfaces.has(Edge.R07):
+		if Coast.CAPE.has_point(oni.position):
+			oni_route_index = Visits.BRIDGE_WEST_INDEX
+		elif Edge.D0.has_point(oni.position):
+			oni_route_index = Visits.BRIDGE_EAST_INDEX
+		else:
+			oni.autonomous_destination = Vector2.INF
+			return
 	var target: Vector2 = Visits.ROUTE[oni_route_index]
-	if oni.motion.grounded and oni.position.distance_to(target) < 5.0:
-		var next := clampi(oni_route_index + (1 if towards_cape else -1), 0, last)
-		if next == oni_route_index:
+	if oni.position.distance_to(target) < 5.0:
+		if destination == oni_route_index:
+			oni.autonomous_destination = Vector2.INF
+			return
+		var next := oni_route_index + (1 if destination > oni_route_index else -1)
+		if mini(next, oni_route_index) == Visits.BRIDGE_WEST_INDEX and not _surfaces.has(Edge.R07):
 			oni.autonomous_destination = Vector2.INF
 			return
 		oni_route_index = next
 		target = Visits.ROUTE[oni_route_index]
 	oni.autonomous_destination = target
+
+
+func _oni_edge_near() -> bool:
+	if not observation_fixture or _friend_at_cafe(Visits.ONI_ID):
+		return false
+	var oni := entities.get_entity(Visits.ONI_ID) as EntityBody
+	return _friend_available(oni) and _entity_location(oni.position) == Edge.ID and oni.position.distance_to(Visits.EDGE_SPOT) < 12.0 and _within_reach(oni.position, oni.motion.elevation)
 
 
 func _oni_site() -> String:

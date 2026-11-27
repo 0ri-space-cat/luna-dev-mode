@@ -64,6 +64,30 @@ func _run() -> void:
 	home._camera.reset_smoothing()
 	home._sync_mountain_bridge()
 	assert(home._surfaces.has(Edge.BRIDGE) and home._surfaces.has(Edge.R07))
+	# The permanent clue exists without Oni, prism, cafe or the main refuge.
+	_place(home, Edge.ONI_RECORD)
+	assert(home._edge_action() == "Рассмотреть рисунок" and home.interact())
+	assert(not home.get_node("Interface/SaveNotice").text.contains("META_WHITE_VOID"))
+	var oni = home.entities.get_entity(Island.Visits.ONI_ID)
+	# Seed at her ordinary cape stop; the extension must be walked.
+	home._place_friend(oni, Island.Visits.CAPE, 0.0)
+	home.oni_route_index = Island.Visits.CAPE_INDEX
+	assert(oni.set_parameter("speed", 2.5))
+	assert(home.world_clock.set_time_of_day(23 * 60))
+	assert(await _reach(oni, Island.Visits.EDGE_SPOT, 540), "Oni edge arrival %s index %s" % [oni.position, home.oni_route_index])
+	assert(home.entities.get_entity(Island.Visits.ONI_ID) == oni and oni.location_id == Edge.ID)
+	_place(home, Island.Visits.EDGE_SPOT + Vector2(0, 28))
+	assert(home._edge_action() == "Поговорить с Они" and home.interact())
+	assert(not home.social.prism_owned and home.social.meetings.is_empty())
+	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
+	oni = home.entities.get_entity(Island.Visits.ONI_ID)
+	assert(oni.location_id == Edge.ID and home._oni_edge_near())
+	# A daytime return follows the same physical span and leaves the drawing.
+	assert(home.world_clock.set_time_of_day(12 * 60))
+	assert(await _reach(oni, Island.Visits.CAPE, 540), "Oni cape return %s index %s" % [oni.position, home.oni_route_index])
+	_place(home, Edge.ONI_RECORD)
+	assert(home._edge_action() == "Рассмотреть рисунок" and home.interact())
+	player = home.actor
 	# Local collapse never resets previously collected items.
 	home.edge.elapsed = Edge.INTACT_SECONDS - 0.1
 	home._tick_edge(0.2)
@@ -103,3 +127,11 @@ func _run() -> void:
 	await process_frame
 	print("M3.174–185: edge, P01, independent P04, camera spans, cycle and portal identity")
 	quit()
+
+
+func _reach(body: Node, point: Vector2, ticks: int) -> bool:
+	for tick in ticks:
+		if body.motion.grounded and body.position.distance_to(point) < 4.0:
+			return true
+		await physics_frame
+	return false
