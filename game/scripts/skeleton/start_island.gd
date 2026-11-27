@@ -1865,6 +1865,8 @@ func _place_friend(body: EntityBody, point: Vector2, height: float) -> void:
 	body.location_id = _entity_location(point)
 	body.autonomous_destination = Vector2.INF
 	body.music_interest = Vector2.INF
+	body.profile_interest = Vector2.INF
+	body.profile_interest_gap = 0.0
 	body.velocity = Vector2.ZERO
 	body._sync_projection()
 
@@ -3332,7 +3334,7 @@ func _tick_profile_attraction() -> void:
 	# Attraction is sensed locally and cannot replace authored destinations,
 	# forced behavior, rider input, vital swimming, or explicit AI disable.
 	# Body size is used only for safe personal distance, never eligibility.
-	var enabled := observation_fixture and visible and hero_profile.attracts_animals() and is_instance_valid(actor) and actor.get_parameter("alive") == true
+	var enabled: bool = observation_fixture and visible and hero_profile.attracts_animals() and is_instance_valid(actor) and actor.get_parameter("alive") == true
 	var location := _entity_location(actor.position) if enabled else ""
 	for id in entities.list_ids():
 		var body := entities.get_entity(id) as EntityBody

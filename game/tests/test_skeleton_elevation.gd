@@ -4,6 +4,7 @@ extends SceneTree
 const Motion = preload("res://scripts/skeleton/elevation_motion_2d.gd")
 const Fixture = preload("res://scenes/skeleton/elevation_fixture.tscn")
 const SaveStore = preload("res://scripts/runtime2d/save_store_2d.gd")
+const PixelSteps = preload("res://scripts/skeleton/pixel_air_steps_2d.gd")
 
 
 func _initialize() -> void:
@@ -12,6 +13,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	_check_solver()
+	_check_pixel_steps()
 	var scene = Fixture.instantiate()
 	scene.keyboard = false
 	root.add_child(scene)
@@ -194,3 +196,43 @@ func _until(condition: Callable) -> bool:
 		if condition.call():
 			return true
 	return false
+
+func _check_pixel_steps() -> void:
+	var floor_surfaces: Array[Dictionary] = [{"bounds": Rect2(0, 0, 160, 120), "height": 0.0}]
+	var pixel := Node2D.new()
+	var stranger := Node2D.new()
+	pixel.position = Vector2(30, 60)
+	var steps := PixelSteps.new()
+	assert(steps.bind(pixel) and not steps.bind(stranger))
+	assert(not steps.observe_step(pixel, 18.0, floor_surfaces))
+	stranger.position = Vector2(65, 60)
+	assert(not steps.observe_step(stranger, 18.0, floor_surfaces))
+	pixel.position = Vector2(65, 60)
+	assert(steps.observe_step(pixel, 18.0, floor_surfaces))
+	assert(steps.active_count() == 1 and floor_surfaces.size() == 2)
+	# Both independent vertical solvers land on the very same support.
+	var first := Motion.new()
+	var second := Motion.new()
+	for body in [first, second]:
+		body.reset_on_surface(pixel.position, 0.0)
+		body.elevation = 35.0
+		body.grounded = false
+		body.vertical_speed = -120.0
+		body.step(pixel.position, pixel.position, 0.2, -600.0, floor_surfaces)
+		assert(body.grounded and is_equal_approx(body.elevation, 18.0))
+		assert(body.snapshot()["anchor"][2] == 0.0)
+	assert(not steps.observe_step(pixel, 18.0, floor_surfaces))
+	steps.advance(PixelSteps.LIFETIME, floor_surfaces)
+	assert(steps.active_count() == 0 and floor_surfaces.size() == 1)
+	for body in [first, second]:
+		body.step(pixel.position, pixel.position, 0.5, -600.0, floor_surfaces)
+		assert(body.grounded and is_zero_approx(body.elevation))
+	# Teleport-sized changes cannot leave a physical platform behind.
+	pixel.position += Vector2(500, 0)
+	assert(not steps.observe_step(pixel, 18.0, floor_surfaces))
+	pixel.position += Vector2(25, 0)
+	assert(steps.observe_step(pixel, 24.0, floor_surfaces))
+	steps.clear(floor_surfaces)
+	assert(floor_surfaces.size() == 1 and not steps.observe_step(pixel, 24.0, floor_surfaces))
+	pixel.free()
+	stranger.free()

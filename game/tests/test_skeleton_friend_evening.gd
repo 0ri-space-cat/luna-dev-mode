@@ -22,7 +22,7 @@ func _run() -> void:
 	root.add_child(game)
 	await physics_frame
 	var home = game.home
-	_check_leia_attraction(home)
+	await _check_leia_attraction(home)
 	var leia = home.entities.get_entity(Island.LEIA_ID)
 	var turtle = home.entities.get_entity(Island.LEIA_TURTLE)
 	assert(leia != null and turtle != null)
@@ -181,6 +181,12 @@ func _check_leia_attraction(home) -> void:
 		assert(fox.profile_interest == home.actor.position and fox.profile_interest_gap > 0.0)
 		assert(fox.get_parameter("luna_relation") == relation)
 		assert(fox.get_parameter("behavior_mode") == "WANDER")
+	assert(fox.set_parameter("size", 0.5))
+	home._tick_profile_attraction()
+	var before: float = fox.position.distance_to(home.actor.position)
+	for tick in 12:
+		await physics_frame
+	assert(fox.position.distance_to(home.actor.position) < before, "Leia should attract the actual moving fox")
 	fox.set_parameter("ai_enabled", false)
 	home._tick_profile_attraction()
 	assert(not fox.profile_interest.is_finite())
@@ -190,6 +196,6 @@ func _check_leia_attraction(home) -> void:
 	assert(not fox.profile_interest.is_finite())
 	fox.set_parameter("size", old_size)
 	fox.set_parameter("behavior_mode", mode)
-	fox.autonomous_destination = old_destination
 	home._place_friend(fox, fox_point, fox_height)
+	fox.autonomous_destination = old_destination
 	home._place_friend(home.actor, player_point, 0.0)
