@@ -81,8 +81,9 @@ const City = preload("res://scripts/skeleton/luma_city_layout.gd")
 const LunaDoor = preload("res://scripts/skeleton/luna_door_2d.gd")
 const Social = preload("res://scripts/runtime2d/friend_progress_2d.gd")
 const HeroProfile = preload("res://scripts/skeleton/hero_profile_2d.gd")
+const HeroProfilePanel = preload("res://scripts/skeleton/hero_profile_panel_2d.gd")
 var hero_profile := HeroProfile.new()
-var _profile_panel: PanelContainer
+var _profile_panel: HeroProfilePanel
 const Music = preload("res://scripts/runtime2d/flute_2d.gd")
 const Visits = preload("res://scripts/skeleton/oni_music_layout.gd")
 const ATTRACTION_SECONDS := 14.0
@@ -2424,7 +2425,7 @@ func cycle_compass() -> bool:
 
 
 func _setup_profile_panel() -> void:
-	_profile_panel = PanelContainer.new()
+	_profile_panel = HeroProfilePanel.new()
 	_profile_panel.position = Vector2(40, 85)
 	$Interface.add_child(_profile_panel)
 	_profile_panel.hide()
@@ -2455,27 +2456,7 @@ func request_profile_change(profile_id: String) -> bool:
 func _open_profile_panel() -> bool:
 	if not _profile_edit_allowed() or not is_instance_valid(_profile_panel):
 		return false
-	for child in _profile_panel.get_children():
-		_profile_panel.remove_child(child)
-		child.queue_free()
-	var box := VBoxContainer.new()
-	_profile_panel.add_child(box)
-	var heading := Label.new()
-	heading.text = "Профиль · " + HeroProfile.NAMES[hero_profile.active]
-	box.add_child(heading)
-	for profile_id in hero_profile.available(_completed_profile_branches()):
-		var button := Button.new()
-		button.text = HeroProfile.NAMES[profile_id] + " · " + HeroProfile.DESCRIPTIONS[profile_id]
-		button.disabled = profile_id == hero_profile.active
-		button.pressed.connect(func():
-			if request_profile_change(profile_id):
-				_profile_panel.hide())
-		box.add_child(button)
-	var close := Button.new()
-	close.text = "Закрыть"
-	close.pressed.connect(_profile_panel.hide)
-	box.add_child(close)
-	_profile_panel.show()
+	_profile_panel.configure(hero_profile.available(_completed_profile_branches()), hero_profile.active, request_profile_change)
 	apply_player_input(Vector2.ZERO)
 	return true
 

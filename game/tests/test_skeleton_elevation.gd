@@ -40,6 +40,23 @@ func _run() -> void:
 	assert(await _until(func(): return body.motion.grounded))
 	assert(is_zero_approx(body.motion.elevation))
 
+	# Real traveler lands on a temporary physical step, then falls back to
+	# the permanent floor when it expires. The marker is not a donor.
+	_place(body, Vector2(420, 280), 0.0)
+	var pixel_marker := Node2D.new()
+	pixel_marker.position = Vector2(380, 280)
+	var pixel_steps := PixelSteps.new()
+	assert(pixel_steps.bind(pixel_marker))
+	pixel_marker.position = body.position
+	assert(pixel_steps.observe_step(pixel_marker, 18.0, body.surfaces))
+	body.jump()
+	assert(await _until(func(): return body.motion.grounded and is_equal_approx(body.motion.elevation, 18.0)))
+	assert(body.motion.snapshot()["anchor"][2] == 0.0)
+	pixel_steps.advance(PixelSteps.LIFETIME, body.surfaces)
+	assert(await _until(func(): return body.motion.grounded and is_zero_approx(body.motion.elevation)))
+	pixel_steps.clear(body.surfaces)
+	pixel_marker.free()
+
 	# Having flight available and pushing upward does not erase a higher wall.
 	_place(body, Vector2(782, 280), 0.0)
 	body.direction = Vector2.RIGHT

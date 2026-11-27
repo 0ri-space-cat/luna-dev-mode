@@ -145,7 +145,10 @@ func _run() -> void:
 	var original_actor = home.actor
 	var components: Dictionary = original_actor.record.get_components()
 	assert(not home.request_profile_change("YUKI"))
-	assert(home.request_profile_change("ONI") and home.hero_profile.active == "ONI")
+	assert(home._open_profile_panel())
+	assert(home._profile_panel.preview_profile("ONI") and home.hero_profile.active == "LUNA")
+	assert(not home._profile_panel.preview_profile("YUKI"))
+	assert(home._profile_panel.confirm_preview() and home.hero_profile.active == "ONI")
 	assert(home.actor == original_actor and home.actor.record.get_components() == components)
 	home.set_luna_eyes(false)
 	assert(home.hero_profile.sees_underside(false) and not home._w8_open)
