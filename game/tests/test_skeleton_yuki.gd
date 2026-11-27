@@ -39,12 +39,15 @@ func _run() -> void:
 	assert(home.yuki.observed)
 	# A deliberate individual edit protects this cat from mass cleanup.
 	assert(cat.set_parameter("luna_relation", "FRIEND"))
+	# Return with the rule still active: the optional gift never requires cleanup.
+	home.actor.position = friend_body.position + Vector2(-30, 0)
+	home.actor.motion.reset_on_surface(home.actor.position, 0.0)
+	assert(home.yuki.has_active_cat_rule())
+	assert(home._interact_yuki() and home.yuki.ownership == 2)
+	assert(home.yuki.has_active_cat_rule())
 	assert(home.set_yuki_running(false))
 	home._tick_yuki(120.0)
 	assert(home.yuki.spawn_serial == 1)
-	home.actor.position = friend_body.position + Vector2(-30, 0)
-	home.actor.motion.reset_on_surface(home.actor.position, 0.0)
-	assert(home._interact_yuki() and home.yuki.ownership == 2)
 	assert("YUKI" in home.social.meetings)
 	var saved: Dictionary = home.make_snapshot()
 	var invalid: Dictionary = saved.duplicate(true)

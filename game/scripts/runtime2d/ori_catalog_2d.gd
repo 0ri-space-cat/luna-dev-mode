@@ -3,7 +3,7 @@ extends RefCounted
 const FORMS := {"cat": "Котик", "fox": "Лисичка", "ray": "Скат", "lizard": "Ящерка", "trollik": "Троллик"}
 const RELATIONS := ["FRIEND", "NEUTRAL", "HOSTILE", "AFRAID"]
 const MODULES := ["", "GLOW", "FLY"]
-const MAX_CREATIONS := 6
+const MAX_SERIAL := 999999 # Stable ID bound; live bodies are limited by the shared world.
 var ownership := 0
 var known: Array[String] = []
 var template: Dictionary = {}
@@ -36,7 +36,7 @@ func restore(data: Variant) -> bool:
 	var count: Variant = data.get("serial")
 	if typeof(state) not in [TYPE_INT, TYPE_FLOAT] or float(state) not in [0.0, 1.0, 2.0]:
 		return false
-	if typeof(count) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(count)) or float(count) != floorf(float(count)) or float(count) < 0 or float(count) > MAX_CREATIONS:
+	if typeof(count) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(count)) or float(count) != floorf(float(count)) or float(count) < 0 or float(count) > MAX_SERIAL:
 		return false
 	var forms: Variant = data.get("known")
 	if not forms is Array or forms.size() > FORMS.size():

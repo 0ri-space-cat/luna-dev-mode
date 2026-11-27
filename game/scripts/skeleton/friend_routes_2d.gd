@@ -12,6 +12,10 @@ const MEADOW_PATH := [TOFFI_MEADOW, Vector2(1890, 430), Vector2(1910, 590), MEAD
 const CITY_PATH := [CITY_GATE, Vector2(4745, 480), Vector2(5000, 480), PLAZA_TURN, Vector2(5135, 620), SHOP_GATE]
 const SHOP_PATH := [SHOP_INSIDE, Vector2(5965, 645), SHOP_TALK]
 const SECRET_PATH := [PLAZA_TURN, Vector2(5150, 320), Vector2(5150, 240), Vector2(5150, 145), Vector2(5095, 145)]
+const YUKI_INSIDE := [Vector2(5700, 620), Vector2(5700, 685), Vector2(5630, 685)]
+const YUKI_OUTSIDE := [Vector2(4935, 290), Vector2(4995, 325), Vector2(5030, 340)]
+const ORI_INSIDE := [Vector2(6050, 620), Vector2(6050, 680), Vector2(5970, 680)]
+const ORI_OUTSIDE := [Vector2(5190, 660), Vector2(5190, 590), Vector2(5100, 560)]
 const LEIA_PATH := [Vector2(2058, -28), Vector2(2058, -65), Vector2(1900, -65), Vector2(1885, -145), Vector2(1885, -260)]
 
 

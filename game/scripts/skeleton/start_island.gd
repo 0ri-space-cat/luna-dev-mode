@@ -608,7 +608,7 @@ func _yuki_action() -> String:
 		return ""
 	if yuki.ownership == 0:
 		return "Одолжить ноутбук Юки"
-	if yuki.ownership == 1 and yuki.observed and not yuki.has_active_cat_rule():
+	if yuki.ownership == 1 and yuki.observed:
 		return "Обсудить эксперимент с Юки"
 	return ""
 
@@ -670,7 +670,10 @@ func _execute_yuki_rule(rule: Dictionary) -> bool:
 	if body == null:
 		return false
 	var key: String = {"SET_SPEED": "speed", "SET_ALIVE": "alive", "SET_AI": "ai_enabled"}.get(rule["action"], "")
-	return not key.is_empty() and commands.execute_set(body, key, rule["value"], ENTITY_ID, "yuki:rule")
+	var applied := not key.is_empty() and commands.execute_set(body, key, rule["value"], ENTITY_ID, "yuki:rule")
+	if applied and yuki.ownership == 1 and body.location_id == _entity_location(actor.position) and _within_reach(body.position, body.motion.elevation):
+		yuki.observed = true
+	return applied
 
 
 func _yuki_spawn_cat() -> bool:
@@ -764,8 +767,8 @@ func _ori_action() -> String:
 		return ""
 	if ori.ownership == 0:
 		return "Одолжить Каталог Ори"
-	if ori.ownership == 1 and not ori.order_id.is_empty() and city_tools.ori_stage == 0:
-		return "Показать Ори летающего помощника на площади"
+	if ori.ownership == 1 and ori.serial >= 2:
+		return "Поделиться с Ори своими созданиями"
 	return ""
 
 
@@ -775,8 +778,11 @@ func _interact_ori() -> bool:
 			ori.ownership = 1
 			_tick_ori()
 			return true
-		"Показать Ори летающего помощника на площади":
-			city_tools.ori_stage = 1
+		"Поделиться с Ори своими созданиями":
+			ori.ownership = 2
+			city_tools.ori_stage = 3
+			social.complete("ORI")
+			$Interface/SaveNotice.text = "Ори: Когда наиграешься, приходи ещё. Каталог твой!"
 			return true
 	return false
 
@@ -815,7 +821,7 @@ func request_extract_ori(target_id: String, instance_id: String) -> bool:
 
 
 func catalog_create(data: Dictionary) -> String:
-	if ori.ownership == 0 or not ecology_fixture or not (actor as EntityBody).accepts_player_input() or not actor.motion.grounded or not ori.valid_template(data) or ori.serial >= OriCatalog.MAX_CREATIONS:
+	if ori.ownership == 0 or not ecology_fixture or not (actor as EntityBody).accepts_player_input() or not actor.motion.grounded or not ori.valid_template(data) or ori.serial >= OriCatalog.MAX_SERIAL or entities.count_live() >= _entity_limit():
 		return ""
 	var identity := ORI_CREATED_PREFIX + str(ori.serial + 1)
 	var form: String = data["form"]
@@ -2326,6 +2332,33 @@ func _friend_threshold(body: EntityBody, source: Vector2, destination: Vector2) 
 	return true
 
 
+func _tick_city_friend_schedules() -> void:
+	if not observation_fixture:
+		return
+	var evening := world_clock.phase() in [WorldClock.Phase.EVENING, WorldClock.Phase.NIGHT]
+	for id in [City.YUKI, City.ORI]:
+		if _friend_at_cafe(id) or (id == City.ORI and city_tools.ori_stage in [1, 2] and ori.ownership == 1):
+			continue
+		var body := entities.get_entity(id) as EntityBody
+		if not _schedule_available(body):
+			if body != null:
+				body.autonomous_destination = Vector2.INF
+			continue
+		var room: Rect2 = City.WORKSHOP if id == City.YUKI else City.SHOP
+		var inside: Array = FriendRoutes.YUKI_INSIDE if id == City.YUKI else FriendRoutes.ORI_INSIDE
+		var outside: Array = FriendRoutes.YUKI_OUTSIDE if id == City.YUKI else FriendRoutes.ORI_OUTSIDE
+		if room.has_point(body.position):
+			if evening and _friend_threshold(body, inside[-1], outside[0]):
+				continue
+			body.autonomous_destination = FriendRoutes.next_point(body.position, inside, evening)
+		elif _entity_location(body.position) == City.CITY_ID:
+			if not evening and _friend_threshold(body, outside[0], inside[-1]):
+				continue
+			body.autonomous_destination = FriendRoutes.next_point(body.position, outside, evening)
+		else:
+			body.autonomous_destination = Vector2.INF
+
+
 func _tick_toffi_route() -> void:
 	var toffi := entities.get_entity(City.TOFFI) as EntityBody
 	if toffi == null or _friend_at_cafe(City.TOFFI):
@@ -2359,7 +2392,7 @@ func _tick_toffi_route() -> void:
 		toffi.autonomous_destination = Vector2.INF
 		return
 	# The secret branch rejoins the public plaza before leaving for another site.
-	if point.y < 475.0 and point.x >= 5030.0:
+	if point.y < 470.0 and point.x >= 5030.0:
 		toffi.autonomous_destination = FriendRoutes.next_point(point, FriendRoutes.SECRET_PATH, secret_visit)
 		return
 	if secret_visit:
@@ -3618,6 +3651,7 @@ func _physics_process(delta: float) -> void:
 		_tick_yuki(world_clock.sim_delta(delta))
 		_tick_ori()
 		_tick_ori_helper()
+		_tick_city_friend_schedules()
 		_tick_leia()
 		_sync_leia_pose()
 		_tick_antimemetic(world_clock.sim_delta(delta))

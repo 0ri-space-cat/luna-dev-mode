@@ -56,6 +56,16 @@ func _run() -> void:
 	assert(home.ori.ownership == 1 and home.ori.serial == 2)
 	assert(home.entities.get_entity(first).has_active_ability("GLOW"))
 	assert(not home.entities.get_entity(second).has_active_ability("GLOW"))
+	# Two creations suffice; no specific order, flight demonstration or extra module.
+	var current_ori = home.entities.get_entity(Island.City.ORI)
+	_place(home, current_ori.position + Vector2(0, 30))
+	assert(home._interact_ori() and home.ori.ownership == 2)
+	# The old six-creation narrative ceiling is gone; shared capacity still applies.
+	for point in [Vector2(1260, 75), Vector2(1300, 960), Vector2(1910, 740), Vector2(1860, -300), Vector2(2290, 1010)]:
+		_place(home, point)
+		assert(not home.catalog_create({"form": "cat", "size": 0.6, "relation": "NEUTRAL", "ability": ""}).is_empty())
+	assert(home.ori.serial == 7 and home.apply_snapshot(home.make_snapshot()))
+	assert(home.ori.ownership == 2 and home.ori.serial == 7)
 	game.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PROFILE))

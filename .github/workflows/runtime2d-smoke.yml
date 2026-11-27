@@ -94,6 +94,9 @@ jobs:
       - name: Test Tamagotchi companion identity and module conservation
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_tamagotchi.gd
+      - name: Test ordinary friend schedules and persistent identity
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_friend_routes.gd
       - name: Test Q10 and permanent antimemetic perception
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 0 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_antimemetic.gd
