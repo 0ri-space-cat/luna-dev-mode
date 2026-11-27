@@ -92,7 +92,20 @@ func _run() -> void:
 	assert(home.interact() and home.actor.location_id == Island.W8.REFUGE)
 	assert(await _walk_to(home, Island.W8.NOTE))
 	assert(home.interact() and not home.get_node("Interface/SaveNotice").text.contains("META_WHITE_VOID"))
+	assert(not home.social.oni_profile_unlocked() and not home._oni_w8_near())
+	# Isolate the Q21b contact contract using the existing NPC, never a duplicate.
+	# Autonomous W8 approach is a separate production block.
+	assert(await _walk_to(home, Vector2(4140, 585)))
+	var oni = home.entities.get_entity(Island.Visits.ONI_ID)
+	var oni_origin: Vector2 = oni.position
+	var oni_height: float = oni.motion.elevation
+	home._place_friend(oni, Vector2(4140, 610), 0.0)
+	assert(home._oni_w8_near() and home.interact())
+	assert(home.social.oni_profile_unlocked() and not home.social.prism_owned and home.social.oni_sites.is_empty())
+	home._place_friend(oni, oni_origin, oni_height)
+	assert(not home._oni_w8_near())
 	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
+	assert(home.social.oni_profile_unlocked())
 	assert(home.actor.location_id == Island.W8.REFUGE and home.wand_pair.held.is_empty())
 	assert(await _walk_to(home, Island.W8.ENTRY))
 	assert(home.interact() and home.actor.location_id == Island.W8.PASSAGE)

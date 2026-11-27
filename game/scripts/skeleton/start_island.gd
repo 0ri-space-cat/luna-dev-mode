@@ -654,6 +654,8 @@ func _w8_action() -> String:
 			return "Рассмотреть старую запись"
 		if _within_reach(W8.ENTRY):
 			return "Выйти из малого убежища"
+		if _oni_w8_near():
+			return "Поговорить с Они в убежище"
 	elif _w8_open and W8.LANDING.has_point(actor.position) and _within_reach(W8.FAR):
 		return "Войти в малое убежище"
 	return ""
@@ -673,6 +675,13 @@ func _interact_w8() -> bool:
 			_move_home_travelers(point, W8.PASSAGE)
 		"Рассмотреть старую запись":
 			$Interface/SaveNotice.text = "Два рисунка одного камня: один цельный, у другого линии продолжаются за краем. Кто-то долго сравнивал их."
+		"Поговорить с Они в убежище":
+			if not _oni_w8_near():
+				return false
+			if social.complete_oni_deep():
+				$Interface/SaveNotice.text = "Они: Ты тоже нашла этот проход? Здесь линии продолжаются там, где их не должно быть."
+			else:
+				$Interface/SaveNotice.text = "Они: Мне всё ещё интересно, что скрывается за этими линиями."
 		_:
 			return false
 	_sync_w8()
@@ -3045,6 +3054,13 @@ func _tick_oni() -> void:
 		oni_route_index = next
 		target = Visits.ROUTE[oni_route_index]
 	oni.autonomous_destination = target
+
+
+func _oni_w8_near() -> bool:
+	if not observation_fixture or _friend_at_cafe(Visits.ONI_ID) or _entity_location(actor.position) != W8.REFUGE:
+		return false
+	var oni := entities.get_entity(Visits.ONI_ID) as EntityBody
+	return _friend_available(oni) and _entity_location(oni.position) == W8.REFUGE and _within_reach(oni.position, oni.motion.elevation)
 
 
 func _oni_edge_near() -> bool:

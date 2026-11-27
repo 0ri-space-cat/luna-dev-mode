@@ -8,6 +8,8 @@ var invitations: Array[String] = []
 var legacy_evening := false
 var oni_sites: Array[String] = []
 var prism_owned := false
+# Q21b is independent of the two ordinary observations and their gift.
+var oni_deep_met := false
 
 
 func complete(friend: String) -> bool:
@@ -23,6 +25,17 @@ func observe_with_oni(site: String) -> bool:
 	oni_sites.append(site)
 	complete("ONI")
 	return true
+
+
+func complete_oni_deep() -> bool:
+	if oni_deep_met:
+		return false
+	oni_deep_met = true
+	return true
+
+
+func oni_profile_unlocked() -> bool:
+	return oni_deep_met
 
 
 func can_invite(friend: String) -> bool:
@@ -46,14 +59,16 @@ func can_restore_evening() -> bool:
 
 func snapshot() -> Dictionary:
 	return {"meetings": meetings.duplicate(), "oni_sites": oni_sites.duplicate(), "prism_owned": prism_owned,
-		"invitations": invitations.duplicate(), "legacy_evening": legacy_evening}
+		"invitations": invitations.duplicate(), "legacy_evening": legacy_evening, "oni_deep_met": oni_deep_met}
 
 
 func restore(data: Variant, evening_started: bool = false) -> bool:
-	if not data is Dictionary or data.size() not in [3, 5]:
+	if not data is Dictionary or data.size() not in [3, 5, 6]:
 		return false
 	var old_format: bool = data.size() == 3 and not data.has("invitations") and not data.has("legacy_evening")
 	if not old_format and (not data.has("invitations") or not data.has("legacy_evening")):
+		return false
+	if data.has("oni_deep_met") != (data.size() == 6) or not data.get("oni_deep_met", false) is bool:
 		return false
 	var raw_invites: Variant = data.get("invitations", [])
 	var carried_evening: Variant = data.get("legacy_evening", old_format and evening_started)
@@ -88,4 +103,5 @@ func restore(data: Variant, evening_started: bool = false) -> bool:
 	legacy_evening = carried_evening
 	oni_sites.assign(checked_sites)
 	prism_owned = owned
+	oni_deep_met = data.get("oni_deep_met", false)
 	return true
