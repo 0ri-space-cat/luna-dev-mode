@@ -67,6 +67,9 @@ jobs:
       - name: Test the meadows routes and thawing creek
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_meadows.gd
+      - name: Test optional elevated finds through ordinary physical movement
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_secret_finds.gd
       - name: Test ordinary quiet regions and persistent natural fauna
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_quiet_regions.gd

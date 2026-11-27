@@ -211,6 +211,7 @@ var freeze_selected := false
 var _initial_meadow_states: Array[Dictionary] = []
 var _initial_quiet_states: Array[Dictionary] = []
 var _initial_quiet_region_states: Array[Dictionary] = []
+var _secret_find_visibility := Vector2i(-1, -1)
 var _plank_surface := {}
 var _store := SaveStore.new()
 
@@ -3719,6 +3720,12 @@ func _physics_process(delta: float) -> void:
 	_was_at_bank = at_bank
 	_update_local_camera()
 	_sync_mountain_bridge()
+	var find_visibility := Vector2i(
+		int(actor.motion.elevation >= SecretFinds.GRAVITY_HEIGHT and actor.position.distance_to(SecretFinds.GRAVITY_POINT) < 75.0),
+		int(actor.motion.elevation >= SecretFinds.FLUTE_HEIGHT and actor.position.distance_to(SecretFinds.FLUTE_POINT) < 75.0))
+	if find_visibility != _secret_find_visibility:
+		_secret_find_visibility = find_visibility
+		queue_redraw()
 	var area: String = AREA_LABELS[_entity_location(actor.position)]
 	var local_phase: int = coast_house_phase if _entity_location(actor.position) == Coast.HOUSE_ID else world_clock.phase()
 	_world_light.color = PHASE_TINTS[local_phase]
