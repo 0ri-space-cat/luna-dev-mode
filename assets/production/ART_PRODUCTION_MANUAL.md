@@ -1,5 +1,7 @@
 # Подготовка графики LUNA
 
+**Актуальный общий арт-конвейер 27.11:** [производственный арт-мануал и банк промптов](../../docs/art/VISUAL_PRODUCTION_PLAYBOOK.md). Этот файл сохраняет конкретные существующие экспорты и эталоны; глобальная сетка мира утверждается через P0, не из размера PNG.
+
 ## Эталоны и масштаб
 
 [Луна Classic](../approved/characters/luna/palette_blue_lilac/explorer_v1/front.png) и [Они](../approved/characters/oni/idle_front.png) задают размер пиксельных кластеров, толщину контура, фронтальный ракурс и пластику лица. Готовые [портреты](../approved/hud/godot/retro-ui-kit/assets/ui/pixel-v1/characters/) определяют характер мимики. [Новый авторский лист](characters/source/author-lineup.png) даёт отличительные элементы костюмов и силуэтов, [первый лист](../../references/author/crew-author.png) пригоден для сверки деталей. Рабочие решения и точные опоры в [реестре](ART_ASSET_REGISTER.md).
