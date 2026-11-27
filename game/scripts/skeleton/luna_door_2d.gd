@@ -15,6 +15,8 @@ func _ready() -> void:
 
 func _draw() -> void:
 	super._draw()
+	# The shared shadow renderer leaves its local transform active.
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	draw_rect(Rect2(Vector2(-8, -37 - motion.elevation), Vector2(16, 35)), Color("e5c79b"), false, 1.5)
 	draw_circle(Vector2(4, -18 - motion.elevation), 2.0, Color("e5c79b"))
 

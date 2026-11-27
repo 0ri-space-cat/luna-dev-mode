@@ -1022,6 +1022,10 @@ func _door_at_source() -> bool:
 	return door != null and not door.is_attached() and door.motion.grounded and is_zero_approx(door.motion.elevation) and _entity_location(door.position) == _entity_location(actor.position) and _within_reach(door.position)
 
 
+func _can_use_placed_luna_door() -> bool:
+	return observation_fixture and actor.motion.grounded and not actor.is_attached() and not actor.has_passenger() and is_zero_approx(actor.motion.elevation) and _entity_location(actor.position) != City.HOME_ID and city_tools.owned.has(LunaDoor.TOOL_KEY) and _door_at_source()
+
+
 func interact_with_attachment(target_id: String = "") -> bool:
 	var result := super.interact_with_attachment(target_id)
 	var door := _door_body()
@@ -1044,11 +1048,9 @@ func use_luna_door() -> bool:
 			return false
 		_move_home_travelers(back["point"], back["address"])
 		return true
-	if not _door_at_source() or actor.has_passenger():
+	if not _can_use_placed_luna_door():
 		return false
 	var door := _door_body()
-	if not city_tools.owned.has(LunaDoor.TOOL_KEY) or not door.get_parameter("pickable"):
-		return false
 	var source := _door_source({"address": address, "x": door.position.x, "y": door.position.y})
 	if source.is_empty():
 		return false
@@ -4124,7 +4126,7 @@ func _nearby_action() -> String:
 	var city_door := _city_door_action()
 	if not city_door.is_empty():
 		return city_door["label"]
-	if _door_at_source() and _entity_location(actor.position) != City.HOME_ID and _door_session_is_live():
+	if _can_use_placed_luna_door():
 		return "Пройти через Дверь Луны"
 	var station := _city_station_destination()
 	if not station.is_empty():
@@ -4281,6 +4283,8 @@ func interact() -> bool:
 			return false
 		_move_home_travelers(city_door["point"], city_door["address"])
 		return true
+	if _can_use_placed_luna_door():
+		return use_luna_door()
 	var station := _city_station_destination()
 	if not station.is_empty():
 		return public_ride_requested.call(station)

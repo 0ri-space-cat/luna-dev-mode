@@ -91,9 +91,19 @@ func _run() -> void:
 	assert(home.interact() and home.actor.location_id == Island.City.CITY_ID)
 	assert(home.actor._rider == door)
 	assert(home.interact_with_attachment() and not door.is_attached())
+	# The ordinary drop releases at hand height; it must land under gravity.
+	assert(not door.motion.grounded and not home.use_luna_door())
+	for tick in 90:
+		if door.motion.grounded:
+			break
+		await physics_frame
+	assert(door.motion.grounded and is_zero_approx(door.motion.elevation), "Door did not settle: %s Z=%s" % [door.position, door.motion.elevation])
 	var source: Vector2 = door.position
 	assert(not home._copy_lake_prop(door))
-	assert(home.use_luna_door() and home.actor.location_id == Island.City.HOME_ID)
+	# Move away from the public room threshold: E acts on the placed original.
+	_place(home, source + Vector2(30, 0))
+	assert(home._nearby_action() == "Пройти через Дверь Луны")
+	assert(home.interact() and home.actor.location_id == Island.City.HOME_ID, "Settled original must open the home session")
 	assert(home.apply_snapshot(home.make_snapshot()))
 	door = home.entities.get_entity(Island.LunaDoor.ID)
 	assert(door.position.is_equal_approx(source) and not door.is_attached())
