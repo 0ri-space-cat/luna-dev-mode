@@ -2,6 +2,9 @@ extends SceneTree
 const Scene = preload("res://scenes/skeleton/adventure.tscn")
 const Island = preload("res://scripts/skeleton/start_island.gd")
 const Social = preload("res://scripts/runtime2d/friend_progress_2d.gd")
+const Routes = preload("res://scripts/skeleton/outer_routes_fixture.gd")
+const Store = preload("res://scripts/runtime2d/save_store_2d.gd")
+var path := "user://luna_friend_evening_%d.json" % OS.get_process_id()
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -13,7 +16,7 @@ func _place(body: Node, point: Vector2) -> void:
 func _run() -> void:
 	_check_social_migration()
 	var game = Scene.instantiate()
-	game.profile_path = "user://luna_friend_evening_regression.json"
+	game.profile_path = path
 	game.get_node("Home").keyboard = false
 	root.add_child(game)
 	await physics_frame
@@ -67,13 +70,38 @@ func _run() -> void:
 	assert(home.evening_stage == 2 and home.evening_origins.size() == 6)
 	assert(home.social.invitations.size() == 6)
 	assert(home.finish_cafe_evening())
+	assert(home.ordinary_finale_voice().contains("Помоги мне") and not home.ordinary_finale_voice().contains("отголосок"))
+	assert(not game.white_discovered and not game.meta.merged and not game.meta.pixel_seen)
 	home._finish_ordinary_credits()
 	assert(home.evening_stage == 4 and not home.begin_cafe_evening())
 	home._tick_cafe(0.1)
 	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
+	# Cafe-first ordering: isolate discovery here; the window-escape test
+	# independently covers the actual first physical entry and its gates.
+	assert(not game._visit_white_void())
+	_place(home.actor, Island.AncientConsole.RETURN_POINT)
+	home.actor.location_id = home._entity_location(home.actor.position)
+	assert(home.at_ancient_console() and home.interact())
+	home.ancient_console._submit("TELEPORT " + Routes.WHITE_ADDRESS)
+	assert(not game._away and not game.white_discovered)
+	game.white_discovered = true
+	home.ancient_console._submit("TELEPORT " + Routes.WHITE_ADDRESS)
+	assert(game._away and not game.meta.merged and not game.outer.pixel_repeat)
+	var traveler = game.outer.actor
+	_place(traveler, Routes.META_APPROACH.get_center())
+	assert(game.outer.use_route() and game.outer.use_route() and game.outer.use_route())
+	assert(game.meta.merged and game.outer.actor == traveler and not game.meta.pixel_seen)
+	assert(game._return_to_home() and home.actor == traveler)
+	assert(home.evening_stage == 4 and home.social.invitations.size() == 6)
+	assert(not home.begin_cafe_evening() and home.ordinary_finale_voice().contains("отголосок"))
+	assert(game.save_game())
+	var saved_profile: Dictionary = Store.new().read_snapshot(path)
+	assert(saved_profile["meta"]["merged"] and saved_profile["state"]["evening"]["stage"] == 4)
 	game.queue_free()
 	await process_frame
-	print("M3.136–143: Leia meeting, voluntary cafe, stable IDs and saved finale")
+	for file in [path, path + ".bak"]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(file))
+	print("M3.136–143: six invitations, cafe-first finale, stable IDs and preserved cafe after merge")
 	quit()
 
 func _check_social_migration() -> void:

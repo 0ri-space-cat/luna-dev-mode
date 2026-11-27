@@ -1942,6 +1942,15 @@ func _finish_ordinary_credits() -> void:
 		_show_evening_panel()
 
 
+func ordinary_finale_voice() -> String:
+	# The same request plays in either order; after merging it is remembered
+	# rather than a new unfinished call. No discovery, quest or access change.
+	var line := "На мгновение всё замирает.\n\n…Луна… Помоги мне…\n\nГолос исчезает."
+	if meta_merged.is_valid() and meta_merged.call():
+		line += "\n\nЛуна узнаёт отголосок знакомого голоса."
+	return line
+
+
 func _show_evening_panel() -> void:
 	for child in _evening_panel.get_children():
 		_evening_panel.remove_child(child)
@@ -1971,9 +1980,7 @@ func _show_evening_panel() -> void:
 			button.text = "Завершить вечер"
 			button.pressed.connect(func(): finish_cafe_evening())
 		3:
-			label.text = "На мгновение всё замирает.\n\n…Луна… Помоги мне…\n\nГолос исчезает."
-			if meta_merged.is_valid() and meta_merged.call():
-				label.text += "\n\nЛуна узнаёт отголосок знакомого голоса."
+			label.text = ordinary_finale_voice()
 			button.text = "Далее"
 			button.pressed.connect(_finish_ordinary_credits)
 		4:

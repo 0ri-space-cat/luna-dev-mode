@@ -125,6 +125,27 @@ func _run() -> void:
 	home2.ancient_console._submit("TELEPORT " + Routes.WHITE_ADDRESS)
 	assert(game._away and not game.outer.pixel_repeat)
 	assert(game._return_to_home())
+	# Meta-first ordering: the separate friend-evening regression obtains
+	# every invitation through contact. Here seed that completed social
+	# contract, then exercise the real gathering and ordinary credits.
+	assert(home2.evening_stage == 0 and not home2.social.can_gather())
+	for friend in home2.Social.FRIENDS:
+		if friend == "ONI":
+			assert(home2.social.observe_with_oni("W1"))
+		else:
+			assert(home2.social.complete(friend))
+		assert(home2.social.invite(friend))
+	assert(not home2.social.prism_owned)
+	_place(home2, Island.CAFE_TALK)
+	assert(home2.begin_cafe_evening())
+	home2._tick_cafe(2.0)
+	assert(home2.evening_stage == 2 and home2.finish_cafe_evening())
+	assert(home2.ordinary_finale_voice().contains("Помоги мне") and home2.ordinary_finale_voice().contains("отголосок"))
+	home2._finish_ordinary_credits()
+	assert(home2.evening_stage == 4 and game.meta.merged and game.meta.pixel_seen and game.white_discovered)
+	assert(game.save_game())
+	var final_save: Dictionary = Store.new().read_snapshot(path)
+	assert(final_save["state"]["evening"]["stage"] == 4 and final_save["meta"]["merged"] and final_save["meta"]["pixel_seen"])
 	game.queue_free()
 	await process_frame
 	for file in [path, path + ".bak"]:
