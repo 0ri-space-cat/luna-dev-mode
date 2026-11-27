@@ -86,12 +86,33 @@ func _run() -> void:
 	assert(home.at_ancient_console() and home.interact())
 	home.ancient_console._submit("TELEPORT " + Routes.WHITE_ADDRESS)
 	assert(not game._away and not game.white_discovered)
-	# Fixture placement at the existing camera pickup; use the real
-	# interaction. DEVELOPER is still seeded to isolate this order test.
+	# Use the actual wand progression, including a physical duplicate.
+	# Positions here are fixtures, not a claim that the full route is walked.
+	assert(home.access.wand_mode == "ORDINARY")
+	_place(home.actor, Island.RIFT_SPOT + Vector2(0, -44))
+	home.actor.location_id = home._entity_location(home.actor.position)
+	assert(home.interact() and home.access.wand_mode == "PLAYFUL")
+	assert(not home.tick_wand_self_hack(3.0, true))
+	_place(home.actor, Island.Lake.SHORE)
+	home.actor.location_id = home._entity_location(home.actor.position)
+	assert(home.wand_pair.duplicate == null and home._nearby_action() == "Коснуться воды палочкой")
+	assert(home.interact() and home.wand_pair.duplicate != null)
+	assert(home.wand_pair.original.carried and not home.wand_pair.duplicate.carried)
+	assert(home.wand_pair.duplicate.ground_location_id == Island.Lake.LOCATION_ID)
+	assert(not home.tick_wand_self_hack(2.0, true))
+	assert(not home.tick_wand_self_hack(0.0, false))
+	assert(not home.tick_wand_self_hack(2.0, true))
+	assert(home.access.wand_mode == "PLAYFUL")
+	assert(home.tick_wand_self_hack(1.0, true))
+	assert(home.access.wand_mode == "DEVELOPER")
+	assert(home.evening_stage == 4 and home.social.invitations.size() == 6)
+	assert(game.save_game() and game.load_game())
+	assert(home.access.wand_mode == "DEVELOPER" and home.wand_pair.duplicate != null)
+	assert(home.evening_stage == 4 and not game.white_discovered)
+	# Fixture placement at the existing camera pickup; use the real interaction.
 	_place(home.actor, Mountain.CAMERA_POINT)
 	home.actor.location_id = home._entity_location(home.actor.position)
 	assert(home.interact() and home.highland.camera_owned)
-	assert(home.access.set_wand_mode("DEVELOPER"))
 	assert(home.set_game_mode("WINDOWED"))
 	_place(home.actor, Vector2(510, 535))
 	home.actor.location_id = home._entity_location(home.actor.position)
@@ -137,6 +158,7 @@ func _run() -> void:
 	assert(game.save_game())
 	var saved_profile: Dictionary = Store.new().read_snapshot(path)
 	assert(saved_profile["meta"]["merged"] and saved_profile["state"]["evening"]["stage"] == 4)
+	assert(saved_profile["state"]["island"]["access"]["wand_mode"] == "DEVELOPER")
 	game.queue_free()
 	await process_frame
 	for file in [path, path + ".bak"]:
