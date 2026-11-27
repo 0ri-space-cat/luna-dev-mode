@@ -251,7 +251,7 @@ func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	body.emergency_anchor = Vector3(start.x, start.y, BANK_HEIGHT if use_water_map else UPPER_HEIGHT)
 
 
-func _build_wall(wall: Dictionary, mount: Node2D = null) -> void:
+func _build_wall(wall: Dictionary, mount: Node2D = null) -> StaticBody2D:
 	var bounds: Rect2 = wall["bounds"]
 	var solid := StaticBody2D.new()
 	solid.disable_mode = CollisionObject2D.DISABLE_MODE_KEEP_ACTIVE
@@ -265,6 +265,7 @@ func _build_wall(wall: Dictionary, mount: Node2D = null) -> void:
 	solid.add_child(collider)
 	(mount if mount != null else self).add_child(solid)
 	_surfaces.append(_wall_surface(wall))
+	return solid
 
 
 func _wall_surface(wall: Dictionary) -> Dictionary:

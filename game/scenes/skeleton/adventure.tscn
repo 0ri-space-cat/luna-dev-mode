@@ -16,6 +16,7 @@ ecology_fixture = true
 observation_fixture = true
 ancient_console_enabled = true
 fairy_realm_enabled = true
+forest_depths_enabled = true
 
 [node name="SystemPause" type="Node" parent="."]
 script = ExtResource("4")

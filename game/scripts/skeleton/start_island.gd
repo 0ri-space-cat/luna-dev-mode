@@ -8,6 +8,7 @@ signal forest_bank_interacted
 signal forest_bank_left
 
 const ForestBank = preload("res://scripts/skeleton/forest_bank_2d.gd")
+const ForestDepths = preload("res://scripts/skeleton/forest_depths_2d.gd")
 const FairyMap = preload("res://scripts/skeleton/fairy_realm_layout.gd")
 const FairyRealm = preload("res://scripts/skeleton/fairy_realm_2d.gd")
 const FairyFox = preload("res://scripts/skeleton/fairy_slime_fox_2d.gd")
@@ -202,6 +203,8 @@ var desktop_requested: Callable
 # Only an author-designated room may configure this. Default Adventure has none.
 var backdrop_route: BackdropRoute
 var _room_view: StaticRoomView
+@export var forest_depths_enabled := false
+var forest_depths: ForestDepths
 @export var fairy_realm_enabled := false
 var fairy_realm: FairyRealm
 var _outdoor_camera_zoom := Vector2(1.25, 1.25)
@@ -277,6 +280,11 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if forest_depths_enabled:
+		if ForestDepths.is_dream(point):
+			return ForestDepths.ID
+		if ForestDepths.GARDEN.has_point(point) or ForestDepths.GARDEN_TRAIL.has_point(point):
+			return ForestBank.LOCATION_ID
 	if fairy_realm_enabled and FairyMap.owns(point):
 		return FairyMap.ID
 	if observation_fixture:
@@ -511,6 +519,8 @@ func _ready() -> void:
 		ground.append_array(AncientConsole.DECKS)
 	if fairy_realm_enabled:
 		ground.append_array(FairyMap.decks())
+	if forest_depths_enabled:
+		ground.append_array(ForestDepths.decks())
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
@@ -563,6 +573,8 @@ func _ready() -> void:
 		_walls.append({"bounds": AncientConsole.CONSOLE_BODY, "height": 92.0, "layer": 2})
 	if fairy_realm_enabled:
 		_walls.append_array(FairyMap.ROOT_WALLS)
+	if forest_depths_enabled:
+		_walls.append(ForestDepths.ROOT)
 	for wall in _walls:
 		_build_wall(wall)
 	commands.configure_world(entities)
@@ -616,6 +628,10 @@ func _ready() -> void:
 		fairy_realm = FairyRealm.new()
 		add_child(fairy_realm)
 		fairy_realm.mount(self)
+	if forest_depths_enabled:
+		forest_depths = ForestDepths.new()
+		add_child(forest_depths)
+		forest_depths.mount(self)
 
 
 func _setup_crystal_observation() -> void:
@@ -3414,6 +3430,8 @@ func _take_flute() -> bool:
 
 
 func toggle_prism() -> bool:
+	if forest_dream_active():
+		return false
 	if not social.prism_owned or is_instance_valid(_debug_editor):
 		return false
 	prism_active = not prism_active
@@ -3441,10 +3459,13 @@ func _play_note(letter: String) -> bool:
 
 
 func perform_music(phrase: String) -> bool:
-	if not flute_owned or not (actor as EntityBody).accepts_player_input() \
+	if forest_dream_active() or not flute_owned or not (actor as EntityBody).accepts_player_input() \
 			or actor.is_attached() or actor.has_passenger() or not actor.motion.grounded:
 		return false
-	match Music.resolve(phrase):
+	var melody := Music.resolve(phrase)
+	match melody:
+		"M05", "M10":
+			return forest_depths != null and forest_depths.perform(melody, actor.position)
 		"M02":
 			_attraction.start()
 			if world_clock.phase() == WorldClock.Phase.NIGHT and ghost_ride_requested.is_valid() and not _city_station_destination().is_empty():
@@ -4272,6 +4293,8 @@ func _holds_ecology_catalog() -> bool:
 
 
 func request_wand_parameter_edit(target_id: String, parameter_id: String, value: Variant) -> bool:
+	if forest_dream_active():
+		return false
 	if parameter_id == "SWIM_ENABLED":
 		return value is bool and _set_swim_enabled(target_id, value)
 	return super.request_wand_parameter_edit(target_id, parameter_id, value)
@@ -4467,6 +4490,8 @@ func _ordinary_arrival_is_safe(address: String, point: Vector2, height: float = 
 func teleport_known_location(address: String) -> bool:
 	if not at_ancient_console() or access.wand_mode == AccessState.ORDINARY:
 		return false
+	if forest_depths != null and address == ForestDepths.ID:
+		return forest_depths.enter_awake()
 	for point in _ordinary_arrival_points(address):
 		if not _ordinary_arrival_is_safe(address, point):
 			continue
@@ -4523,19 +4548,26 @@ func _connect_bridge_body() -> void:
 	(actor as EntityBody).secondary_step_obstacle = giant
 
 
+func forest_dream_active() -> bool:
+	return forest_depths != null and forest_depths.asleep and ForestDepths.is_dream(actor.position)
+
+
 func _physics_process(delta: float) -> void:
 	for identity in entities.list_ids():
 		var body := entities.get_entity(identity) as EntityBody
 		body.location_id = _entity_location(body.position)
 	if keyboard:
 		_apply_keyboard_input()
-		tick_wand_self_hack(delta, Input.is_physical_key_pressed(KEY_TAB))
+		if not forest_dream_active():
+			tick_wand_self_hack(delta, Input.is_physical_key_pressed(KEY_TAB))
 	if not actor.direction.is_zero_approx():
 		crystal_observer.facing = actor.direction.normalized()
 	_sync_crystal_observation()
 	_sync_w8()
 	if fairy_realm != null:
 		fairy_realm.tick(world_clock.sim_delta(delta))
+	if forest_depths != null:
+		forest_depths.tick(world_clock.sim_delta(delta), _tower_field_note_visible() and not forest_dream_active())
 	if not is_instance_valid(_debug_editor):
 		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
@@ -4586,7 +4618,16 @@ func _physics_process(delta: float) -> void:
 		_secret_find_visibility = find_visibility
 		queue_redraw()
 	var address := _entity_location(actor.position)
-	var area: String = "Мир фей" if address == FairyMap.ID else AREA_LABELS[address]
+	var sleeping := forest_dream_active()
+	$Interface/Controls.visible = not sleeping
+	$Interface/ProfilePortrait.visible = not sleeping
+	$Interface/SaveNotice.visible = not sleeping
+	if sleeping:
+		_status.text = forest_depths.address_glimpse()
+		var sleep_action := _nearby_action()
+		_prompt.text = "" if sleep_action.is_empty() else "E  " + sleep_action
+		return
+	var area: String = AREA_LABELS.get(address, "Мир фей" if address == FairyMap.ID else "Повреждённый лес")
 	var local_phase: int = coast_house_phase if _entity_location(actor.position) == Coast.HOUSE_ID else world_clock.phase()
 	_world_light.color = PHASE_TINTS[local_phase]
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
@@ -4812,6 +4853,10 @@ func _use_tunnel(point: Vector2, address: String) -> bool:
 
 
 func _nearby_action() -> String:
+	if forest_depths != null:
+		var local := forest_depths.action(actor.position) if actor.motion.grounded and not actor.is_attached() else ""
+		if forest_dream_active() or not local.is_empty():
+			return local
 	if fairy_realm != null:
 		var threshold := fairy_realm.action()
 		if not threshold.is_empty():
@@ -4976,6 +5021,12 @@ func _update_ice_support(active: bool) -> void:
 func interact() -> bool:
 	if not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	if forest_depths != null:
+		var local := forest_depths.action(actor.position) if actor.motion.grounded and not actor.is_attached() else ""
+		if not local.is_empty():
+			return forest_depths.interact(actor.position)
+		if forest_dream_active():
+			return false
 	if fairy_realm != null:
 		var threshold := fairy_realm.action()
 		if not threshold.is_empty():
@@ -5183,6 +5234,15 @@ func _set_wand_mode(mode: String) -> bool:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if forest_dream_active():
+		if event.keycode == KEY_E:
+			interact()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_SPACE or event.keycode in [KEY_ESCAPE, KEY_F5, KEY_F9]:
+			return
+		else:
+			get_viewport().set_input_as_handled()
 		return
 	if is_instance_valid(_profile_panel) and _profile_panel.visible:
 		if event.keycode in [KEY_ESCAPE, KEY_TAB]:
@@ -5505,6 +5565,8 @@ func _toggle_debug_editor() -> void:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
+	if forest_depths != null:
+		data["forest_depths"] = forest_depths.snapshot()
 	if fairy_realm != null:
 		data["fairy_realm"] = fairy_realm.snapshot()
 	data["address_schema"] = ADDRESS_SCHEMA
@@ -5593,6 +5655,9 @@ func make_snapshot() -> Dictionary:
 
 
 func apply_snapshot(data: Dictionary) -> bool:
+	var next_depths: Variant = data.get("forest_depths", ForestDepths.START)
+	if forest_depths != null and not ForestDepths.valid_snapshot(next_depths, data.get("entities"), ENTITY_ID):
+		return false
 	var next_realm: Variant = data.get("fairy_realm", FairyRealm.START)
 	if fairy_realm != null and not FairyRealm.valid_snapshot(next_realm):
 		return false
@@ -6069,7 +6134,13 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if fairy_realm != null:
 		previous_realm = fairy_realm.snapshot()
 		fairy_realm.stage_snapshot(next_realm)
+	var previous_depths := {}
+	if forest_depths != null:
+		previous_depths = forest_depths.snapshot()
+		forest_depths.restore(next_depths)
 	if not super.apply_snapshot(candidate):
+		if forest_depths != null:
+			forest_depths.restore(previous_depths)
 		if fairy_realm != null:
 			fairy_realm.stage_snapshot(previous_realm)
 			fairy_realm.finish_snapshot()

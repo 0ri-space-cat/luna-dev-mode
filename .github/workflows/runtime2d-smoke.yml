@@ -100,6 +100,9 @@ jobs:
       - name: Test Fairy Realm travel, physical time loop and canopy observation
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_fairy_realm.gd
+      - name: Test forest ruins and both contexts of the forest dream
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_forest_depths.gd
       - name: Test Yuki notebook, physical program carriers and durable scripts
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_yuki.gd
