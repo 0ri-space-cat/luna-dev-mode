@@ -249,6 +249,32 @@ func _run() -> void:
 	assert(scene._ordinary_arrival_is_safe(Valley.LOCATION_ID, Tunnel.W1_RETURN))
 	var tunnel_return: Dictionary = scene.make_snapshot()
 	assert(scene.apply_snapshot(tunnel_return) and scene.actor.location_id == Lake.LOCATION_ID)
+	assert(scene._apply_alchemy("ALC-R21"))
+	# Walk to a clear shore before diving; use the ordinary swim control to descend.
+	assert(await _walk_to(scene, Vector2(2465, 426)))
+	scene.actor.direction = Vector2.RIGHT
+	for tick in range(220):
+		scene.actor.swim_intent = -1.0
+		await physics_frame
+		if scene._tunnel_action() == "Нырнуть в обратный тоннель":
+			break
+		if scene.actor.position.x >= Tunnel.W6_MOUTH.x:
+			scene.actor.direction = Vector2.ZERO
+	scene.actor.direction = Vector2.ZERO
+	scene.actor.swim_intent = 0.0
+	assert(scene._tunnel_action() == "Нырнуть в обратный тоннель", "W6 return mouth: %s Z=%s" % [scene.actor.position, scene.actor.motion.elevation])
+	assert(scene.interact() and scene.actor.location_id == Tunnel.LOCATION_ID)
+	scene.actor.direction = Vector2.LEFT
+	for tick in range(400):
+		await physics_frame
+		if scene.actor.position.x <= Tunnel.WEST_EXIT.x + 8.0:
+			break
+	scene.actor.direction = Vector2.ZERO
+	assert(Tunnel.WEST.has_point(scene.actor.position) and scene.actor.motion.grounded)
+	assert(scene.interact() and scene.actor.location_id == Valley.LOCATION_ID)
+	assert(scene.actor._is_dry(scene.actor.position, scene.actor.motion.elevation))
+	scene._clear_bubble()
+	assert(not scene.actor.can_swim())
 	# The integrated ecology fixture has an original and unique DUPLICATE.
 	scene.queue_free()
 	await process_frame

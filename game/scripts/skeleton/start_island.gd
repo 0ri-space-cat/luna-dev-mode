@@ -83,6 +83,9 @@ const Music = preload("res://scripts/runtime2d/flute_2d.gd")
 const Visits = preload("res://scripts/skeleton/oni_music_layout.gd")
 const ATTRACTION_SECONDS := 14.0
 const Life = preload("res://scripts/skeleton/coastal_life_layout.gd")
+const ShellCollection = preload("res://scripts/skeleton/shell_collection_2d.gd")
+var shell_collection_ready := false
+var shell_collection_delivered := false
 const LAB_ICE_SECONDS := 40.0
 const CoastExtra = preload("res://scripts/skeleton/coast_observation_layout.gd")
 const LAKE_CHIBI_PREFIX := "W6_CHIBI_"
@@ -244,6 +247,8 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if observation_fixture and (ShellCollection.COVE.has_point(point) or ShellCollection.PATH.has_point(point)):
+		return Coast.LOCATION_ID
 	if observation_fixture and FairyBranch.ROOM.has_point(point):
 		return FairyBranch.ID
 	if observation_fixture and RuneRoom.contains(point):
@@ -431,11 +436,11 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 79 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT if observation_fixture else super._entity_limit()
+	return 80 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT + ShellCollection.REQUIRED if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fairy", "fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle", "glitch_fox", "return_cat", "double_rabbit"] or super._starts_alive(category)
+	return category in ["octopus", "fairy", "fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle", "glitch_fox", "return_cat", "double_rabbit"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -455,6 +460,7 @@ func _ready() -> void:
 		ground.append_array(ForestBank.DECKS + [FRIDGE_COURT, FRIDGE_PATH])
 		ground.append_array(QuietRegions.decks())
 		ground.append_array([RuneRoom.KEY_PATH, RuneRoom.KEY_ROOM, FairyBranch.ROOM])
+		ground.append_array(ShellCollection.DECKS)
 		ground.append_array(Valley.DECKS + Coast.DECKS + MiaLab.DECKS + Tunnel.DECKS + Crystal.DECKS + [CoastExtra.LANDING] + City.DECKS + Mountain.GROUND + Edge.GROUND)
 		_water_volumes.append(WaterVolume.new(ForestBank.RIVER, -110.0, 0.0, Vector2(12, 0), 1.3))
 	if ancient_console_enabled:
@@ -3041,6 +3047,53 @@ func _tick_music(delta: float) -> void:
 		animal.music_interest = actor.position
 
 
+func _tick_shell_collection() -> void:
+	if not observation_fixture or shell_collection_ready or not ShellCollection.COVE.has_point(actor.position):
+		return
+	# Materialize the optional local population once, atomically. Until the
+	# cove is visited, distant shell bodies do not add simulation cost.
+	var added: Array[String] = []
+	var octopus := spawn_entity({"id": ShellCollection.OCTOPUS, "category": "octopus", "label": "Осьминог", "material": "FABRIC"}, ShellCollection.OCTOPUS_POINT, 0.0)
+	if octopus == null:
+		return
+	added.append(ShellCollection.OCTOPUS)
+	octopus.set_parameter("behavior_mode", "IDLE")
+	for index in range(1, ShellCollection.REQUIRED + 1):
+		var identity := ShellCollection.natural_id(index)
+		var shell := spawn_entity({"id": identity, "category": "prop", "label": ShellCollection.LABEL, "material": "STONE"}, ShellCollection.shell_point(index), 0.0)
+		if shell == null:
+			for created in added:
+				var body := entities.get_entity(created) as EntityBody
+				entities.unregister_entity(created)
+				body.free()
+			return
+		added.append(identity)
+		shell.set_parameter("size", 0.5)
+		shell.set_parameter("mass", 0.25)
+		shell.set_parameter("pickable", true)
+	shell_collection_ready = true
+
+
+func _octopus_action() -> bool:
+	if not observation_fixture or not shell_collection_ready or not actor.motion.grounded or actor.is_attached():
+		return false
+	var octopus := entities.get_entity(ShellCollection.OCTOPUS) as EntityBody
+	return octopus != null and octopus.get_parameter("alive") and _entity_location(actor.position) == octopus.location_id and _within_reach(octopus.position, octopus.motion.elevation)
+
+
+func _talk_octopus() -> bool:
+	if not _octopus_action():
+		return false
+	if shell_collection_delivered:
+		$Interface/SaveNotice.text = "Осьминог: Тридцать одинаковых! Как ты это сделала?"
+	elif ShellCollection.identical_count(entities) >= ShellCollection.REQUIRED:
+		shell_collection_delivered = true
+		$Interface/SaveNotice.text = "Осьминог: Все тридцать? И совершенно одинаковые?!"
+	else:
+		$Interface/SaveNotice.text = "Осьминог: Принеси тридцать одинаковых ракушек и положи их сюда."
+	return true
+
+
 func _spawn_coastal_life() -> void:
 	var mia := spawn_entity({"id": Life.MIA_ID, "category": "mia", "label": "Мия", "material": "FABRIC"}, Life.MIA_START, 0.0)
 	if mia != null:
@@ -3381,7 +3434,7 @@ func _ordinary_copy_source(target: EntityBody) -> bool:
 		return false
 	# Explicit ordinary source set: no artifact, structural puzzle prop, NPC,
 	# finite ability or special machine is silently made replicable.
-	return target.entity_id in [City.CRATE, City.BREAD, CAFE_SNACK, LAKE_STONE_ID] or target.entity_id.begins_with(WAND_COPY_PREFIX)
+	return target.entity_id in [City.CRATE, City.BREAD, CAFE_SNACK, LAKE_STONE_ID] or target.entity_id.begins_with(WAND_COPY_PREFIX) or ShellCollection.is_shell(target.entity_id)
 
 
 func request_wand_copy(target_id: String) -> String:
@@ -3393,14 +3446,15 @@ func request_wand_copy(target_id: String) -> String:
 	if Vector3(actor.position.x - source.position.x, actor.position.y - source.position.y, actor.motion.elevation - source.motion.elevation).length() > WandPolicy.REACH_PX:
 		return ""
 	var identity := ""
+	var shell_source := ShellCollection.is_shell(source.entity_id)
 	for index in range(1, WAND_COPY_LIMIT + 1):
-		var candidate_id := WAND_COPY_PREFIX + str(index)
-		if entities.get_entity(candidate_id) == null:
-			identity = candidate_id
+		if entities.get_entity(WAND_COPY_PREFIX + str(index)) == null and entities.get_entity(ShellCollection.COPY_PREFIX + str(index)) == null:
+			identity = (ShellCollection.COPY_PREFIX if shell_source else WAND_COPY_PREFIX) + str(index)
 			break
 	if identity.is_empty():
 		return ""
-	for offset in [Vector2(42, 0), Vector2(-42, 0), Vector2(0, 42), Vector2(0, -42), Vector2(42, 42), Vector2(-42, 42), Vector2(42, -42), Vector2(-42, -42)]:
+	var offsets: Array = ShellCollection.offsets() if shell_source else [Vector2(42, 0), Vector2(-42, 0), Vector2(0, 42), Vector2(0, -42), Vector2(42, 42), Vector2(-42, 42), Vector2(42, -42), Vector2(-42, -42)]
+	for offset in offsets:
 		var point: Vector2 = source.position + offset
 		if _entity_location(point) != _entity_location(source.position):
 			continue
@@ -4014,6 +4068,7 @@ func _physics_process(delta: float) -> void:
 		_tick_bubble(world_clock.sim_delta(delta))
 		_tick_duplicate(world_clock.sim_delta(delta))
 		_tick_lake(world_clock.sim_delta(delta))
+		_tick_shell_collection()
 		_lab_ice.tick(world_clock.sim_delta(delta))
 		_tick_mia()
 		_tick_oni()
@@ -4265,6 +4320,8 @@ func _nearby_action() -> String:
 		return city_door["label"]
 	if _can_use_placed_luna_door():
 		return "Пройти через Дверь Луны"
+	if _octopus_action():
+		return "Поговорить с осьминогом"
 	if _nearby_food() != null:
 		return "Съесть порцию"
 	var station := _city_station_destination()
@@ -4458,6 +4515,8 @@ func interact() -> bool:
 			return _use_fairy_door()
 		"Съесть порцию":
 			return _eat_nearby_food()
+		"Поговорить с осьминогом":
+			return _talk_octopus()
 		"Пройти через Дверь Луны":
 			return use_luna_door()
 		"Нырнуть в тоннель":
@@ -4914,6 +4973,7 @@ func make_snapshot() -> Dictionary:
 	if observation_fixture:
 		data["quiet_regions_layout"] = 2
 		data["f2_food_layout"] = 1
+		data["shell_collection"] = {"ready": shell_collection_ready, "delivered": shell_collection_delivered}
 	data["world_clock"] = world_clock.snapshot()
 	data["coast_house_phase"] = coast_house_phase
 	data["alchemy_glow"] = _alchemy_glow.remaining
@@ -5150,6 +5210,35 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not fridge_found or not yeti_found:
 		return false
 	var candidate := data
+	var next_shell_collection: Variant = data.get("shell_collection", {"ready": false, "delivered": false})
+	if not next_shell_collection is Dictionary or next_shell_collection.size() != 2 or not next_shell_collection.get("ready") is bool or not next_shell_collection.get("delivered") is bool or (next_shell_collection["delivered"] and not next_shell_collection["ready"]):
+		return false
+	if observation_fixture:
+		var shell_ids := {}
+		for entry in states:
+			if not entry is Dictionary:
+				return false
+			var identity: Variant = entry.get("id")
+			if not identity is String:
+				return false
+			if identity == ShellCollection.OCTOPUS or identity.begins_with(ShellCollection.NATURAL_PREFIX) or identity.begins_with(ShellCollection.COPY_PREFIX):
+				if not next_shell_collection["ready"] or shell_ids.has(identity):
+					return false
+				if identity == ShellCollection.OCTOPUS:
+					if entry.get("category") != "octopus":
+						return false
+				elif not ShellCollection.is_shell(identity) or entry.get("category") != "prop":
+					return false
+				shell_ids[identity] = true
+		if next_shell_collection["ready"]:
+			if not shell_ids.has(ShellCollection.OCTOPUS):
+				return false
+			for index in range(1, ShellCollection.REQUIRED + 1):
+				if not shell_ids.has(ShellCollection.natural_id(index)):
+					return false
+		for index in range(1, WAND_COPY_LIMIT + 1):
+			if shell_ids.has(ShellCollection.COPY_PREFIX + str(index)) and states.any(func(entry): return entry.get("id") == WAND_COPY_PREFIX + str(index)):
+				return false
 	if float(layout) == 1.0:
 		candidate = data.duplicate(true)
 		for entry in _initial_meadow_states:
@@ -5401,6 +5490,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 				if not previous_edge_surfaces.has(surface):
 					_surfaces.erase(surface)
 		return false
+	shell_collection_ready = next_shell_collection["ready"]
+	shell_collection_delivered = next_shell_collection["delivered"]
 	game_mode = next_game_mode
 	_reset_window_frame()
 	_update_window_visual()
@@ -5826,6 +5917,7 @@ func _draw() -> void:
 		Lake.draw_shallow_on(self)
 		Coast.draw_on(self, coast_house_phase, world_clock.phase(), Coast.tide_height(world_clock.minute_of_day()))
 		Life.draw_on(self, Coast.tide_height(world_clock.minute_of_day()) * 8.0 / 30.0, hourglass_owned, flask_state, _lab_ice.remaining > 0.0)
+		ShellCollection.draw_on(self)
 		Visits.draw_on(self, flute_owned, prism_active)
 		SecretFinds.draw_on(self, actor.position, actor.motion.elevation, "GRAVITY_GUN" in city_tools.owned, flute_owned)
 		FairyBranch.draw_on(self)
