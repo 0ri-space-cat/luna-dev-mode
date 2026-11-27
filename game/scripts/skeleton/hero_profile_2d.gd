@@ -10,6 +10,9 @@ const TOFFI := "TOFFI"
 const ORDER := [LUNA, YUKI, MIA, ORI, LEIA, TOFFI, ONI]
 const NAMES := {LUNA: "Луна", ONI: "Они", YUKI: "Юки", ORI: "Ори", MIA: "Мия", LEIA: "Лея", TOFFI: "Тоффи"}
 const DESCRIPTIONS := {LUNA: "Обычный профиль", YUKI: "Общие возможности", MIA: "Общие возможности", ORI: "Общие возможности", LEIA: "Зверьки тянутся к Лее", TOFFI: "Видит незримых существ", ONI: "Изнанка с закрытыми глазами"}
+# Authored animal categories in the current graybox; no size condition.
+const ANIMALS := ["cat", "fox", "ray", "lizard", "trollik", "crab", "turtle",
+	"mirror_snail", "fish", "octopus", "mouse", "yeti", "glitch_fox", "return_cat", "double_rabbit"]
 var active := LUNA
 
 

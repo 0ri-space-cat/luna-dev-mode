@@ -19,6 +19,9 @@ var secondary_step_obstacle: SkeletonElevationBody2D
 var autonomous_destination := Vector2.INF
 # Transient musical interest; never overwrites autonomous scripts or saved relationships.
 var music_interest := Vector2.INF
+# Transient innate attraction, never serialized as a permanent relationship.
+var profile_interest := Vector2.INF
+var profile_interest_gap := 0.0
 var _ability_glow: PointLight2D
 var temporary_ability := ""
 
@@ -290,6 +293,17 @@ func _wander_on_support(delta: float) -> Vector2:
 		var offset := autonomous_destination - position
 		var step_length := WALK_SPEED * delta * drive_multiplier
 		return offset.limit_length(step_length) / step_length if step_length > 0.0 else Vector2.ZERO
+	if profile_interest.is_finite():
+		var offset := profile_interest - position
+		if offset.length() <= profile_interest_gap:
+			return Vector2.ZERO
+		var approach := offset.normalized()
+		for angle in [0.0, 0.65, -0.65]:
+			var heading: Vector2 = approach.rotated(angle)
+			var ahead := position + heading * 22.0
+			if is_equal_approx(_dry_landing_height(ahead, motion.elevation), motion.elevation) and _clear_step(ahead, motion.elevation):
+				return heading
+		return Vector2.ZERO
 	if music_interest.is_finite():
 		var offset := music_interest - position
 		if offset.length() <= 36.0:

@@ -2445,6 +2445,7 @@ func request_profile_change(profile_id: String) -> bool:
 		return false
 	$Interface/ProfilePortrait.text = HeroProfile.NAMES[hero_profile.active]
 	_sync_antimemetic_visibility()
+	_tick_profile_attraction()
 	queue_redraw()
 	return true
 
@@ -3325,6 +3326,30 @@ func perform_music(phrase: String) -> bool:
 					_move_home_travelers(point, Coast.LOCATION_ID, 18.0)
 					return true
 	return false
+
+
+func _tick_profile_attraction() -> void:
+	# Attraction is sensed locally and cannot replace authored destinations,
+	# forced behavior, rider input, vital swimming, or explicit AI disable.
+	# Body size is used only for safe personal distance, never eligibility.
+	var enabled := observation_fixture and visible and hero_profile.attracts_animals() and is_instance_valid(actor) and actor.get_parameter("alive") == true
+	var location := _entity_location(actor.position) if enabled else ""
+	for id in entities.list_ids():
+		var body := entities.get_entity(id) as EntityBody
+		body.profile_interest = Vector2.INF
+		body.profile_interest_gap = 0.0
+		if not enabled or body == actor or id == TAMAGOTCHI_PET or body.record.category not in HeroProfile.ANIMALS:
+			continue
+		if not body.get_parameter("alive") or not body.get_parameter("ai_enabled") or not body.visible or body.is_attached() or body.has_passenger() or body.get_parameter("control_source") != "NONE" or body.autonomous_destination.is_finite():
+			continue
+		if body.get_parameter("behavior_mode") not in ["AUTO", "WANDER", "IDLE"] or body.location_id != location:
+			continue
+		var gap := body.foot_radius() + actor.foot_radius() + 12.0
+		var range_px := maxf(80.0, float(body.get_parameter("sense_range")) * 80.0)
+		if body.position.distance_to(actor.position) > range_px + gap or absf(body.motion.elevation - actor.motion.elevation) > 48.0:
+			continue
+		body.profile_interest = actor.position
+		body.profile_interest_gap = gap
 
 
 func _tick_music(delta: float) -> void:
@@ -4386,6 +4411,7 @@ func _physics_process(delta: float) -> void:
 		_observe_city_tools()
 		_tick_stamps(world_clock.sim_delta(delta))
 		_tick_music(world_clock.sim_delta(delta))
+		_tick_profile_attraction()
 		_update_yeti_route()
 		_refresh_plank_surface()
 	_update_alchemy_light()

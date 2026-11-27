@@ -22,6 +22,7 @@ func _run() -> void:
 	root.add_child(game)
 	await physics_frame
 	var home = game.home
+	_check_leia_attraction(home)
 	var leia = home.entities.get_entity(Island.LEIA_ID)
 	var turtle = home.entities.get_entity(Island.LEIA_TURTLE)
 	assert(leia != null and turtle != null)
@@ -154,3 +155,41 @@ func _check_profile_gates() -> void:
 	assert(not profile.restore("PROTO", done) and profile.active == "ONI")
 	assert(not profile.restore("ONI", loans) and profile.active == "ONI")
 	assert(profile.restore("LUNA", initial))
+
+func _check_leia_attraction(home) -> void:
+	# Isolate innate stimulus; restore initial state before six-friend route.
+	var fox = home.entities.get_entity(Island.Meadows.FOX_ID)
+	var player_point: Vector2 = home.actor.position
+	var fox_point: Vector2 = fox.position
+	var fox_height: float = fox.motion.elevation
+	var old_size: float = fox.get_parameter("size")
+	var old_ai: bool = fox.get_parameter("ai_enabled")
+	var relation: String = fox.get_parameter("luna_relation")
+	var mode: String = fox.get_parameter("behavior_mode")
+	var old_destination: Vector2 = fox.autonomous_destination
+	_place(home.actor, Vector2(410, 420))
+	home.actor.location_id = home._entity_location(home.actor.position)
+	_place(fox, Vector2(510, 420))
+	fox.location_id = home._entity_location(fox.position)
+	fox.autonomous_destination = Vector2.INF
+	fox.set_parameter("behavior_mode", "WANDER")
+	fox.set_parameter("ai_enabled", true)
+	home.hero_profile.active = "LEIA"
+	for size in [0.5, 2.0]:
+		assert(fox.set_parameter("size", size))
+		home._tick_profile_attraction()
+		assert(fox.profile_interest == home.actor.position and fox.profile_interest_gap > 0.0)
+		assert(fox.get_parameter("luna_relation") == relation)
+		assert(fox.get_parameter("behavior_mode") == "WANDER")
+	fox.set_parameter("ai_enabled", false)
+	home._tick_profile_attraction()
+	assert(not fox.profile_interest.is_finite())
+	fox.set_parameter("ai_enabled", old_ai)
+	home.hero_profile.active = "LUNA"
+	home._tick_profile_attraction()
+	assert(not fox.profile_interest.is_finite())
+	fox.set_parameter("size", old_size)
+	fox.set_parameter("behavior_mode", mode)
+	fox.autonomous_destination = old_destination
+	home._place_friend(fox, fox_point, fox_height)
+	home._place_friend(home.actor, player_point, 0.0)

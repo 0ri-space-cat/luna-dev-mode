@@ -128,6 +128,12 @@ func _wander_on_support(delta: float) -> Vector2:
 	if not aquatic_bounds.has_area():
 		return super._wander_on_support(delta)
 	var limits := aquatic_bounds.grow(-20.0)
+	if profile_interest.is_finite() and has_vital_swim():
+		# Swim toward the stimulus only inside the actual water bounds.
+		var target := profile_interest.clamp(limits.position, limits.end)
+		if target.distance_to(position) <= profile_interest_gap:
+			return Vector2.ZERO
+		return (target - position).normalized()
 	if position.x <= limits.position.x:
 		_swim_direction = 1.0
 	elif position.x >= limits.end.x:
