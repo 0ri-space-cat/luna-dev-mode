@@ -63,13 +63,44 @@ func _run() -> void:
 	assert(not game.outer.get_node("Interface").visible)
 	assert(Store.new().read_snapshot(path)["white_discovered"])
 	assert(game.save_game())
+	# A physical approach, not a menu or automatic story flag.
+	assert(not game._commit_meta_event("MERGE") and not game.meta.merged)
+	assert(not game.outer.pixel_repeat and not game.outer.use_route())
+	game.outer.actor.direction = Vector2.RIGHT
+	for tick in 180:
+		await physics_frame
+		if game.outer.at_meta_encounter():
+			break
+	game.outer.actor.direction = Vector2.ZERO
+	assert(game.outer.at_meta_encounter(), "Proto approach")
+	assert(game.outer.use_route() and not game.meta.merged)
+	assert(game.outer.use_route() and not game.meta.merged)
+	assert(game.outer.decline_meta() and not game.meta.merged)
+	assert(game.outer.use_route() and game.outer.use_route())
+	assert(game.save_game() and game.load_game())
+	assert(not game.meta.merged and game.outer._meta_stage == 0)
+	assert(game.outer.use_route() and game.outer.use_route() and game.outer.use_route())
+	assert(game.meta.merged and not game.meta.pixel_seen and not game.outer.pixel_repeat)
+	assert(not game.outer.use_route() and not game._commit_meta_event("MERGE"))
+	assert(game.outer.actor == traveler and not game.outer.get_node("Interface").visible)
+	assert(Store.new().read_snapshot(path)["meta"] == {"merged": true, "pixel_seen": false})
 	assert(game._return_to_home() and home.actor == traveler and home.game_frame_solid)
-	assert(game.apply_local_rollback(early) and game.white_discovered)
+	assert(game.apply_local_rollback(early) and game.white_discovered and game.meta.merged)
 	_place(home, Island.AncientConsole.RETURN_POINT)
 	assert(home.interact())
 	home.ancient_console._submit("TELEPORT " + Routes.WHITE_ADDRESS)
 	assert(game._away and game.outer.current_address == Routes.WHITE_ADDRESS and game.outer.actor == home.actor)
-	assert(game._return_to_home())
+	assert(game.outer.pixel_repeat and not game.meta.pixel_seen)
+	assert(Store.new().read_snapshot(path)["guest"]["pixel_repeat"])
+	game.outer.keyboard = false
+	game.outer.actor.direction = Vector2.RIGHT
+	for tick in 180:
+		await physics_frame
+		if game.outer.at_meta_encounter():
+			break
+	game.outer.actor.direction = Vector2.ZERO
+	assert(game.outer.at_meta_encounter() and game.outer.use_route() and not game.meta.pixel_seen)
+	assert(game.outer.use_route() and game.meta.pixel_seen and not game._away)
 	assert(home.actor.position.distance_to(Island.AncientConsole.RETURN_POINT) < 1.0)
 	game.queue_free()
 	await process_frame
@@ -77,12 +108,18 @@ func _run() -> void:
 	game.profile_path = path
 	root.add_child(game)
 	await physics_frame
-	assert(game._profile_valid and game.white_discovered)
+	assert(game._profile_valid and game.white_discovered and game.meta.merged and game.meta.pixel_seen)
+	var home2 = game.home
+	_place(home2, Island.AncientConsole.RETURN_POINT)
+	assert(home2.interact())
+	home2.ancient_console._submit("TELEPORT " + Routes.WHITE_ADDRESS)
+	assert(game._away and not game.outer.pixel_repeat)
+	assert(game._return_to_home())
 	game.queue_free()
 	await process_frame
 	for file in [path, path + ".bak"]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(file))
-	print("Protected window, physical desktop, persisted discovery and console repeat passed")
+	print("Protected window, physical desktop, voluntary merge, preserved memory, one-time Pixel console repeat passed")
 	quit()
 
 

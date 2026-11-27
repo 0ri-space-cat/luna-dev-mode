@@ -4,6 +4,9 @@ extends "res://scripts/skeleton/address_fixture.gd"
 const BorrowedEntity = preload("res://scripts/skeleton/entity_body_2d.gd")
 const RouteRoom = preload("res://scripts/skeleton/outer_route_room.gd")
 const VoidExploration = preload("res://scripts/skeleton/void_exploration_2d.gd")
+const MetaMemory = preload("res://scripts/skeleton/meta_memory_2d.gd")
+# Temporary graybox interaction zone on existing White Void floor; no new address or art.
+const META_APPROACH := Rect2(530, 372, 184, 140)
 const Clock = preload("res://scripts/runtime2d/world_clock_2d.gd")
 const MEADOWS := "DEV_OUTER_MEADOWS"
 const LUMA := "DEV_OUTER_LUMA"
@@ -43,6 +46,11 @@ var _desktop_previous := Vector2.INF
 var _desktop_crossing := false
 var public_arrival: Callable
 var hosted_entry := BLACK_VOID
+var meta: MetaMemory
+var meta_commit: Callable
+var pixel_repeat := false
+var _meta_stage := 0
+var _meta_label: Label
 
 @onready var traveler_visual: Sprite2D = $TravelerVisual
 @onready var _action_hint: Label = $Interface/Action
@@ -297,7 +305,11 @@ func use_route() -> bool:
 			if public_arrival.is_valid():
 				return public_arrival.call(EDGE)
 			return _at_action() and _move_to_address(COAST)
-		WHITE_ADDRESS, DESKTOP:
+		WHITE_ADDRESS:
+			if _at_action() and return_to_host.is_valid():
+				return return_to_host.call()
+			return _use_meta_encounter()
+		DESKTOP:
 			return _at_action() and return_to_host.is_valid() and return_to_host.call()
 		BLACK_VOID:
 			if _at_action():
@@ -309,6 +321,87 @@ func use_route() -> bool:
 				return true
 	_record_text = read_local_record()
 	return not _record_text.is_empty()
+
+
+func at_meta_encounter() -> bool:
+	return current_address == WHITE_ADDRESS and is_instance_valid(actor) and not actor.is_attached() and _at_area(META_APPROACH)
+
+
+func _pixel_waiting() -> bool:
+	return meta != null and pixel_repeat and meta.merged and not meta.pixel_seen
+
+
+func can_commit_meta(event: String) -> bool:
+	if not at_meta_encounter() or meta == null:
+		return false
+	if event == MetaMemory.MERGE:
+		return not meta.merged and _meta_stage == 2
+	return event == MetaMemory.PIXEL and _pixel_waiting() and _meta_stage == 1
+
+
+func _use_meta_encounter() -> bool:
+	if not at_meta_encounter() or meta == null or not meta_commit.is_valid():
+		return false
+	if _pixel_waiting():
+		if _meta_stage == 0:
+			_meta_stage = 1
+			return true
+		if meta_commit.call(MetaMemory.PIXEL):
+			_meta_stage = 0
+			return return_to_host.call()
+		return false
+	if meta.merged:
+		return false
+	if _meta_stage < 2:
+		_meta_stage += 1
+		return true
+	if not meta_commit.call(MetaMemory.MERGE):
+		return false
+	_meta_stage = 0
+	return true
+
+
+func decline_meta() -> bool:
+	if not at_meta_encounter() or _meta_stage == 0:
+		return false
+	_meta_stage = 0
+	return true
+
+
+func _update_meta_scene() -> void:
+	# This temporary in-world caption is outside the disabled game HUD.
+	# No finished character art, animation, music or new Entity is introduced.
+	if current_address != WHITE_ADDRESS or meta == null:
+		if is_instance_valid(_meta_label):
+			_meta_label.hide()
+		_meta_stage = 0
+		return
+	if not is_instance_valid(_meta_label):
+		_meta_label = Label.new()
+		_meta_label.position = Vector2(320, 308)
+		_meta_label.size = Vector2(640, 58)
+		_meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_meta_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_meta_label.add_theme_color_override("font_color", Color("51445c"))
+		_meta_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_meta_label)
+	_meta_label.show()
+	if not at_meta_encounter():
+		_meta_stage = 0
+		_meta_label.text = "E · вернуться" if _at_action() else ("Впереди кто-то ждёт…" if not meta.merged or _pixel_waiting() else "")
+		return
+	if _pixel_waiting():
+		_meta_label.text = "Пиксель подмигивает. E · подойти" if _meta_stage == 0 else "«Спасибо, что играла в мою игру»\nE · вернуться"
+	elif meta.merged:
+		_meta_label.text = "Обе истории теперь с Луной."
+	else:
+		match _meta_stage:
+			0:
+				_meta_label.text = "E · поговорить"
+			1:
+				_meta_label.text = "«Ты слышишь меня здесь? Я так давно никого не слышала».\nE · продолжить   C · позже"
+			2:
+				_meta_label.text = "«Может, мы сможем быть вместе?»\nE · согласиться на объединение   C · позже"
 
 
 func _at_action() -> bool:
@@ -453,7 +546,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_F7:
 			play_station_melody("M02")
 		KEY_C:
-			toggle_local_door()
+			if current_address == WHITE_ADDRESS:
+				decline_meta()
+			else:
+				toggle_local_door()
 		KEY_TAB:
 			if current_address == LUMA and _door_nearby() and access.wand_mode != Access.ORDINARY:
 				_address_input.clear()
@@ -495,6 +591,7 @@ func _update_interface() -> void:
 			_status.text = "Белая Пустота"
 	$Interface.visible = current_address not in [DESKTOP, WHITE_ADDRESS]
 	_action_hint.text = _contextual_action()
+	_update_meta_scene()
 
 
 func _contextual_action() -> String:
@@ -532,6 +629,7 @@ func make_snapshot() -> Dictionary:
 	data["last_safe"] = {"address": last_safe_address, "point": [last_safe_point.x, last_safe_point.y]}
 	data["clock"] = world_clock.snapshot()
 	data["outer_exploration"] = exploration.snapshot()
+	data["pixel_repeat"] = pixel_repeat if current_address == WHITE_ADDRESS else false
 	data["journey"] = {
 		"destination": ride_destination, "elapsed": ride_elapsed, "outward": outward_elapsed,
 		"cracking": cracking, "crack_elapsed": crack_elapsed, "drift": [_drift.x, _drift.y],
@@ -547,6 +645,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_exploration := VoidExploration.new()
 	var address: Variant = data.get("address")
 	var white_visit := return_to_host.is_valid() and hosted_entry == WHITE_ADDRESS
+	var repeat_visit: Variant = data.get("pixel_repeat", false)
+	if not repeat_visit is bool or (repeat_visit and (not white_visit or meta == null or not meta.merged)):
+		return false
 	if (address == WHITE_ADDRESS) != white_visit or (address == DESKTOP) != (return_to_host.is_valid() and hosted_entry == DESKTOP):
 		return false
 	if return_to_host.is_valid() and hosted_entry == GHOST_ENTRY and address != BLACK_VOID:
@@ -574,6 +675,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 	if not can_return or not super.apply_snapshot(data):
 		return false
 	exploration = next_exploration
+	pixel_repeat = repeat_visit
+	_meta_stage = 0
 	_record_text = ""
 	_desktop_previous = Vector2.INF
 	last_safe_address = safe["address"]

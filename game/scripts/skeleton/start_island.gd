@@ -62,6 +62,7 @@ var _time_address := ""
 var _forward_remaining := 0.0
 var _forward_behavior := ""
 var ghost_ride_requested: Callable
+var meta_merged: Callable
 var ghost_offer := ""
 const Mountain = preload("res://scripts/skeleton/mountain_layout.gd")
 const Highland = preload("res://scripts/runtime2d/highland_artifacts_2d.gd")
@@ -1846,6 +1847,8 @@ func _show_evening_panel() -> void:
 			button.pressed.connect(func(): finish_cafe_evening())
 		3:
 			label.text = "На мгновение всё замирает.\n\n…Луна… Помоги мне…\n\nГолос исчезает."
+			if meta_merged.is_valid() and meta_merged.call():
+				label.text += "\n\nЛуна узнаёт отголосок знакомого голоса."
 			button.text = "Далее"
 			button.pressed.connect(_finish_ordinary_credits)
 		4:

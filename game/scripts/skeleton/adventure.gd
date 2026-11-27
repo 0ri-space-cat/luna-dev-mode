@@ -5,6 +5,7 @@ signal gameplay_event(event: Dictionary)
 signal intervention_applied(action: String)
 
 const Island = preload("res://scripts/skeleton/start_island.gd")
+const MetaMemory = preload("res://scripts/skeleton/meta_memory_2d.gd")
 const OuterRoutes = preload("res://scripts/skeleton/outer_routes_fixture.gd")
 const OUTER = preload("res://scenes/skeleton/outer_routes.tscn")
 const Recovery = preload("res://scripts/runtime2d/game_recovery_2d.gd")
@@ -40,6 +41,7 @@ var _continuity: Dictionary = {}
 var _interrupted: Dictionary = {}
 var _away := false
 var white_discovered := false
+var meta := MetaMemory.new()
 var _guest_save: Dictionary = {}
 var _recovery_only := false
 var _ready_for_play := false
@@ -64,6 +66,7 @@ func _ready() -> void:
 	home.public_ride_requested = _start_public_ride
 	home.desktop_requested = _start_desktop_visit
 	home.ghost_ride_requested = _start_ghost_ride
+	home.meta_merged = func(): return meta.merged
 	home.commands.parameter_changed.connect(_on_parameter_changed)
 	home.commands.component_changed.connect(_on_component_changed)
 	home.fauna_respawned.connect(_on_fauna_respawned)
@@ -494,12 +497,17 @@ func _visit_white_void(saved_guest: Dictionary = {}) -> bool:
 	var checkpoint := home.make_snapshot()
 	if not _activate_guest(OuterRoutes.WHITE_ADDRESS):
 		return false
-	if (not saved_guest.is_empty() and not outer.apply_snapshot(saved_guest)) \
-			or not _write_profile(journal, _manual, checkpoint, {}, true, saved_guest):
+	# Eligibility is captured on console arrival, never by merging during that visit.
+	outer.pixel_repeat = saved_guest.is_empty() and meta.merged and not meta.pixel_seen
+	if not saved_guest.is_empty() and not outer.apply_snapshot(saved_guest):
+		_reactivate_home(checkpoint)
+		return false
+	var guest := outer.make_snapshot()
+	if not _write_profile(journal, _manual, checkpoint, {}, true, guest):
 		_reactivate_home(checkpoint)
 		return false
 	_continuity = checkpoint
-	_guest_save = saved_guest
+	_guest_save = guest
 	_away = true
 	return true
 
@@ -585,6 +593,8 @@ func _activate_guest(address: String) -> bool:
 	guest.process_mode = Node.PROCESS_MODE_PAUSABLE
 	guest.hosted_entry = address
 	guest.return_to_host = _return_to_home
+	guest.meta = meta
+	guest.meta_commit = _commit_meta_event
 	if address == OuterRoutes.DESKTOP:
 		guest.desktop_exit = _discover_white_from_desktop
 	if address in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
@@ -604,6 +614,23 @@ func _activate_guest(address: String) -> bool:
 	outer = guest
 	if leaving_bank:
 		observations.queue_forest_report()
+	return true
+
+
+func _commit_meta_event(event: String) -> bool:
+	if not _away or not white_discovered or _simulation_suspended() or not is_instance_valid(outer) \
+			or outer.current_address != OuterRoutes.WHITE_ADDRESS or not outer.at_meta_encounter():
+		return false
+	if not outer.can_commit_meta(event):
+		return false
+	var before := meta.snapshot()
+	if not meta.advance(event):
+		return false
+	var guest := outer.make_snapshot()
+	if not _write_profile(journal, _manual, _continuity, {}, true, guest):
+		meta.restore(before)
+		return false
+	_guest_save = guest
 	return true
 
 
@@ -765,7 +792,8 @@ func _overlay_wand_mode(checkpoint: Dictionary, source: Journal) -> void:
 func _restore_profile(profile: Dictionary) -> bool:
 	var candidate := Journal.new()
 	var discovered: Variant = profile.get("white_discovered", false)
-	if not discovered is bool:
+	var next_meta := MetaMemory.new()
+	if not discovered is bool or not next_meta.restore(profile.get("meta", {})) or (next_meta.merged and not discovered):
 		return false
 	if profile.get("kind") != PROFILE_KIND or not candidate.restore(profile.get("journal")) \
 			or not profile.get("state") is Dictionary or not profile.get("manual") is Dictionary \
@@ -806,6 +834,7 @@ func _restore_profile(profile: Dictionary) -> bool:
 	_interrupted = checkpoint if not interrupted.is_empty() else interrupted
 	_away = profile["away"]
 	white_discovered = discovered
+	meta = next_meta
 	journal = candidate
 	ecology = candidate_ecology
 	observations = candidate_observations
@@ -915,7 +944,7 @@ func _write_profile(current: Journal, manual: Dictionary, state: Dictionary, int
 		away: bool, guest: Dictionary = {}) -> bool:
 	return _profile_valid and _store.write_snapshot({"format": Store.FORMAT, "kind": PROFILE_KIND,
 		"journal": current.snapshot(), "ecology": ecology.snapshot(), "observations": observations.snapshot(),
-		"manual": manual, "state": state, "white_discovered": white_discovered,
+		"manual": manual, "state": state, "white_discovered": white_discovered, "meta": meta.snapshot(),
 		"away": away, "interrupted": interrupted, "guest": guest,
 		"guest_entry": outer.hosted_entry if away else ""}, profile_path)
 
