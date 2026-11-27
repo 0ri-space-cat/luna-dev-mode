@@ -29,6 +29,7 @@ func configure(address: String, door: Door, camera: Camera2D, hud: Control, room
 		return false
 	if not room.grow(door.interaction_radius).has_point(door.global_position):
 		return false
+	_invalidate()
 	source_address = address
 	_door = door
 	_camera = camera
@@ -38,8 +39,18 @@ func configure(address: String, door: Door, camera: Camera2D, hud: Control, room
 	return true
 
 
+func _invalidate() -> void:
+	_actor = null
+	_last = Vector2.INF
+	_left_room = false
+	_crossed_screen = false
+	_distance = 0.0
+	_used = false
+	source_point = Vector2.INF
+
+
 func _can_move(body) -> bool:
-	return is_instance_valid(body) and body.motion.grounded and not body.is_attached() and not body.has_passenger() and body.accepts_player_input()
+	return is_instance_valid(body) and body.motion.grounded and is_zero_approx(float(body.motion.elevation)) and not body.is_attached() and not body.has_passenger() and body.accepts_player_input()
 
 
 func begin(body, clock) -> bool:
@@ -72,7 +83,7 @@ func _screen_point(body) -> Vector2:
 
 
 func on_backdrop() -> bool:
-	return _left_room and not _used and is_instance_valid(_actor)
+	return _left_room and not _used and is_instance_valid(_actor) and _static_camera() and _can_move(_actor) and _actor.global_position.distance_to(_last) < 1.0
 
 
 func can_edit_hud(body, access: Access, target: Control) -> bool:
@@ -86,17 +97,17 @@ func can_edit_hud(body, access: Access, target: Control) -> bool:
 
 
 func observe(body) -> bool:
-	if _used or body != _actor or not _can_move(body) or not _static_camera():
-		_crossed_screen = false
-		_distance = 0.0
+	if _used or not is_instance_valid(_actor) or body != _actor:
+		return false
+	if not _can_move(body) or not _static_camera():
+		_invalidate()
 		return false
 	var current: Vector2 = body.global_position
 	var step := current - _last
 	var previous := _last
 	_last = current
 	if not step.is_finite() or step.length() > MAX_STEP:
-		_crossed_screen = false
-		_distance = 0.0
+		_invalidate()
 		return false
 	if _room.has_point(current):
 		_left_room = false
@@ -104,7 +115,8 @@ func observe(body) -> bool:
 		_distance = 0.0
 		return false
 	if not _left_room:
-		if not _room.has_point(previous) or step.dot(_outward) <= 0.0 or not _door.can_interact_from(previous):
+		if not _room.has_point(previous) or step.dot(_outward) <= 0.0 or not is_instance_valid(_door) or not _door.can_interact_from(previous):
+			_invalidate()
 			return false
 		_left_room = true
 	var transform := _camera.get_canvas_transform()

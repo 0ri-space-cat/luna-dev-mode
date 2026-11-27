@@ -44,6 +44,16 @@ func _run() -> void:
 	assert(route.begin(body, home.world_clock))
 	assert(not route.can_edit_hud(body, home.access, hud))
 	assert(not game._start_backdrop_void())
+	# A real departure followed by a discontinuous jump cannot grant backdrop access.
+	assert(await _walk(home, route, Vector2(450, 420)))
+	assert(route.on_backdrop())
+	body.position = Vector2(550, 420)
+	assert(not route.on_backdrop() and not route.observe(body))
+	assert(not route.ready_for_void(body) and not route.can_edit_hud(body, home.access, hud))
+	body.position = source
+	body.motion.reset_on_surface(source, 0.0)
+	body.location_id = Island.ISLAND_ID
+	assert(route.begin(body, home.world_clock))
 	assert(await _walk(home, route, Vector2(450, 420)))
 	assert(route.on_backdrop() and not route.ready_for_void(body))
 	assert(not route.can_use_reverse_door(body, Callable()))
