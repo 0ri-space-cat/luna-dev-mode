@@ -1,6 +1,7 @@
 extends SceneTree
 const Scene = preload("res://scenes/skeleton/adventure.tscn")
 const Island = preload("res://scripts/skeleton/start_island.gd")
+const Mountain = preload("res://scripts/skeleton/mountain_layout.gd")
 const Social = preload("res://scripts/runtime2d/friend_progress_2d.gd")
 const Routes = preload("res://scripts/skeleton/outer_routes_fixture.gd")
 const Store = preload("res://scripts/runtime2d/save_store_2d.gd")
@@ -78,19 +79,56 @@ func _run() -> void:
 	assert(home.evening_stage == 4 and not home.begin_cafe_evening())
 	home._tick_cafe(0.1)
 	assert(home.apply_snapshot(JSON.parse_string(JSON.stringify(home.make_snapshot()))))
-	# Cafe-first ordering: isolate discovery here; the window-escape test
-	# independently covers the actual first physical entry and its gates.
+	# Cafe-first ordering: actual physical discovery, not a seeded flag.
 	assert(not game._visit_white_void())
 	_place(home.actor, Island.AncientConsole.RETURN_POINT)
 	home.actor.location_id = home._entity_location(home.actor.position)
 	assert(home.at_ancient_console() and home.interact())
 	home.ancient_console._submit("TELEPORT " + Routes.WHITE_ADDRESS)
 	assert(not game._away and not game.white_discovered)
-	game.white_discovered = true
-	home.ancient_console._submit("TELEPORT " + Routes.WHITE_ADDRESS)
-	assert(game._away and not game.meta.merged and not game.outer.pixel_repeat)
-	var traveler = game.outer.actor
-	_place(traveler, Routes.META_APPROACH.get_center())
+	# Fixture placement at the existing camera pickup; use the real
+	# interaction. DEVELOPER is still seeded to isolate this order test.
+	_place(home.actor, Mountain.CAMERA_POINT)
+	home.actor.location_id = home._entity_location(home.actor.position)
+	assert(home.interact() and home.highland.camera_owned)
+	assert(home.access.set_wand_mode("DEVELOPER"))
+	assert(home.set_game_mode("WINDOWED"))
+	_place(home.actor, Vector2(510, 535))
+	home.actor.location_id = home._entity_location(home.actor.position)
+	home.apply_player_input(Vector2.ZERO)
+	home._update_local_camera()
+	home._camera.reset_smoothing()
+	assert(home.toggle_camera_lock())
+	await physics_frame
+	var traveler = home.actor
+	var bounds: Rect2 = home._frame_world_bounds()
+	assert(bounds.has_point(traveler.position))
+	var edge := Vector2(bounds.position.x + 18.0, traveler.position.y)
+	assert(await _walk_home(home, edge))
+	assert(home.set_game_frame_solid(false))
+	assert(not game._start_desktop_visit())
+	home.apply_player_input(Vector2.LEFT)
+	for tick in 50:
+		await physics_frame
+		if game._away:
+			break
+	assert(game._away and game.outer.current_address == Routes.DESKTOP and game.outer.actor == traveler)
+	assert(not game.white_discovered and not game.meta.merged)
+	game.outer.keyboard = false
+	game.outer.actor.direction = Vector2.RIGHT
+	for tick in 240:
+		await physics_frame
+		if game.outer.current_address == Routes.WHITE_ADDRESS:
+			break
+	assert(game.outer.current_address == Routes.WHITE_ADDRESS and game.white_discovered and game.outer.actor == traveler)
+	assert(not game.outer.pixel_repeat and not game.meta.merged)
+	game.outer.actor.direction = Vector2.RIGHT
+	for tick in 180:
+		await physics_frame
+		if game.outer.at_meta_encounter():
+			break
+	game.outer.actor.direction = Vector2.ZERO
+	assert(game.outer.at_meta_encounter())
 	assert(game.outer.use_route() and game.outer.use_route() and game.outer.use_route())
 	assert(game.meta.merged and game.outer.actor == traveler and not game.meta.pixel_seen)
 	assert(game._return_to_home() and home.actor == traveler)
@@ -199,3 +237,15 @@ func _check_leia_attraction(home) -> void:
 	home._place_friend(fox, fox_point, fox_height)
 	fox.autonomous_destination = old_destination
 	home._place_friend(home.actor, player_point, 0.0)
+
+
+func _walk_home(home, target: Vector2) -> bool:
+	for tick in 240:
+		var offset: Vector2 = target - home.actor.position
+		if offset.length_squared() < 16.0:
+			home.apply_player_input(Vector2.ZERO)
+			return true
+		home.apply_player_input(offset.normalized())
+		await physics_frame
+	home.apply_player_input(Vector2.ZERO)
+	return false
