@@ -1,10 +1,10 @@
-; LUNA 2D systems lab. DEV rooms are used for testing.
+; LUNA Adventure. DEV scenes are isolated regression fixtures.
 config_version=5
 
 [application]
 
 config/name="LUNA: DEV MODE"
-run/main_scene="res://eternia/eternia.tscn"
+run/main_scene="res://scenes/skeleton/adventure.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
 [display]

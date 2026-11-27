@@ -223,10 +223,7 @@ jobs:
       - name: Test protected atomic spell program command bundles
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 0 }}
         run: bash ci/run_godot_script.sh res://tests/test_runtime2d_spell_program.gd
-      - name: Test playable Eternia campaign
-        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
-        run: bash ci/run_godot_script.sh res://tests/test_eternia_adventure.gd
-      - name: Boot 2D main scene
+      - name: Boot primary Adventure scene
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 0 }}
         run: |
           set -o pipefail
