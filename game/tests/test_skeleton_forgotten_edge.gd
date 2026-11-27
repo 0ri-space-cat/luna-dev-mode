@@ -49,7 +49,7 @@ func _run() -> void:
 	assert(home.teleport_known_location(Edge.ID))
 	assert(player.position.distance_to(Edge.ENTRY) < 1.0)
 	# Camera observation and personal gaze remain different.
-	_place(home, Vector2(4020, 1110))
+	_place(home, Edge.REFUGE_APPROACH.get_center())
 	home._update_local_camera()
 	home._camera.reset_smoothing()
 	home._sync_mountain_bridge()

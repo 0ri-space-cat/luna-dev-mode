@@ -13,15 +13,26 @@ const D4_DESK := Rect2(3620, 1390, 185, 100)
 const D8 := Rect2(3315, 1230, 285, 250)
 const D5_TRAIL := Rect2(3780, 1080, 225, 120)
 const D5 := Rect2(3970, 1045, 140, 155)
-const D6 := Rect2(4330, 1045, 165, 155)
-const D7 := Rect2(4430, 1170, 160, 155)
-const GROUND := [D0, D1, D2, D3, D4, D4_DESK, D8, D5_TRAIL, D5, D6, D7]
+# Q22 now lies north of the existing crystal cavern, in the waterfall region.
+# Keep the old D5 as an ordinary dead end and preserve the old address IDs.
+const REFUGE_OFFSET := Vector2(-1110, -1115)
+const LEGACY_D6 := Rect2(4330, 1045, 165, 155)
+const LEGACY_D7 := Rect2(4430, 1170, 160, 155)
+const REFUGE_APPROACH := Rect2(2860, -70, 140, 155)
+const REFUGE_PATH := Rect2(2875, 65, 110, 260)
+const D6 := Rect2(3220, -70, 165, 155)
+const D7 := Rect2(3320, 55, 160, 155)
+const LEGACY_GROUND := [D0, D1, D2, D3, D4, D4_DESK, D8, D5_TRAIL, D5, LEGACY_D6, LEGACY_D7]
+const GROUND := [D0, D1, D2, D3, D4, D4_DESK, D8, D5_TRAIL, D5, REFUGE_PATH, REFUGE_APPROACH, D6, D7]
 const R07 := {"bounds": Rect2(2970, 1060, 250, 55), "height": 0.0, "safe": false, "feature_id": "BRIDGE_CAMERA_COAST_EDGE"}
-const BRIDGE := {"bounds": Rect2(4090, 1080, 260, 65), "height": 0.0, "safe": false, "feature_id": "BRIDGE_III_FORGOTTEN"}
+const LEGACY_BRIDGE := Rect2(4090, 1080, 260, 65)
+const BRIDGE := {"bounds": Rect2(2980, -35, 260, 65), "height": 0.0, "safe": false, "feature_id": "BRIDGE_III_FORGOTTEN"}
 const CYCLE_SPAN := {"bounds": Rect2(3670, 1310, 85, 100), "height": 0.0, "safe": false}
-const LOWER := {"bounds": Rect2(4075, 1130, 260, 100), "height": -48.0}
-const WATER := Rect2(4100, 1045, 230, 85)
-const LOWER_STEPS := [
+const LEGACY_LOWER := Rect2(4075, 1130, 260, 100)
+const LEGACY_WATER := Rect2(4100, 1045, 230, 85)
+const LOWER := {"bounds": Rect2(2965, 15, 260, 100), "height": -48.0}
+const WATER := Rect2(2990, -70, 230, 85)
+const LEGACY_LOWER_STEPS := [
 	{"bounds": Rect2(3970, 1145, 75, 90), "height": -6.0, "walk_up": true},
 	{"bounds": Rect2(3990, 1160, 75, 90), "height": -12.0, "walk_up": true},
 	{"bounds": Rect2(4010, 1180, 75, 70), "height": -18.0, "walk_up": true},
@@ -30,12 +41,22 @@ const LOWER_STEPS := [
 	{"bounds": Rect2(4070, 1200, 75, 70), "height": -36.0, "walk_up": true},
 	{"bounds": Rect2(4090, 1180, 75, 70), "height": -42.0, "walk_up": true},
 ]
+const LOWER_STEPS := [
+	{"bounds": Rect2(2860, 30, 75, 90), "height": -6.0, "walk_up": true},
+	{"bounds": Rect2(2880, 45, 75, 90), "height": -12.0, "walk_up": true},
+	{"bounds": Rect2(2900, 65, 75, 70), "height": -18.0, "walk_up": true},
+	{"bounds": Rect2(2920, 75, 75, 70), "height": -24.0, "walk_up": true},
+	{"bounds": Rect2(2940, 85, 75, 70), "height": -30.0, "walk_up": true},
+	{"bounds": Rect2(2960, 85, 75, 70), "height": -36.0, "walk_up": true},
+	{"bounds": Rect2(2980, 65, 75, 70), "height": -42.0, "walk_up": true},
+]
 const ENTRY := Vector2(3480, 995)
 const FALL_ENTRY := Vector2(3400, 1140)
 const RETURN := Vector2(3235, 1145)
 const COAST_RETURN := Vector2(2900, 1085)
 const DESK := Vector2(3710, 1440)
-const NOTE := Vector2(4520, 1260)
+const LEGACY_NOTE := Vector2(4520, 1260)
+const NOTE := Vector2(3410, 145)
 const PORTAL_A := Vector2(3360, 1310)
 const PORTAL_B := Vector2(3545, 1410)
 const PORTAL_A_EXIT := Vector2(3395, 1310)
@@ -44,19 +65,48 @@ const CYCLE_SECONDS := 72.0
 const INTACT_SECONDS := 60.0
 
 
+static func legacy_refuge_point(point: Vector2) -> bool:
+	if D5.has_point(point) or LEGACY_D6.has_point(point) or LEGACY_D7.has_point(point) or LEGACY_BRIDGE.has_point(point) or LEGACY_LOWER.has_point(point) or LEGACY_WATER.has_point(point):
+		return true
+	for surface in LEGACY_LOWER_STEPS:
+		if surface["bounds"].has_point(point):
+			return true
+	return false
+
+
 static func address(point: Vector2) -> String:
 	if D7.has_point(point):
 		return REFUGE
 	if D6.has_point(point):
 		return BANK
+	if REFUGE_PATH.has_point(point) or REFUGE_APPROACH.has_point(point) or BRIDGE["bounds"].has_point(point) or LOWER["bounds"].has_point(point) or WATER.has_point(point):
+		return "ET_WATERFALL_VALLEY"
+	for surface in LOWER_STEPS:
+		if surface["bounds"].has_point(point):
+			return "ET_WATERFALL_VALLEY"
 	if D4.has_point(point) or D4_DESK.has_point(point) or CYCLE_SPAN["bounds"].has_point(point):
 		return SERVICE
-	for region in GROUND:
+	for region in [D0, D1, D2, D3, D4, D4_DESK, D8, D5_TRAIL, D5]:
 		if region.has_point(point):
 			return ID
-	if BRIDGE["bounds"].has_point(point) or LOWER["bounds"].has_point(point) or WATER.has_point(point):
+	if R07["bounds"].has_point(point) and point.x >= 2990.0:
 		return ID
-	for surface in LOWER_STEPS:
+	return ""
+
+
+static func address_v18(point: Vector2) -> String:
+	if LEGACY_D7.has_point(point):
+		return REFUGE
+	if LEGACY_D6.has_point(point):
+		return BANK
+	if D4.has_point(point) or D4_DESK.has_point(point) or CYCLE_SPAN["bounds"].has_point(point):
+		return SERVICE
+	for region in LEGACY_GROUND:
+		if region.has_point(point):
+			return ID
+	if LEGACY_BRIDGE.has_point(point) or LEGACY_LOWER.has_point(point) or LEGACY_WATER.has_point(point):
+		return ID
+	for surface in LEGACY_LOWER_STEPS:
 		if surface["bounds"].has_point(point):
 			return ID
 	if R07["bounds"].has_point(point) and point.x >= 2990.0:
@@ -76,12 +126,13 @@ static func draw_on(canvas: Node2D, elapsed: float, time_owned: bool, portal_own
 	canvas.draw_string(font, Vector2(3400, 1110), "Уцелевший двор")
 	canvas.draw_string(font, Vector2(3600, 1085), "Покинутые улицы")
 	canvas.draw_string(font, Vector2(3640, 1260), "Служебный карман")
-	canvas.draw_string(font, Vector2(3990, 1070), "Край водопадов")
-	canvas.draw_string(font, Vector2(4350, 1070), "Тихий берег")
-	canvas.draw_string(font, Vector2(4450, 1210), "Убежище")
+	canvas.draw_string(font, Vector2(3990, 1070), "Тихая улица")
+	canvas.draw_string(font, REFUGE_APPROACH.position + Vector2(20, 25), "Край водопадов")
+	canvas.draw_string(font, D6.position + Vector2(20, 25), "Тихий берег")
+	canvas.draw_string(font, D7.position + Vector2(20, 40), "Убежище")
 	canvas.draw_rect(WATER, Color("597d9f"))
-	for x in range(4110, 4320, 18):
-		canvas.draw_line(Vector2(x, 1052), Vector2(x + 4, 1123), Color("a4c9e0"), 2.0)
+	for x in range(int(WATER.position.x) + 10, int(WATER.end.x) - 10, 18):
+		canvas.draw_line(Vector2(x, WATER.position.y + 7), Vector2(x + 4, WATER.end.y - 7), Color("a4c9e0"), 2.0)
 	if elapsed < INTACT_SECONDS:
 		canvas.draw_rect(CYCLE_SPAN["bounds"], Color("8f7e89"))
 	else:

@@ -43,7 +43,7 @@ const FISH_POINTS := {
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
-const ADDRESS_SCHEMA := 18
+const ADDRESS_SCHEMA := 19
 const QuietRegions = preload("res://scripts/skeleton/quiet_regions_layout.gd")
 const SecretFinds = preload("res://scripts/skeleton/secret_finds_layout.gd")
 const FriendRoutes = preload("res://scripts/skeleton/friend_routes_2d.gd")
@@ -230,6 +230,17 @@ func _entity_location(point: Vector2) -> String:
 		var quiet_address := QuietRegions.address(point)
 		if not quiet_address.is_empty():
 			return quiet_address
+		var edge_address := Edge.address(point)
+		if not edge_address.is_empty():
+			return edge_address
+	return _entity_location_v15(point)
+
+
+func _entity_location_v18(point: Vector2) -> String:
+	if observation_fixture:
+		var quiet_address := QuietRegions.address(point)
+		if not quiet_address.is_empty():
+			return quiet_address
 	return _entity_location_v16(point)
 
 
@@ -243,7 +254,7 @@ func _entity_location_v17(point: Vector2) -> String:
 
 func _entity_location_v16(point: Vector2) -> String:
 	if observation_fixture:
-		var edge_address := Edge.address(point)
+		var edge_address := Edge.address_v18(point)
 		if not edge_address.is_empty():
 			return edge_address
 	return _entity_location_v15(point)
@@ -2085,7 +2096,7 @@ func _interact_edge() -> bool:
 			_move_home_travelers(Edge.COAST_RETURN, Coast.LOCATION_ID)
 			return true
 		"Прочесть личную запись":
-			$Interface/SaveNotice.text = "На листе прямоугольник, след шагов продолжается за его границей. Рядом незаконченный рисунок комнаты."
+			$Interface/SaveNotice.text = "На листе прямоугольник окна (WINDOWED). След шагов продолжается за его границей; рядом незаконченный рисунок GAME_FRAME и рабочего стола."
 			return true
 		"Взять Кнопку времени":
 			edge.time_owned = true
@@ -4605,7 +4616,7 @@ func make_snapshot() -> Dictionary:
 
 func apply_snapshot(data: Dictionary) -> bool:
 	var schema: Variant = data.get("address_schema", 0)
-	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, float(ADDRESS_SCHEMA)]:
+	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, float(ADDRESS_SCHEMA)]:
 		return false
 	if int(schema) < ADDRESS_SCHEMA:
 		data = _migrate_home_addresses(data, int(schema))
@@ -5126,8 +5137,34 @@ func _migrate_home_addresses(source: Dictionary, previous_schema: int) -> Dictio
 	var pair: Variant = result.get("wand_pair")
 	if pair is Dictionary and pair.get("duplicate") is Dictionary:
 		_migrate_address_entry(pair["duplicate"], true, previous_schema)
+	if observation_fixture and previous_schema >= 16:
+		var old_highland: Variant = result.get("highland")
+		if old_highland is Dictionary:
+			_shift_legacy_refuge_xy(old_highland.get("camera_lock"))
+		var old_edge: Variant = result.get("edge")
+		if old_edge is Dictionary:
+			_shift_legacy_refuge_xy(old_edge.get("portal_a"))
+			_shift_legacy_refuge_xy(old_edge.get("portal_b"))
+		var old_evening: Variant = result.get("evening")
+		if old_evening is Dictionary and old_evening.get("origins") is Dictionary:
+			for origin in old_evening["origins"].values():
+				_shift_legacy_refuge_xy(origin)
 	result["address_schema"] = ADDRESS_SCHEMA
 	return result
+
+
+func _shift_legacy_refuge_xy(raw: Variant) -> bool:
+	if not raw is Array or raw.size() not in [2, 3]:
+		return false
+	for value in raw:
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
+			return false
+	var point := Vector2(float(raw[0]), float(raw[1]))
+	if not Edge.legacy_refuge_point(point):
+		return false
+	raw[0] = point.x + Edge.REFUGE_OFFSET.x
+	raw[1] = point.y + Edge.REFUGE_OFFSET.y
+	return true
 
 
 func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: int) -> void:
@@ -5135,6 +5172,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 	if not stored is String:
 		return
 	var canonical: String = Lake.LOCATION_ID if stored == Lake.LEGACY_LOCATION_ID else stored
+	if observation_fixture and previous_schema >= 16 and not is_field and entry.get("motion") is Dictionary:
+		_shift_legacy_refuge_xy(entry["motion"].get("anchor"))
 	# A carried wand may retain its previous ground location.
 	if is_field and entry.get("carried") == true:
 		entry["location_id"] = canonical
@@ -5146,6 +5185,9 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		if typeof(coordinate) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(coordinate)):
 			return
 	var point := Vector2(float(raw[0]), float(raw[1]))
+	if observation_fixture and previous_schema >= 16 and canonical == Edge.address_v18(point) and _shift_legacy_refuge_xy(raw):
+		entry["location_id"] = _entity_location(point + Edge.REFUGE_OFFSET)
+		return
 	# Schema 14 accidentally overlaid the existing Mia cave. Relocate only
 	# records explicitly assigned to the old mountain addresses, not old valley records.
 	if previous_schema == 14 and canonical in Mountain.ADDRESSES and Mountain.old_mountain_point(point):
@@ -5191,6 +5233,8 @@ func _migrate_address_entry(entry: Dictionary, is_field: bool, previous_schema: 
 		previous_location = _entity_location_v16(point)
 	elif previous_schema == 17:
 		previous_location = _entity_location_v17(point)
+	elif previous_schema == 18:
+		previous_location = _entity_location_v18(point)
 	if canonical == previous_location:
 		entry["location_id"] = _entity_location(point)
 

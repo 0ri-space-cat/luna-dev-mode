@@ -70,6 +70,9 @@ jobs:
       - name: Test optional elevated finds through ordinary physical movement
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_secret_finds.gd
+      - name: Test relocated Proto refuge, camera span and old profile migration
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_proto_refuge.gd
       - name: Test ordinary quiet regions and persistent natural fauna
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_quiet_regions.gd
