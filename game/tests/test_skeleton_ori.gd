@@ -25,10 +25,14 @@ func _run() -> void:
 	var home = game.home
 	# Optional visitor interaction works without a loan or a creation.
 	var visitor = home.entities.get_entity(Island.ORI_CUSTOMER)
-	_place(home, visitor.position + Vector2(25, 0))
+	# Approach from the south-west: the east side overlaps the higher
+	# priority Reality Stamp pickup (6160, 660).
+	_place(home, visitor.position + Vector2(-15, 25))
 	var social_before: Dictionary = home.social.snapshot()
 	var ori_before: Dictionary = home.ori.snapshot()
-	assert(home._near_ori_customer() and home._nearby_action() == "Поговорить с посетителем")
+	assert(home._near_ori_customer(), "Visitor must be alive, available and in reach")
+	assert(home._city_tool_action().is_empty(), "Visitor interaction must not overlap a tool pickup")
+	assert(home._nearby_action() == "Поговорить с посетителем", "Unexpected action: " + home._nearby_action())
 	assert(home.interact() and home.get_node("Interface/SaveNotice").text.contains("просто посмотреть"))
 	assert(home.social.snapshot() == social_before and home.ori.snapshot() == ori_before)
 	_place(home, Vector2(510, 535))
@@ -58,9 +62,10 @@ func _run() -> void:
 	# Observe the genuine creature in its current physical room, without
 	# granting a friend meeting or changing the module bank.
 	assert(created.position.distance_to(customer.position) <= 100.0)
-	_place(home, customer.position + Vector2(25, 0))
+	_place(home, customer.position + Vector2(-15, 25))
 	var visitor_social: Dictionary = home.social.snapshot()
 	var visitor_bank: Dictionary = home.actor.record.get_component("ABILITY_BANK").duplicate(true)
+	assert(home._nearby_action() == "Поговорить с посетителем", "Unexpected action with GLOW: " + home._nearby_action())
 	assert(home.interact() and home.get_node("Interface/SaveNotice").text.contains("ночник"))
 	assert(home.social.snapshot() == visitor_social and home.actor.record.get_component("ABILITY_BANK") == visitor_bank)
 	_place(home, customer.position + Vector2(-42, 0))
