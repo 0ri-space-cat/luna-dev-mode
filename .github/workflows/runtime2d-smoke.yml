@@ -100,6 +100,9 @@ jobs:
       - name: Test forgotten edge and hosted P01 and P04 routes
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_forgotten_edge.gd
+      - name: Test anomalous fauna and guarded local Time Button
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_edge_time.gd
       - name: Test the starter world clock, camp and timed effects
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_world_time.gd

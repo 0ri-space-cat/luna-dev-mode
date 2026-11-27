@@ -47,6 +47,14 @@ const ADDRESS_SCHEMA := 16
 const Edge = preload("res://scripts/skeleton/forgotten_edge_layout.gd")
 const EdgeState = preload("res://scripts/runtime2d/forgotten_edge_state.gd")
 var edge := EdgeState.new()
+const Anomaly = preload("res://scripts/runtime2d/edge_anomaly_2d.gd")
+var anomalies := Anomaly.new()
+var _initial_anomaly_states: Array[Dictionary] = []
+const TimeHistory = preload("res://scripts/runtime2d/world_timeline_2d.gd")
+var _time_history := TimeHistory.new()
+var _time_address := ""
+var _forward_remaining := 0.0
+var _forward_behavior := ""
 var ghost_ride_requested: Callable
 var ghost_offer := ""
 const Mountain = preload("res://scripts/skeleton/mountain_layout.gd")
@@ -364,11 +372,11 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 69 if observation_fixture else super._entity_limit()
+	return 72 if observation_fixture else super._entity_limit()
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle"] or super._starts_alive(category)
+	return category in ["fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle", "glitch_fox", "return_cat", "double_rabbit"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -475,6 +483,7 @@ func _ready() -> void:
 		_setup_flute()
 		_setup_antimemetic()
 		_setup_highland()
+		_setup_anomalies()
 	if ancient_console_enabled:
 		ancient_console = AncientConsole.new()
 		add_child(ancient_console)
@@ -1666,6 +1675,214 @@ func _valid_evening(data: Variant) -> bool:
 
 
 
+
+func _setup_anomalies() -> void:
+	for definition in Anomaly.DEFINITIONS:
+		var body := spawn_entity(definition, definition["point"], 0.0)
+		if body == null:
+			push_error("Could not place anomalous resident " + definition["id"])
+			continue
+		body.set_parameter("size", definition["size"])
+		body.set_parameter("speed", definition["speed"])
+		body.set_parameter("color", Color(definition["color"]))
+		body.set_parameter("behavior_mode", "IDLE")
+	for entry in make_snapshot()["entities"]:
+		if Anomaly.DEFINITIONS.any(func(definition): return definition["id"] == entry["id"]):
+			_initial_anomaly_states.append(entry.duplicate(true))
+
+
+func _anomaly_available(body: EntityBody, area: Rect2) -> bool:
+	return body != null and body.get_parameter("alive") and body.get_parameter("ai_enabled") and body.get_parameter("control_source") == "NONE" and body.get_parameter("behavior_mode") in ["IDLE", "CHASE"] and not body.is_attached() and not body.has_passenger() and body.motion.grounded and area.has_point(body.position) and body.location_id == Edge.ID
+
+
+func _anomaly_move(body: EntityBody, point: Vector2, area: Rect2) -> bool:
+	if not area.has_point(point) or _entity_location(point) != Edge.ID or not _friend_safe(body, point, body.motion.elevation):
+		return false
+	body.position = point
+	body.motion.reset_on_surface(point, body.motion.elevation)
+	body.direction = Vector2.ZERO
+	body.velocity = Vector2.ZERO
+	body._impulse_velocity = Vector2.ZERO
+	body._sync_projection()
+	return true
+
+
+func _tick_anomalies(delta: float) -> void:
+	if not observation_fixture:
+		return
+	anomalies.fox_echo_time = maxf(0.0, anomalies.fox_echo_time - delta)
+	var fox := entities.get_entity(Anomaly.FOX) as EntityBody
+	if _anomaly_available(fox, Anomaly.FOX_BOUNDS):
+		var hostile: bool = fox.get_parameter("luna_relation") == "HOSTILE"
+		var target: Vector2 = Anomaly.FOX_ROUTE[anomalies.fox_index]
+		if hostile and Anomaly.FOX_BOUNDS.has_point(actor.position):
+			var away: Vector2 = (fox.position - actor.position).normalized()
+			if away.is_zero_approx():
+				away = Vector2.RIGHT
+			target = actor.position + away * 42.0
+			if not Anomaly.FOX_BOUNDS.has_point(target):
+				target = Anomaly.FOX_ROUTE[anomalies.fox_index]
+		if fox.position.distance_to(target) <= 6.0:
+			anomalies.fox_index = (anomalies.fox_index + 1) % Anomaly.FOX_ROUTE.size()
+			target = Anomaly.FOX_ROUTE[anomalies.fox_index]
+		if anomalies.blink:
+			fox.autonomous_destination = Vector2.INF
+			anomalies.fox_elapsed = minf(1.6, anomalies.fox_elapsed + delta)
+			if anomalies.fox_elapsed >= 1.6:
+				var prior: Vector2 = fox.position
+				if _anomaly_move(fox, target, Anomaly.FOX_BOUNDS):
+					anomalies.fox_echo = prior
+					anomalies.fox_echo_time = 0.7
+				anomalies.fox_index = (anomalies.fox_index + 1) % Anomaly.FOX_ROUTE.size()
+				anomalies.fox_elapsed = 0.0
+		else:
+			fox.autonomous_destination = target if _friend_safe(fox, target, fox.motion.elevation) else Vector2.INF
+	elif fox != null:
+		fox.autonomous_destination = Vector2.INF
+	var cat := entities.get_entity(Anomaly.CAT) as EntityBody
+	if _anomaly_available(cat, Anomaly.CAT_BOUNDS):
+		var target: Vector2 = Anomaly.CAT_ROUTE[anomalies.cat_index]
+		if cat.position.distance_to(target) <= 7.0:
+			anomalies.cat_index = (anomalies.cat_index + 1) % Anomaly.CAT_ROUTE.size()
+			target = Anomaly.CAT_ROUTE[anomalies.cat_index]
+		cat.autonomous_destination = target
+		anomalies.cat_elapsed += delta
+		if anomalies.cat_elapsed >= 0.5:
+			anomalies.cat_elapsed = 0.0
+			anomalies.cat_history.append(cat.position)
+			var capacity := anomalies.cat_delay * 2 + 1
+			if anomalies.cat_history.size() >= capacity:
+				var prior: Vector2 = anomalies.cat_history[0]
+				if _anomaly_move(cat, prior, Anomaly.CAT_BOUNDS):
+					anomalies.cat_history.clear()
+				else:
+					anomalies.cat_history.pop_front()
+	else:
+		anomalies.cat_history.clear()
+		if cat != null:
+			cat.autonomous_destination = Vector2.INF
+	var rabbit := entities.get_entity(Anomaly.RABBIT) as EntityBody
+	if _anomaly_available(rabbit, Anomaly.RABBIT_BOUNDS):
+		var target: Vector2 = Anomaly.RABBIT_ROUTE[anomalies.rabbit_index]
+		if rabbit.position.distance_to(target) <= 7.0:
+			anomalies.rabbit_index = (anomalies.rabbit_index + 1) % Anomaly.RABBIT_ROUTE.size()
+			target = Anomaly.RABBIT_ROUTE[anomalies.rabbit_index]
+		rabbit.autonomous_destination = target
+		anomalies.rabbit_elapsed += delta
+		if anomalies.rabbit_elapsed >= 0.35:
+			anomalies.rabbit_elapsed = 0.0
+			anomalies.rabbit_echo = rabbit.position
+	else:
+		anomalies.rabbit_echo = Vector2.INF
+		if rabbit != null:
+			rabbit.autonomous_destination = Vector2.INF
+	if Edge.D2.merge(Edge.D3).grow(400.0).has_point(actor.position):
+		queue_redraw()
+
+
+func _edit_anomaly(target_id: String, key: String) -> bool:
+	# Recheck existing wand authorization on invocation, including reach.
+	if super.get_wand_editor_tabs(target_id).is_empty():
+		return false
+	var body := entities.get_entity(target_id) as EntityBody
+	if body == null:
+		return false
+	if target_id == Anomaly.FOX:
+		if key == "BLINK":
+			anomalies.blink = not anomalies.blink
+			return true
+		if key == "NOTICE":
+			var hostile: bool = body.get_parameter("luna_relation") != "HOSTILE"
+			if not request_wand_parameter_edit(target_id, "size", 1.5 if hostile else 0.85):
+				return false
+			return request_wand_parameter_edit(target_id, "luna_relation", "HOSTILE" if hostile else "NEUTRAL")
+	if target_id == Anomaly.CAT and key == "PAST":
+		var next := (Anomaly.CAT_DELAYS.find(anomalies.cat_delay) + 1) % Anomaly.CAT_DELAYS.size()
+		anomalies.cat_delay = Anomaly.CAT_DELAYS[next]
+		anomalies.cat_history.clear()
+		return true
+	return false
+
+
+func _draw_anomalies() -> void:
+	if anomalies.fox_echo_time > 0.0 and anomalies.fox_echo.is_finite():
+		draw_circle(anomalies.fox_echo - Vector2(0, 12), 9.0, Color(0.67, 0.53, 0.95, anomalies.fox_echo_time * 0.7))
+	if anomalies.rabbit_echo.is_finite():
+		draw_circle(anomalies.rabbit_echo - Vector2(0, 10), 7.0, Color(0.58, 0.81, 0.98, 0.28))
+
+
+func _tick_local_time(delta: float) -> void:
+	if not observation_fixture or not edge.time_owned:
+		return
+	if _forward_remaining > 0.0:
+		_forward_remaining = maxf(0.0, _forward_remaining - delta)
+		if _forward_remaining <= 0.0:
+			_stop_time_forward()
+	var address := _entity_location(actor.position)
+	if address != _time_address:
+		_time_address = address
+		_time_history.reset(make_snapshot())
+	elif _time_history.tick(delta):
+		_time_history.record(make_snapshot())
+
+
+func rewind_local_time(seconds: float = 5.0) -> bool:
+	if not edge.time_owned or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor) or _forward_remaining > 0.0 or actor.is_attached() or actor.has_passenger() or _time_address != _entity_location(actor.position):
+		return false
+	var past := _time_history.preview(seconds)
+	if past.is_empty():
+		return false
+	var candidate := make_snapshot()
+	var previous: Dictionary = past["world"]
+	var local := {}
+	for entry in previous["entities"]:
+		if entry["location_id"] == _time_address:
+			local[entry["id"]] = entry
+	var current_count := 0
+	for index in candidate["entities"].size():
+		var entry: Dictionary = candidate["entities"][index]
+		if entry["location_id"] != _time_address:
+			continue
+		current_count += 1
+		var old: Dictionary = local.get(entry["id"], {})
+		# A body or finite module that crossed a boundary is never recreated.
+		if old.is_empty() or old["category"] != entry["category"] or old.get("components", {}) != entry.get("components", {}) or old["attachment"] != entry["attachment"] or not entry["attachment"]["carrier_id"].is_empty():
+			return false
+		candidate["entities"][index] = old.duplicate(true)
+	if current_count != local.size() or not local.has(ENTITY_ID):
+		return false
+	if _time_address == Edge.SERVICE:
+		candidate["edge"]["elapsed"] = previous["edge"]["elapsed"]
+	# Keep discoveries, artifacts, world clock, foreign bodies and profile journal.
+	if not apply_snapshot(candidate):
+		return false
+	_time_address = _entity_location(actor.position)
+	_time_history.commit_rewind(float(past["time"]))
+	_time_history.reset(make_snapshot())
+	return true
+
+
+func start_time_forward() -> bool:
+	if not edge.time_owned or _forward_remaining > 0.0 or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor) or actor.is_attached() or actor.has_passenger():
+		return false
+	_forward_behavior = actor.get_parameter("behavior_mode")
+	if not actor.set_parameter("behavior_mode", "WANDER"):
+		return false
+	actor.set_parameter("control_source", "NONE")
+	actor.set_parameter("ai_enabled", true)
+	_forward_remaining = 6.0
+	return true
+
+
+func _stop_time_forward() -> void:
+	if not _forward_behavior.is_empty():
+		actor.set_parameter("behavior_mode", _forward_behavior)
+		actor.set_parameter("control_source", "PLAYER")
+		actor.set_parameter("ai_enabled", false)
+	_forward_remaining = 0.0
+	_forward_behavior = ""
+
+
 func _tick_edge(delta: float) -> void:
 	if not observation_fixture:
 		return
@@ -1740,7 +1957,7 @@ func _interact_edge() -> bool:
 		"Взять Кнопку времени":
 			edge.time_owned = true
 			queue_redraw()
-			$Interface/SaveNotice.text = "Получена Кнопка времени."
+			$Interface/SaveNotice.text = "Кнопка времени · F8: назад / F12: вперёд"
 			return true
 		"Взять Портал-ган":
 			edge.portal_owned = true
@@ -1859,6 +2076,7 @@ func toggle_camera_lock() -> bool:
 
 
 func return_to_luna() -> bool:
+	_stop_time_forward()
 	if not super.return_to_luna():
 		return false
 	highland.camera_mode = "FOLLOW"
@@ -3223,6 +3441,8 @@ func _physics_process(delta: float) -> void:
 		_tick_antimemetic(world_clock.sim_delta(delta))
 		_sync_highland_forces()
 		_tick_edge(delta)
+		_tick_anomalies(world_clock.sim_delta(delta))
+		_tick_local_time(delta)
 		if _mountain_echo > 0.0:
 			_mountain_echo = maxf(0.0, _mountain_echo - delta)
 			queue_redraw()
@@ -3817,6 +4037,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_P:
 			if toggle_prism():
 				get_viewport().set_input_as_handled()
+		KEY_F12:
+			if start_time_forward():
+				get_viewport().set_input_as_handled()
+		KEY_F8:
+			if rewind_local_time():
+				get_viewport().set_input_as_handled()
 		KEY_F10:
 			if place_portal(0):
 				get_viewport().set_input_as_handled()
@@ -3953,6 +4179,12 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 	var tabs := super.get_wand_editor_tabs(target_id)
 	if target_id == Administrator.ID and not tabs.is_empty():
 		return {} if tabs["Отношения"].is_empty() else {"Отношения": tabs["Отношения"]}
+	if not tabs.is_empty() and target_id == Anomaly.FOX:
+		var fox := entities.get_entity(target_id) as EntityBody
+		tabs["Разум"].append({"id": "GLITCH_WHERE", "label": "ГДЕ ОНА СЕЙЧАС?", "kind": "action", "value": "НЕ ЗДЕСЬ" if anomalies.blink else "ЗДЕСЬ", "action": func(): return _edit_anomaly(target_id, "BLINK")})
+		tabs["Разум"].append({"id": "GLITCH_NOTICE", "label": "ОНО ТЕБЯ ЗАМЕТИЛО", "kind": "action", "value": str(fox.get_parameter("luna_relation") == "HOSTILE"), "action": func(): return _edit_anomaly(target_id, "NOTICE")})
+	if not tabs.is_empty() and target_id == Anomaly.CAT:
+		tabs["Разум"].append({"id": "RETURN_PAST", "label": "КОГДА ОН БЫЛ ЗДЕСЬ?", "kind": "action", "value": "%d с" % anomalies.cat_delay, "action": func(): return _edit_anomaly(target_id, "PAST")})
 	if not tabs.is_empty():
 		for rule in yuki.rules:
 			if rule["host"] == target_id:
@@ -4014,6 +4246,13 @@ func _toggle_debug_editor() -> void:
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
 	data["address_schema"] = ADDRESS_SCHEMA
+	# FORWARD is a transient autonomy lease. Disk/recovery saves preserve the
+	# physical result but return the player to ordinary input on restoration.
+	if not _forward_behavior.is_empty():
+		for entry in data["entities"]:
+			if entry["id"] == ENTITY_ID:
+				entry["control"] = {"ai_enabled": false, "control_source": "PLAYER"}
+				entry["editor"]["behavior_mode"] = _forward_behavior
 	if observation_fixture:
 		data["observation_layout"] = 1
 	if ecology_fixture:
@@ -4067,6 +4306,8 @@ func make_snapshot() -> Dictionary:
 		data["highland_layout"] = 1
 		data["highland"] = highland.snapshot()
 		data["edge"] = edge.snapshot()
+		data["anomaly_layout"] = 1
+		data["anomalies"] = anomalies.snapshot()
 		data["oni_route_index"] = oni_route_index
 		data["flute_owned"] = flute_owned
 		data["prism_active"] = prism_active
@@ -4139,6 +4380,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 		if next_recalled and entry.get("attachment") is Dictionary and entry["attachment"].get("carrier_id") == TAMAGOTCHI_PET:
 			return false
 	if pet_count > 1 or (next_recalled and (pet_count != 1 or next_tools.stamped.has(TAMAGOTCHI_PET) or next_yuki.rules.any(func(rule): return rule["host"] == TAMAGOTCHI_PET))):
+		return false
+	var next_anomalies := Anomaly.new()
+	if not next_anomalies.restore(data.get("anomalies", next_anomalies.snapshot())):
 		return false
 	var next_edge := EdgeState.new()
 	if not next_edge.restore(data.get("edge", next_edge.snapshot())) or not _valid_edge_anchor(next_edge.portal_a) or not _valid_edge_anchor(next_edge.portal_b):
@@ -4400,6 +4644,16 @@ func apply_snapshot(data: Dictionary) -> bool:
 					candidate["entities"].append(initial.duplicate(true))
 		elif candidate["highland_layout"] != 1:
 			return false
+	if observation_fixture:
+		if not candidate.has("anomaly_layout"):
+			if _initial_anomaly_states.size() != Anomaly.DEFINITIONS.size():
+				return false
+			candidate = candidate.duplicate(true)
+			for initial in _initial_anomaly_states:
+				if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
+					candidate["entities"].append(initial.duplicate(true))
+		elif candidate["anomaly_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -4470,6 +4724,10 @@ func apply_snapshot(data: Dictionary) -> bool:
 	antimemetic = next_am
 	highland = next_highland
 	edge = next_edge
+	anomalies = next_anomalies
+	_forward_remaining = 0.0
+	_forward_behavior = ""
+	_time_address = ""
 	ghost_offer = ""
 	_tick_edge(0.0)
 	_mountain_echo = 0.0
@@ -4643,6 +4901,10 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
 	if observation_fixture:
+		for definition in Anomaly.DEFINITIONS:
+			var anomalous: EntityBody = candidates.get(definition["id"])
+			if anomalous == null or anomalous.record.category != definition["category"]:
+				return false
 		for id in [Mountain.ORACLE_ID, Mountain.RAY_ID]:
 			var highland_resident: EntityBody = candidates.get(id)
 			if highland_resident == null or highland_resident.record.category != ("oracle" if id == Mountain.ORACLE_ID else "ray"):
@@ -4809,6 +5071,7 @@ func _draw() -> void:
 		_draw_antimemetic()
 		Mountain.draw_on(self, highland.compass_owned, highland.camera_owned, actor.position, prism_active, _mountain_echo)
 		Edge.draw_on(self, edge.elapsed, edge.time_owned, edge.portal_owned)
+		_draw_anomalies()
 		for endpoint in [edge.portal_a, edge.portal_b]:
 			if endpoint.size() == 2:
 				draw_arc(Vector2(endpoint[0], endpoint[1]) - Vector2(0, 15), 18.0, 0, TAU, 32, Color("dfa5f7"), 3.0)
