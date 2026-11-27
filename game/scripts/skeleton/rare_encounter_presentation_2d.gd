@@ -16,10 +16,16 @@ static func draw_on(canvas: Node2D, identity: String, anchor: Vector2, elapsed: 
 		canvas.draw_line(anchor, hand, ink, 3.0 * size)
 		canvas.draw_arc(anchor, 8.0 + 16.0 * t, 0.0, TAU, 24, Color(0.65, 0.9, 0.9, 0.25 * fade), 1.0)
 	elif identity == Director.HAND:
-		var envelope := sin(t * PI)
-		var reach := 13.0 * envelope
-		canvas.draw_line(anchor + Vector2(0, -12) * envelope, anchor + Vector2(0, 12) * envelope, Color(0.19, 0.12, 0.31, envelope), 4.0)
-		# Abstract hand and sleeve only; final character appearance is deferred.
-		if t > 0.2 and t < 0.8:
-			canvas.draw_line(anchor, anchor + Vector2(reach, -3), Color(0.75, 0.69, 0.85, envelope), 4.0)
-			canvas.draw_circle(anchor + Vector2(reach, -3), 3.0, Color(0.9, 0.83, 0.91, envelope))
+		var opening := smoothstep(0.04, 0.24, t) * (1.0 - smoothstep(0.63, 0.82, t))
+		var reach := smoothstep(0.18, 0.37, t) * (1.0 - smoothstep(0.57, 0.70, t))
+		if opening > 0.0:
+			canvas.draw_line(anchor + Vector2(0, -13) * opening, anchor + Vector2(0, 13) * opening,
+				Color(0.29, 0.23, 0.43, opening), 3.0)
+		if reach > 0.0:
+			var end := anchor + Vector2(16.0 * reach, -3.0 * reach)
+			canvas.draw_line(anchor, end, Color(0.75, 0.69, 0.85, opening), 4.0, true)
+			canvas.draw_circle(end, 3.0 * reach, Color(0.9, 0.83, 0.91, opening))
+		if t > 0.70:
+			var ripple := smoothstep(0.70, 1.0, t)
+			canvas.draw_arc(anchor, 5.0 + 14.0 * ripple, 0.0, TAU, 20,
+				Color(0.73, 0.66, 0.87, 0.30 * (1.0 - ripple)), 1.0, true)

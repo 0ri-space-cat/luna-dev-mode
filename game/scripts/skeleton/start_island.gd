@@ -111,6 +111,7 @@ const LAKE_STONE_ID := "W6_SHORE_STONE"
 const Crystal = preload("res://scripts/skeleton/crystal_observation_layout.gd")
 const W8 = preload("res://scripts/skeleton/underside_refuge_layout.gd")
 const BackdropRoute = preload("res://scripts/skeleton/interior_backdrop_2d.gd")
+const StaticRoomView = preload("res://scripts/skeleton/static_room_view_2d.gd")
 const Gaze = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const Solidity = preload("res://scripts/runtime2d/observation_body_2d.gd")
 const Tunnel = preload("res://scripts/skeleton/waterfall_tunnel_layout.gd")
@@ -196,6 +197,8 @@ var public_ride_requested: Callable
 var desktop_requested: Callable
 # Only an author-designated room may configure this. Default Adventure has none.
 var backdrop_route: BackdropRoute
+var _room_view: StaticRoomView
+var _outdoor_camera_zoom := Vector2(1.25, 1.25)
 const WindowFrame = preload("res://scripts/skeleton/window_frame_2d.gd")
 var game_mode := "FULLSCREEN"
 var game_frame_solid := true
@@ -474,6 +477,12 @@ func _editor_parent() -> Node:
 
 func _ready() -> void:
 	_setup_window_frame()
+	if observation_fixture:
+		_room_view = StaticRoomView.new()
+		_room_view.camera = _camera
+		_room_view.hide()
+		$Interface.add_child(_room_view)
+		$Interface.move_child(_room_view, 0)
 	_setup_profile_panel()
 	wand_pair.original = projection
 	world_clock.minute_changed.connect(_update_world_light)
@@ -2637,6 +2646,8 @@ func _frame_world_bounds() -> Rect2:
 
 
 func _frame_edit_allowed() -> bool:
+	if _room_view != null and _room_view.visible:
+		return false
 	if not desktop_requested.is_valid() or game_mode != "WINDOWED" or highland.camera_mode != "LOCKED" or not highland.camera_owned or access.wand_mode != AccessState.DEVELOPER or not actor.motion.grounded or actor.is_attached() or actor.has_passenger() or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
 	var bounds := _frame_world_bounds()
@@ -2661,7 +2672,8 @@ func _on_frame_switch(value: bool) -> void:
 
 func _tick_window_frame() -> bool:
 	_update_window_visual()
-	if game_mode != "WINDOWED" or highland.camera_mode != "LOCKED" or not highland.camera_owned:
+	if game_mode != "WINDOWED" or highland.camera_mode != "LOCKED" or not highland.camera_owned \
+			or (_room_view != null and _room_view.visible):
 		_frame_previous = Vector2.INF
 		game_frame_solid = true
 		return false
@@ -2704,6 +2716,8 @@ func toggle_camera_lock() -> bool:
 	if not highland.camera_owned or is_instance_valid(_debug_editor) or not (actor as EntityBody).accepts_player_input():
 		return false
 	if highland.camera_mode == "FOLLOW":
+		if _room_view != null and _room_view.visible:
+			return false
 		_update_local_camera()
 		_camera.reset_smoothing()
 		_camera.force_update_scroll()
@@ -4588,17 +4602,29 @@ func _physics_process(delta: float) -> void:
 
 func _update_local_camera() -> void:
 	_sync_c6_facade()
-	if highland.camera_owned and highland.camera_mode == "LOCKED":
+	var room := Rect2()
+	if _room_view != null:
+		for candidate in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP, RuneRoom.KEY_ROOM, FairyBranch.ROOM]:
+			if candidate.has_point(actor.position):
+				room = candidate
+				break
+	var changed_room := _room_view != null and room != _room_view.bounds
+	if room.has_area():
+		if changed_room and not _room_view.bounds.has_area():
+			_outdoor_camera_zoom = _camera.zoom
+		_camera.position = room.get_center()
+		_camera.zoom = Vector2(2.25, 2.25)
+	elif highland.camera_mode == "LOCKED" and highland.camera_owned:
 		_camera.position = highland.camera_lock
-		return
-	if observation_fixture:
-		for room in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP, RuneRoom.KEY_ROOM, FairyBranch.ROOM]:
-			if room.has_point(actor.position):
-				_camera.position = room.get_center()
-				_camera.zoom = Vector2(2.25, 2.25)
-				return
-	_camera.position = actor.position
-	_camera.zoom = Vector2(1.25, 1.25)
+		if changed_room:
+			_camera.zoom = _outdoor_camera_zoom
+	else:
+		_camera.position = actor.position
+		_camera.zoom = Vector2(1.25, 1.25)
+	if changed_room:
+		_room_view.set_room(room)
+		_camera.reset_smoothing()
+		_camera.force_update_scroll()
 
 
 func _apply_keyboard_input() -> void:
