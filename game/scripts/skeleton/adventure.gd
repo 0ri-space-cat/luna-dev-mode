@@ -39,6 +39,7 @@ var _manual: Dictionary = {}
 var _continuity: Dictionary = {}
 var _interrupted: Dictionary = {}
 var _away := false
+var white_discovered := false
 var _guest_save: Dictionary = {}
 var _recovery_only := false
 var _ready_for_play := false
@@ -61,6 +62,7 @@ func _ready() -> void:
 	home.frost_cast.connect(_on_frost_cast)
 	home.wand_mode_requested = _commit_wand_mode
 	home.public_ride_requested = _start_public_ride
+	home.desktop_requested = _start_desktop_visit
 	home.ghost_ride_requested = _start_ghost_ride
 	home.commands.parameter_changed.connect(_on_parameter_changed)
 	home.commands.component_changed.connect(_on_component_changed)
@@ -300,7 +302,7 @@ func _assess_ecology() -> void:
 
 
 func _has_persistent_history() -> bool:
-	return journal.serial > 0 or not ecology.episodes.is_empty() or not ecology.help.is_empty() \
+	return white_discovered or journal.serial > 0 or not ecology.episodes.is_empty() or not ecology.help.is_empty() \
 		or not ecology.exposures.is_empty() or observations.wakes > 0 or observations.forest_count > 0 \
 		or not observations.pending.is_empty() or not observations.delivered.is_empty()
 
@@ -425,7 +427,7 @@ func _on_ancient_command(command: String, argument: String) -> void:
 		match command:
 			"TELEPORT":
 				if argument == OuterRoutes.WHITE_ADDRESS:
-					succeeded = _visit_white_void()
+					succeeded = white_discovered and _visit_white_void()
 				else:
 					succeeded = home.teleport_known_location(argument)
 					if succeeded:
@@ -447,7 +449,44 @@ func _on_ancient_command(command: String, argument: String) -> void:
 		console.reject()
 
 
+func _start_desktop_visit() -> bool:
+	if _away or _simulation_suspended() or not _interrupted.is_empty() or home.game_mode != "WINDOWED" or home.game_frame_solid or not home._frame_edit_allowed():
+		return false
+	var checkpoint := home.make_snapshot()
+	if not _activate_guest(OuterRoutes.DESKTOP):
+		return false
+	var guest := outer.make_snapshot()
+	if not _write_profile(journal, _manual, checkpoint, {}, true, guest):
+		_reactivate_home(checkpoint)
+		return false
+	_continuity = checkpoint
+	_guest_save = guest
+	_away = true
+	return true
+
+
+func _discover_white_from_desktop() -> bool:
+	if not _away or _simulation_suspended() or not is_instance_valid(outer) or outer.hosted_entry != OuterRoutes.DESKTOP or outer.current_address != OuterRoutes.DESKTOP or not outer.at_desktop_exit():
+		return false
+	var before := outer.make_snapshot()
+	var known := white_discovered
+	if not outer._move_to_address(OuterRoutes.WHITE_ADDRESS):
+		return false
+	outer.hosted_entry = OuterRoutes.WHITE_ADDRESS
+	white_discovered = true
+	var guest := outer.make_snapshot()
+	if not _write_profile(journal, _manual, _continuity, {}, true, guest):
+		white_discovered = known
+		outer.hosted_entry = OuterRoutes.DESKTOP
+		outer.apply_snapshot(before)
+		return false
+	_guest_save = guest
+	return true
+
+
 func _visit_white_void(saved_guest: Dictionary = {}) -> bool:
+	if not white_discovered and saved_guest.is_empty():
+		return false
 	if not home.can_return_traveler(home.actor.position, home.actor.motion.elevation):
 		return false
 	var checkpoint := home.make_snapshot()
@@ -544,6 +583,8 @@ func _activate_guest(address: String) -> bool:
 	guest.process_mode = Node.PROCESS_MODE_PAUSABLE
 	guest.hosted_entry = address
 	guest.return_to_host = _return_to_home
+	if address == OuterRoutes.DESKTOP:
+		guest.desktop_exit = _discover_white_from_desktop
 	if address in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
 		guest.public_arrival = _finish_public_ride
 	add_child(guest)
@@ -584,7 +625,7 @@ func _reactivate_home(checkpoint: Dictionary) -> void:
 			continue
 		var point := Vector2(entity["position"][0], entity["position"][1])
 		var height := float(entity["motion"]["elevation"])
-		if outer.hosted_entry == OuterRoutes.WHITE_ADDRESS and not home.can_return_traveler(point, height):
+		if outer.hosted_entry in [OuterRoutes.WHITE_ADDRESS, OuterRoutes.DESKTOP] and not home.can_return_traveler(point, height):
 			point = Island.AncientConsole.RETURN_POINT
 			height = 0.0
 			if not home.can_return_traveler(point, height):
@@ -619,7 +660,7 @@ func save_game() -> bool:
 	if _away and outer.hosted_entry == OuterRoutes.WHITE_ADDRESS:
 		manual = checkpoint.duplicate(true)
 		manual["white_visit"] = guest
-	elif _away and outer.hosted_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
+	elif _away and outer.hosted_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY, OuterRoutes.DESKTOP]:
 		manual = checkpoint.duplicate(true)
 		manual["public_visit"] = {"entry": outer.hosted_entry, "guest": guest}
 	if not _write_profile(journal, manual, checkpoint, {}, _away, guest):
@@ -652,7 +693,7 @@ func load_game() -> bool:
 
 func _load_saved_public_visit(checkpoint: Dictionary) -> bool:
 	var visit: Variant = checkpoint.get("public_visit")
-	if not visit is Dictionary or visit.get("entry") not in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY] \
+	if not visit is Dictionary or visit.get("entry") not in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY, OuterRoutes.DESKTOP] \
 			or not visit.get("guest") is Dictionary or visit["guest"].is_empty():
 		return false
 	var previous := home.make_snapshot()
@@ -721,6 +762,9 @@ func _overlay_wand_mode(checkpoint: Dictionary, source: Journal) -> void:
 
 func _restore_profile(profile: Dictionary) -> bool:
 	var candidate := Journal.new()
+	var discovered: Variant = profile.get("white_discovered", false)
+	if not discovered is bool:
+		return false
 	if profile.get("kind") != PROFILE_KIND or not candidate.restore(profile.get("journal")) \
 			or not profile.get("state") is Dictionary or not profile.get("manual") is Dictionary \
 			or not profile.get("interrupted") is Dictionary or not profile.get("away") is bool:
@@ -737,7 +781,7 @@ func _restore_profile(profile: Dictionary) -> bool:
 	var guest_entry: Variant = profile.get("guest_entry", OuterRoutes.BLACK_VOID if away else "")
 	if interrupted.is_empty() != candidate.pending.is_empty() \
 			or (away and (not interrupted.is_empty() or continuity.is_empty() \
-				or guest_entry not in [OuterRoutes.BLACK_VOID, OuterRoutes.WHITE_ADDRESS, OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY])) \
+				or guest_entry not in [OuterRoutes.BLACK_VOID, OuterRoutes.WHITE_ADDRESS, OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY, OuterRoutes.DESKTOP])) \
 			or (guest_entry == OuterRoutes.BLACK_VOID and candidate.applied != 2) \
 			or (not away and guest_entry != ""):
 		return false
@@ -759,6 +803,7 @@ func _restore_profile(profile: Dictionary) -> bool:
 	_continuity = checkpoint if interrupted.is_empty() and not source.is_empty() else continuity
 	_interrupted = checkpoint if not interrupted.is_empty() else interrupted
 	_away = profile["away"]
+	white_discovered = discovered
 	journal = candidate
 	ecology = candidate_ecology
 	observations = candidate_observations
@@ -769,10 +814,10 @@ func _restore_profile(profile: Dictionary) -> bool:
 			if outer.apply_snapshot(guest_save):
 				_guest_save = guest_save
 			else:
-				if guest_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
+				if guest_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY, OuterRoutes.DESKTOP]:
 					return _return_to_home()
 				_notice("Восстановлена безопасная точка прибытия")
-		elif guest_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY]:
+		elif guest_entry in [OuterRoutes.MEADOWS, OuterRoutes.LUMA, OuterRoutes.GHOST_ENTRY, OuterRoutes.DESKTOP]:
 			return _return_to_home()
 		return true
 	if not _interrupted.is_empty():
@@ -868,7 +913,7 @@ func _write_profile(current: Journal, manual: Dictionary, state: Dictionary, int
 		away: bool, guest: Dictionary = {}) -> bool:
 	return _profile_valid and _store.write_snapshot({"format": Store.FORMAT, "kind": PROFILE_KIND,
 		"journal": current.snapshot(), "ecology": ecology.snapshot(), "observations": observations.snapshot(),
-		"manual": manual, "state": state,
+		"manual": manual, "state": state, "white_discovered": white_discovered,
 		"away": away, "interrupted": interrupted, "guest": guest,
 		"guest_entry": outer.hosted_entry if away else ""}, profile_path)
 

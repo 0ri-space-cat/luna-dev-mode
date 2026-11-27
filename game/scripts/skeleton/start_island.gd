@@ -168,6 +168,14 @@ var oni_route_index := 0
 var _initial_oni: Dictionary = {}
 var _initial_city_states: Array[Dictionary] = []
 var public_ride_requested: Callable
+var desktop_requested: Callable
+const WindowFrame = preload("res://scripts/skeleton/window_frame_2d.gd")
+var game_mode := "FULLSCREEN"
+var game_frame_solid := true
+var _window_frame: WindowFrame
+var _frame_panel: PanelContainer
+var _frame_switch: CheckButton
+var _frame_previous := Vector2.INF
 var city_bench_active := true
 var city_bench_step := 0
 var city_bench_observed := false
@@ -417,6 +425,7 @@ func _editor_parent() -> Node:
 
 
 func _ready() -> void:
+	_setup_window_frame()
 	wand_pair.original = projection
 	world_clock.minute_changed.connect(_update_world_light)
 	_ice_duration.active_changed.connect(_update_ice_support)
@@ -2205,6 +2214,107 @@ func cycle_compass() -> bool:
 	return true
 
 
+func _setup_window_frame() -> void:
+	_window_frame = WindowFrame.new()
+	var layer := CanvasLayer.new()
+	layer.layer = 0
+	add_child(layer)
+	layer.add_child(_window_frame)
+	_frame_panel = PanelContainer.new()
+	_frame_panel.position = Vector2(430, 340)
+	_frame_panel.custom_minimum_size = Vector2(270, 56)
+	_frame_switch = CheckButton.new()
+	_frame_switch.text = "GAME_FRAME"
+	_frame_switch.button_pressed = true
+	_frame_switch.toggled.connect(_on_frame_switch)
+	_frame_panel.add_child(_frame_switch)
+	$Interface.add_child(_frame_panel)
+	_frame_panel.hide()
+
+
+func set_game_mode(mode: String) -> bool:
+	if mode not in ["FULLSCREEN", "WINDOWED"] or not (actor as EntityBody).accepts_player_input():
+		return false
+	game_mode = mode
+	_reset_window_frame()
+	_update_window_visual()
+	return true
+
+
+func _reset_window_frame() -> void:
+	game_frame_solid = true
+	_frame_previous = Vector2.INF
+	if is_instance_valid(_frame_panel):
+		_frame_panel.hide()
+
+
+func _update_window_visual() -> void:
+	if is_instance_valid(_window_frame):
+		_window_frame.active = game_mode == "WINDOWED"
+		_window_frame.solid = game_frame_solid
+		_window_frame.queue_redraw()
+
+
+func _frame_world_bounds() -> Rect2:
+	_camera.force_update_scroll()
+	var extent := _camera.get_viewport_rect().size / _camera.zoom
+	return Rect2(_camera.get_screen_center_position() - extent * (Vector2.ONE * 0.5 - WindowFrame.INSET), extent * (Vector2.ONE - WindowFrame.INSET * 2.0))
+
+
+func _frame_edit_allowed() -> bool:
+	if not desktop_requested.is_valid() or game_mode != "WINDOWED" or highland.camera_mode != "LOCKED" or not highland.camera_owned or access.wand_mode != AccessState.DEVELOPER or not actor.motion.grounded or actor.is_attached() or actor.has_passenger() or not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
+		return false
+	var bounds := _frame_world_bounds()
+	var point: Vector2 = actor.position - Vector2(0, actor.motion.elevation)
+	return bounds.grow(2.0).has_point(point) and not bounds.grow(-actor.foot_radius() - 35.0).has_point(point)
+
+
+func set_game_frame_solid(value: bool) -> bool:
+	if not _frame_edit_allowed():
+		return false
+	game_frame_solid = value
+	_update_window_visual()
+	return true
+
+
+func _on_frame_switch(value: bool) -> void:
+	if set_game_frame_solid(value):
+		_frame_panel.hide()
+	else:
+		_frame_switch.set_pressed_no_signal(game_frame_solid)
+
+
+func _tick_window_frame() -> bool:
+	_update_window_visual()
+	if game_mode != "WINDOWED" or highland.camera_mode != "LOCKED" or not highland.camera_owned:
+		_frame_previous = Vector2.INF
+		game_frame_solid = true
+		return false
+	if access.wand_mode != AccessState.DEVELOPER:
+		game_frame_solid = true
+	var bounds := _frame_world_bounds()
+	var current: Vector2 = actor.position - Vector2(0, actor.motion.elevation)
+	var previous := _frame_previous
+	_frame_previous = current
+	if previous == Vector2.INF or not bounds.has_point(previous) or previous.distance_to(current) > 64.0 or not actor.motion.grounded or actor.is_attached() or actor.has_passenger() or not (actor as EntityBody).accepts_player_input():
+		return false
+	if bounds.has_point(current):
+		return false
+	var inside := current.clamp(bounds.position + Vector2.ONE, bounds.end - Vector2.ONE)
+	var safe := inside + Vector2(0, actor.motion.elevation)
+	if not can_return_traveler(safe, actor.motion.elevation):
+		return false
+	actor.position = safe
+	actor.motion.reset_on_surface(safe, actor.motion.elevation)
+	_frame_previous = inside
+	if not game_frame_solid and access.wand_mode == AccessState.DEVELOPER and desktop_requested.is_valid():
+		if desktop_requested.call():
+			_reset_window_frame()
+			return true
+	actor._impulse_velocity = Vector2.ZERO
+	return false
+
+
 func toggle_camera_lock() -> bool:
 	if not highland.camera_owned or is_instance_valid(_debug_editor) or not (actor as EntityBody).accepts_player_input():
 		return false
@@ -2213,6 +2323,7 @@ func toggle_camera_lock() -> bool:
 		highland.camera_mode = "LOCKED"
 	else:
 		highland.camera_mode = "FOLLOW"
+	_reset_window_frame()
 	_update_local_camera()
 	_camera.reset_smoothing()
 	_sync_mountain_bridge()
@@ -2224,6 +2335,7 @@ func return_to_luna() -> bool:
 	if not super.return_to_luna():
 		return false
 	highland.camera_mode = "FOLLOW"
+	_reset_window_frame()
 	_update_local_camera()
 	_camera.reset_smoothing()
 	_sync_mountain_bridge()
@@ -3516,6 +3628,10 @@ func _configure_body(body: ElevationBody, entity_id: String) -> void:
 
 
 func set_home_active(active: bool) -> void:
+	if is_instance_valid(_window_frame):
+		_window_frame.visible = active
+	if not active:
+		_reset_window_frame()
 	if not active and ancient_console != null:
 		ancient_console.close()
 	if not active and is_instance_valid(_yuki_panel):
@@ -3730,6 +3846,8 @@ func _physics_process(delta: float) -> void:
 		forest_bank_left.emit()
 	_was_at_bank = at_bank
 	_update_local_camera()
+	if _tick_window_frame():
+		return
 	_sync_mountain_bridge()
 	var find_visibility := Vector2i(
 		int(actor.motion.elevation >= SecretFinds.GRAVITY_HEIGHT and actor.position.distance_to(SecretFinds.GRAVITY_POINT) < 75.0),
@@ -3768,6 +3886,7 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Z: Тамагочи"
 	if antimemetic.stage > 0:
 		_status.text += "  ·  F3: Фонарь" + (" ✓" if antimemetic.active else "")
+	_status.text += "  ·  F1: " + game_mode
 	if highland.camera_owned:
 		_status.text += "  ·  F4: " + highland.camera_mode
 	if highland.compass_owned:
@@ -3794,6 +3913,9 @@ func _update_local_camera() -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if is_instance_valid(_frame_panel) and _frame_panel.visible:
+		apply_player_input(Vector2.ZERO)
+		return
 	if is_instance_valid(_tamagotchi_panel) and _tamagotchi_panel.visible:
 		apply_player_input(Vector2.ZERO)
 		return
@@ -4289,7 +4411,15 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_ESCAPE, KEY_M: _set_music_focus(false)
 		get_viewport().set_input_as_handled()
 		return
+	if is_instance_valid(_frame_panel) and _frame_panel.visible:
+		if event.keycode == KEY_ESCAPE:
+			_frame_panel.hide()
+		get_viewport().set_input_as_handled()
+		return
 	match event.keycode:
+		KEY_F1:
+			if set_game_mode("WINDOWED" if game_mode == "FULLSCREEN" else "FULLSCREEN"):
+				get_viewport().set_input_as_handled()
 		KEY_O:
 			if use_luna_door():
 				get_viewport().set_input_as_handled()
@@ -4370,6 +4500,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			if cycle_hourglass():
 				get_viewport().set_input_as_handled()
 		KEY_TAB:
+			if _frame_edit_allowed():
+				_frame_switch.set_pressed_no_signal(game_frame_solid)
+				_frame_panel.show()
+				_frame_switch.grab_focus()
+				get_viewport().set_input_as_handled()
+				return
 			if not _can_hack_second_wand() or not get_wand_editor_tabs(Administrator.ID).is_empty():
 				_toggle_debug_editor()
 			get_viewport().set_input_as_handled()
@@ -4535,6 +4671,7 @@ func _toggle_debug_editor() -> void:
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
 	data["address_schema"] = ADDRESS_SCHEMA
+	data["game_mode"] = game_mode
 	# FORWARD is a transient autonomy lease. Disk/recovery saves preserve the
 	# physical result but return the player to ordinary input on restoration.
 	if not _forward_behavior.is_empty():
@@ -4615,6 +4752,9 @@ func make_snapshot() -> Dictionary:
 
 
 func apply_snapshot(data: Dictionary) -> bool:
+	var next_game_mode: Variant = data.get("game_mode", "FULLSCREEN")
+	if next_game_mode not in ["FULLSCREEN", "WINDOWED"]:
+		return false
 	var schema: Variant = data.get("address_schema", 0)
 	if typeof(schema) not in [TYPE_INT, TYPE_FLOAT] or float(schema) not in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, float(ADDRESS_SCHEMA)]:
 		return false
@@ -5019,6 +5159,9 @@ func apply_snapshot(data: Dictionary) -> bool:
 				if not previous_edge_surfaces.has(surface):
 					_surfaces.erase(surface)
 		return false
+	game_mode = next_game_mode
+	_reset_window_frame()
+	_update_window_visual()
 	city_tools = next_tools
 	luna_door_session = next_door
 	_tick_stamps(0.0)

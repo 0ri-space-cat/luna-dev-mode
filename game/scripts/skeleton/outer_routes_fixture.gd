@@ -16,6 +16,8 @@ const BLACK_VOID := "DEV_OUTER_BLACK_VOID"
 const GHOST_ENTRY := "P04_NIGHT_STATION"
 const HOUSE_04 := "ET_LUMA_RES_04"
 const WHITE_ADDRESS := "META_WHITE_VOID"
+const DESKTOP := "DEV_VIRTUAL_DESKTOP"
+const DESKTOP_EXIT := Rect2(1000, 330, 90, 230)
 const ORDINARY_STOPS := [MEADOWS, LUMA, COAST]
 const FRAME := Rect2(108, 184, 1064, 432)
 const RIDE_SECONDS := 6.0
@@ -36,6 +38,8 @@ var crack_elapsed := 0.0
 var cracking := false
 var _drift := Vector2.ZERO
 var return_to_host: Callable
+var desktop_exit: Callable
+var _desktop_previous := Vector2.INF
 var public_arrival: Callable
 var hosted_entry := BLACK_VOID
 
@@ -60,7 +64,7 @@ func _ready() -> void:
 		_address_input.text_submitted.connect(_submit_address)
 		if not router.load_catalog_json(_catalog_path()):
 			_startup_error(router.last_error)
-		if hosted_entry == WHITE_ADDRESS:
+		if hosted_entry in [WHITE_ADDRESS, DESKTOP]:
 			$Interface/Controls.text = "WASD / стрелки · движение    E · действие"
 			for label: Label in [$Interface/Controls, _status, _action_hint, _feedback]:
 				label.add_theme_color_override("font_color", Color("4b415b"))
@@ -127,7 +131,7 @@ func _can_place(room: Room, point: Vector2) -> bool:
 
 
 func _can_restore_at(room: Room, body: ElevationBody) -> bool:
-	if return_to_host.is_valid() and hosted_entry == WHITE_ADDRESS:
+	if return_to_host.is_valid() and hosted_entry in [WHITE_ADDRESS, DESKTOP]:
 		return _can_place(room, body.position)
 	return (room as RouteRoom).travel_bounds.grow(4.0).has_point(body.position)
 
@@ -292,7 +296,7 @@ func use_route() -> bool:
 			if public_arrival.is_valid():
 				return public_arrival.call(EDGE)
 			return _at_action() and _move_to_address(COAST)
-		WHITE_ADDRESS:
+		WHITE_ADDRESS, DESKTOP:
 			return _at_action() and return_to_host.is_valid() and return_to_host.call()
 		BLACK_VOID:
 			if _at_action():
@@ -363,7 +367,7 @@ func _physics_process(delta: float) -> void:
 	world_clock.advance(delta)
 	if world_clock.phase() != Clock.Phase.NIGHT:
 		exploration.station_ghost = ""
-	var margin := actor.motion.safe_margin + 1.0 if current_address == WHITE_ADDRESS else 1.0
+	var margin := actor.motion.safe_margin + 1.0 if current_address in [WHITE_ADDRESS, DESKTOP] else 1.0
 	var bounds := (_room as RouteRoom).travel_bounds.grow(-margin)
 	actor.position = actor.position.clamp(bounds.position, bounds.end)
 	var input := _keyboard_movement().limit_length() if keyboard else Vector2.ZERO
@@ -381,7 +385,16 @@ func _physics_process(delta: float) -> void:
 			if keyboard:
 				_apply_keyboard_input()
 			_remember_safe_point()
+	if current_address == DESKTOP:
+		var previous := _desktop_previous
+		_desktop_previous = actor.position
+		if previous != Vector2.INF and previous.distance_to(actor.position) <= 64.0 and not DESKTOP_EXIT.has_point(previous) and at_desktop_exit() and desktop_exit.is_valid():
+			desktop_exit.call()
 	_update_interface()
+
+
+func at_desktop_exit() -> bool:
+	return current_address == DESKTOP and actor.motion.grounded and DESKTOP_EXIT.has_point(actor.position)
 
 
 func _tick_frame(delta: float, input: Vector2) -> void:
@@ -477,6 +490,7 @@ func _update_interface() -> void:
 			_status.text = "Дом №04"
 		WHITE_ADDRESS:
 			_status.text = "Белая Пустота"
+	$Interface.visible = current_address not in [DESKTOP, WHITE_ADDRESS]
 	_action_hint.text = _contextual_action()
 
 
@@ -530,7 +544,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_exploration := VoidExploration.new()
 	var address: Variant = data.get("address")
 	var white_visit := return_to_host.is_valid() and hosted_entry == WHITE_ADDRESS
-	if (address == WHITE_ADDRESS) != white_visit:
+	if (address == WHITE_ADDRESS) != white_visit or (address == DESKTOP) != (return_to_host.is_valid() and hosted_entry == DESKTOP):
 		return false
 	if return_to_host.is_valid() and hosted_entry == GHOST_ENTRY and address != BLACK_VOID:
 		return false
@@ -558,6 +572,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	exploration = next_exploration
 	_record_text = ""
+	_desktop_previous = Vector2.INF
 	last_safe_address = safe["address"]
 	last_safe_point = safe_point
 	world_clock.restore(clock.snapshot())

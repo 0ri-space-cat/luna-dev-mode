@@ -7,6 +7,7 @@
     {"id": "DEV_OUTER_SUBSPACE", "scene": "res://scenes/skeleton/outer_routes/subspace.tscn", "entries": {"entry": [640, 582]}},
     {"id": "DEV_OUTER_EDGE", "scene": "res://scenes/skeleton/outer_routes/edge.tscn", "entries": {"entry": [250, 432]}},
     {"id": "DEV_OUTER_BLACK_VOID", "scene": "res://scenes/skeleton/outer_routes/black_void.tscn", "entries": {"entry": [221, 442], "house_exterior": [248, 242], "ghost": [638, 254]}},
+    {"id": "DEV_VIRTUAL_DESKTOP", "scene": "res://scenes/skeleton/outer_routes/virtual_desktop.tscn", "entries": {"entry": [595, 443]}},
     {"id": "META_WHITE_VOID", "scene": "res://scenes/skeleton/outer_routes/white_void.tscn", "entries": {"entry": [345, 443]}},
     {"id": "ET_LUMA_RES_04", "scene": "res://scenes/skeleton/outer_routes/house_04.tscn", "entries": {"entry": [280, 438]}}
   ],

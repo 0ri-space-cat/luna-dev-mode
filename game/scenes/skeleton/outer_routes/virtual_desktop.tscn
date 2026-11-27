@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/skeleton/outer_route_room.gd" id="1"]
+
+[node name="VirtualDesktop" type="Node2D"]
+script = ExtResource("1")
+floor_bounds = Rect2(110, 220, 1080, 400)
+requires_door = false
+travel_bounds = Rect2(110, 220, 1080, 400)
+action_bounds = Rect2(270, 390, 120, 115)

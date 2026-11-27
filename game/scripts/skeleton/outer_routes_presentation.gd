@@ -56,6 +56,8 @@ func _draw() -> void:
 			_draw_black_void()
 		Routes.WHITE_ADDRESS:
 			_draw_white_void()
+		Routes.DESKTOP:
+			_draw_desktop()
 		_:
 			_draw_ground()
 	if world.current_address != Routes.SUBSPACE and world.actor.motion.grounded:
@@ -126,9 +128,23 @@ func _draw_ground() -> void:
 			draw_rect(opening, Color("ffd490"), false, 3.0)
 
 
+func _draw_desktop() -> void:
+	_gradient(Color("39354e"), Color("77708b"))
+	var window := Rect2(115, 220, 450, 355)
+	draw_rect(window, Color("46495c"))
+	draw_rect(window.grow(4), Color("b4a6ca"), false, 3.0)
+	draw_rect(Rect2(window.position, Vector2(window.size.x, 25)), Color("71618d"))
+	draw_string(ThemeDB.fallback_font, window.position + Vector2(12, 18), "LUNA: Dev Mode", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("eadbf4"))
+	draw_rect(Rect2(270, 390, 120, 115), Color("b5a4c8"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, Vector2(285, 525), "E", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("e7dcec"))
+	draw_rect(Rect2(1000, 330, 90, 230), Color("d9d4e8"))
+	draw_rect(Rect2(0, 760, 1280, 40), Color("353044"))
+
+
 func _draw_white_void() -> void:
 	var room := world._room as Routes.RouteRoom
 	_gradient(Color("fcfaff"), Color("ded9ec"))
+	draw_string(ThemeDB.fallback_font, Vector2(810, 710), Routes.WHITE_ADDRESS, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("c4bed1"))
 	draw_rect(room.floor_bounds, Color("f5f1fb"))
 	draw_rect(room.floor_bounds, Color("c8bfd7"), false, 2.0)
 	var pad := room.action_bounds

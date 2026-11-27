@@ -73,6 +73,10 @@ func _run() -> void:
 
 	_key(KEY_E)
 	await process_frame
+	await _type_command("TELEPORT " + Routes.WHITE_ADDRESS)
+	assert(field.visible and not game._away and not game.white_discovered)
+	# Isolate repeat visit; physical route has a separate test.
+	game.white_discovered = true
 	game.profile_path = "res://unwritable.json"
 	await _type_command("TELEPORT " + Routes.WHITE_ADDRESS)
 	assert(field.visible and not game._away and game.outer == null and actor.get_parent() == home)
