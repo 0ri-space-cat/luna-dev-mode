@@ -100,6 +100,9 @@ jobs:
       - name: Test Yuki notebook, physical program carriers and durable scripts
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_yuki.gd
+      - name: Test rare encounter budget and actual overload-gated reflection
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_rare_encounters.gd
       - name: Test Ori catalog, physical creation and finite light transfer
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 0 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_ori.gd

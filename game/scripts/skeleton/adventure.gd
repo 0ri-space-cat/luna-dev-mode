@@ -14,6 +14,7 @@ const SystemPause = preload("res://scripts/runtime2d/system_pause_2d.gd")
 const Observations = preload("res://scripts/runtime2d/administrator_observations_2d.gd")
 const Ecology = preload("res://scripts/runtime2d/ecology_journal_2d.gd")
 const Journal = preload("res://scripts/runtime2d/system_incident_journal_2d.gd")
+const RareDirector = preload("res://scripts/runtime2d/rare_encounter_director_2d.gd")
 const EventBus = preload("res://scripts/core/event_bus.gd")
 const Store = preload("res://scripts/runtime2d/save_store_2d.gd")
 const GUEST_OFFSET := Vector2(6000, 0)
@@ -25,6 +26,7 @@ const OBSERVATION_GAP := 20.0
 
 @export var profile_path := "user://luna_adventure.json"
 var journal := Journal.new()
+var rare_encounters := RareDirector.new()
 var ecology := Ecology.new()
 var observations := Observations.new()
 var _observation_presence_until := 0.0
@@ -103,6 +105,7 @@ func _process(delta: float) -> void:
 	if not _away:
 		_tick_ecology(delta)
 		_tick_observations(delta)
+	_tick_rare_encounters()
 	if is_instance_valid(home.administrator) and not journal.encounter_is_active() \
 			and journal.active_seconds >= maxf(_ecology_presence_until, _observation_presence_until):
 		home.hide_administrator()
@@ -304,6 +307,39 @@ func _assess_ecology() -> void:
 	_persist_home_history()
 
 
+func _has_confirmed_overload(source: Journal) -> bool:
+	return source.history.any(func(entry): return entry["overload"])
+
+
+func _clear_rare_encounter() -> void:
+	rare_encounters.clear_active()
+	home.clear_rare_presentation()
+
+
+func _tick_rare_encounters(sample: float = -1.0) -> void:
+	var now := journal.active_seconds
+	var blocked := _away or not _interrupted.is_empty() or not journal.pending.is_empty() or journal.encounter_is_active() or is_instance_valid(home.administrator)
+	if not rare_encounters.active.is_empty():
+		if blocked or now >= rare_encounters.active_until or not home.update_rare_presentation(RareDirector.SCENE_SECONDS - (rare_encounters.active_until - now)):
+			_clear_rare_encounter()
+	if not rare_encounters.window_due(now):
+		return
+	var confirmed := _has_confirmed_overload(journal)
+	var candidate: Dictionary = {} if blocked or not confirmed or now < rare_encounters.cooldown_until else home.rare_candidate()
+	var identity: String = candidate.get("id", "")
+	var roll := 1.0 if identity.is_empty() else (randf() if sample < 0.0 else sample)
+	var appeared := rare_encounters.consider(now, confirmed, journal.instability, identity, roll)
+	# Persist the spent window before displaying anything; disk failure is a
+	# silent skipped event, never a reason to interrupt normal play.
+	if not confirmed or blocked:
+		return
+	if not _persist_home_history():
+		_clear_rare_encounter()
+		return
+	if appeared:
+		home.begin_rare_presentation(identity, candidate["anchor"])
+
+
 func _has_persistent_history() -> bool:
 	return white_discovered or journal.serial > 0 or not ecology.episodes.is_empty() or not ecology.help.is_empty() \
 		or not ecology.exposures.is_empty() or observations.wakes > 0 or observations.forest_count > 0 \
@@ -359,6 +395,7 @@ func report_system_incident(reason: String, overload: bool = false) -> bool:
 
 
 func _begin_recovery() -> void:
+	_clear_rare_encounter()
 	events.clear_pending()
 	home.ancient_console.close()
 	home.hide_administrator()
@@ -636,6 +673,7 @@ func _activate_guest(address: String) -> bool:
 		return false
 	player.step_obstacle = null
 	player.secondary_step_obstacle = null
+	_clear_rare_encounter()
 	home.set_home_active(false)
 	var camera := Camera2D.new()
 	camera.position = Vector2(640, 400)
@@ -810,6 +848,7 @@ func _apply_home_snapshot(checkpoint: Dictionary) -> bool:
 	if not home.apply_snapshot(data):
 		return false
 	observations.clear_transient_observation()
+	_clear_rare_encounter()
 	return true
 
 
@@ -828,6 +867,9 @@ func _restore_profile(profile: Dictionary) -> bool:
 	if profile.get("kind") != PROFILE_KIND or not candidate.restore(profile.get("journal")) \
 			or not profile.get("state") is Dictionary or not profile.get("manual") is Dictionary \
 			or not profile.get("interrupted") is Dictionary or not profile.get("away") is bool:
+		return false
+	var candidate_rare := RareDirector.new()
+	if not candidate_rare.restore(profile.get("rare_encounters", {}), candidate.active_seconds, _has_confirmed_overload(candidate)):
 		return false
 	var candidate_ecology := Ecology.new()
 	if not candidate_ecology.restore(profile.get("ecology", {}), candidate.active_seconds):
@@ -866,6 +908,8 @@ func _restore_profile(profile: Dictionary) -> bool:
 	white_discovered = discovered
 	meta = next_meta
 	journal = candidate
+	rare_encounters = candidate_rare
+	home.clear_rare_presentation()
 	ecology = candidate_ecology
 	observations = candidate_observations
 	if _away:
@@ -973,7 +1017,7 @@ func _restriction_label() -> String:
 func _write_profile(current: Journal, manual: Dictionary, state: Dictionary, interrupted: Dictionary,
 		away: bool, guest: Dictionary = {}) -> bool:
 	return _profile_valid and _store.write_snapshot({"format": Store.FORMAT, "kind": PROFILE_KIND,
-		"journal": current.snapshot(), "ecology": ecology.snapshot(), "observations": observations.snapshot(),
+		"journal": current.snapshot(), "ecology": ecology.snapshot(), "observations": observations.snapshot(), "rare_encounters": rare_encounters.snapshot(),
 		"manual": manual, "state": state, "white_discovered": white_discovered, "meta": meta.snapshot(),
 		"away": away, "interrupted": interrupted, "guest": guest,
 		"guest_entry": outer.hosted_entry if away else ""}, profile_path)

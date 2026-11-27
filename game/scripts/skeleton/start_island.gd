@@ -43,6 +43,15 @@ const FISH_POINTS := {
 }
 const Lake = preload("res://scripts/skeleton/duplicate_lake_layout.gd")
 const Valley = preload("res://scripts/skeleton/valley_dry_layout.gd")
+const RareDirector = preload("res://scripts/runtime2d/rare_encounter_director_2d.gd")
+const RarePresentation = preload("res://scripts/skeleton/rare_encounter_presentation_2d.gd")
+const RARE_REFLECTION_BANK := Rect2(2044, 385, 32, 64)
+const RARE_HAND_POINT := Vector2(1850, 420)
+var rare_kind := ""
+var rare_anchor := Vector2.ZERO
+var rare_elapsed := 0.0
+var rare_body_scale := 1.0
+var rare_tint := Color.WHITE
 const Coast = preload("res://scripts/skeleton/coast_layout.gd")
 const ADDRESS_SCHEMA := 20
 const Runes = preload("res://scripts/runtime2d/latin_runes_2d.gd")
@@ -1813,6 +1822,65 @@ func _near_city_resident() -> bool:
 		return false
 	var resident := entities.get_entity(PASSERBY) as EntityBody
 	return _friend_available(resident) and resident.record.category == "resident" and resident.location_id == City.CITY_ID and _entity_location(actor.position) == City.CITY_ID and _within_reach(resident.position, resident.motion.elevation)
+
+
+# Only ordinary, visible and calm locations can host rare presentations.
+func _rare_safe() -> bool:
+	if not observation_fixture or not visible or not is_instance_valid(actor) or not actor.accepts_player_input() or not actor.motion.grounded or actor.is_attached() or actor.has_passenger() or not is_zero_approx(float(actor.motion.elevation)):
+		return false
+	if evening_stage in [1, 2, 3] or music_focus or not crystal_observer.luna_eyes_open or is_instance_valid(_debug_editor) or is_instance_valid(administrator) or (ancient_console != null and ancient_console.is_open()):
+		return false
+	for panel in [_profile_panel, _frame_panel, _alchemy_panel, _yuki_panel, _ori_panel, _city_tool_panel, _tamagotchi_panel, _evening_panel]:
+		if is_instance_valid(panel) and panel.visible:
+			return false
+	return true
+
+
+func _rare_point_visible(point: Vector2) -> bool:
+	return get_viewport().get_visible_rect().grow(-24.0).has_point(get_global_transform_with_canvas() * point)
+
+
+func rare_candidate() -> Dictionary:
+	if not _rare_safe() or not _nearby_action().is_empty():
+		return {}
+	if RARE_REFLECTION_BANK.has_point(actor.position) and _entity_location(actor.position) == Valley.LOCATION_ID:
+		var anchor := Vector2(2100, actor.position.y)
+		if _rare_point_visible(anchor):
+			return {"id": RareDirector.REFLECTION, "anchor": anchor}
+	# A working post-introduction threshold, not a required story flag.
+	var distance: float = actor.position.distance_to(RARE_HAND_POINT)
+	if not (meta_merged.is_valid() and meta_merged.call()) and social.meetings.size() >= 3 and Meadows.M2.has_point(actor.position) and distance >= 40.0 and distance <= 100.0 and _rare_point_visible(RARE_HAND_POINT):
+		return {"id": RareDirector.HAND, "anchor": RARE_HAND_POINT}
+	return {}
+
+
+func begin_rare_presentation(identity: String, anchor: Vector2) -> void:
+	rare_kind = identity
+	rare_anchor = anchor
+	rare_elapsed = 0.0
+	rare_body_scale = actor.body_size
+	rare_tint = actor.get_parameter("color")
+	queue_redraw()
+
+
+func update_rare_presentation(elapsed: float) -> bool:
+	if rare_kind.is_empty() or not _rare_safe() or not _nearby_action().is_empty() or not _rare_point_visible(rare_anchor):
+		return false
+	if rare_kind == RareDirector.REFLECTION and (not Valley.W1_WEST.grow(12.0).has_point(actor.position) or _entity_location(actor.position) != Valley.LOCATION_ID):
+		return false
+	if rare_kind == RareDirector.HAND and (not Meadows.M2.has_point(actor.position) or actor.position.distance_to(rare_anchor) > 150.0 or (meta_merged.is_valid() and meta_merged.call())):
+		return false
+	rare_elapsed = elapsed
+	queue_redraw()
+	return true
+
+
+func clear_rare_presentation() -> void:
+	if rare_kind.is_empty():
+		return
+	rare_kind = ""
+	rare_elapsed = 0.0
+	queue_redraw()
 
 
 func _can_hint_previous_luna() -> bool:
@@ -6367,6 +6435,8 @@ func _draw() -> void:
 	Lake.draw_on(self)
 	if observation_fixture:
 		Valley.draw_on(self, world_clock.phase() == WorldClock.Phase.EVENING)
+		if rare_kind == RareDirector.REFLECTION:
+			RarePresentation.draw_on(self, rare_kind, rare_anchor, rare_elapsed, rare_body_scale, rare_tint)
 		if _tower_field_note_visible():
 			Valley.draw_field_note(self, Valley.TOWER_UPPER_VIEW, false, Color("9edee8"))
 		MiaLab.draw_on(self)
@@ -6388,6 +6458,8 @@ func _draw() -> void:
 		Valley.draw_field_note(self, Mountain.H4_NOTE, true, Color("e3d3ad"))
 		Edge.draw_on(self, edge.elapsed, edge.time_owned, edge.portal_owned)
 		_draw_anomalies()
+		if rare_kind == RareDirector.HAND:
+			RarePresentation.draw_on(self, rare_kind, rare_anchor, rare_elapsed, rare_body_scale, rare_tint)
 		for endpoint in [edge.portal_a, edge.portal_b]:
 			if endpoint.size() == 2:
 				draw_arc(Vector2(endpoint[0], endpoint[1]) - Vector2(0, 15), 18.0, 0, TAU, 32, Color("dfa5f7"), 3.0)
