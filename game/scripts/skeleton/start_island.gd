@@ -1497,6 +1497,35 @@ func _friend_safe(body: EntityBody, point: Vector2, height: float, ignore: Array
 	return true
 
 
+# Explicit ordinary invitations are independent of the artifact inventory.
+func _friend_invitation_target() -> String:
+	if not observation_fixture or evening_stage != 0 or not actor.motion.grounded or actor.is_attached():
+		return ""
+	var ids := _friend_ids()
+	var closest := INF
+	var result := ""
+	for index in ids.size():
+		var friend: String = Social.FRIENDS[index]
+		var body := entities.get_entity(ids[index]) as EntityBody
+		if not social.can_invite(friend) or not _friend_available(body):
+			continue
+		if _entity_location(body.position) != _entity_location(actor.position) or not _within_reach(body.position, body.motion.elevation):
+			continue
+		var distance: float = actor.position.distance_squared_to(body.position)
+		if distance < closest:
+			closest = distance
+			result = friend
+	return result
+
+
+func _invite_nearby_friend() -> bool:
+	var friend := _friend_invitation_target()
+	if friend.is_empty() or not social.invite(friend):
+		return false
+	$Interface/SaveNotice.text = "Приглашены в кафе: %d из 6" % social.invitations.size()
+	return true
+
+
 func _cafe_plan() -> Dictionary:
 	var result: Dictionary = {}
 	var ids := _friend_ids()
@@ -1566,6 +1595,7 @@ func _tick_cafe(delta: float) -> void:
 		var plan := _cafe_plan()
 		if plan.size() != 6:
 			evening_stage = 0
+			social.legacy_evening = false
 			_evening_panel.hide()
 			$Interface/SaveNotice.text = "Пока не все могут прийти. Попробуй позже."
 			return
@@ -1618,7 +1648,7 @@ func _show_evening_panel() -> void:
 	match evening_stage:
 		0:
 			label.text = "Давно мы все вместе не собирались. Может, сегодня?"
-			button.text = "Пригласить друзей"
+			button.text = "Начать вечер"
 			button.pressed.connect(func(): begin_cafe_evening())
 			var later := Button.new()
 			later.text = "Позже"
@@ -3684,6 +3714,8 @@ func _nearby_action() -> String:
 	var leia_action := _leia_action()
 	if not leia_action.is_empty():
 		return leia_action
+	if not _friend_invitation_target().is_empty():
+		return "Пригласить в кафе"
 	var cafe_action := _cafe_action()
 	if not cafe_action.is_empty():
 		return cafe_action
@@ -3827,6 +3859,8 @@ func interact() -> bool:
 	if _interact_toffi_secret():
 		return true
 	if _interact_leia():
+		return true
+	if _invite_nearby_friend():
 		return true
 	if not _cafe_action().is_empty():
 		_show_evening_panel()
@@ -4403,7 +4437,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_prism: Variant = data.get("prism_active", false)
 	var next_music_scale: Variant = data.get("music_scale", 0.0)
 	var next_attraction := ActiveDuration.new(ATTRACTION_SECONDS)
-	if data.has("social") and not next_social.restore(data["social"]):
+	if data.has("social") and not next_social.restore(data["social"], next_evening["stage"] > 0):
 		return false
 	if not next_flute is bool or not next_prism is bool or (next_prism and not next_social.prism_owned) \
 			or typeof(next_oni) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(next_oni)) \
@@ -4414,7 +4448,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	if next_am.stage == 2 and not next_social.meetings.has("TOFFI"):
 		return false
-	if (next_evening["stage"] > 0 and not next_social.can_gather()) or (next_evening["tamagotchi"] and not next_social.meetings.has("LEIA")):
+	if (next_evening["stage"] > 0 and not next_social.can_restore_evening()) or (next_evening["tamagotchi"] and not next_social.meetings.has("LEIA")):
 		return false
 	var next_hourglass: Variant = data.get("hourglass_owned", false)
 	var next_flask: Variant = data.get("flask_state", 0)
