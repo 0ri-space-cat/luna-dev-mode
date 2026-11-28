@@ -24,6 +24,9 @@ var profile_interest := Vector2.INF
 var profile_interest_gap := 0.0
 var _ability_glow: PointLight2D
 var temporary_ability := ""
+var food_effects: Array = []
+var consumable_flight_remaining := 0.0
+var consumable_glow_remaining := 0.0
 
 
 func get_world_location_id() -> String:
@@ -82,7 +85,7 @@ func has_active_ability(ability_id: String) -> bool:
 
 
 func _sync_ability_glow() -> void:
-	var enabled: bool = (has_active_ability("GLOW") or temporary_ability == "GLOW") and bool(get_parameter("alive"))
+	var enabled: bool = (has_active_ability("GLOW") or temporary_ability == "GLOW" or consumable_glow_remaining > 0.0) and bool(get_parameter("alive"))
 	if enabled and not is_instance_valid(_ability_glow):
 		_ability_glow = PointLight2D.new()
 		var gradient := Gradient.new()
@@ -219,7 +222,7 @@ func _allows_ride() -> bool:
 
 
 func can_fly() -> bool:
-	if temporary_ability == "FLY" or super.can_fly():
+	if consumable_flight_remaining > 0.0 or temporary_ability == "FLY" or super.can_fly():
 		return true
 	for entry in record.get_component("ABILITY_SET").get("instances", {}).values():
 		if entry["enabled"] and entry["ability_id"] == "FLY":

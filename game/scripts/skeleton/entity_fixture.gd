@@ -1,6 +1,7 @@
 extends "res://scripts/skeleton/elevation_fixture.gd"
 ## Developer map for ID-based creation, editing and saving of 2D+Z entities.
 
+const ConsumableProfile = preload("res://scripts/runtime2d/consumable_profile_2d.gd")
 const DebugEditor = preload("res://scripts/skeleton/entity_editor_debug.gd")
 var _debug_editor: DebugEditor
 
@@ -155,8 +156,14 @@ func make_snapshot() -> Dictionary:
 		data["editor"] = body.editor_snapshot()
 		data["gravity_scale"] = body.get_parameter("gravity_scale")
 		data["attachment"] = body.attachment_snapshot()
+		if body.consumable_flight_remaining > 0.0:
+			data["consumable_flight"] = body.consumable_flight_remaining
+		if body.consumable_glow_remaining > 0.0:
+			data["consumable_glow"] = body.consumable_glow_remaining
 		if body.record.category in ["food", "drink"]:
 			data["food"] = {"edible": body.get_parameter("edible"), "portions": body.get_parameter("portions")}
+			if not body.food_effects.is_empty():
+				data["food"]["effects"] = body.food_effects.duplicate(true)
 		states.append(data)
 	return {"format": SaveStore.FORMAT, "fixture": _location_id(), "entity_state_version": 6, "entities": states}
 
@@ -225,18 +232,39 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 		return null
 	if body != null and body.record.category in ["food", "drink"]:
 		var food: Variant = state.get("food")
-		if not food is Dictionary or food.size() != 2 or not body.set_parameter("edible", food.get("edible")) or not body.set_parameter("portions", food.get("portions")):
+		if not food is Dictionary:
 			body.free()
 			return null
+		var profile: Dictionary = food.duplicate(true)
+		if not profile.has("effects"):
+			profile["effects"] = []
+		if not ConsumableProfile.valid_profile(profile, true):
+			body.free()
+			return null
+		body.set_parameter("edible", profile["edible"])
+		body.set_parameter("portions", profile["portions"])
+		body.food_effects = profile["effects"]
 	elif body != null and state.has("food"):
 		body.free()
 		return null
 	if body != null:
+		var flight: Variant = state.get("consumable_flight", 0.0)
+		var glow: Variant = state.get("consumable_glow", 0.0)
+		if not _valid_effect_duration(flight, ConsumableProfile.FLIGHT_LIMIT) or not _valid_effect_duration(glow, ConsumableProfile.GLOW_LIMIT):
+			body.free()
+			return null
+		body.consumable_flight_remaining = float(flight)
+		body.consumable_glow_remaining = float(glow)
 		body.location_id = _entity_location(body.position)
 		if state.get("location_id") != body.location_id:
 			body.free()
 			return null
 	return body
+
+
+func _valid_effect_duration(value: Variant, maximum: float) -> bool:
+	return typeof(value) in [TYPE_INT, TYPE_FLOAT] and is_finite(float(value)) \
+		and float(value) >= 0.0 and float(value) <= maximum
 
 
 func _restore_attachments(states: Array, candidates: Dictionary) -> bool:

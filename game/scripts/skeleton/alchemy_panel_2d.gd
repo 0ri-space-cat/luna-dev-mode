@@ -3,8 +3,10 @@ extends PanelContainer
 signal try_effect(effect_id: String)
 signal fill_effect(effect_id: String)
 signal borrow_requested
+signal edit_profile_requested
 const Recipes = preload("res://scripts/runtime2d/alchemy_recipes_2d.gd")
-const IMPLEMENTED := ["ALC-R08", "ALC-R09", "ALC-R20", "ALC-R21", "ALC-R30"]
+const Profile = preload("res://scripts/runtime2d/consumable_profile_2d.gd")
+const IMPLEMENTED := Profile.RECIPES
 var selected: Array[String] = []
 var _buttons: Dictionary = {}
 var _result: Label
@@ -12,6 +14,7 @@ var _try: Button
 var _effect := ""
 var _fill: Button
 var _borrow: Button
+var _edit_profile: Button
 var _portable := false
 
 
@@ -57,6 +60,10 @@ func _ready() -> void:
 	_borrow.text = "Одолжить склянку Мии"
 	_borrow.pressed.connect(func(): borrow_requested.emit())
 	content.add_child(_borrow)
+	_edit_profile = Button.new()
+	_edit_profile.text = "Параметры и код состава"
+	_edit_profile.pressed.connect(func(): edit_profile_requested.emit())
+	content.add_child(_edit_profile)
 	configure_access(false, false, false)
 	var close := Button.new()
 	close.text = "Закрыть"
@@ -65,11 +72,12 @@ func _ready() -> void:
 	hide()
 
 
-func configure_access(portable: bool, has_flask: bool, can_borrow: bool) -> void:
+func configure_access(portable: bool, has_flask: bool, can_borrow: bool, can_edit: bool = false) -> void:
 	_portable = portable
 	_try.visible = not portable
 	_fill.visible = has_flask
 	_borrow.visible = can_borrow
+	_edit_profile.visible = portable and can_edit
 
 
 func _select(enabled: bool, element: String) -> void:

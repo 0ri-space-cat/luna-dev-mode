@@ -543,11 +543,11 @@ func _move_with_contacts(drive: Vector2, delta: float, acceleration: float) -> v
 		var previous := position
 		var hit := move_and_collide(displacement)
 		if hit == null:
-			motion.step(previous, position, remaining, acceleration, surfaces, _bounciness)
+			motion.step(previous, position, remaining, acceleration, surfaces, _surface_bounciness())
 			return
 		var fraction_left := clampf(hit.get_remainder().length() / displacement.length(), 0.0, 1.0)
 		var after_impact := remaining * fraction_left
-		motion.step(previous, position, remaining - after_impact, acceleration, surfaces, _bounciness)
+		motion.step(previous, position, remaining - after_impact, acceleration, surfaces, _surface_bounciness())
 		remaining = after_impact
 
 		var normal := hit.get_normal()
@@ -560,7 +560,11 @@ func _move_with_contacts(drive: Vector2, delta: float, acceleration: float) -> v
 			rebound = 0.0
 		drive = drive.slide(normal)
 		_impulse_velocity = (_impulse_velocity.slide(normal) + normal * rebound).limit_length(MAX_IMPULSE_SPEED)
-	motion.step(position, position, remaining, acceleration, surfaces, _bounciness)
+	motion.step(position, position, remaining, acceleration, surfaces, _surface_bounciness())
+
+
+func _surface_bounciness() -> float:
+	return _bounciness
 
 
 func _update_wall_mask(feet: float) -> void:

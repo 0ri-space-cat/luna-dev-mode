@@ -108,7 +108,7 @@ const Life = preload("res://scripts/skeleton/coastal_life_layout.gd")
 const ShellCollection = preload("res://scripts/skeleton/shell_collection_2d.gd")
 var shell_collection_ready := false
 var shell_collection_delivered := false
-const LAB_ICE_SECONDS := 40.0
+const LAB_ICE_SECONDS := float(ConsumableProfile.FREEZE_LIMIT)
 const CoastExtra = preload("res://scripts/skeleton/coast_observation_layout.gd")
 const LAKE_CHIBI_PREFIX := "W6_CHIBI_"
 const LAKE_PROP_PREFIX := "W6_PROP_COPY_"
@@ -123,10 +123,10 @@ const StaticRoomView = preload("res://scripts/skeleton/static_room_view_2d.gd")
 const Gaze = preload("res://scripts/runtime2d/observer_query_2d.gd")
 const Solidity = preload("res://scripts/runtime2d/observation_body_2d.gd")
 const Tunnel = preload("res://scripts/skeleton/waterfall_tunnel_layout.gd")
-const BUBBLE_SECONDS := 30.0
+const BUBBLE_SECONDS := float(ConsumableProfile.SWIM_LIMIT)
 const MiaLab = preload("res://scripts/skeleton/mia_lab_layout.gd")
 const AlchemyPanel = preload("res://scripts/skeleton/alchemy_panel_2d.gd")
-const GLOW_SECONDS := 35.0
+const GLOW_SECONDS := float(ConsumableProfile.GLOW_LIMIT)
 const WandPair = preload("res://scripts/skeleton/wand_pair_2d.gd")
 const WAND_HOLD_SECONDS := 3.0
 const Meadows = preload("res://scripts/skeleton/meadows_layout.gd")
@@ -193,6 +193,13 @@ var _initial_lake_stone: Dictionary = {}
 var hourglass_owned := false
 var flask_state := 0 # 0 Mia, 1 loan, 2 gift. One original.
 var flask_effect := ""
+var flask_override: Variant = null
+var _consumable_editor: PanelContainer
+var _consumable_target := ""
+var _flask_hold := -1.0
+var _flask_portion: FlaskPortion
+const FlaskPortion = preload("res://scripts/skeleton/flask_portion_2d.gd")
+const FLASK_AIM_SECONDS := 0.33
 var mia_experienced := false
 var mia_route_step := 0
 var _lab_ice := ActiveDuration.new(LAB_ICE_SECONDS)
@@ -273,6 +280,8 @@ var _initial_quiet_states: Array[Dictionary] = []
 var _initial_quiet_region_states: Array[Dictionary] = []
 var _initial_f2_food_states: Array[Dictionary] = []
 const CAFE_SNACK := "C2_CAFE_SNACK"
+const FAIRY_POLLEN := "F2_FAIRY_POLLEN"
+const ConsumableEditor = preload("res://scripts/skeleton/consumable_editor_2d.gd")
 const WAND_COPY_PREFIX := "WAND_COPY_"
 const WAND_COPY_LIMIT := 32
 var _secret_find_visibility := Vector2i(-1, -1)
@@ -496,7 +505,7 @@ func _entity_limit() -> int:
 	# keep their original limit. Individual copy systems remain capped.
 	if not observation_fixture:
 		return super._entity_limit()
-	return 80 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT + ShellCollection.REQUIRED 		+ (2 if fairy_realm_enabled else 0) + (1 if waterfall_guardian_enabled else 0)
+	return 80 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT + ShellCollection.REQUIRED 		+ (2 if fairy_realm_enabled else 0) + (1 if waterfall_guardian_enabled else 0) + 1
 
 
 func _starts_alive(category: String) -> bool:
@@ -1910,7 +1919,7 @@ func _rare_safe() -> bool:
 		return false
 	if evening_stage in [1, 2, 3] or music_focus or not crystal_observer.luna_eyes_open or is_instance_valid(_debug_editor) or is_instance_valid(administrator) or (ancient_console != null and ancient_console.is_open()):
 		return false
-	for panel in [_profile_panel, _frame_panel, _alchemy_panel, _yuki_panel, _ori_panel, _city_tool_panel, _tamagotchi_panel, _evening_panel]:
+	for panel in [_profile_panel, _frame_panel, _alchemy_panel, _consumable_editor, _yuki_panel, _ori_panel, _city_tool_panel, _tamagotchi_panel, _evening_panel]:
 		if is_instance_valid(panel) and panel.visible:
 			return false
 	return true
@@ -3725,6 +3734,7 @@ func _gift_flask() -> bool:
 func _fill_flask(effect_id: String) -> void:
 	if flask_state > 0 and effect_id in AlchemyPanel.IMPLEMENTED:
 		flask_effect = effect_id
+		flask_override = null
 		_alchemy_panel.hide()
 		$Interface/SaveNotice.text = "Состав в склянке: " + AlchemyPanel.Recipes.NAMES[effect_id]
 
@@ -3738,11 +3748,8 @@ func _update_lab_ice(active: bool) -> void:
 	queue_redraw()
 
 
-func _freeze_lab_water() -> bool:
-	if not observation_fixture or actor.position.distance_to(MiaLab.SHALLOW.get_center()) > 115.0:
-		return false
-	_lab_ice.start()
-	return true
+func _near_lab_water(point: Vector2) -> bool:
+	return observation_fixture and point.distance_to(MiaLab.SHALLOW.get_center()) <= 115.0
 
 
 func _setup_alchemy() -> void:
@@ -3751,7 +3758,10 @@ func _setup_alchemy() -> void:
 	panel.try_effect.connect(_apply_lab_effect)
 	panel.fill_effect.connect(_fill_flask)
 	panel.borrow_requested.connect(_borrow_flask)
+	panel.edit_profile_requested.connect(_open_flask_program)
 	_alchemy_panel = panel
+	_consumable_editor = ConsumableEditor.new()
+	$Interface.add_child(_consumable_editor)
 	_alchemy_light = PointLight2D.new()
 	var gradient := Gradient.new()
 	gradient.colors = PackedColorArray([Color(1.0, 0.92, 0.65, 1.0), Color(1.0, 0.92, 0.65, 0.0)])
@@ -3786,25 +3796,205 @@ func _apply_lab_effect(effect_id: String) -> void:
 		_alchemy_panel.hide()
 
 
+func _flask_program() -> Array:
+	if flask_override != null:
+		return flask_override.duplicate(true)
+	return ConsumableProfile.RECIPES.get(flask_effect, []).duplicate(true)
+
+
+func _can_edit_flask_program() -> bool:
+	return _consumable_editor != null and access.wand_mode == AccessState.DEVELOPER and projection.carried \
+		and (actor as EntityBody).accepts_player_input() and not forest_dream_active() \
+		and flask_state > 0 and not flask_effect.is_empty()
+
+
+func _commit_flask_program(profile: Dictionary) -> bool:
+	if not _can_edit_flask_program() or not ConsumableProfile.valid_profile(profile, false):
+		return false
+	flask_override = profile["effects"].duplicate(true)
+	return true
+
+
+func _open_flask_program() -> void:
+	if not _can_edit_flask_program():
+		return
+	_alchemy_panel.hide()
+	_consumable_target = ""
+	_consumable_editor.open_profile("Склянка Мии", {"effects": _flask_program()}, false, _commit_flask_program)
+	apply_player_input(Vector2.ZERO)
+
+
+func _editable_food(target_id: String) -> EntityBody:
+	if _consumable_editor == null or access.wand_mode != AccessState.DEVELOPER or forest_dream_active():
+		return null
+	var target := _wand_target(target_id)
+	if target == null or target.record.category not in ["food", "drink"] or super.get_wand_editor_tabs(target_id).is_empty():
+		return null
+	return target
+
+
+func _open_food_program(target_id: String) -> void:
+	var item := _editable_food(target_id)
+	if item == null:
+		return
+	if is_instance_valid(_debug_editor):
+		_toggle_debug_editor()
+	_consumable_target = target_id
+	_consumable_editor.open_profile(item.record.display_name, {
+		"edible": item.get_parameter("edible"), "portions": item.get_parameter("portions"),
+		"effects": item.food_effects}, true, _commit_food_program.bind(target_id))
+	apply_player_input(Vector2.ZERO)
+
+
+func _commit_food_program(profile: Dictionary, target_id: String) -> bool:
+	var item := _editable_food(target_id)
+	if item == null or not ConsumableProfile.valid_profile(profile, true):
+		return false
+	item.set_parameter("edible", profile["edible"])
+	item.set_parameter("portions", profile["portions"])
+	item.food_effects = profile["effects"].duplicate(true)
+	return true
+
+
+func _can_use_flask() -> bool:
+	return flask_state > 0 and not flask_effect.is_empty() and not forest_dream_active() \
+		and (actor as EntityBody).accepts_player_input() and not is_instance_valid(_debug_editor) \
+		and not (_alchemy_panel != null and _alchemy_panel.visible) \
+		and not (_consumable_editor != null and _consumable_editor.visible)
+
+
+func drink_flask() -> bool:
+	return _can_use_flask() and _apply_consumable(_flask_program(), actor)
+
+
+func _begin_flask_use() -> bool:
+	if not _can_use_flask():
+		return false
+	_flask_hold = 0.0
+	return true
+
+
+func _release_flask_use(aim: Vector2) -> bool:
+	if _flask_hold < 0.0:
+		return false
+	var held := _flask_hold
+	_flask_hold = -1.0
+	queue_redraw()
+	return _throw_flask(aim) if held >= FLASK_AIM_SECONDS else drink_flask()
+
+
+func _throw_flask(aim: Vector2) -> bool:
+	if not _can_use_flask() or is_instance_valid(_flask_portion) or not aim.is_finite():
+		return false
+	var direction: Vector2 = (aim - actor.position).normalized()
+	var effects := _flask_program()
+	if direction.is_zero_approx() or effects.is_empty():
+		return false
+	var portion := _new_flask_portion()
+	portion.effects = effects
+	portion.launch(actor.position, actor.motion.elevation + actor.body_height() * 0.52,
+		direction, actor.motion.snapshot()["anchor"])
+	return true
+
+
+func _new_flask_portion() -> FlaskPortion:
+	var portion := FlaskPortion.new()
+	portion.surfaces = _surfaces
+	portion.walls = _walls
+	portion.hit_body = _find_flask_contact
+	portion.landed = _apply_consumable
+	add_child(portion)
+	_flask_portion = portion
+	return portion
+
+
+func _find_flask_contact(from: Vector3, finish: Vector3, can_hit_thrower: bool) -> EntityBody:
+	var start := Vector2(from.x, from.y)
+	var end := Vector2(finish.x, finish.y)
+	var length := start.distance_to(end)
+	var best: EntityBody
+	var first := INF
+	for identity in entities.list_ids():
+		var body := entities.get_entity(identity) as EntityBody
+		if not body.visible or not body.get_parameter("alive") or (body == actor and not can_hit_thrower):
+			continue
+		var point := Geometry2D.get_closest_point_to_segment(body.position, start, end)
+		if point.distance_squared_to(body.position) > pow(body.foot_radius() + 2.5, 2):
+			continue
+		var distance := start.distance_to(point)
+		var height := lerpf(from.z, finish.z, distance / length) if length > 0.001 else finish.z
+		if height < body.motion.elevation or height > body.motion.elevation + body.body_height():
+			continue
+		if distance < first:
+			best = body
+			first = distance
+	return best
+
+
+func _restore_flask_portion(data: Dictionary) -> void:
+	if is_instance_valid(_flask_portion):
+		_flask_portion.free()
+	_flask_hold = -1.0
+	if not data.is_empty():
+		var portion := _new_flask_portion()
+		if not portion.restore(data):
+			portion.free()
+
+
 func _apply_alchemy(effect_id: String) -> bool:
-	match effect_id:
-		"ALC-R08":
-			_alchemy_glow.start()
-		"ALC-R09":
-			_alchemy_glow.restore(0.0)
-			_clear_bubble()
-			_lab_ice.restore(0.0)
-		"ALC-R20":
-			if not _freeze_lab_water():
-				return false
-		"ALC-R21":
-			_alchemy_bubble.start()
-			_bubble_started = false
-			actor.temporary_swim = true
-		"ALC-R30":
-			world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
-		_:
-			return false
+	return ConsumableProfile.RECIPES.has(effect_id) and _apply_consumable(ConsumableProfile.RECIPES[effect_id], actor)
+
+
+func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = Vector2.INF) -> bool:
+	if receiver != null and not receiver.get_parameter("alive"):
+		return false
+	for effect in effects:
+		match effect["id"]:
+			"FREEZE_WATER":
+				if impact.is_finite():
+					if not MiaLab.SHALLOW.has_point(impact):
+						return false
+				elif receiver == null or not _near_lab_water(receiver.position):
+					return false
+			"HEAL", "FLY", "GLOW", "CLEAR":
+				if receiver == null:
+					return false
+			"SWIM":
+				if receiver != actor:
+					return false
+	for effect in effects:
+		var amount: int = int(effect.get("value", 0))
+		match effect["id"]:
+			"HEAL":
+				var health: int = receiver.get_parameter("health")
+				var normal: int = parameters.get_spec(receiver.record.category, "health")["default"]
+				if health < normal:
+					receiver.record.set_parameter("health", mini(normal, health + amount))
+			"FLY":
+				receiver.consumable_flight_remaining = maxf(receiver.consumable_flight_remaining, amount)
+			"GLOW":
+				if receiver == actor:
+					_alchemy_glow.restore(maxf(_alchemy_glow.remaining, amount))
+				else:
+					receiver.consumable_glow_remaining = maxf(receiver.consumable_glow_remaining, amount)
+			"CLEAR":
+				if receiver == actor:
+					_alchemy_glow.restore(0.0)
+					_clear_bubble()
+					_lab_ice.restore(0.0)
+				else:
+					receiver.consumable_glow_remaining = 0.0
+				if receiver.consumable_flight_remaining > 0.0:
+					receiver.thrust_requested = false
+					receiver.consumable_flight_remaining = 0.0
+			"FREEZE_WATER":
+				_lab_ice.restore(float(amount))
+			"SWIM":
+				_alchemy_bubble.restore(float(amount))
+				_bubble_started = false
+				receiver.temporary_swim = true
+			"NIGHT":
+				world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
 	_update_alchemy_light()
 	return true
 
@@ -3902,8 +4092,15 @@ func _setup_f2_food() -> void:
 		snack.set_parameter("portions", 2)
 	else:
 		push_error("Could not spawn cafe food")
+	var pollen := spawn_entity({"id": FAIRY_POLLEN, "category": "food", "label": "Баночка пыльцы",
+		"material": "ARCANE"}, Vector2(6377, 272), 0.0)
+	if pollen != null:
+		pollen.set_parameter("size", 0.5)
+		pollen.set_parameter("pickable", true)
+		pollen.set_parameter("portions", 2)
+		pollen.food_effects = [{"id": "FLY", "value": 18}]
 	for entry in make_snapshot()["entities"]:
-		if entry["id"] in [FairyBranch.RESIDENT, CAFE_SNACK]:
+		if entry["id"] in [FairyBranch.RESIDENT, CAFE_SNACK, FAIRY_POLLEN]:
 			_initial_f2_food_states.append(entry.duplicate(true))
 
 
@@ -3935,7 +4132,7 @@ func _nearby_food() -> EntityBody:
 	var distance := INF
 	for identity in entities.list_ids():
 		var target := entities.get_entity(identity) as EntityBody
-		if target.record.category != "food" or not target.get_parameter("edible") or int(target.get_parameter("portions")) <= 0:
+		if target.record.category not in ["food", "drink"] or not target.get_parameter("edible") or int(target.get_parameter("portions")) <= 0:
 			continue
 		if target.location_id != _entity_location(actor.position) or (target.is_attached() and not (actor.has_passenger() and actor._rider == target)):
 			continue
@@ -3948,8 +4145,9 @@ func _nearby_food() -> EntityBody:
 
 func _eat_nearby_food() -> bool:
 	var food := _nearby_food()
-	if food == null or not food.set_parameter("portions", int(food.get_parameter("portions")) - 1):
+	if food == null or not _apply_consumable(food.food_effects, actor):
 		return false
+	food.set_parameter("portions", int(food.get_parameter("portions")) - 1)
 	$Interface/SaveNotice.text = "Съедена порция. Осталось: %d" % int(food.get_parameter("portions"))
 	return true
 
@@ -3993,6 +4191,7 @@ func request_wand_copy(target_id: String) -> String:
 				break
 		if ok and source.record.category == "food":
 			ok = copy.set_parameter("edible", source.get_parameter("edible")) and copy.set_parameter("portions", source.get_parameter("portions"))
+			copy.food_effects = source.food_effects.duplicate(true)
 		if not ok:
 			entities.unregister_entity(identity)
 			copy.free()
@@ -4600,9 +4799,24 @@ func forest_dream_active() -> bool:
 
 
 func _physics_process(delta: float) -> void:
+	var effect_delta := world_clock.sim_delta(delta) if not is_instance_valid(_debug_editor) else 0.0
+	if keyboard and _flask_hold >= 0.0:
+		if Input.is_physical_key_pressed(KEY_E) and _can_use_flask():
+			_flask_hold += delta
+			if _flask_hold >= FLASK_AIM_SECONDS:
+				queue_redraw()
+		else:
+			_flask_hold = -1.0
+			queue_redraw()
 	for identity in entities.list_ids():
 		var body := entities.get_entity(identity) as EntityBody
 		body.location_id = _entity_location(body.position)
+		if body.consumable_flight_remaining > 0.0:
+			body.consumable_flight_remaining = maxf(0.0, body.consumable_flight_remaining - effect_delta)
+			if body.consumable_flight_remaining == 0.0:
+				body.thrust_requested = false
+		if body.consumable_glow_remaining > 0.0:
+			body.consumable_glow_remaining = maxf(0.0, body.consumable_glow_remaining - effect_delta)
 	if keyboard:
 		_apply_keyboard_input()
 		if not forest_dream_active():
@@ -4621,7 +4835,7 @@ func _physics_process(delta: float) -> void:
 		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
 		_ice_duration.tick(delta)
-		_alchemy_glow.tick(delta)
+		_alchemy_glow.tick(effect_delta)
 		_tick_bubble(world_clock.sim_delta(delta))
 		_tick_duplicate(world_clock.sim_delta(delta))
 		_tick_lake(world_clock.sim_delta(delta))
@@ -4689,6 +4903,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Глаза закрыты"
 	if _alchemy_bubble.remaining > 0.0:
 		_status.text += "  ·  Пузырь %d" % ceili(_alchemy_bubble.remaining)
+	if actor.consumable_flight_remaining > 0.0:
+		_status.text += "  ·  Полёт %d с" % ceili(actor.consumable_flight_remaining)
 	if flute_owned:
 		_status.text += "  ·  M: свирель"
 	if social.prism_owned:
@@ -4717,6 +4933,10 @@ func _physics_process(delta: float) -> void:
 	var action := _nearby_action()
 	_prompt.text = "" if action.is_empty() or is_instance_valid(_debug_editor) \
 		or (ancient_console != null and ancient_console.is_open()) else "E  " + action
+	if _consumable_editor != null and _consumable_editor.visible:
+		_prompt.text = ""
+	elif _flask_hold >= FLASK_AIM_SECONDS:
+		_prompt.text = "Отпустить E · бросить"
 
 
 func _update_local_camera() -> void:
@@ -4749,6 +4969,12 @@ func _update_local_camera() -> void:
 
 
 func _apply_keyboard_input() -> void:
+	if _consumable_editor != null and _consumable_editor.visible:
+		if (_consumable_target.is_empty() and not _can_edit_flask_program()) \
+				or (not _consumable_target.is_empty() and _editable_food(_consumable_target) == null):
+			_consumable_editor.hide()
+		apply_player_input(Vector2.ZERO)
+		return
 	if is_instance_valid(_profile_panel) and _profile_panel.visible:
 		if not _profile_edit_allowed():
 			_profile_panel.hide()
@@ -4785,6 +5011,8 @@ func _apply_keyboard_input() -> void:
 		var body := entities.get_entity(identity) as EntityBody
 		if body.accepts_player_input():
 			body.swim_intent = float(Input.is_physical_key_pressed(KEY_SPACE)) - float(Input.is_physical_key_pressed(KEY_SHIFT))
+			if body.consumable_flight_remaining > 0.0:
+				body.thrust_requested = body.swim_intent > 0.0 and not forest_dream_active()
 
 
 func _update_world_light(_minute: int = 0) -> void:
@@ -5295,7 +5523,11 @@ func _set_wand_mode(mode: String) -> bool:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not keyboard or not event is InputEventKey or not event.pressed or event.echo:
+	if not keyboard or not event is InputEventKey or event.echo:
+		return
+	if not event.pressed:
+		if event.keycode == KEY_E and _release_flask_use(get_global_mouse_position()):
+			get_viewport().set_input_as_handled()
 		return
 	if forest_dream_active():
 		if event.keycode == KEY_E:
@@ -5336,9 +5568,16 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_yuki_panel.hide()
 		get_viewport().set_input_as_handled()
 		return
+	if _consumable_editor != null and _consumable_editor.visible:
+		if event.keycode == KEY_ESCAPE:
+			_consumable_editor.hide()
+		get_viewport().set_input_as_handled()
+		return
 	if _alchemy_panel != null and _alchemy_panel.visible:
 		if event.keycode == KEY_ESCAPE:
 			_alchemy_panel.hide()
+		elif event.keycode == KEY_TAB and _alchemy_panel._portable:
+			_open_flask_program()
 		get_viewport().set_input_as_handled()
 		return
 	if ancient_console != null and ancient_console.is_open():
@@ -5442,7 +5681,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				elif _active_city_tool == "ori" and ori.ownership > 0:
 					if not catalog_repeat().is_empty():
 						get_viewport().set_input_as_handled()
-				elif flask_state > 0 and not flask_effect.is_empty() and _apply_alchemy(flask_effect):
+				elif _begin_flask_use():
 					get_viewport().set_input_as_handled()
 		KEY_L:
 			if not is_instance_valid(_debug_editor) and not catalog_repeat().is_empty():
@@ -5486,7 +5725,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 				elif flask_state > 0 and _alchemy_panel != null:
 					_active_city_tool = ""
-					_alchemy_panel.configure_access(true, true, false)
+					_alchemy_panel.configure_access(true, true, false, _can_edit_flask_program())
 					_alchemy_panel.show()
 					apply_player_input(Vector2.ZERO)
 					get_viewport().set_input_as_handled()
@@ -5601,6 +5840,11 @@ func get_wand_editor_tabs(target_id: String) -> Dictionary:
 					if not tabs.has("Способности"):
 						tabs["Способности"] = []
 					tabs["Способности"].append({"id": id, "label": ORI_MODULES[id], "kind": "action", "value": "В банк", "action": func(): return request_extract_ori(target_id, id)})
+	if not tabs.is_empty() and _editable_food(target_id) != null:
+		tabs["Общее"].append({"id": "CONSUMABLE", "label": "Расходник", "kind": "action", "value": "Параметры и код",
+			"action": func():
+				_open_food_program.call_deferred(target_id)
+				return true})
 	if not tabs.is_empty() and _ordinary_copy_source(_wand_target(target_id)):
 		tabs["Общее"].append({"id": "COPY", "label": "Copy", "kind": "action", "value": "Copy", "footer": true, "repeatable": true, "action": func(): return not request_wand_copy(target_id).is_empty()})
 	return tabs
@@ -5663,7 +5907,7 @@ func make_snapshot() -> Dictionary:
 	data["quiet_meadow_layout"] = 1
 	if observation_fixture:
 		data["quiet_regions_layout"] = 2
-		data["f2_food_layout"] = 1
+		data["f2_food_layout"] = 2
 		data["shell_collection"] = {"ready": shell_collection_ready, "delivered": shell_collection_delivered}
 	data["world_clock"] = world_clock.snapshot()
 	data["coast_house_phase"] = coast_house_phase
@@ -5679,6 +5923,10 @@ func make_snapshot() -> Dictionary:
 		data["hourglass_owned"] = hourglass_owned
 		data["flask_state"] = flask_state
 		data["flask_effect"] = flask_effect
+		if flask_override != null:
+			data["flask_override"] = flask_override.duplicate(true)
+		if is_instance_valid(_flask_portion) and not _flask_portion.is_queued_for_deletion():
+			data["flask_portion"] = _flask_portion.snapshot()
 		data["mia_experienced"] = mia_experienced
 		data["mia_route_step"] = mia_route_step
 		data["lab_ice"] = _lab_ice.remaining
@@ -5828,6 +6076,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var next_hourglass: Variant = data.get("hourglass_owned", false)
 	var next_flask: Variant = data.get("flask_state", 0)
 	var next_recipe: Variant = data.get("flask_effect", "")
+	var next_flask_override: Variant = data.get("flask_override")
+	var next_portion: Variant = data.get("flask_portion", {})
+	if not next_portion is Dictionary:
+		return false
+	if not next_portion.is_empty() and (next_flask == 0 or not FlaskPortion.valid_snapshot(next_portion)):
+		return false
+	if next_flask_override != null and (next_recipe == "" or not ConsumableProfile.valid_effects(next_flask_override, false)):
+		return false
 	var next_experience: Variant = data.get("mia_experienced", false)
 	var next_mia_step: Variant = data.get("mia_route_step", 0)
 	var next_lab_ice := ActiveDuration.new(LAB_ICE_SECONDS)
@@ -6027,14 +6283,14 @@ func apply_snapshot(data: Dictionary) -> bool:
 		elif candidate["city_layout"] != 1:
 			return false
 		var f2_version: Variant = candidate.get("f2_food_layout", 0)
-		if typeof(f2_version) not in [TYPE_FLOAT, TYPE_INT] or float(f2_version) not in [0.0, 1.0]:
+		if typeof(f2_version) not in [TYPE_FLOAT, TYPE_INT] or float(f2_version) not in [0.0, 1.0, 2.0]:
 			return false
-		if int(f2_version) == 0:
-			if _initial_f2_food_states.size() != 2:
+		if int(f2_version) < 2:
+			if _initial_f2_food_states.size() != 3:
 				return false
 			candidate = candidate.duplicate(true)
 			for initial in _initial_f2_food_states:
-				if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
+				if (int(f2_version) == 0 or initial["id"] == FAIRY_POLLEN) and not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
 					candidate["entities"].append(initial.duplicate(true))
 		var door_version: Variant = candidate.get("luna_door_layout", 0)
 		if typeof(door_version) not in [TYPE_FLOAT, TYPE_INT] or float(door_version) not in [0.0, float(LunaDoor.LAYOUT_VERSION)]:
@@ -6204,6 +6460,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 			_surfaces.append(Crystal.BRIDGE)
 	var previous_lab_ice := _lab_ice.remaining
 	_lab_ice.restore(next_lab_ice.remaining)
+	_restore_flask_portion(next_portion)
 	var previous_ice := ice_remaining
 	var previous_plank := _plank_surface
 	_ice_duration.restore(next_ice.remaining)
@@ -6321,6 +6578,7 @@ func apply_snapshot(data: Dictionary) -> bool:
 	hourglass_owned = next_hourglass
 	flask_state = int(next_flask)
 	flask_effect = next_recipe
+	flask_override = next_flask_override.duplicate(true) if next_flask_override != null else null
 	mia_experienced = next_experience
 	mia_route_step = int(next_mia_step)
 	_duplicate_elapsed = float(next_duplicate)
@@ -6344,6 +6602,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 	actor.temporary_swim = next_bubble.remaining > 0.0
 	if _alchemy_panel != null:
 		_alchemy_panel.hide()
+	if _consumable_editor != null:
+		_consumable_editor.hide()
 	_update_alchemy_light()
 	world_clock.restore(next_clock.snapshot())
 	_update_world_light()
@@ -6542,6 +6802,9 @@ func _validate_saved_entities(candidates: Dictionary) -> bool:
 			elif resident.record.category != definition["category"]:
 				return false
 		var fairy: EntityBody = candidates.get(FairyBranch.RESIDENT)
+		var pollen: EntityBody = candidates.get(FAIRY_POLLEN)
+		if pollen == null or pollen.record.category != "food":
+			return false
 		var snack: EntityBody = candidates.get(CAFE_SNACK)
 		if fairy == null or fairy.record.category != "fairy" or snack == null or snack.record.category != "food":
 			return false
@@ -6727,3 +6990,7 @@ func _draw() -> void:
 			var point: Vector2 = field.ground_position
 			draw_line(point + Vector2(-11, 7), point + Vector2(11, -7), Color("ead1ff"), 5.0)
 			draw_circle(point + Vector2(11, -7), 4.0, Color("ffd98d"))
+	if _flask_hold >= FLASK_AIM_SECONDS:
+		var from: Vector2 = actor.position - Vector2(0, actor.motion.elevation + 12.0)
+		var aim: Vector2 = (get_global_mouse_position() - actor.position).limit_length(150.0)
+		draw_line(from, from + aim, Color(0.68, 0.90, 0.94, 0.65), 1.5, true)
