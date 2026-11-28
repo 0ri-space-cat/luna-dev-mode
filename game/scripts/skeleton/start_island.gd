@@ -9,6 +9,8 @@ signal forest_bank_left
 
 const ForestBank = preload("res://scripts/skeleton/forest_bank_2d.gd")
 const ForestDepths = preload("res://scripts/skeleton/forest_depths_2d.gd")
+const WaterfallGuardian = preload("res://scripts/skeleton/waterfall_guardian_2d.gd")
+const AxolotlGuard = preload("res://scripts/skeleton/axolotl_guard_2d.gd")
 const FairyMap = preload("res://scripts/skeleton/fairy_realm_layout.gd")
 const FairyRealm = preload("res://scripts/skeleton/fairy_realm_2d.gd")
 const FairyFox = preload("res://scripts/skeleton/fairy_slime_fox_2d.gd")
@@ -134,6 +136,7 @@ const AREA_LABELS := {
 	ISLAND_ID: "Стартовый остров", Meadows.LOCATION_ID: "Большие луга",
 	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
+	FairyMap.ID: "Мир фей", ForestDepths.ID: "Повреждённый лес", WaterfallGuardian.PLACE: "За водопадом",
 	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
 	W8.PASSAGE: "Кристальные пещеры", W8.REFUGE: "Малое убежище",
 	Coast.HOUSE_ID: "Дом вечерних окон", Coast.GROTTO_ID: "Морской грот",
@@ -203,6 +206,8 @@ var desktop_requested: Callable
 # Only an author-designated room may configure this. Default Adventure has none.
 var backdrop_route: BackdropRoute
 var _room_view: StaticRoomView
+@export var waterfall_guardian_enabled := false
+var waterfall_guardian: WaterfallGuardian
 @export var forest_depths_enabled := false
 var forest_depths: ForestDepths
 @export var fairy_realm_enabled := false
@@ -280,6 +285,8 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if waterfall_guardian_enabled and WaterfallGuardian.owns(point):
+		return WaterfallGuardian.PLACE
 	if forest_depths_enabled:
 		if ForestDepths.is_dream(point):
 			return ForestDepths.ID
@@ -480,11 +487,13 @@ func _legacy_entity_location(point: Vector2) -> String:
 func _entity_limit() -> int:
 	# The adventure now contains multiple authored regions; small fixtures
 	# keep their original limit. Individual copy systems remain capped.
-	return 80 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT + ShellCollection.REQUIRED + (2 if fairy_realm_enabled else 0) if observation_fixture else super._entity_limit()
+	if not observation_fixture:
+		return super._entity_limit()
+	return 80 + QuietRegions.FAUNA.size() + WAND_COPY_LIMIT + ShellCollection.REQUIRED 		+ (2 if fairy_realm_enabled else 0) + (1 if waterfall_guardian_enabled else 0)
 
 
 func _starts_alive(category: String) -> bool:
-	return category in ["octopus", "fairy", "fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle", "glitch_fox", "return_cat", "double_rabbit"] or super._starts_alive(category)
+	return category in [AxolotlGuard.CATEGORY, "octopus", "fairy", "fox", "trollik", "fish", "mirror_snail", "chibi_luna", "mia", "crab", "turtle", "oni", "cat", "ray", "toffi", "yuki", "ori", "lizard", "resident", "mouse", "leia", "emot", "emot_giant", "oracle", "glitch_fox", "return_cat", "double_rabbit"] or super._starts_alive(category)
 
 
 func _editor_parent() -> Node:
@@ -521,12 +530,17 @@ func _ready() -> void:
 		ground.append_array(FairyMap.decks())
 	if forest_depths_enabled:
 		ground.append_array(ForestDepths.decks())
+	if waterfall_guardian_enabled:
+		ground.append_array(WaterfallGuardian.DECKS)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
 		for tread in Coast.ESCAPE_DECKS + Valley.TOWER_DECKS + MiaLab.ELEVATED + CoastExtra.SHELF_STEPS + [City.TABLE] + Mountain.STAIRS + Edge.LOWER_STEPS + [Edge.LOWER] + SecretFinds.GRAVITY_STEPS + SecretFinds.FLUTE_STEPS + FairyBranch.STEPS:
 			_decks.append(tread.duplicate())
 	_surfaces.assign(_decks)
+	if waterfall_guardian_enabled:
+		_surfaces.append(WaterfallGuardian.BED)
+		_water_volumes.append(WaterVolume.new(WaterfallGuardian.POOL, -36.0, 0.0, Vector2.ZERO, 1.8))
 	if fairy_realm_enabled:
 		_surfaces.append(FairyMap.CANOPY_LOWER)
 	if observation_fixture:
@@ -575,6 +589,8 @@ func _ready() -> void:
 		_walls.append_array(FairyMap.ROOT_WALLS)
 	if forest_depths_enabled:
 		_walls.append(ForestDepths.ROOT)
+	if waterfall_guardian_enabled:
+		_walls.append(WaterfallGuardian.ANCHOR_WALL)
 	for wall in _walls:
 		_build_wall(wall)
 	commands.configure_world(entities)
@@ -632,6 +648,10 @@ func _ready() -> void:
 		forest_depths = ForestDepths.new()
 		add_child(forest_depths)
 		forest_depths.mount(self)
+	if waterfall_guardian_enabled:
+		waterfall_guardian = WaterfallGuardian.new()
+		add_child(waterfall_guardian)
+		waterfall_guardian.mount(self)
 
 
 func _setup_crystal_observation() -> void:
@@ -1441,7 +1461,9 @@ func gravity_pull(target_id: String = "") -> bool:
 			closest = target
 			distance = gap
 	if closest == null:
-		return _mountain_anchor_pull() if target_id.is_empty() else false
+		if not target_id.is_empty():
+			return false
+		return (waterfall_guardian != null and waterfall_guardian.pull_to_anchor()) or _mountain_anchor_pull()
 	var direction_to_actor: Vector2 = (actor.position - closest.position).normalized()
 	if float(closest.get_parameter("mass")) > 3.0:
 		return actor.apply_impulse(-direction_to_actor * 145.0, 18.0)
@@ -4236,6 +4258,10 @@ func request_install_duplicate(target_id: String) -> bool:
 
 
 func _create_entity_body(identity: String, category: String) -> EntityBody:
+	if waterfall_guardian_enabled and identity == WaterfallGuardian.ID and category == AxolotlGuard.CATEGORY:
+		var guard := AxolotlGuard.new()
+		guard.birth_point = WaterfallGuardian.DEN
+		return guard
 	if fairy_realm_enabled and identity == FairyMap.FOX_ID and category == "slime_fox":
 		return FairyFox.new()
 	if fairy_realm_enabled and identity == FairyMap.CANOPY_RESIDENT and category == "fairy":
@@ -4278,6 +4304,8 @@ func _create_entity_body(identity: String, category: String) -> EntityBody:
 
 
 func get_natural_fauna(identity: String) -> Fauna:
+	if identity == WaterfallGuardian.ID:
+		return null # A guardian fight is self-defense, not an ecology episode.
 	return entities.get_entity(identity) as Fauna
 
 
@@ -4368,6 +4396,8 @@ func _configure_plank_marker(plank: EntityBody) -> void:
 func _configure_body(body: ElevationBody, entity_id: String) -> void:
 	super._configure_body(body, entity_id)
 	body.emergency_anchor = Vector3(SPAWN.x, SPAWN.y, 0.0)
+	if waterfall_guardian_enabled and entity_id == WaterfallGuardian.ID:
+		body.emergency_anchor = Vector3(WaterfallGuardian.DEN.x, WaterfallGuardian.DEN.y, 0.0)
 	if fairy_realm_enabled and entity_id == FairyMap.FOX_ID:
 		body.emergency_anchor = Vector3(FairyMap.FOX_LATE.x, FairyMap.FOX_LATE.y, 0.0)
 	if body is Fauna and body.aquatic_bounds.has_area():
@@ -4568,6 +4598,8 @@ func _physics_process(delta: float) -> void:
 		fairy_realm.tick(world_clock.sim_delta(delta))
 	if forest_depths != null:
 		forest_depths.tick(world_clock.sim_delta(delta), _tower_field_note_visible() and not forest_dream_active())
+	if waterfall_guardian != null:
+		waterfall_guardian.tick(world_clock.sim_delta(delta))
 	if not is_instance_valid(_debug_editor):
 		world_clock.advance(delta)
 		donut_refill = maxf(0.0, donut_refill - delta)
@@ -4627,7 +4659,7 @@ func _physics_process(delta: float) -> void:
 		var sleep_action := _nearby_action()
 		_prompt.text = "" if sleep_action.is_empty() else "E  " + sleep_action
 		return
-	var area: String = AREA_LABELS.get(address, "Мир фей" if address == FairyMap.ID else "Повреждённый лес")
+	var area: String = AREA_LABELS.get(address, "Этерния")
 	var local_phase: int = coast_house_phase if _entity_location(actor.position) == Coast.HOUSE_ID else world_clock.phase()
 	_world_light.color = PHASE_TINTS[local_phase]
 	var wand := "Обычная палочка" if access.wand_mode == AccessState.ORDINARY else access.wand_mode
@@ -4857,6 +4889,10 @@ func _nearby_action() -> String:
 		var local := forest_depths.action(actor.position) if actor.motion.grounded and not actor.is_attached() else ""
 		if forest_dream_active() or not local.is_empty():
 			return local
+	if waterfall_guardian != null and actor.motion.grounded and not actor.is_attached():
+		var local := waterfall_guardian.action(actor.position)
+		if not local.is_empty():
+			return local
 	if fairy_realm != null:
 		var threshold := fairy_realm.action()
 		if not threshold.is_empty():
@@ -5027,6 +5063,8 @@ func interact() -> bool:
 			return forest_depths.interact(actor.position)
 		if forest_dream_active():
 			return false
+	if waterfall_guardian != null and actor.motion.grounded and not actor.is_attached() 			and not waterfall_guardian.action(actor.position).is_empty():
+		return waterfall_guardian.interact(actor.position)
 	if fairy_realm != null:
 		var threshold := fairy_realm.action()
 		if not threshold.is_empty():
@@ -5565,6 +5603,8 @@ func _toggle_debug_editor() -> void:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
+	if waterfall_guardian != null:
+		data["guardian_layout"] = 1
 	if forest_depths != null:
 		data["forest_depths"] = forest_depths.snapshot()
 	if fairy_realm != null:
@@ -6084,6 +6124,15 @@ func apply_snapshot(data: Dictionary) -> bool:
 		for initial in fairy_realm.initial_residents:
 			if not candidate["entities"].any(func(entry): return entry.get("id") == initial["id"]):
 				candidate["entities"].append(initial.duplicate(true))
+	if waterfall_guardian != null:
+		if not candidate.has("guardian_layout"):
+			if waterfall_guardian.initial_guard.is_empty():
+				return false
+			candidate = candidate.duplicate(true)
+			if not candidate["entities"].any(func(entry): return entry.get("id") == WaterfallGuardian.ID):
+				candidate["entities"].append(waterfall_guardian.initial_guard.duplicate(true))
+		elif candidate["guardian_layout"] != 1:
+			return false
 	var plank: Dictionary = {}
 	for state in candidate["entities"]:
 		if state is Dictionary and state.get("id") == Meadows.PLANK_ID and state.get("category") == "prop":
@@ -6163,6 +6212,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 				if not previous_edge_surfaces.has(surface):
 					_surfaces.erase(surface)
 		return false
+	if waterfall_guardian != null:
+		waterfall_guardian.restore()
 	shell_collection_ready = next_shell_collection["ready"]
 	shell_collection_delivered = next_shell_collection["delivered"]
 	game_mode = next_game_mode
@@ -6411,6 +6462,8 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 
 
 func _validate_saved_entities(candidates: Dictionary) -> bool:
+	if waterfall_guardian_enabled and not candidates.get(WaterfallGuardian.ID) is AxolotlGuard:
+		return false
 	if fairy_realm_enabled:
 		var fox: EntityBody = candidates.get(FairyMap.FOX_ID)
 		if not fox is FairyFox or not (FairyMap.LATE.has_point(fox.position) or FairyMap.EARLY.has_point(fox.position)):

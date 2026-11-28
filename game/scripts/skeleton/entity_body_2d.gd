@@ -173,11 +173,27 @@ func configure_dynamics(mass: float, bounciness: float) -> bool:
 	return true
 
 func life_snapshot() -> Dictionary:
-	return {"alive": get_parameter("alive"), "asleep": get_parameter("asleep")}
+	var data := {"alive": get_parameter("alive"), "asleep": get_parameter("asleep")}
+	var health: int = get_parameter("health")
+	if health != record.registry.get_spec(record.category, "health")["default"]:
+		data["health"] = health
+	return data
+
+
+func _restore_health(state: Dictionary) -> bool:
+	if not state.has("health"):
+		return true
+	var health: Variant = state["health"]
+	if typeof(health) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(health)):
+		return false
+	var spec: Dictionary = record.registry.get_spec(record.category, "health")
+	if float(health) < spec["min"] or float(health) > spec["max"] or float(health) != floorf(float(health)):
+		return false
+	return record.set_parameter("health", health)
 
 
 func restore_life(state: Variant) -> bool:
-	if not state is Dictionary or state.size() != 2:
+	if not state is Dictionary or state.size() != (3 if state.has("health") else 2):
 		return false
 	var alive: Variant = state.get("alive")
 	var asleep: Variant = state.get("asleep")
@@ -186,6 +202,8 @@ func restore_life(state: Variant) -> bool:
 	if record.category not in ["fridge", "prop"] and alive != get_parameter("alive"):
 		return false
 	if record.category != "yeti" and asleep != get_parameter("asleep"):
+		return false
+	if not _restore_health(state):
 		return false
 	record.parameters["alive"] = alive
 	record.parameters["asleep"] = asleep

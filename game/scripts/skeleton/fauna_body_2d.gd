@@ -71,6 +71,8 @@ func restore_life(state: Variant) -> bool:
 	if typeof(delay) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(delay)) \
 			or float(delay) < 0.0 or float(delay) > RESPAWN_SECONDS or (state["alive"] and float(delay) != 0.0):
 		return false
+	if not _restore_health(state):
+		return false
 	record.parameters["alive"] = state["alive"]
 	death_remaining = float(delay)
 	return true

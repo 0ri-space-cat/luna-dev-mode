@@ -20,7 +20,7 @@ const PHYSICS_FIELDS := ["mass", "bounciness"]
 const BEHAVIOR_FIELDS := ["behavior_mode", "target_group", "sense_range", "follow_distance", "luna_relation"]
 const ATTACHMENT_FIELDS := ["rideable", "pickable"]
 const EDITOR_TABS := {
-	"Общее": ["alive", "asleep", "rideable", "pickable", "edible", "portions"],
+	"Общее": ["alive", "health", "asleep", "rideable", "pickable", "edible", "portions"],
 	"Облик": ["size", "color"],
 	"Физика": ["mass", "bounciness", "gravity_scale"],
 	"Разум": ["ai_enabled", "control_source", "sense_range"],

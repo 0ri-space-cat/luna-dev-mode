@@ -103,6 +103,9 @@ jobs:
       - name: Test forest ruins and both contexts of the forest dream
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_forest_depths.gd
+      - name: Test the optional waterfall guardian, hit, retreat, edit and lake exit
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 0 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_waterfall_guardian.gd
       - name: Test Yuki notebook, physical program carriers and durable scripts
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_yuki.gd
