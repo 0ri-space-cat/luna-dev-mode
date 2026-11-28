@@ -283,7 +283,7 @@ func _entity_location(point: Vector2) -> String:
 	if forest_depths_enabled:
 		if ForestDepths.is_dream(point):
 			return ForestDepths.ID
-		if ForestDepths.GARDEN.has_point(point) or ForestDepths.GARDEN_TRAIL.has_point(point):
+		if ForestDepths.is_garden_walk(point):
 			return ForestBank.LOCATION_ID
 	if fairy_realm_enabled and FairyMap.owns(point):
 		return FairyMap.ID

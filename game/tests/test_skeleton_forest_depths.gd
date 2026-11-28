@@ -36,23 +36,26 @@ func _run() -> void:
 
 
 func _garden() -> bool:
+	var old_floor_position := Vector2(2010, -252)
+	home._move_home_travelers(old_floor_position, Island.ForestBank.LOCATION_ID)
+	assert(game.save_game() and game.load_game() and home.actor.position.is_equal_approx(old_floor_position))
 	home._move_home_travelers(Vector2(1900, 120), Island.ForestBank.LOCATION_ID)
-	assert(await _walk([Vector2(1880, -83), Vector2(1880, -318)]))
+	assert(await _walk([Vector2(1850, -83), Vector2(1850, -160), Vector2(1558, -160), Vector2(1558, -318)]))
 	home.apply_player_input(Vector2.RIGHT)
 	for frame in 38:
 		await physics_frame
 	home.apply_player_input(Vector2.ZERO)
-	assert(home.actor.position.x < 1951 and home._walls.has(Map.ARCH))
+	assert(home.actor.position.x < Map.ARCH["bounds"].position.x and home._walls.has(Map.ARCH))
 	assert(not home.perform_music(Island.Music.PHRASES["M05"]))
 	assert(home.actor.set_parameter("size", 0.5))
-	assert(await _walk([Vector2(1925, -233.5), Vector2(1990, -233.5), Vector2(1990, -319)]))
+	assert(await _walk([Vector2(1605, -233.5), Vector2(1670, -233.5), Vector2(1670, -319)]))
 	assert(home.actor.set_parameter("size", 1.0) and home._walls.has(Map.ARCH))
 	home.flute_owned = true
 	assert(not home.perform_music("LLUR"))
 	assert(home.perform_music(Island.Music.PHRASES["M05"]))
 	assert(not home._walls.has(Map.ARCH) and game.save_game() and game.load_game())
 	assert(not home._walls.has(Map.ARCH) and home.forest_depths.gate_open)
-	assert(await _walk([Vector2(1915, -319), Vector2(2030, -315), Map.SHRINE]))
+	assert(await _walk([Vector2(1595, -319), Vector2(1710, -315), Map.SHRINE]))
 	return true
 
 
@@ -62,7 +65,7 @@ func _awake_visit() -> bool:
 	assert(not home.forest_dream_active() and home.flute_owned)
 	assert(game.save_game() and game.load_game() and home.interact())
 	assert(home.actor.position.distance_to(Map.SHRINE) <= 4.0)
-	assert(await _walk([Vector2(1880, -319), Vector2(1880, 48), Vector2(2310, 92), Island.AncientConsole.RETURN_POINT]))
+	assert(await _walk([Vector2(1558, -319), Vector2(1558, -160), Vector2(1850, -160), Vector2(1850, 48), Vector2(2310, 92), Island.AncientConsole.RETURN_POINT]))
 	assert(home.access.set_wand_mode(Access.PLAYFUL) and home.interact())
 	assert(home.ancient_console.is_open())
 	home.ancient_console.field.text_submitted.emit("TELEPORT " + Map.ID)

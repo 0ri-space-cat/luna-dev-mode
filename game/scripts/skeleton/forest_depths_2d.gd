@@ -4,14 +4,20 @@ extends Node2D
 const Music = preload("res://scripts/runtime2d/flute_2d.gd")
 const Runes = preload("res://scripts/runtime2d/latin_runes_2d.gd")
 const ID := "ET_FOREST_DREAM_01"
-const GARDEN_TRAIL := Rect2(1850, -267, 66, 170)
-const GARDEN := Rect2(1830, -376, 290, 152)
-const ARCH := {"bounds": Rect2(1951, -376, 16, 109), "layer": 32, "height": 112.0}
-const ROOT := {"bounds": Rect2(1951, -267, 16, 24), "layer": 2, "height": 112.0}
+const GARDEN_ENTRY := Rect2(1835, -173, 47, 83)
+const GARDEN_LINK := Rect2(1528, -187, 341, 41)
+const GARDEN_TRAIL := Rect2(1528, -267, 66, 122)
+const GARDEN := Rect2(1510, -376, 290, 152)
+# Preserve walking surfaces from the first released layout for existing profiles.
+# The former site is an ordinary clearing beside the older key path.
+const OLD_CLEARING := Rect2(1830, -376, 290, 152)
+const OLD_TRAIL := Rect2(1850, -267, 66, 170)
+const ARCH := {"bounds": Rect2(1631, -376, 16, 109), "layer": 32, "height": 112.0}
+const ROOT := {"bounds": Rect2(1631, -267, 16, 24), "layer": 2, "height": 112.0}
 const CAMP := Vector2(2125, 4)
 const NICHE_TRAIL := Rect2(2155, -120, 38, 112)
 const NICHE := Vector2(2171, -92)
-const SHRINE := Vector2(2084, -318)
+const SHRINE := Vector2(1764, -318)
 const DREAM_CAMP := Rect2(8300, 410, 305, 200)
 const DREAM_FALL := Rect2(8605, 455, 145, 106)
 const DREAM_BANK := Rect2(8300, 1020, 290, 172)
@@ -36,9 +42,15 @@ var _return_from := Vector2.INF
 
 
 static func decks() -> Array[Rect2]:
-	var result: Array[Rect2] = [GARDEN_TRAIL, GARDEN, DREAM_CAMP, DREAM_BANK, DREAM_SQUARE]
+	var result: Array[Rect2] = [GARDEN_ENTRY, GARDEN_LINK, GARDEN_TRAIL, GARDEN,
+		OLD_CLEARING, OLD_TRAIL, DREAM_CAMP, DREAM_BANK, DREAM_SQUARE]
 	result.append_array(FRAGMENTS)
 	return result
+
+
+static func is_garden_walk(point: Vector2) -> bool:
+	return (GARDEN_ENTRY.has_point(point) or GARDEN_LINK.has_point(point) or GARDEN_TRAIL.has_point(point)
+		or GARDEN.has_point(point) or OLD_CLEARING.has_point(point) or OLD_TRAIL.has_point(point))
 
 
 static func is_dream(point: Vector2) -> bool:
@@ -181,7 +193,8 @@ func address_glimpse() -> String:
 
 
 func _draw() -> void:
-	draw_rect(GARDEN_TRAIL, Color("63836a"))
+	for path in [GARDEN_ENTRY, GARDEN_LINK, GARDEN_TRAIL]:
+		draw_rect(path, Color("63836a"))
 	draw_rect(GARDEN, Color("8a927d"))
 	draw_rect(GARDEN.grow(-8.0), Color("d0ccb0"), false, 2.0)
 	draw_rect(ROOT["bounds"], Color("857064"))
@@ -191,7 +204,7 @@ func _draw() -> void:
 	else:
 		draw_rect(stone, Color("b4ada3"))
 		draw_string(ThemeDB.fallback_font, stone.get_center() + Vector2(-8, 4), "♪", HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("423b49"))
-	for point: Vector2 in [Vector2(1855, -355), Vector2(1895, -355), Vector2(2010, -353), Vector2(2078, -350)]:
+	for point: Vector2 in [Vector2(1535, -355), Vector2(1575, -355), Vector2(1690, -353), Vector2(1758, -350)]:
 		draw_arc(point, 14.0, PI, TAU, 14, Color("e0d2b6"), 3.0, true)
 		draw_line(point + Vector2(15, -1), point + Vector2(15, 28), Color("e0d2b6"), 3.0, true)
 	draw_circle(CAMP, 8.0, Color("e8a279"))
@@ -200,9 +213,9 @@ func _draw() -> void:
 	Runes.draw_encoded(self, Runes.encode(ID), NICHE + Vector2(-36, -19),
 		Color("b0cef1") if _previous_prism else Color("737d77"), 0.52)
 	if _previous_prism:
-		_draw_notes("M05", Vector2(1888, -330))
+		_draw_notes("M05", Vector2(1568, -330))
 		_draw_notes("M10", SHRINE)
-		Runes.draw_encoded(self, Runes.encode("TELEPORT ET_MEADOWS_MAIN"), Vector2(1842, -289), Color("b0cef1"), 0.47)
+		Runes.draw_encoded(self, Runes.encode("TELEPORT ET_MEADOWS_MAIN"), Vector2(1522, -289), Color("b0cef1"), 0.47)
 	draw_rect(DREAM_CAMP, Color("38394a"))
 	draw_line(Vector2(8450, 508), Vector2(8605, 508), Color("77778c"), 19.0, true)
 	draw_rect(Rect2(ARRIVAL + Vector2(10, -13), Vector2(23, 19)), Color("857d8a"))
