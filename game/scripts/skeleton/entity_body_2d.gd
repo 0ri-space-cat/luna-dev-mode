@@ -28,6 +28,7 @@ var food_effects: Array = []
 var consumable_flight_remaining := 0.0
 var consumable_glow_remaining := 0.0
 var life_suspended_remaining := 0.0
+var electric_charge := {}
 
 
 func get_world_location_id() -> String:
@@ -464,3 +465,14 @@ func restore_editor(state: Variant) -> bool:
 		if not set_parameter(key, state.get(key)):
 			return false
 	return set_parameter("color", Color.html(encoded))
+
+
+func _draw() -> void:
+	super._draw()
+	if electric_charge.is_empty() or not get_parameter("alive"):
+		return
+	var center := Vector2(0, -motion.elevation - body_height() * 0.42)
+	var radius := maxf(foot_radius(), 6.0) + 3.0
+	var tint := Color("ffe783") if electric_charge["entry_damage"] > 0 else Color("b8c7e2")
+	draw_arc(center, radius, -0.95, 0.85, 18, tint, 1.7, true)
+	draw_arc(center, radius, 2.2, 4.0, 18, tint, 1.7, true)

@@ -112,6 +112,9 @@ jobs:
       - name: Test the music pavilion, six arches and saved return
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_music_pavilion.gd
+      - name: Test Electro devices, bounded arcs and saved water-entry damage
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 3 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_electric_discharge.gd
       - name: Test consumable code and fields, temporary flight and physical flask portions
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 1 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_consumable_editor.gd

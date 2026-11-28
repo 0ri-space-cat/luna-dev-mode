@@ -196,6 +196,7 @@ var flask_effect := ""
 var flask_override: Variant = null
 var _consumable_editor: PanelContainer
 var _consumable_target := ""
+var electro: ElectricDischarge
 var _flask_hold := -1.0
 var _flask_portion: FlaskPortion
 const FlaskPortion = preload("res://scripts/skeleton/flask_portion_2d.gd")
@@ -3753,6 +3754,9 @@ func _near_lab_water(point: Vector2) -> bool:
 
 
 func _setup_alchemy() -> void:
+	electro = ElectricDischarge.new()
+	electro.home = self
+	add_child(electro)
 	var panel := AlchemyPanel.new()
 	$Interface.add_child(panel)
 	panel.try_effect.connect(_apply_lab_effect)
@@ -3902,13 +3906,14 @@ func _new_flask_portion() -> FlaskPortion:
 	portion.surfaces = _surfaces
 	portion.walls = _walls
 	portion.hit_body = _find_flask_contact
+	portion.hit_water = _flask_electric_water_contact
 	portion.landed = _apply_consumable
 	add_child(portion)
 	_flask_portion = portion
 	return portion
 
 
-func _find_flask_contact(from: Vector3, finish: Vector3, can_hit_thrower: bool) -> EntityBody:
+func _find_flask_contact(from: Vector3, finish: Vector3, can_hit_thrower: bool, accept_conductors: bool) -> EntityBody:
 	var start := Vector2(from.x, from.y)
 	var end := Vector2(finish.x, finish.y)
 	var length := start.distance_to(end)
@@ -3916,7 +3921,8 @@ func _find_flask_contact(from: Vector3, finish: Vector3, can_hit_thrower: bool) 
 	var first := INF
 	for identity in entities.list_ids():
 		var body := entities.get_entity(identity) as EntityBody
-		if not body.visible or (not body.get_parameter("alive") and body.life_suspended_remaining <= 0.0) \
+		var conductive := accept_conductors and ElectricDischarge.is_conductor(body)
+		if not body.visible or (not body.get_parameter("alive") and body.life_suspended_remaining <= 0.0 and not conductive) \
 				or (body == actor and not can_hit_thrower):
 			continue
 		var point := Geometry2D.get_closest_point_to_segment(body.position, start, end)
@@ -3930,6 +3936,25 @@ func _find_flask_contact(from: Vector3, finish: Vector3, can_hit_thrower: bool) 
 			best = body
 			first = distance
 	return best
+
+
+func _flask_electric_water_contact(effects: Array, from: Vector3, finish: Vector3) -> bool:
+	var first: WaterVolume
+	var earliest := INF
+	var point := Vector2.INF
+	for volume: WaterVolume in _water_volumes:
+		var fraction := volume.segment_entry(from, finish)
+		if fraction >= earliest:
+			continue
+		var position_3d := from.lerp(finish, fraction)
+		var candidate := Vector2(position_3d.x, position_3d.y)
+		if from.z >= volume.surface and _surfaces.any(func(surface):
+				return surface["height"] >= volume.surface and surface["bounds"].has_point(candidate)):
+			continue
+		first = volume
+		earliest = fraction
+		point = candidate
+	return first != null and _apply_consumable(effects, null, point, first)
 
 
 func _restore_flask_portion(data: Dictionary) -> void:
@@ -3946,12 +3971,18 @@ func _apply_alchemy(effect_id: String) -> bool:
 	return ConsumableProfile.RECIPES.has(effect_id) and _apply_consumable(ConsumableProfile.RECIPES[effect_id], actor)
 
 
-func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = Vector2.INF) -> bool:
-	if receiver != null and not receiver.get_parameter("alive") \
-			and (receiver.life_suspended_remaining <= 0.0 or effects != [{"id": "CLEAR"}]):
-		return false
+func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = Vector2.INF,
+		water: WaterVolume = null) -> bool:
+	if receiver != null and not receiver.get_parameter("alive"):
+		var neutralizing := receiver.life_suspended_remaining > 0.0 and effects == [{"id": "CLEAR"}]
+		var powering: bool = effects.size() == 1 and effects[0]["id"] == "ELECTRO" and ElectricDischarge.is_conductor(receiver)
+		if not (neutralizing or powering):
+			return false
 	for effect in effects:
 		match effect["id"]:
+			"ELECTRO":
+				if electro == null or not electro.can_start(receiver, water):
+					return false
 			"FREEZE_WATER":
 				if impact.is_finite():
 					if not MiaLab.SHALLOW.has_point(impact):
@@ -3970,6 +4001,8 @@ func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = V
 	for effect in effects:
 		var amount: int = int(effect.get("value", 0))
 		match effect["id"]:
+			"ELECTRO":
+				electro.pulse(receiver, impact, water, amount)
 			"HEAL":
 				var health: int = receiver.get_parameter("health")
 				var normal: int = parameters.get_spec(receiver.record.category, "health")["default"]
@@ -3983,6 +4016,7 @@ func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = V
 				else:
 					receiver.consumable_glow_remaining = maxf(receiver.consumable_glow_remaining, amount)
 			"CLEAR":
+				receiver.electric_charge = {}
 				if receiver.life_suspended_remaining > 0.0:
 					receiver.set_parameter("alive", true)
 				if receiver == actor:
@@ -4830,6 +4864,8 @@ func _physics_process(delta: float) -> void:
 	for identity in entities.list_ids():
 		var body := entities.get_entity(identity) as EntityBody
 		body.location_id = _entity_location(body.position)
+		if electro != null and not body.electric_charge.is_empty():
+			electro.tick_body(body, effect_delta)
 		if body.life_suspended_remaining > 0.0:
 			body.tick_life_suspension(effect_delta)
 		if body.consumable_flight_remaining > 0.0:
@@ -4838,6 +4874,8 @@ func _physics_process(delta: float) -> void:
 				body.thrust_requested = false
 		if body.consumable_glow_remaining > 0.0:
 			body.consumable_glow_remaining = maxf(0.0, body.consumable_glow_remaining - effect_delta)
+	if electro != null:
+		electro.tick(effect_delta)
 	if keyboard:
 		_apply_keyboard_input()
 		if not forest_dream_active():
@@ -4944,6 +4982,8 @@ func _physics_process(delta: float) -> void:
 		_status.text += "  ·  Z: Тамагочи"
 	if antimemetic.stage > 0:
 		_status.text += "  ·  F3: Фонарь" + (" ✓" if antimemetic.active else "")
+	if not actor.electric_charge.is_empty():
+		_status.text += "  ·  Разряд %d с" % ceili(actor.electric_charge["remaining"])
 	_status.text += "  ·  F1: " + game_mode
 	if highland.camera_owned:
 		_status.text += "  ·  F4: " + highland.camera_mode
@@ -6482,6 +6522,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 	var previous_lab_ice := _lab_ice.remaining
 	_lab_ice.restore(next_lab_ice.remaining)
 	_restore_flask_portion(next_portion)
+	if electro != null:
+		electro.clear_flash()
 	var previous_ice := ice_remaining
 	var previous_plank := _plank_surface
 	_ice_duration.restore(next_ice.remaining)

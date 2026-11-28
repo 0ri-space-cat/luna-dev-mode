@@ -2,6 +2,7 @@ extends "res://scripts/skeleton/elevation_fixture.gd"
 ## Developer map for ID-based creation, editing and saving of 2D+Z entities.
 
 const ConsumableProfile = preload("res://scripts/runtime2d/consumable_profile_2d.gd")
+const ElectricDischarge = preload("res://scripts/skeleton/electric_discharge_2d.gd")
 const DebugEditor = preload("res://scripts/skeleton/entity_editor_debug.gd")
 var _debug_editor: DebugEditor
 
@@ -162,6 +163,8 @@ func make_snapshot() -> Dictionary:
 			data["consumable_glow"] = body.consumable_glow_remaining
 		if body.life_suspended_remaining > 0.0:
 			data["life_suspended"] = body.life_suspended_remaining
+		if body.get_parameter("alive") and not body.electric_charge.is_empty():
+			data["electric_charge"] = body.electric_charge.duplicate(true)
 		if body.record.category in ["food", "drink"]:
 			data["food"] = {"edible": body.get_parameter("edible"), "portions": body.get_parameter("portions")}
 			if not body.food_effects.is_empty():
@@ -253,6 +256,11 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 		var flight: Variant = state.get("consumable_flight", 0.0)
 		var glow: Variant = state.get("consumable_glow", 0.0)
 		var dormant: Variant = state.get("life_suspended", 0.0)
+		var charge: Variant = state.get("electric_charge", {})
+		if not ElectricDischarge.valid_charge(charge) or (not charge.is_empty() and not body.get_parameter("alive")):
+			body.free()
+			return null
+		body.electric_charge = charge.duplicate(true)
 		if not _valid_effect_duration(dormant, ConsumableProfile.DORMANT_LIMIT) \
 				or (float(dormant) > 0.0 and (body.get_parameter("alive") or not body.supports_consumable_life())):
 			body.free()

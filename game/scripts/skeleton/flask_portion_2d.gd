@@ -7,8 +7,13 @@ const SPEED := 310.0
 const RISE := 105.0
 const REBOUND := 0.66
 
-var effects: Array
+var effects: Array:
+	set(value):
+		effects = value
+		carries_electricity = effects.any(func(effect): return effect["id"] == "ELECTRO")
+var carries_electricity := false
 var hit_body: Callable
+var hit_water: Callable
 var landed: Callable
 var _elapsed := 0.0
 var bounced := false
@@ -61,10 +66,16 @@ func _physics_process(delta: float) -> void:
 		bounced = true
 	if bounced:
 		configure_dynamics(1.0, 0.0)
-	var target: Node = hit_body.call(from, Vector3(position.x, position.y, motion.elevation), bounced)
-	if target != null or motion.grounded:
+	var finish := Vector3(position.x, position.y, motion.elevation)
+	var target: Node = hit_body.call(from, finish, bounced, carries_electricity)
+	if target != null:
 		queue_free()
 		landed.call(effects, target, position)
+	elif carries_electricity and hit_water.is_valid() and hit_water.call(effects, from, finish):
+		queue_free()
+	elif motion.grounded:
+		queue_free()
+		landed.call(effects, null, position)
 	elif hit_surface and landed.call(effects, null, position):
 		queue_free()
 

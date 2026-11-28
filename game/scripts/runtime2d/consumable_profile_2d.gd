@@ -6,8 +6,10 @@ const GLOW_LIMIT := 35
 const SWIM_LIMIT := 30
 const FREEZE_LIMIT := 40
 const DORMANT_LIMIT := 60
+const ELECTRO_LIMIT := 16
 const MAX_EFFECTS := 6
 const EFFECTS := {
+	"ELECTRO": {"argument": "POWER", "max": ELECTRO_LIMIT, "food": false},
 	"HEAL": {"argument": "AMOUNT", "max": 100, "food": true},
 	"FLY": {"argument": "SECONDS", "max": FLIGHT_LIMIT, "food": true},
 	"GLOW": {"argument": "SECONDS", "max": GLOW_LIMIT, "food": true},
@@ -19,6 +21,7 @@ const EFFECTS := {
 	"DORMANT": {"argument": "SECONDS", "max": DORMANT_LIMIT, "food": false},
 }
 const RECIPES := {
+	"ALC-R07": [{"id": "ELECTRO", "value": 8}],
 	"ALC-R08": [{"id": "GLOW", "value": GLOW_LIMIT}],
 	"ALC-R09": [{"id": "CLEAR"}],
 	"ALC-R12": [{"id": "HEAL", "value": 25}],
