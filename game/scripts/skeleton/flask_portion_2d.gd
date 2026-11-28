@@ -63,8 +63,8 @@ func _physics_process(delta: float) -> void:
 		configure_dynamics(1.0, 0.0)
 	var target: Node = hit_body.call(from, Vector3(position.x, position.y, motion.elevation), bounced)
 	if target != null or motion.grounded:
-		landed.call(effects, target, position)
 		queue_free()
+		landed.call(effects, target, position)
 	elif hit_surface and landed.call(effects, null, position):
 		queue_free()
 

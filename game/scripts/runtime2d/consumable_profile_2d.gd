@@ -5,6 +5,7 @@ const FLIGHT_LIMIT := 45
 const GLOW_LIMIT := 35
 const SWIM_LIMIT := 30
 const FREEZE_LIMIT := 40
+const DORMANT_LIMIT := 60
 const MAX_EFFECTS := 6
 const EFFECTS := {
 	"HEAL": {"argument": "AMOUNT", "max": 100, "food": true},
@@ -14,13 +15,17 @@ const EFFECTS := {
 	"FREEZE_WATER": {"argument": "SECONDS", "max": FREEZE_LIMIT, "food": false},
 	"CLEAR": {"argument": "", "max": 0, "food": false},
 	"NIGHT": {"argument": "", "max": 0, "food": false},
+	"MORI": {"argument": "", "max": 0, "food": false},
+	"DORMANT": {"argument": "SECONDS", "max": DORMANT_LIMIT, "food": false},
 }
 const RECIPES := {
 	"ALC-R08": [{"id": "GLOW", "value": GLOW_LIMIT}],
 	"ALC-R09": [{"id": "CLEAR"}],
 	"ALC-R12": [{"id": "HEAL", "value": 25}],
+	"ALC-R13": [{"id": "MORI"}],
 	"ALC-R20": [{"id": "FREEZE_WATER", "value": FREEZE_LIMIT}],
 	"ALC-R21": [{"id": "SWIM", "value": SWIM_LIMIT}],
+	"ALC-R28": [{"id": "DORMANT", "value": DORMANT_LIMIT}],
 	"ALC-R30": [{"id": "NIGHT"}],
 }
 
@@ -44,7 +49,7 @@ static func valid_effects(effects: Variant, food: bool) -> bool:
 		elif effect.size() != 2 or not whole_in_range(effect.get("value"), 1, spec["max"]):
 			return false
 		used[id] = true
-	return true
+	return not used.has("MORI") or used.size() == 1
 
 
 static func valid_profile(profile: Dictionary, food: bool) -> bool:
@@ -94,7 +99,7 @@ static func parse(source: String, food: bool) -> Dictionary:
 				return _line_error(index, "%s не принимает аргумент" % key)
 			profile["effects"].append(effect)
 			if not valid_effects(profile["effects"], food):
-				return _line_error(index, "Эффект повторяется или превышен предел действий")
+				return _line_error(index, "Эффект повторяется, несовместим с другим действием или превышен предел")
 	if not valid_profile(profile, food):
 		return {"error": "Для еды нужны поля EDIBLE и PORTIONS"}
 	return {"profile": profile}

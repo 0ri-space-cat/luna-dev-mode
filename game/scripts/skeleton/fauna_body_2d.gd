@@ -14,6 +14,10 @@ var death_remaining := 0.0
 var _swim_direction := 1.0
 
 
+func supports_consumable_life() -> bool:
+	return true
+
+
 func can_edit_parameter(key: String) -> bool:
 	if key == "alive":
 		return true
@@ -43,14 +47,17 @@ func set_parameter(key: String, value: Variant) -> bool:
 
 
 func _revive() -> bool:
-	if not fits_walls_at(birth_point, birth_height, foot_radius()) \
-			or not motion.start_on_safe_support(birth_point, birth_height, surfaces):
-		return false
+	if life_suspended_remaining <= 0.0:
+		if not fits_walls_at(birth_point, birth_height, foot_radius()) \
+				or not motion.start_on_safe_support(birth_point, birth_height, surfaces):
+			return false
+		position = birth_point
+		velocity = Vector2.ZERO
+		_impulse_velocity = Vector2.ZERO
 	record.parameters["alive"] = true
+	record.set_parameter("health", record.registry.get_spec(record.category, "health")["default"])
 	death_remaining = 0.0
-	position = birth_point
-	velocity = Vector2.ZERO
-	_impulse_velocity = Vector2.ZERO
+	life_suspended_remaining = 0.0
 	show()
 	if _marker != null:
 		_marker.rotation = 0.0
@@ -102,7 +109,7 @@ func is_vitally_deprived() -> bool:
 func _physics_process(delta: float) -> void:
 	if aquatic_bounds.has_area():
 		configure_water(0.0, has_vital_swim())
-	if not get_parameter("alive"):
+	if not get_parameter("alive") and life_suspended_remaining <= 0.0:
 		death_remaining = maxf(0.0, death_remaining - delta)
 		_update_death_visual()
 		if death_remaining == 0.0 and _revive():
@@ -110,6 +117,8 @@ func _physics_process(delta: float) -> void:
 			return
 		elif not visible:
 			return
+	elif life_suspended_remaining > 0.0:
+		_update_death_visual()
 	super._physics_process(delta)
 
 
@@ -122,6 +131,9 @@ func _update_death_visual() -> void:
 	if get_parameter("alive"):
 		return
 	_marker.rotation = PI / 2.5
+	if life_suspended_remaining > 0.0:
+		show()
+		return
 	var elapsed := RESPAWN_SECONDS - death_remaining
 	visible = elapsed < BLINK_SECONDS and floori(elapsed / BLINK_SECONDS * BLINK_COUNT * 2.0) % 2 == 0
 

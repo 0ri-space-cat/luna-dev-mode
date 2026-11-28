@@ -27,6 +27,7 @@ var temporary_ability := ""
 var food_effects: Array = []
 var consumable_flight_remaining := 0.0
 var consumable_glow_remaining := 0.0
+var life_suspended_remaining := 0.0
 
 
 func get_world_location_id() -> String:
@@ -153,6 +154,8 @@ func set_parameter(key: String, value: Variant) -> bool:
 		if not value is bool:
 			return false
 		record.parameters[key] = value
+		if key == "alive" and value:
+			life_suspended_remaining = 0.0
 		if not _can_act():
 			_stop_active_motion()
 		return true
@@ -211,6 +214,26 @@ func restore_life(state: Variant) -> bool:
 	record.parameters["alive"] = alive
 	record.parameters["asleep"] = asleep
 	return true
+
+
+func supports_consumable_life() -> bool:
+	return record.category in ["prop", "fridge"]
+
+
+func suspend_life(seconds: float) -> bool:
+	if not supports_consumable_life() or not get_parameter("alive") or not set_parameter("alive", false):
+		return false
+	life_suspended_remaining = seconds
+	return true
+
+
+func tick_life_suspension(delta: float) -> void:
+	if life_suspended_remaining <= 0.0 or delta <= 0.0:
+		return
+	if delta < life_suspended_remaining:
+		life_suspended_remaining -= delta
+	elif set_parameter("alive", true):
+		life_suspended_remaining = 0.0
 
 
 func _can_act() -> bool:

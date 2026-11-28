@@ -30,11 +30,12 @@ func _run() -> void:
 	assert(await _edit_and_eat(pollen_code))
 	assert(_edit_flask())
 	assert(await _throw_portions())
+	assert(await _life_recipes())
 	game.queue_free()
 	await process_frame
 	for file in [path, path + ".bak"]:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(file))
-	print("Consumables: learned flight, two-way editor, atomic rejection, borrowing, recipe reset, independent copy, saved effects and physical throws passed")
+	print("Consumables: learned flight, two-way editor, atomic rejection, borrowing, recipe reset, independent copy, saved effects, physical throws and life recipes passed")
 	quit()
 
 
@@ -175,3 +176,63 @@ func _wait_for_contact() -> bool:
 		if not is_instance_valid(home._flask_portion):
 			return true
 	return false
+
+func _life_recipes() -> bool:
+	var source := Vector2(370, 485)
+	var destination := Vector2(441, 485)
+	home._move_home_travelers(source, Island.ISLAND_ID)
+	var identity: String = Island.Meadows.FOX_ID
+	var fox = home.get_natural_fauna(identity)
+	assert(fox != null)
+	home._place_friend(fox, destination, 0.0)
+	assert(fox.set_parameter("size", 1.4) and fox.set_parameter("ai_enabled", false))
+	assert(fox.record.set_parameter("health", 33))
+	assert(not Profile.parse("MORI\nDORMANT 2", false).has("profile"))
+	assert(not Profile.parse("EDIBLE true\nPORTIONS 1\nMORI", true).has("profile"))
+
+	home._fill_flask("ALC-R28")
+	assert(home._flask_program()[0]["value"] == 60)
+	assert(not home.drink_flask() and home.actor.get_parameter("alive"))
+	assert(home._commit_flask_program({"effects": [{"id": "DORMANT", "value": 2}]}))
+	assert(home._throw_flask(destination) and await _wait_for_contact())
+	assert(not fox.get_parameter("alive") and fox.visible and fox.life_suspended_remaining > 0.0)
+	assert(game.ecology.episodes.is_empty())
+	assert(game.save_game() and game.load_game())
+	fox = home.get_natural_fauna(identity)
+	assert(fox.visible and fox.position.is_equal_approx(destination) and fox.life_suspended_remaining > 0.0)
+	for frame in 140:
+		await physics_frame
+		if fox.get_parameter("alive"):
+			break
+	assert(fox.get_parameter("alive") and fox.position.is_equal_approx(destination))
+	assert(fox.get_parameter("health") == 100 and fox.death_remaining == 0.0)
+
+	home._fill_flask("ALC-R28")
+	assert(home._throw_flask(destination) and await _wait_for_contact())
+	assert(not fox.get_parameter("alive") and fox.life_suspended_remaining > 0.0)
+	home._fill_flask("ALC-R09")
+	assert(home._throw_flask(destination) and await _wait_for_contact())
+	assert(fox.get_parameter("alive") and fox.position.is_equal_approx(destination))
+
+	home._fill_flask("ALC-R13")
+	assert(not home.drink_flask() and home.actor.get_parameter("alive"))
+	assert(fox.record.set_parameter("health", 33))
+	assert(home._throw_flask(destination) and await _wait_for_contact())
+	assert(not fox.get_parameter("alive") and fox.death_remaining > 0.0 and fox.life_suspended_remaining == 0.0)
+	assert(game.ecology.episodes.size() == 1)
+	assert(home.request_wand_parameter_edit(identity, "IS_ALIVE", true))
+	assert(home.get_natural_fauna(identity) == fox and fox.get_parameter("health") == 100)
+	assert(fox.death_remaining == 0.0)
+
+	var fridge = home.entities.get_entity(Island.FRIDGE_ID)
+	assert(fridge.set_parameter("alive", true))
+	assert(home._apply_consumable(Profile.RECIPES["ALC-R13"], fridge))
+	assert(not fridge.get_parameter("alive") and home.entities.get_entity(Island.FRIDGE_ID) == fridge)
+
+	var mirror = home.get_natural_fauna(Island.MIRROR_SNAIL)
+	var original: Dictionary = mirror.record.get_components()
+	assert(original["ABILITY_SET"]["instances"].has(Island.DUPLICATE_MODULE_ID))
+	assert(home._apply_consumable([{"id": "DORMANT", "value": 1}], mirror))
+	mirror.tick_life_suspension(1.0)
+	assert(mirror.get_parameter("alive") and mirror.record.get_components() == original)
+	return true

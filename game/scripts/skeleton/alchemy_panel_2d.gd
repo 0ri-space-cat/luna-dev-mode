@@ -97,5 +97,8 @@ func _select(enabled: bool, element: String) -> void:
 func _mix() -> void:
 	_effect = Recipes.resolve(selected)
 	_result.text = Recipes.NAMES.get(_effect, "Нет известной реакции") if not selected.is_empty() else "Выбери 1–3 элемента"
-	_try.disabled = _effect not in IMPLEMENTED
+	var requires_target := _effect in ["ALC-R13", "ALC-R28"]
+	_try.disabled = _effect not in IMPLEMENTED or requires_target
 	_fill.disabled = _effect not in IMPLEMENTED
+	if requires_target:
+		_result.text += "\nДля применения нужна совместимая цель."

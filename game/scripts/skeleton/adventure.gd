@@ -252,7 +252,7 @@ func _observation_message(item: Dictionary) -> String:
 
 func _observe_life_change(change: Dictionary) -> void:
 	if change["parameter_id"] != "alive" or change["initiator_id"] != Island.ENTITY_ID \
-			or change["source_id"] != "wand:luna":
+			or change["source_id"] not in ["wand:luna", "alchemy:mori"]:
 		return
 	var subject := home.get_natural_fauna(change["entity_id"])
 	if subject == null or not change["before"] is bool or not change["after"] is bool:

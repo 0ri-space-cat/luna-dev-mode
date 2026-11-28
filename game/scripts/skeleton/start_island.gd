@@ -3916,7 +3916,8 @@ func _find_flask_contact(from: Vector3, finish: Vector3, can_hit_thrower: bool) 
 	var first := INF
 	for identity in entities.list_ids():
 		var body := entities.get_entity(identity) as EntityBody
-		if not body.visible or not body.get_parameter("alive") or (body == actor and not can_hit_thrower):
+		if not body.visible or (not body.get_parameter("alive") and body.life_suspended_remaining <= 0.0) \
+				or (body == actor and not can_hit_thrower):
 			continue
 		var point := Geometry2D.get_closest_point_to_segment(body.position, start, end)
 		if point.distance_squared_to(body.position) > pow(body.foot_radius() + 2.5, 2):
@@ -3946,7 +3947,8 @@ func _apply_alchemy(effect_id: String) -> bool:
 
 
 func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = Vector2.INF) -> bool:
-	if receiver != null and not receiver.get_parameter("alive"):
+	if receiver != null and not receiver.get_parameter("alive") \
+			and (receiver.life_suspended_remaining <= 0.0 or effects != [{"id": "CLEAR"}]):
 		return false
 	for effect in effects:
 		match effect["id"]:
@@ -3961,6 +3963,9 @@ func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = V
 					return false
 			"SWIM":
 				if receiver != actor:
+					return false
+			"MORI", "DORMANT":
+				if not _life_recipe_target(receiver):
 					return false
 	for effect in effects:
 		var amount: int = int(effect.get("value", 0))
@@ -3978,6 +3983,8 @@ func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = V
 				else:
 					receiver.consumable_glow_remaining = maxf(receiver.consumable_glow_remaining, amount)
 			"CLEAR":
+				if receiver.life_suspended_remaining > 0.0:
+					receiver.set_parameter("alive", true)
 				if receiver == actor:
 					_alchemy_glow.restore(0.0)
 					_clear_bubble()
@@ -3995,8 +4002,20 @@ func _apply_consumable(effects: Array, receiver: EntityBody, impact: Vector2 = V
 				receiver.temporary_swim = true
 			"NIGHT":
 				world_clock.set_time_of_day(WorldClock.NIGHT_MINUTE)
+			"DORMANT":
+				if not receiver.suspend_life(amount):
+					return false
+			"MORI":
+				var changes: Array[Dictionary] = [{"kind": "parameter", "entity_id": receiver.entity_id,
+					"parameter_id": "alive", "target": receiver, "before": true, "after": false}]
+				return commands.execute_batch(changes, ENTITY_ID, "alchemy:mori")
 	_update_alchemy_light()
 	return true
+
+
+func _life_recipe_target(target: EntityBody) -> bool:
+	return target != null and target != actor and target.get_parameter("alive") \
+		and target.supports_consumable_life()
 
 
 func _clear_bubble() -> void:
@@ -4811,6 +4830,8 @@ func _physics_process(delta: float) -> void:
 	for identity in entities.list_ids():
 		var body := entities.get_entity(identity) as EntityBody
 		body.location_id = _entity_location(body.position)
+		if body.life_suspended_remaining > 0.0:
+			body.tick_life_suspension(effect_delta)
 		if body.consumable_flight_remaining > 0.0:
 			body.consumable_flight_remaining = maxf(0.0, body.consumable_flight_remaining - effect_delta)
 			if body.consumable_flight_remaining == 0.0:

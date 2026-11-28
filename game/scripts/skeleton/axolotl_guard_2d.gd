@@ -14,13 +14,6 @@ func set_parameter(key: String, value: Variant) -> bool:
 	return super.set_parameter(key, value)
 
 
-func _revive() -> bool:
-	if not super._revive():
-		return false
-	record.set_parameter("health", record.registry.get_spec(record.category, "health")["default"])
-	return true
-
-
 func refresh_form_marker() -> void:
 	_marker.polygon = PackedVector2Array([Vector2(-20, -2), Vector2(-25, -9), Vector2(-22, -21),
 		Vector2(-14, -27), Vector2(10, -26), Vector2(24, -18), Vector2(22, -6), Vector2(13, 0)])

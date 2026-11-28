@@ -160,6 +160,8 @@ func make_snapshot() -> Dictionary:
 			data["consumable_flight"] = body.consumable_flight_remaining
 		if body.consumable_glow_remaining > 0.0:
 			data["consumable_glow"] = body.consumable_glow_remaining
+		if body.life_suspended_remaining > 0.0:
+			data["life_suspended"] = body.life_suspended_remaining
 		if body.record.category in ["food", "drink"]:
 			data["food"] = {"edible": body.get_parameter("edible"), "portions": body.get_parameter("portions")}
 			if not body.food_effects.is_empty():
@@ -250,11 +252,17 @@ func _build_saved_entity(state: Variant, version: int) -> EntityBody:
 	if body != null:
 		var flight: Variant = state.get("consumable_flight", 0.0)
 		var glow: Variant = state.get("consumable_glow", 0.0)
+		var dormant: Variant = state.get("life_suspended", 0.0)
+		if not _valid_effect_duration(dormant, ConsumableProfile.DORMANT_LIMIT) \
+				or (float(dormant) > 0.0 and (body.get_parameter("alive") or not body.supports_consumable_life())):
+			body.free()
+			return null
 		if not _valid_effect_duration(flight, ConsumableProfile.FLIGHT_LIMIT) or not _valid_effect_duration(glow, ConsumableProfile.GLOW_LIMIT):
 			body.free()
 			return null
 		body.consumable_flight_remaining = float(flight)
 		body.consumable_glow_remaining = float(glow)
+		body.life_suspended_remaining = float(dormant)
 		body.location_id = _entity_location(body.position)
 		if state.get("location_id") != body.location_id:
 			body.free()
