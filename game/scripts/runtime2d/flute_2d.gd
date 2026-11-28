@@ -12,7 +12,7 @@ const PHRASES := {
 	"M09": "UDRDLU",
 	"M10": "DLDRUL",
 }
-const IMPLEMENTED := ["M01", "M02", "M03", "M04", "M05", "M06", "M07", "M09", "M10"]
+const IMPLEMENTED := ["M01", "M02", "M03", "M04", "M05", "M06", "M07", "M08", "M09", "M10"]
 const GLYPHS := {"U": "↑", "D": "↓", "L": "←", "R": "→"}
 const FREQUENCIES := {"U": 523.25, "D": 392.0, "L": 440.0, "R": 493.88}
 const MAX_NOTES := 8

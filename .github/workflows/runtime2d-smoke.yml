@@ -106,6 +106,9 @@ jobs:
       - name: Test the optional waterfall guardian, hit, retreat, edit and lake exit
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 0 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_waterfall_guardian.gd
+      - name: Test M08 in Adventure, return and deliberate P01
+        if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
+        run: bash ci/run_godot_script.sh res://tests/test_skeleton_musical_buffer.gd
       - name: Test the music pavilion, six arches and saved return
         if: ${{ !cancelled() && steps.parse.outcome == 'success' && matrix.shard == 2 }}
         run: bash ci/run_godot_script.sh res://tests/test_skeleton_music_pavilion.gd

@@ -456,7 +456,7 @@ func _finish_buffer() -> bool:
 	if exploration.buffer_from_house:
 		moved = _move_to_address(HOUSE_04)
 	elif ride_destination.is_empty():
-		moved = _return_to_safe_point()
+		moved = return_to_host.call() if return_to_host.is_valid() and hosted_entry == BUFFER else _return_to_safe_point()
 	elif ride_destination in [LUMA, MEADOWS] and public_arrival.is_valid():
 		moved = public_arrival.call(ride_destination)
 	elif ride_destination == MEADOWS and return_to_host.is_valid():
@@ -686,6 +686,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 		return false
 	if return_to_host.is_valid() and hosted_entry in [GHOST_ENTRY, BACKDROP_ENTRY] and address != BLACK_VOID:
 		return false
+	if return_to_host.is_valid() and hosted_entry == BUFFER and address not in [BUFFER, SUBSPACE]:
+		return false
 	if data.has("outer_exploration"):
 		if not next_exploration.restore(data["outer_exploration"]) or data.get("routes") != router.snapshot_routes():
 			return false
@@ -699,6 +701,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 		or not _valid_journey(address, journey) or not clock.restore(data.get("clock")):
 		return false
 	if not _valid_exploration(address, journey, next_exploration):
+		return false
+	if return_to_host.is_valid() and hosted_entry == BUFFER and (journey["destination"] != "" or next_exploration.buffer_from_house):
 		return false
 	var safe_point := Vector2(float(safe["point"][0]), float(safe["point"][1]))
 	var safe_room := _load_room(safe["address"])

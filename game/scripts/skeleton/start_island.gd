@@ -204,6 +204,7 @@ var _initial_oni: Dictionary = {}
 var _initial_city_states: Array[Dictionary] = []
 var _c6_facade: Node2D
 var public_ride_requested: Callable
+var musical_buffer_requested: Callable
 var desktop_requested: Callable
 # Only an author-designated room may configure this. Default Adventure has none.
 var backdrop_route: BackdropRoute
@@ -3523,6 +3524,8 @@ func perform_music(phrase: String) -> bool:
 			return true
 		"M07":
 			return _mountain_music_response()
+		"M08":
+			return musical_buffer_requested.is_valid() and musical_buffer_requested.call()
 		"M09":
 			return _am_music_response()
 		"M06":
