@@ -32,6 +32,7 @@ var initial_guard: Dictionary
 var _phase := "den"
 var _elapsed := 0.0
 var _hit := false
+var _was_here := false
 var _bar: ProgressBar
 var _name: Label
 
@@ -137,24 +138,33 @@ func tick(delta: float) -> void:
 	if guard == null or _bar == null:
 		return
 	var actor = home.actor
-	var here := owns(actor.position)
+	if not owns(actor.position):
+		if _was_here:
+			_was_here = false
+			_bar.hide()
+			_name.hide()
+			if actor.secondary_step_obstacle == guard:
+				actor.secondary_step_obstacle = home.entities.get_entity(home.AM.GIANT)
+			guard.collision_layer = 0
+			guard.autonomous_destination = Vector2.INF
+			_begin("return")
+			queue_redraw()
+		return
+	_was_here = true
 	var hostile := _is_hostile(guard)
-	var present: bool = here and guard.get_parameter("alive") and (hostile or _phase != "den")
-	_bar.visible = present
-	_name.visible = present
+	_bar.visible = hostile
+	_name.visible = hostile
 	var health: int = guard.get_parameter("health")
 	_bar.value = health
-	if present:
+	if hostile:
 		_name.text = "Гигантский аксолотль · %d HP" % health
-	if not here or not hostile:
-		if here:
-			actor.secondary_step_obstacle = null
-		elif actor.secondary_step_obstacle == guard:
-			actor.secondary_step_obstacle = home.entities.get_entity(home.AM.GIANT)
+	else:
+		actor.secondary_step_obstacle = null
 		guard.collision_layer = 0
 		guard.autonomous_destination = Vector2.INF
-		_phase = "den" if not hostile else "return"
-		queue_redraw()
+		if _phase != "den":
+			_begin("den")
+			queue_redraw()
 		return
 	actor.secondary_step_obstacle = guard
 	guard.collision_layer = guard.BODY_OBSTACLE_LAYER if _phase in ["charge", "opening"] else 0

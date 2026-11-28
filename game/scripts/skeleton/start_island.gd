@@ -9,6 +9,7 @@ signal forest_bank_left
 
 const ForestBank = preload("res://scripts/skeleton/forest_bank_2d.gd")
 const ForestDepths = preload("res://scripts/skeleton/forest_depths_2d.gd")
+const MusicPavilion = preload("res://scripts/skeleton/music_pavilion_2d.gd")
 const WaterfallGuardian = preload("res://scripts/skeleton/waterfall_guardian_2d.gd")
 const AxolotlGuard = preload("res://scripts/skeleton/axolotl_guard_2d.gd")
 const FairyMap = preload("res://scripts/skeleton/fairy_realm_layout.gd")
@@ -137,6 +138,7 @@ const AREA_LABELS := {
 	Lake.LOCATION_ID: "Озеро Дубликатов", ForestBank.LOCATION_ID: "Лес",
 	AncientConsole.LOCATION_ID: "Лесная поляна", Valley.LOCATION_ID: "Долина водопадов",
 	FairyMap.ID: "Мир фей", ForestDepths.ID: "Повреждённый лес", WaterfallGuardian.PLACE: "За водопадом",
+	MusicPavilion.ID: "Музыкальный павильон",
 	Valley.CRYSTAL_ID: "Кристальные пещеры", Coast.LOCATION_ID: "Побережье",
 	W8.PASSAGE: "Кристальные пещеры", W8.REFUGE: "Малое убежище",
 	Coast.HOUSE_ID: "Дом вечерних окон", Coast.GROTTO_ID: "Морской грот",
@@ -206,6 +208,8 @@ var desktop_requested: Callable
 # Only an author-designated room may configure this. Default Adventure has none.
 var backdrop_route: BackdropRoute
 var _room_view: StaticRoomView
+@export var music_pavilion_enabled := false
+var music_pavilion: MusicPavilion
 @export var waterfall_guardian_enabled := false
 var waterfall_guardian: WaterfallGuardian
 @export var forest_depths_enabled := false
@@ -285,6 +289,8 @@ func _location_id() -> String:
 
 
 func _entity_location(point: Vector2) -> String:
+	if music_pavilion_enabled and MusicPavilion.ROOM.has_point(point):
+		return MusicPavilion.ID
 	if waterfall_guardian_enabled and WaterfallGuardian.owns(point):
 		return WaterfallGuardian.PLACE
 	if forest_depths_enabled:
@@ -532,6 +538,8 @@ func _ready() -> void:
 		ground.append_array(ForestDepths.decks())
 	if waterfall_guardian_enabled:
 		ground.append_array(WaterfallGuardian.DECKS)
+	if music_pavilion_enabled:
+		ground.append(MusicPavilion.ROOM)
 	for bounds in ground:
 		_decks.append({"bounds": bounds, "height": 0.0})
 	if observation_fixture:
@@ -652,6 +660,10 @@ func _ready() -> void:
 		waterfall_guardian = WaterfallGuardian.new()
 		add_child(waterfall_guardian)
 		waterfall_guardian.mount(self)
+	if music_pavilion_enabled:
+		music_pavilion = MusicPavilion.new()
+		music_pavilion.home = self
+		add_child(music_pavilion)
 
 
 func _setup_crystal_observation() -> void:
@@ -3486,6 +3498,8 @@ func perform_music(phrase: String) -> bool:
 		return false
 	var melody := Music.resolve(phrase)
 	match melody:
+		"M01":
+			return music_pavilion != null and music_pavilion.play()
 		"M05", "M10":
 			return forest_depths != null and forest_depths.perform(melody, actor.position)
 		"M02":
@@ -4705,6 +4719,8 @@ func _physics_process(delta: float) -> void:
 func _update_local_camera() -> void:
 	_sync_c6_facade()
 	var room := fairy_realm.view_bounds(actor.position) if fairy_realm != null else Rect2()
+	if music_pavilion != null and MusicPavilion.ROOM.has_point(actor.position):
+		room = MusicPavilion.ROOM
 	if _room_view != null:
 		for candidate in [City.CAFE, City.ROOM, City.WORKSHOP, City.SHOP, RuneRoom.KEY_ROOM, FairyBranch.ROOM]:
 			if candidate.has_point(actor.position):
@@ -4885,6 +4901,8 @@ func _use_tunnel(point: Vector2, address: String) -> bool:
 
 
 func _nearby_action() -> String:
+	if music_pavilion != null and MusicPavilion.ROOM.has_point(actor.position):
+		return music_pavilion.action(actor.position).get("name", "") if actor.motion.grounded and not actor.is_attached() else ""
 	if forest_depths != null:
 		var local := forest_depths.action(actor.position) if actor.motion.grounded and not actor.is_attached() else ""
 		if forest_dream_active() or not local.is_empty():
@@ -5057,6 +5075,9 @@ func _update_ice_support(active: bool) -> void:
 func interact() -> bool:
 	if not (actor as EntityBody).accepts_player_input() or is_instance_valid(_debug_editor):
 		return false
+	if music_pavilion != null and MusicPavilion.ROOM.has_point(actor.position):
+		var port := music_pavilion.action(actor.position)
+		return actor.motion.grounded and not actor.is_attached() and not port.is_empty() and music_pavilion.interact(port)
 	if forest_depths != null:
 		var local := forest_depths.action(actor.position) if actor.motion.grounded and not actor.is_attached() else ""
 		if not local.is_empty():
@@ -5603,6 +5624,8 @@ func _toggle_debug_editor() -> void:
 
 func make_snapshot() -> Dictionary:
 	var data := super.make_snapshot()
+	if music_pavilion != null:
+		data["music_pavilion_origin"] = music_pavilion.snapshot()
 	if waterfall_guardian != null:
 		data["guardian_layout"] = 1
 	if forest_depths != null:
@@ -5695,6 +5718,9 @@ func make_snapshot() -> Dictionary:
 
 
 func apply_snapshot(data: Dictionary) -> bool:
+	var next_pavilion_origin: Variant = data.get("music_pavilion_origin", [])
+	if music_pavilion != null and not MusicPavilion.valid_snapshot(next_pavilion_origin):
+		return false
 	var next_depths: Variant = data.get("forest_depths", ForestDepths.START)
 	if forest_depths != null and not ForestDepths.valid_snapshot(next_depths, data.get("entities"), ENTITY_ID):
 		return false
@@ -6212,6 +6238,8 @@ func apply_snapshot(data: Dictionary) -> bool:
 				if not previous_edge_surfaces.has(surface):
 					_surfaces.erase(surface)
 		return false
+	if music_pavilion != null:
+		music_pavilion.restore(next_pavilion_origin)
 	if waterfall_guardian != null:
 		waterfall_guardian.restore()
 	shell_collection_ready = next_shell_collection["ready"]
@@ -6653,6 +6681,9 @@ func _draw() -> void:
 			RarePresentation.draw_on(self, rare_kind, rare_anchor, rare_elapsed, rare_body_scale, rare_tint)
 		if _tower_field_note_visible():
 			Valley.draw_field_note(self, Valley.TOWER_UPPER_VIEW, false, Color("9edee8"))
+			if music_pavilion != null:
+				draw_string(ThemeDB.fallback_font, Valley.TOWER_MAP + Vector2(-16, -9),
+					Music.arrows(Music.PHRASES["M01"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("a3e0ff"))
 		MiaLab.draw_on(self)
 		Tunnel.draw_on(self)
 		Crystal.draw_on(self, _crystal_door_solid)

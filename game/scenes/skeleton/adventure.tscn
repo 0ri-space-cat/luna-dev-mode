@@ -18,6 +18,7 @@ ancient_console_enabled = true
 fairy_realm_enabled = true
 forest_depths_enabled = true
 waterfall_guardian_enabled = true
+music_pavilion_enabled = true
 
 [node name="SystemPause" type="Node" parent="."]
 script = ExtResource("4")
